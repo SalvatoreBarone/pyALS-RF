@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PMML version="4.1" xmlns="http://www.dmg.org/PMML-4_1">
+  <Header copyright="francescogrg">
+    <Application name="KNIME" version="2.8.2"/>
+  </Header>
+  <DataDictionary numberOfFields="20">
+    <DataField name="REGION-CENTROID-COL" optype="categorical" dataType="string">
+      <Value value="BRICKFACE"/>
+      <Value value="SKY"/>
+      <Value value="FOLIAGE"/>
+      <Value value="CEMENT"/>
+      <Value value="WINDOW"/>
+      <Value value="PATH"/>
+      <Value value="GRASS"/>
+    </DataField>
+    <DataField name="REGION-CENTROID-ROW" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="1.0" rightMargin="252.0"/>
+    </DataField>
+    <DataField name="REGION-PIXEL-COUNT" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="11.0" rightMargin="250.0"/>
+    </DataField>
+    <DataField name="SHORT-LINE-DENSITY-5" optype="continuous" dataType="integer">
+      <Interval closure="closedClosed" leftMargin="9.0" rightMargin="9.0"/>
+    </DataField>
+    <DataField name="SHORT-LINE-DENSITY-2" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="0.0" rightMargin="0.11111111"/>
+    </DataField>
+    <DataField name="VEDGE-MEAN" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="0.0" rightMargin="0.22222222"/>
+    </DataField>
+    <DataField name="VEDGE-SD" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="0.0" rightMargin="25.5"/>
+    </DataField>
+    <DataField name="HEDGE-MEAN" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="0.0" rightMargin="572.9964"/>
+    </DataField>
+    <DataField name="HEDGE-SD" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="0.0" rightMargin="44.722225"/>
+    </DataField>
+    <DataField name="INTENSITY-MEAN" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="0.0" rightMargin="1386.3292"/>
+    </DataField>
+    <DataField name="RAWRED-MEAN" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="0.0" rightMargin="143.44444"/>
+    </DataField>
+    <DataField name="RAWBLUE-MEAN" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="0.0" rightMargin="136.88889"/>
+    </DataField>
+    <DataField name="RAWGREEN-MEAN" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="0.0" rightMargin="150.88889"/>
+    </DataField>
+    <DataField name="EXRED-MEAN" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="0.0" rightMargin="142.55556"/>
+    </DataField>
+    <DataField name="EXBLUE-MEAN" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="-48.22222" rightMargin="5.7777777"/>
+    </DataField>
+    <DataField name="EXGREEN-MEAN" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="-9.666667" rightMargin="78.77778"/>
+    </DataField>
+    <DataField name="VALUE-MEAN" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="-30.555555" rightMargin="21.88889"/>
+    </DataField>
+    <DataField name="SATURATION-MEAN" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="0.0" rightMargin="150.88889"/>
+    </DataField>
+    <DataField name="HUE-MEAN" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="0.0" rightMargin="1.0"/>
+    </DataField>
+    <DataField name="Col19" optype="continuous" dataType="double">
+      <Interval closure="closedClosed" leftMargin="-2.5309503" rightMargin="2.8649306"/>
+    </DataField>
+  </DataDictionary>
+  <TreeModel modelName="DecisionTree" functionName="classification" splitCharacteristic="binarySplit" missingValueStrategy="lastPrediction" noTrueChildStrategy="returnNullPrediction">
+    <MiningSchema>
+      <MiningField name="REGION-CENTROID-ROW" invalidValueTreatment="asIs"/>
+      <MiningField name="REGION-PIXEL-COUNT" invalidValueTreatment="asIs"/>
+      <MiningField name="SHORT-LINE-DENSITY-5" invalidValueTreatment="asIs"/>
+      <MiningField name="SHORT-LINE-DENSITY-2" invalidValueTreatment="asIs"/>
+      <MiningField name="VEDGE-MEAN" invalidValueTreatment="asIs"/>
+      <MiningField name="VEDGE-SD" invalidValueTreatment="asIs"/>
+      <MiningField name="HEDGE-MEAN" invalidValueTreatment="asIs"/>
+      <MiningField name="HEDGE-SD" invalidValueTreatment="asIs"/>
+      <MiningField name="INTENSITY-MEAN" invalidValueTreatment="asIs"/>
+      <MiningField name="RAWRED-MEAN" invalidValueTreatment="asIs"/>
+      <MiningField name="RAWBLUE-MEAN" invalidValueTreatment="asIs"/>
+      <MiningField name="RAWGREEN-MEAN" invalidValueTreatment="asIs"/>
+      <MiningField name="EXRED-MEAN" invalidValueTreatment="asIs"/>
+      <MiningField name="EXBLUE-MEAN" invalidValueTreatment="asIs"/>
+      <MiningField name="EXGREEN-MEAN" invalidValueTreatment="asIs"/>
+      <MiningField name="VALUE-MEAN" invalidValueTreatment="asIs"/>
+      <MiningField name="SATURATION-MEAN" invalidValueTreatment="asIs"/>
+      <MiningField name="HUE-MEAN" invalidValueTreatment="asIs"/>
+      <MiningField name="Col19" invalidValueTreatment="asIs"/>
+      <MiningField name="REGION-CENTROID-COL" invalidValueTreatment="asIs" usageType="predicted"/>
+    </MiningSchema>
+    <Node id="0" score="BRICKFACE" recordCount="210.0">
+      <True/>
+      <ScoreDistribution value="BRICKFACE" recordCount="30.0"/>
+      <ScoreDistribution value="SKY" recordCount="30.0"/>
+      <ScoreDistribution value="FOLIAGE" recordCount="30.0"/>
+      <ScoreDistribution value="CEMENT" recordCount="30.0"/>
+      <ScoreDistribution value="WINDOW" recordCount="30.0"/>
+      <ScoreDistribution value="PATH" recordCount="30.0"/>
+      <ScoreDistribution value="GRASS" recordCount="30.0"/>
+      <Node id="1" score="BRICKFACE" recordCount="180.0">
+        <SimplePredicate field="Col19" operator="lessOrEqual" value="0.87832255"/>
+        <ScoreDistribution value="BRICKFACE" recordCount="30.0"/>
+        <ScoreDistribution value="SKY" recordCount="30.0"/>
+        <ScoreDistribution value="FOLIAGE" recordCount="30.0"/>
+        <ScoreDistribution value="CEMENT" recordCount="30.0"/>
+        <ScoreDistribution value="WINDOW" recordCount="30.0"/>
+        <ScoreDistribution value="PATH" recordCount="30.0"/>
+        <ScoreDistribution value="GRASS" recordCount="0.0"/>
+        <Node id="2" score="BRICKFACE" recordCount="150.0">
+          <SimplePredicate field="SATURATION-MEAN" operator="lessOrEqual" value="98.6111105"/>
+          <ScoreDistribution value="BRICKFACE" recordCount="30.0"/>
+          <ScoreDistribution value="SKY" recordCount="0.0"/>
+          <ScoreDistribution value="FOLIAGE" recordCount="30.0"/>
+          <ScoreDistribution value="CEMENT" recordCount="30.0"/>
+          <ScoreDistribution value="WINDOW" recordCount="30.0"/>
+          <ScoreDistribution value="PATH" recordCount="30.0"/>
+          <ScoreDistribution value="GRASS" recordCount="0.0"/>
+          <Node id="3" score="BRICKFACE" recordCount="120.0">
+            <SimplePredicate field="REGION-PIXEL-COUNT" operator="lessOrEqual" value="160.5"/>
+            <ScoreDistribution value="BRICKFACE" recordCount="30.0"/>
+            <ScoreDistribution value="SKY" recordCount="0.0"/>
+            <ScoreDistribution value="FOLIAGE" recordCount="30.0"/>
+            <ScoreDistribution value="CEMENT" recordCount="30.0"/>
+            <ScoreDistribution value="WINDOW" recordCount="30.0"/>
+            <ScoreDistribution value="PATH" recordCount="0.0"/>
+            <ScoreDistribution value="GRASS" recordCount="0.0"/>
+            <Node id="4" score="FOLIAGE" recordCount="83.0">
+              <SimplePredicate field="Col19" operator="lessOrEqual" value="-1.7893336"/>
+              <ScoreDistribution value="BRICKFACE" recordCount="1.0"/>
+              <ScoreDistribution value="SKY" recordCount="0.0"/>
+              <ScoreDistribution value="FOLIAGE" recordCount="29.0"/>
+              <ScoreDistribution value="CEMENT" recordCount="29.0"/>
+              <ScoreDistribution value="WINDOW" recordCount="24.0"/>
+              <ScoreDistribution value="PATH" recordCount="0.0"/>
+              <ScoreDistribution value="GRASS" recordCount="0.0"/>
+              <Node id="5" score="CEMENT" recordCount="29.0">
+                <SimplePredicate field="VALUE-MEAN" operator="lessOrEqual" value="-10.9444445"/>
+                <ScoreDistribution value="BRICKFACE" recordCount="0.0"/>
+                <ScoreDistribution value="SKY" recordCount="0.0"/>
+                <ScoreDistribution value="FOLIAGE" recordCount="1.0"/>
+                <ScoreDistribution value="CEMENT" recordCount="26.0"/>
+                <ScoreDistribution value="WINDOW" recordCount="2.0"/>
+                <ScoreDistribution value="PATH" recordCount="0.0"/>
+                <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                <Node id="6" score="WINDOW" recordCount="3.0">
+                  <SimplePredicate field="EXRED-MEAN" operator="lessOrEqual" value="16.3888895"/>
+                  <ScoreDistribution value="BRICKFACE" recordCount="0.0"/>
+                  <ScoreDistribution value="SKY" recordCount="0.0"/>
+                  <ScoreDistribution value="FOLIAGE" recordCount="1.0"/>
+                  <ScoreDistribution value="CEMENT" recordCount="0.0"/>
+                  <ScoreDistribution value="WINDOW" recordCount="2.0"/>
+                  <ScoreDistribution value="PATH" recordCount="0.0"/>
+                  <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                </Node>
+                <Node id="7" score="CEMENT" recordCount="26.0">
+                  <SimplePredicate field="EXRED-MEAN" operator="greaterThan" value="16.3888895"/>
+                  <ScoreDistribution value="BRICKFACE" recordCount="0.0"/>
+                  <ScoreDistribution value="SKY" recordCount="0.0"/>
+                  <ScoreDistribution value="FOLIAGE" recordCount="0.0"/>
+                  <ScoreDistribution value="CEMENT" recordCount="26.0"/>
+                  <ScoreDistribution value="WINDOW" recordCount="0.0"/>
+                  <ScoreDistribution value="PATH" recordCount="0.0"/>
+                  <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                </Node>
+              </Node>
+              <Node id="8" score="FOLIAGE" recordCount="54.0">
+                <SimplePredicate field="VALUE-MEAN" operator="greaterThan" value="-10.9444445"/>
+                <ScoreDistribution value="BRICKFACE" recordCount="1.0"/>
+                <ScoreDistribution value="SKY" recordCount="0.0"/>
+                <ScoreDistribution value="FOLIAGE" recordCount="28.0"/>
+                <ScoreDistribution value="CEMENT" recordCount="3.0"/>
+                <ScoreDistribution value="WINDOW" recordCount="22.0"/>
+                <ScoreDistribution value="PATH" recordCount="0.0"/>
+                <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                <Node id="9" score="FOLIAGE" recordCount="38.0">
+                  <SimplePredicate field="Col19" operator="lessOrEqual" value="-2.0828184"/>
+                  <ScoreDistribution value="BRICKFACE" recordCount="0.0"/>
+                  <ScoreDistribution value="SKY" recordCount="0.0"/>
+                  <ScoreDistribution value="FOLIAGE" recordCount="28.0"/>
+                  <ScoreDistribution value="CEMENT" recordCount="1.0"/>
+                  <ScoreDistribution value="WINDOW" recordCount="9.0"/>
+                  <ScoreDistribution value="PATH" recordCount="0.0"/>
+                  <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                  <Node id="10" score="WINDOW" recordCount="13.0">
+                    <SimplePredicate field="HUE-MEAN" operator="lessOrEqual" value="0.50712685"/>
+                    <ScoreDistribution value="BRICKFACE" recordCount="0.0"/>
+                    <ScoreDistribution value="SKY" recordCount="0.0"/>
+                    <ScoreDistribution value="FOLIAGE" recordCount="4.0"/>
+                    <ScoreDistribution value="CEMENT" recordCount="1.0"/>
+                    <ScoreDistribution value="WINDOW" recordCount="8.0"/>
+                    <ScoreDistribution value="PATH" recordCount="0.0"/>
+                    <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                    <Node id="11" score="FOLIAGE" recordCount="4.0">
+                      <SimplePredicate field="Col19" operator="lessOrEqual" value="-2.27971075"/>
+                      <ScoreDistribution value="BRICKFACE" recordCount="0.0"/>
+                      <ScoreDistribution value="SKY" recordCount="0.0"/>
+                      <ScoreDistribution value="FOLIAGE" recordCount="4.0"/>
+                      <ScoreDistribution value="CEMENT" recordCount="0.0"/>
+                      <ScoreDistribution value="WINDOW" recordCount="0.0"/>
+                      <ScoreDistribution value="PATH" recordCount="0.0"/>
+                      <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                    </Node>
+                    <Node id="12" score="WINDOW" recordCount="9.0">
+                      <SimplePredicate field="Col19" operator="greaterThan" value="-2.27971075"/>
+                      <ScoreDistribution value="BRICKFACE" recordCount="0.0"/>
+                      <ScoreDistribution value="SKY" recordCount="0.0"/>
+                      <ScoreDistribution value="FOLIAGE" recordCount="0.0"/>
+                      <ScoreDistribution value="CEMENT" recordCount="1.0"/>
+                      <ScoreDistribution value="WINDOW" recordCount="8.0"/>
+                      <ScoreDistribution value="PATH" recordCount="0.0"/>
+                      <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                    </Node>
+                  </Node>
+                  <Node id="15" score="FOLIAGE" recordCount="25.0">
+                    <SimplePredicate field="HUE-MEAN" operator="greaterThan" value="0.50712685"/>
+                    <ScoreDistribution value="BRICKFACE" recordCount="0.0"/>
+                    <ScoreDistribution value="SKY" recordCount="0.0"/>
+                    <ScoreDistribution value="FOLIAGE" recordCount="24.0"/>
+                    <ScoreDistribution value="CEMENT" recordCount="0.0"/>
+                    <ScoreDistribution value="WINDOW" recordCount="1.0"/>
+                    <ScoreDistribution value="PATH" recordCount="0.0"/>
+                    <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                  </Node>
+                </Node>
+                <Node id="20" score="WINDOW" recordCount="16.0">
+                  <SimplePredicate field="Col19" operator="greaterThan" value="-2.0828184"/>
+                  <ScoreDistribution value="BRICKFACE" recordCount="1.0"/>
+                  <ScoreDistribution value="SKY" recordCount="0.0"/>
+                  <ScoreDistribution value="FOLIAGE" recordCount="0.0"/>
+                  <ScoreDistribution value="CEMENT" recordCount="2.0"/>
+                  <ScoreDistribution value="WINDOW" recordCount="13.0"/>
+                  <ScoreDistribution value="PATH" recordCount="0.0"/>
+                  <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                  <Node id="21" score="CEMENT" recordCount="2.0">
+                    <SimplePredicate field="HUE-MEAN" operator="lessOrEqual" value="0.515432125"/>
+                    <ScoreDistribution value="BRICKFACE" recordCount="0.0"/>
+                    <ScoreDistribution value="SKY" recordCount="0.0"/>
+                    <ScoreDistribution value="FOLIAGE" recordCount="0.0"/>
+                    <ScoreDistribution value="CEMENT" recordCount="2.0"/>
+                    <ScoreDistribution value="WINDOW" recordCount="0.0"/>
+                    <ScoreDistribution value="PATH" recordCount="0.0"/>
+                    <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                  </Node>
+                  <Node id="22" score="WINDOW" recordCount="14.0">
+                    <SimplePredicate field="HUE-MEAN" operator="greaterThan" value="0.515432125"/>
+                    <ScoreDistribution value="BRICKFACE" recordCount="1.0"/>
+                    <ScoreDistribution value="SKY" recordCount="0.0"/>
+                    <ScoreDistribution value="FOLIAGE" recordCount="0.0"/>
+                    <ScoreDistribution value="CEMENT" recordCount="0.0"/>
+                    <ScoreDistribution value="WINDOW" recordCount="13.0"/>
+                    <ScoreDistribution value="PATH" recordCount="0.0"/>
+                    <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                  </Node>
+                </Node>
+              </Node>
+            </Node>
+            <Node id="25" score="BRICKFACE" recordCount="37.0">
+              <SimplePredicate field="Col19" operator="greaterThan" value="-1.7893336"/>
+              <ScoreDistribution value="BRICKFACE" recordCount="29.0"/>
+              <ScoreDistribution value="SKY" recordCount="0.0"/>
+              <ScoreDistribution value="FOLIAGE" recordCount="1.0"/>
+              <ScoreDistribution value="CEMENT" recordCount="1.0"/>
+              <ScoreDistribution value="WINDOW" recordCount="6.0"/>
+              <ScoreDistribution value="PATH" recordCount="0.0"/>
+              <ScoreDistribution value="GRASS" recordCount="0.0"/>
+              <Node id="26" score="WINDOW" recordCount="6.0">
+                <SimplePredicate field="HUE-MEAN" operator="lessOrEqual" value="0.27250196"/>
+                <ScoreDistribution value="BRICKFACE" recordCount="0.0"/>
+                <ScoreDistribution value="SKY" recordCount="0.0"/>
+                <ScoreDistribution value="FOLIAGE" recordCount="0.0"/>
+                <ScoreDistribution value="CEMENT" recordCount="1.0"/>
+                <ScoreDistribution value="WINDOW" recordCount="5.0"/>
+                <ScoreDistribution value="PATH" recordCount="0.0"/>
+                <ScoreDistribution value="GRASS" recordCount="0.0"/>
+              </Node>
+              <Node id="29" score="BRICKFACE" recordCount="31.0">
+                <SimplePredicate field="HUE-MEAN" operator="greaterThan" value="0.27250196"/>
+                <ScoreDistribution value="BRICKFACE" recordCount="29.0"/>
+                <ScoreDistribution value="SKY" recordCount="0.0"/>
+                <ScoreDistribution value="FOLIAGE" recordCount="1.0"/>
+                <ScoreDistribution value="CEMENT" recordCount="0.0"/>
+                <ScoreDistribution value="WINDOW" recordCount="1.0"/>
+                <ScoreDistribution value="PATH" recordCount="0.0"/>
+                <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                <Node id="30" score="BRICKFACE" recordCount="27.0">
+                  <SimplePredicate field="VALUE-MEAN" operator="lessOrEqual" value="-7.2777779"/>
+                  <ScoreDistribution value="BRICKFACE" recordCount="27.0"/>
+                  <ScoreDistribution value="SKY" recordCount="0.0"/>
+                  <ScoreDistribution value="FOLIAGE" recordCount="0.0"/>
+                  <ScoreDistribution value="CEMENT" recordCount="0.0"/>
+                  <ScoreDistribution value="WINDOW" recordCount="0.0"/>
+                  <ScoreDistribution value="PATH" recordCount="0.0"/>
+                  <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                </Node>
+                <Node id="31" score="BRICKFACE" recordCount="4.0">
+                  <SimplePredicate field="VALUE-MEAN" operator="greaterThan" value="-7.2777779"/>
+                  <ScoreDistribution value="BRICKFACE" recordCount="2.0"/>
+                  <ScoreDistribution value="SKY" recordCount="0.0"/>
+                  <ScoreDistribution value="FOLIAGE" recordCount="1.0"/>
+                  <ScoreDistribution value="CEMENT" recordCount="0.0"/>
+                  <ScoreDistribution value="WINDOW" recordCount="1.0"/>
+                  <ScoreDistribution value="PATH" recordCount="0.0"/>
+                  <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                  <Node id="32" score="FOLIAGE" recordCount="2.0">
+                    <SimplePredicate field="Col19" operator="lessOrEqual" value="-1.28247055"/>
+                    <ScoreDistribution value="BRICKFACE" recordCount="0.0"/>
+                    <ScoreDistribution value="SKY" recordCount="0.0"/>
+                    <ScoreDistribution value="FOLIAGE" recordCount="1.0"/>
+                    <ScoreDistribution value="CEMENT" recordCount="0.0"/>
+                    <ScoreDistribution value="WINDOW" recordCount="1.0"/>
+                    <ScoreDistribution value="PATH" recordCount="0.0"/>
+                    <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                  </Node>
+                  <Node id="33" score="BRICKFACE" recordCount="2.0">
+                    <SimplePredicate field="Col19" operator="greaterThan" value="-1.28247055"/>
+                    <ScoreDistribution value="BRICKFACE" recordCount="2.0"/>
+                    <ScoreDistribution value="SKY" recordCount="0.0"/>
+                    <ScoreDistribution value="FOLIAGE" recordCount="0.0"/>
+                    <ScoreDistribution value="CEMENT" recordCount="0.0"/>
+                    <ScoreDistribution value="WINDOW" recordCount="0.0"/>
+                    <ScoreDistribution value="PATH" recordCount="0.0"/>
+                    <ScoreDistribution value="GRASS" recordCount="0.0"/>
+                  </Node>
+                </Node>
+              </Node>
+            </Node>
+          </Node>
+          <Node id="34" score="PATH" recordCount="30.0">
+            <SimplePredicate field="REGION-PIXEL-COUNT" operator="greaterThan" value="160.5"/>
+            <ScoreDistribution value="BRICKFACE" recordCount="0.0"/>
+            <ScoreDistribution value="SKY" recordCount="0.0"/>
+            <ScoreDistribution value="FOLIAGE" recordCount="0.0"/>
+            <ScoreDistribution value="CEMENT" recordCount="0.0"/>
+            <ScoreDistribution value="WINDOW" recordCount="0.0"/>
+            <ScoreDistribution value="PATH" recordCount="30.0"/>
+            <ScoreDistribution value="GRASS" recordCount="0.0"/>
+          </Node>
+        </Node>
+        <Node id="35" score="SKY" recordCount="30.0">
+          <SimplePredicate field="SATURATION-MEAN" operator="greaterThan" value="98.6111105"/>
+          <ScoreDistribution value="BRICKFACE" recordCount="0.0"/>
+          <ScoreDistribution value="SKY" recordCount="30.0"/>
+          <ScoreDistribution value="FOLIAGE" recordCount="0.0"/>
+          <ScoreDistribution value="CEMENT" recordCount="0.0"/>
+          <ScoreDistribution value="WINDOW" recordCount="0.0"/>
+          <ScoreDistribution value="PATH" recordCount="0.0"/>
+          <ScoreDistribution value="GRASS" recordCount="0.0"/>
+        </Node>
+      </Node>
+      <Node id="36" score="GRASS" recordCount="30.0">
+        <SimplePredicate field="Col19" operator="greaterThan" value="0.87832255"/>
+        <ScoreDistribution value="BRICKFACE" recordCount="0.0"/>
+        <ScoreDistribution value="SKY" recordCount="0.0"/>
+        <ScoreDistribution value="FOLIAGE" recordCount="0.0"/>
+        <ScoreDistribution value="CEMENT" recordCount="0.0"/>
+        <ScoreDistribution value="WINDOW" recordCount="0.0"/>
+        <ScoreDistribution value="PATH" recordCount="0.0"/>
+        <ScoreDistribution value="GRASS" recordCount="30.0"/>
+      </Node>
+    </Node>
+  </TreeModel>
+</PMML>
