@@ -109,15 +109,4 @@ class Worker:
     print("ALS catalog:        ", self.__als_catalog)
     print("ALS timeout:        ", self.__als_timeout)
 
-  """
-  @brief Approximate variants generation for assertion functions
-  """
-  def __generate_assertions_variant(self):
-    temp_dir = "/tmp/EDGINESS/"
-    mkpath(temp_dir)
-    mkpath(temp_dir + "/vhd")
-    #* for each of the tree in the classifier...
-    for tree in self.__classifier.get_inner_trees():
-      tree.full_als_on_assertions(temp_dir, self.__als_lut, self.__als_catalog, self.__als_timeout, self.__als_nvectors)
-  
 
