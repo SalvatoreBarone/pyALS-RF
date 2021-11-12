@@ -45,14 +45,10 @@ class Classifier:
   __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_1'}
   __source_dir = "./resources/"
   # VHDL sources
-  __vhdl_cmake_dir = "vhd/cmake/"
-  __vhdl_tb_dir = "vhd/tb/"
-  __vhdl_build_script_file = "vhd/build.sh"
   __vhdl_bnf_source = "vhd/bnf.vhd"
   __vhdl_reg_source = "vhd/pipe_reg.vhd"
   __vhdl_decision_box_source = "vhd/decision_box.vhd"
   __vhdl_voter_source = "vhd/voter.vhd"
-  __vhdl_cmakelist_template_file = "vhd/CMakeLists.txt.template"
   __vhdl_classifier_template_file = "vhd/classifier.vhd.template"
 
   """
@@ -187,38 +183,32 @@ class Classifier:
   def evaluate_test_dataset(self, csv_file):
     return self.evaluate_preloaded_dataset(self.preload_dataset(csv_file))
 
-  def generate_vhd(self, destination):
+  def generate_ps_ax_implementations(self, destination, configurations):
     mkpath(destination)
-    mkpath(destination + "/vhd")
-    #mkpath(destination + "/cc")
-    copy_tree(self.__source_dir + self.__vhdl_cmake_dir, destination + "/" + self.__vhdl_cmake_dir)
-    copy_tree(self.__source_dir + self.__vhdl_tb_dir, destination + "/" + self.__vhdl_tb_dir)
-    copy_file(self.__source_dir + self.__vhdl_build_script_file, destination + "/vhd/")
-    copy_file(self.__source_dir + self.__vhdl_bnf_source, destination + "/vhd/")
-    copy_file(self.__source_dir + self.__vhdl_reg_source, destination + "/vhd/")
-    copy_file(self.__source_dir + self.__vhdl_decision_box_source, destination + "/vhd/")
-    copy_file(self.__source_dir + self.__vhdl_voter_source, destination + "/vhd/")
-    for tree in self.__trees_list_obj:
-      tree.generate_assertions_vhd(destination)
-      tree.generate_tree_vhd(destination)
-    trees = [ t.gen_name() for t in self.__trees_list_obj ]
+    mkpath(destination + "/ax")
+    trees_name = [ t.get_name() for t in self.__trees_list_obj ]
     file_loader = FileSystemLoader(self.__source_dir)
     env = Environment(loader=file_loader)
     template = env.get_template(self.__vhdl_classifier_template_file)
-    output = template.render(
-      trees = trees, 
-      features  = self.__model_features_list_dict, 
-      classes = self.__model_classes_list_str)
-    out_file = open(destination + "/vhd/classifier.vhd", "w")
-    out_file.write(output)
-    out_file.close()
-    template = env.get_template(self.__vhdl_cmakelist_template_file)
-    output = template.render(trees = trees)
-    out_file = open(destination + "/vhd/CMakeLists.txt", "w")
-    out_file.write(output)
-    out_file.close()
+    for conf, i in zip(configurations, range(len(configurations))):
+      ax_dest = destination + "/ax/configuration_" + str(i)
+      mkpath(ax_dest)
+      classifier = template.render(
+        trees = trees_name, 
+        features  = [ {"name": f["name"], "nab": n} for f, n in zip(self.__model_features_list_dict, conf) ], 
+        classes = self.__model_classes_list_str)
+      out_file = open(ax_dest + "/classifier.vhd", "w")
+      out_file.write(classifier)
+      out_file.close()
+      copy_file(self.__source_dir + self.__vhdl_bnf_source, ax_dest)
+      copy_file(self.__source_dir + self.__vhdl_reg_source, ax_dest)
+      copy_file(self.__source_dir + self.__vhdl_decision_box_source, ax_dest)
+      copy_file(self.__source_dir + self.__vhdl_voter_source, ax_dest)
+      for tree in self.__trees_list_obj:
+        tree.generate_tree_vhd(ax_dest)
+        tree.generate_assertions_vhd(ax_dest)
 
-  def generate_ax_implementations(self, destination, configurations):
+  def generate_asl_ax_implementations(self, destination, configurations):
     mkpath(destination)
     mkpath(destination + "/ax")
     trees_name = [ t.get_name() for t in self.__trees_list_obj ]
@@ -227,7 +217,7 @@ class Classifier:
     template = env.get_template(self.__vhdl_classifier_template_file)
     classifier = template.render(
       trees = trees_name, 
-      features  = self.__model_features_list_dict, 
+      features  = [ {"name": f["name"], "nab": 0} for f in self.__model_features_list_dict], 
       classes = self.__model_classes_list_str)
     for conf, i in zip(configurations, range(len(configurations))):
       ax_dest = destination + "/ax/configuration_" + str(i)
@@ -235,6 +225,7 @@ class Classifier:
       out_file = open(ax_dest + "/classifier.vhd", "w")
       out_file.write(classifier)
       out_file.close()
+      copy_file(self.__source_dir + self.__vhdl_bnf_source, ax_dest)
       copy_file(self.__source_dir + self.__vhdl_reg_source, ax_dest)
       copy_file(self.__source_dir + self.__vhdl_decision_box_source, ax_dest)
       copy_file(self.__source_dir + self.__vhdl_voter_source, ax_dest)
@@ -245,17 +236,46 @@ class Classifier:
         count += size
       for t, c in zip(self.__trees_list_obj, chunks):
         t.generate_tree_vhd(ax_dest)
-        t.set_ax_assertion_conf(c)
+        t.set_assertions_configuration(c)
+        t.generate_ax_assertions_v(ax_dest)
+
+  def generate_full_ax_implementations(self, destination, configurations):
+    mkpath(destination)
+    mkpath(destination + "/ax")
+    trees_name = [ t.get_name() for t in self.__trees_list_obj ]
+    file_loader = FileSystemLoader(self.__source_dir)
+    env = Environment(loader=file_loader)
+    template = env.get_template(self.__vhdl_classifier_template_file)
+    for conf, i in zip(configurations, range(len(configurations))):
+      ax_dest = destination + "/ax/configuration_" + str(i)
+      mkpath(ax_dest)
+      classifier = template.render(
+        trees = trees_name, 
+        features  = [ {"name": f["name"], "nab": n} for f, n in zip(self.__model_features_list_dict, conf[:len(self.__model_features_list_dict)]) ], 
+        classes = self.__model_classes_list_str)
+      out_file = open(ax_dest + "/classifier.vhd", "w")
+      out_file.write(classifier)
+      out_file.close()
+      copy_file(self.__source_dir + self.__vhdl_bnf_source, ax_dest)
+      copy_file(self.__source_dir + self.__vhdl_reg_source, ax_dest)
+      copy_file(self.__source_dir + self.__vhdl_decision_box_source, ax_dest)
+      copy_file(self.__source_dir + self.__vhdl_voter_source, ax_dest)
+      chunks = []
+      count = 0
+      for size in [ len(t.get_graph().get_cells()) for t in self.__trees_list_obj ]:
+        chunks.append([conf[i+count+len(self.__model_features_list_dict)] for i in range(size)])
+        count += size
+      for t, c in zip(self.__trees_list_obj, chunks):
+        t.generate_tree_vhd(ax_dest)
+        t.set_assertions_configuration(c)
         t.generate_ax_assertions_v(ax_dest)
 
   def __evaluate(self, features):
     classes_score = []
     for c in self.__model_classes_list_str:
       classes_score.append({"name" : c, "score" : 0})
-    # the classification outcome computed by each of the trees is summed by DecisionTree.evaluate
     for tree in self.__trees_list_obj:
       tree.evaluate(features, classes_score)
-    # ... and the class that reaches a score that is greater than 50% is declared the winner.
     for c in classes_score:
       c["score"] = 0 if c["score"] < (len(self.__trees_list_obj) / 2) else 1
     return classes_score
@@ -298,18 +318,6 @@ class Classifier:
         feature         = predicate.attrib['field'].replace('-','_')
         operator        = predicate.attrib['operator']
         threshold_value = predicate.attrib['value']
-        """
-        The features to be compared against the treshold, the comparison operator and the threshold value itself
-        are stored in the parent node (which became a full decision box) whether the comparator is in the
-        following Q column.
-        Consequently, also a boolean expression to reach the node will be computed progressively.
-        Boolean expressions of leaf node will be used to define assertion functions in HDL.
-        ---------------------------------------------
-        Q                   ~Q
-        equal 	            notEqual 	
-        lessThan 	          greaterOrEqual 	
-        greaterThan         lessOrEqual 	     	
-        """
         if operator in ('equal','lessThan','greaterThan'):
           parent_tree_node.feature         = feature
           parent_tree_node.operator        = operator
@@ -318,10 +326,8 @@ class Classifier:
         else:
           boolean_expression += "~" + parent_tree_node.name
       if child.find("pmml:Node", self.__namespaces) is None:
-        # if the considered node is a leaf (it has no pmml:Node children), we are interested in the class that the node belongs to
         new_tree_node = Node('Node_' + child.attrib['id'], parent = parent_tree_node, score = child.attrib['score'].replace('-','_'), boolean_expression = boolean_expression)
       else:
-        # if the considered node is a not leaf (it has pmml:Node children), we will go on with recursion
         new_tree_node = Node('Node_' + child.attrib['id'], parent = parent_tree_node, feature = "", operator = "", threshold_value = "", boolean_expression = boolean_expression)
         self.__get_tree_nodes_recursively(child, new_tree_node)
 

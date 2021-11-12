@@ -23,17 +23,14 @@ use work.bnf.all;
 
 entity assertions_block_{{tree_name}} is
   port (
-    {% for b in boxes -%}
-    {{b}} : in std_logic;
+    {% for b in boxes -%}{{b}} : in std_logic;
     {% endfor %}
-    {% for c in classes -%}
-    {{c}} : out std_logic{{";" if not loop.last else ");"}}
+    {% for c in classes -%}{{c}} : out std_logic{{";" if not loop.last else ");"}}
     {% endfor %}
 end assertions_block_{{tree_name}};
 
 architecture dataflow of assertions_block_{{tree_name}} is
 begin
-  {% for f in assertions -%}
-  {{f['class']}} <= {{f['minimized']}};
+  {% for f in assertions -%}{{f['class']}} <= {{f['minimized']}};
   {% endfor %}
 end dataflow;

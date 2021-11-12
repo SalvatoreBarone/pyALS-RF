@@ -14,8 +14,9 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import sys, csv
+import sys
 import numpy as np
+from enum import Enum
 from pymoo.core.problem import ElementwiseProblem, Problem
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.factory import get_sampling, get_crossover, get_mutation, get_termination
@@ -50,8 +51,33 @@ the pymoo module, which requires the following
   4. Optimize (minimize error and hardware requirements, in our case)
 """
 class Optimizer:
+  class AxTechnique(Enum):
+    ALS = 1,
+    PS = 2,
+    FULL = 3
 
-#  class PrecisionScalingOnly(ElementwiseProblem):
+
+  class PSOnly(ElementwiseProblem):
+    def __init__(self, classifier, dataset_csv, threads):
+      self.classifier = classifier
+      self.test_dataset = self.classifier.preload_dataset(dataset_csv)
+      self.threads = threads
+      self.total_bits = self.classifier.get_total_bits()
+      self.baseline_accuracy = self.classifier.evaluate_preloaded_dataset(self.test_dataset)
+      self.als_genes_per_tree = self.classifier.get_als_genes_per_tree()
+      self.ngenes = len( self.classifier.get_features())
+      lower_bound = np.zeros(self.ngenes, dtype = np.uint32)
+      upper_bound = np.array([53] * self.ngenes, dtype = np.uint32)
+      super().__init__(n_var= self.ngenes, n_obj = 2, n_constr = 0, xl = lower_bound, xu = upper_bound)
+
+    def genotype_to_phenotype(self, X):
+      self.classifier.set_nabs([ {"name": f["name"], "nab" : x} for f, x in zip(self.classifier.get_features(), X) ])
+
+    def _evaluate(self, X, out, *args, **kwargs):
+      self.genotype_to_phenotype(X)
+      out["F"] = [
+        self.baseline_accuracy - self.classifier.evaluate_preloaded_dataset(self.test_dataset), 
+        self.classifier.get_total_retained()]
 
   class ALSOnly(ElementwiseProblem):
     def __init__(self, classifier, dataset_csv, threads):
@@ -80,13 +106,46 @@ class Optimizer:
       self.genotype_to_phenotype(X)
       out["F"] = [
         self.baseline_accuracy - self.classifier.evaluate_preloaded_dataset(self.test_dataset), 
-        #self.classifier.get_total_retained(), 
         self.classifier.get_current_required_aig_nodes()]
 
-  #class CombinedTechniques(ElementwiseProblem):
+  class Full(ElementwiseProblem):
+    def __init__(self, classifier, dataset_csv, threads):
+      self.classifier = classifier
+      self.test_dataset = self.classifier.preload_dataset(dataset_csv)
+      self.threads = threads
+      self.total_bits = self.classifier.get_total_bits()
+      self.total_gates = self.classifier.get_current_required_aig_nodes()
+      self.baseline_accuracy = self.classifier.evaluate_preloaded_dataset(self.test_dataset)
+      self.als_genes_per_tree = self.classifier.get_als_genes_per_tree()
+      self.ngenes = len(self.classifier.get_features()) + sum(self.als_genes_per_tree)
+      lower_bound = np.zeros(self.ngenes, dtype = np.uint32)
+      als_ub = [53] * len(self.classifier.get_features()) + self.classifier.get_als_genes_upper_bound()
+      upper_bound = np.array(als_ub, dtype = np.uint32)
+      super().__init__(n_var= self.ngenes, n_obj = 3, n_constr = 0, xl = lower_bound, xu = upper_bound)
 
-  def __init__(self, classifier, test_dataset, n_threads, nsgaii_pop_size, nsgaii_iter, nsgaii_cross_prob, nsgaii_cross_eta, nsgaii_mut_prob, nsgaii_mut_eta):
-    self.problem = Optimizer.ALSOnly(classifier, test_dataset, n_threads)
+    def genotype_to_phenotype(self, X):
+      self.classifier.set_nabs([ {"name": f["name"], "nab" : x} for f, x in zip(self.classifier.get_features(), X[:len(self.classifier.get_features())]) ])
+      configurations = []
+      count = 0
+      for size in self.als_genes_per_tree:
+        configurations.append([X[i+count+len(self.classifier.get_features())] for i in range(size)])
+        count += size
+      self.classifier.set_assertions_configuration(configurations)
+
+    def _evaluate(self, X, out, *args, **kwargs):
+      self.genotype_to_phenotype(X)
+      out["F"] = [
+        self.baseline_accuracy - self.classifier.evaluate_preloaded_dataset(self.test_dataset), 
+        self.classifier.get_total_retained(), 
+        self.classifier.get_current_required_aig_nodes()]
+
+  def __init__(self, axtechnique, classifier, test_dataset, n_threads, nsgaii_pop_size, nsgaii_iter, nsgaii_cross_prob, nsgaii_cross_eta, nsgaii_mut_prob, nsgaii_mut_eta):
+    if (axtechnique == Optimizer.AxTechnique.ALS):
+      self.problem = Optimizer.ALSOnly(classifier, test_dataset, n_threads)
+    elif(axtechnique == Optimizer.AxTechnique.PS):
+      self.problem = Optimizer.PSOnly(classifier, test_dataset, n_threads)
+    elif(axtechnique == Optimizer.AxTechnique.FULL):
+      self.problem = Optimizer.Full(classifier, test_dataset, n_threads)
     self.algorithm = NSGA2(
       pop_size = nsgaii_pop_size,
       n_offsprings = None,

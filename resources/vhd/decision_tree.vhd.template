@@ -26,14 +26,14 @@ entity decision_tree_{{tree_name}} is
     data_width      : natural;
     parallel_blocks : natural;
     {% for feature in features -%}
-    neglected_bits_{{feature['name']}} : natural{{";" if not loop.last else ");"}}
+    nab_{{feature['name']}} : natural{{";" if not loop.last else ");"}}
     {% endfor %}
   port (
     clock   : in std_logic;
     reset_n : in std_logic;
     enable  : in std_logic;
     {% for feature in features -%}
-    data_{{feature['name']}} : in std_logic_vector(data_width-1 downto neglected_bits_{{feature['name']}});
+    {{feature['name']}} : in std_logic_vector(data_width-1 downto nab_{{feature['name']}});
     {% endfor %}
     {% for c in classes -%}
     {{c}} : out std_logic{{";" if not loop.last else ");"}}
@@ -58,26 +58,21 @@ architecture structural of decision_tree_{{tree_name}} is
 
   component assertions_block_{{tree_name}} is
     port (
-      {% for b in boxes -%}
-      {{b['name']}} : in std_logic;
+      {% for b in boxes -%}{{b['name']}} : in std_logic;
       {% endfor %}
-      {% for c in classes -%}
-      {{c}} : out std_logic{{";" if not loop.last else ");"}}
+      {% for c in classes -%}{{c}} : out std_logic{{";" if not loop.last else ");"}}
       {% endfor %}
   end component;
 
-  {% for b in boxes -%}
-  signal {{b['name']}} : std_logic := '0';
+  {% for b in boxes -%}signal {{b['name']}} : std_logic := '0';
   {% endfor %}
-  {% for b in boxes -%}
-  constant {{b['name']}}_thr : std_logic_vector(data_width-1 downto 0) := x"{{b['threshold_hex']}}";
+  {% for b in boxes -%}constant {{b['name']}}_thr : std_logic_vector(data_width-1 downto 0) := x"{{b['threshold_hex']}}";
   {% endfor %}
 
 begin
-  {% for b in boxes -%}
-  {{b['name']}}_inst : decision_box
-    generic map(data_width - neglected_bits_{{b['feature']}}, {{b['data_type']}}, {{b['operator']}}, parallel_blocks)
-    port map(clock, reset_n, enable, data_{{b['feature']}}, {{b['name']}}_thr(data_width-1 downto neglected_bits_{{b['feature']}}), {{b['name']}});
+  {% for b in boxes -%}{{b['name']}}_inst : decision_box
+    generic map(data_width - nab_{{b['feature']}}, {{b['data_type']}}, {{b['operator']}}, parallel_blocks)
+    port map(clock, reset_n, enable, data_{{b['feature']}}, {{b['name']}}_thr(data_width-1 downto nab_{{b['feature']}}), {{b['name']}});
   {% endfor %}
   assertions : assertions_block_{{tree_name}}
     port map ({% for b in boxes -%}{{b['name']}}, {% endfor %}{% for c in classes -%}{{c}}{{", " if not loop.last}}{% endfor %});

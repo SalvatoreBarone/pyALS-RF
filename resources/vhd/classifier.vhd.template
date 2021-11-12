@@ -24,21 +24,18 @@ use work.bnf.all;
 
 entity classifier is
   generic (
-    data_width      : natural;
-    parallel_blocks : natural;
-    pipe_stages     : natural;
-    {% for feature in features -%}
-    neglected_bits_{{feature['name']}} : natural{{";" if not loop.last else ");"}}
+    data_width      : natural := 64;
+    parallel_blocks : natural := 8;
+    pipe_stages     : natural := 4;
+    {% for f in features -%}nab_{{f['name']}} : natural := {{f['nab']}}{{";" if not loop.last else ");"}}
     {% endfor %}
   port (
     clock   : in std_logic;
     reset_n : in std_logic;
     enable  : in std_logic;
-    {% for feature in features -%}
-    data_{{feature['name']}} : in std_logic_vector(data_width-1 downto neglected_bits_{{feature['name']}});
+    {% for feature in features -%}{{feature['name']}} : in std_logic_vector(data_width-1 downto nab_{{feature['name']}});
     {% endfor %}
-    {% for c in classes -%}
-    class_{{c}} : out std_logic{{";" if not loop.last else ");"}}
+    {% for c in classes -%}{{c}} : out std_logic{{";" if not loop.last else ");"}}
     {% endfor %}
 end classifier;
 
@@ -59,37 +56,32 @@ architecture structural of classifier is
       data_width      : natural;
       parallel_blocks : natural;
       {% for feature in features -%}
-      neglected_bits_{{feature['name']}} : natural{{";" if not loop.last else ");"}}
-      {% endfor %}
+      nab_{{feature['name']}} : natural{{";" if not loop.last else ");"}}{% endfor %}
     port (
       clock   : in std_logic;
       reset_n : in std_logic;
       enable  : in std_logic;
       {% for feature in features -%}
-      data_{{feature['name']}}: in std_logic_vector(data_width-1 downto neglected_bits_{{feature['name']}});
-      {% endfor %}
+      {{feature['name']}}: in std_logic_vector(data_width-1 downto nab_{{feature['name']}});{% endfor %}
       {% for c in classes -%}
-      class_{{c}} : out std_logic{{";" if not loop.last else ");"}}
-      {% endfor %}
-  end component;{{"\n  " if not loop.last}}
-  {% endfor %}
+      {{c}} : out std_logic{{";" if not loop.last else ");"}}{% endfor %}
+  end component;{{"\n  " if not loop.last}}{% endfor %}
   {% for c in classes -%}
-  signal class_{{c}}_results : std_logic_vector({{trees|length-1}} downto 0) := (others => '0');
-  {% endfor %}
+  signal {{c}}_results : std_logic_vector({{trees|length-1}} downto 0) := (others => '0');{% endfor %}
 begin
   {% for tree in trees -%}{% set outer_loop = loop %}
   tree_{{tree}} : decision_tree_{{tree}} 
-    generic map (data_width, parallel_blocks, {% for feature in features -%}neglected_bits_{{feature['name']}}{{", " if not loop.last else ")"}}{% endfor %}
-    port map (clock, reset_n, enable, {% for feature in features -%}data_{{feature['name']}}, {% endfor %}{% for c in classes -%}class_{{c}}_results({{outer_loop.index-1}}){{", " if not loop.last else ");"}}{% endfor %}
+    generic map (data_width, parallel_blocks, {% for feature in features -%}nab_{{feature['name']}}{{", " if not loop.last else ")"}}{% endfor %}
+    port map (clock, reset_n, enable, {% for feature in features -%}{{feature['name']}}, {% endfor %}{% for c in classes -%}{{c}}_results({{outer_loop.index-1}}){{", " if not loop.last else ");"}}{% endfor %}
   {% endfor %}
   {% if trees|length > 1 %}
   {% for c in classes -%}
-  comb_class_{{c}} : voter 
+  comb_{{c}} : voter 
     generic map({{trees|length}}, pipe_stages) 
-    port map(clock, reset_n, class_{{c}}_results, class_{{c}});
+    port map(clock, reset_n, {{c}}_results, {{c}});
   {% endfor %}
   {% else %}
   {% for c in classes -%}
-  class_{{c}} <= class_{{c}}_results(0);
+  {{c}} <= {{c}}_results(0);
   {% endfor %}{% endif %}
 end structural;

@@ -52,16 +52,22 @@ class Worker:
     if self.__print_tree:
       self.__classifier.dump()
     print("Performing design-space exploration using NSGA-II. Please wait patiently, this may take quite a long time...")
-    optimizer = Optimizer(self.__classifier, self.__test_dataset, self.__n_threads, self.__nsgaii_pop_size, self.__nsgaii_iter, self.__nsgaii_cross_prob, self.__nsgaii_cross_eta, self.__nsgaii_mut_prob, self.__nsgaii_mut_eta)
+    optimizer = Optimizer(self.__axtechnique, self.__classifier, self.__test_dataset, self.__n_threads, self.__nsgaii_pop_size, self.__nsgaii_iter, self.__nsgaii_cross_prob, self.__nsgaii_cross_eta, self.__nsgaii_mut_prob, self.__nsgaii_mut_eta)
     optimizer.optimize()
     optimizer.print_pareto()
     optimizer.get_report(self.__report_file)
     print("Performing HDL code generation using the embedded coder.")
-    self.__classifier.generate_ax_implementations(self.__output_dir, optimizer.get_individuals())
+    if (self.__axtechnique == Optimizer.AxTechnique.ALS):
+      self.__classifier.generate_asl_ax_implementations(self.__output_dir, optimizer.get_individuals())
+    elif(self.__axtechnique == Optimizer.AxTechnique.PS):
+      self.__classifier.generate_ps_ax_implementations(self.__output_dir, optimizer.get_individuals())
+    elif(self.__axtechnique == Optimizer.AxTechnique.FULL):
+      self.__classifier.generate_full_ax_implementations(self.__output_dir, optimizer.get_individuals())
     print("All done! Take a look at the ", self.__output_dir, " directory.")
 
   def __cli_parser(self):
     parser = argparse.ArgumentParser()
+    parser.add_argument("--ax", type = str, help="specify the AxC technique to be adopted [ps, als, full]", default = "")
     parser.add_argument("--pmml", type = str, help="specify the input PMML file", default = "model.pmml")
     parser.add_argument("--dump", help="Dump the model", action="store_true")
     parser.add_argument("--dataset", type = str, help="specify the file name for the input dataset", default = "dataset.txt")
@@ -78,6 +84,16 @@ class Worker:
     parser.add_argument("--timeout", type = int, help = "Set the time budget for the SMT synthesis of LUTs, in ms, during ALS", default = 60000)
     args, left = parser.parse_known_args()
     sys.argv = sys.argv[:1] + left
+
+    if (args.ax == "als"):
+      self.__axtechnique = Optimizer.AxTechnique.ALS
+    elif(args.ax == "ps"):
+      self.__axtechnique = Optimizer.AxTechnique.PS
+    elif(args.ax == "full"):
+      self.__axtechnique = Optimizer.AxTechnique.FULL
+    else:
+      raise ValueError('Approximation technique not recognized')
+      
     self.__pmml_file = args.pmml
     self.__test_dataset = args.dataset
     self.__print_tree = args.dump

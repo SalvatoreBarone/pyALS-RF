@@ -221,7 +221,7 @@ class DecisionTree:
   """
   def generate_assertions_vhd(self, destination):
     module_name = "assertions_block_" + self.__name 
-    file_name = destination + "/vhd/assertions_block_" + self.__name + ".vhd"
+    file_name = destination + "/assertions_block_" + self.__name + ".vhd"
     file_loader = FileSystemLoader(self.__source_dir)
     env = Environment(loader=file_loader)
     template = env.get_template(self.__vhdl_assertions_source)
