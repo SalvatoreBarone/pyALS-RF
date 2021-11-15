@@ -31,7 +31,7 @@ class ALSSMT:
               cannot be solved within the given time budget, the function behaves as if such a problem is unsatisfiable.
   """
   def __init__(self, fun_spec, distance, timeout):
-    self.__fun_spec = fun_spec.as_string()
+    self.__fun_spec = fun_spec
     self.__distance = distance
     self.__solver = z3.Solver()
     self.__solver.set(timeout = timeout)

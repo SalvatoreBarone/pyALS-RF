@@ -127,7 +127,7 @@ class ALSCatalog:
     if result is None:
       ys.log("Cache miss for {spec}@{dist}\n".format(spec = lut_spec.as_string(), dist = distance))
       ys.log("Performing SMT-ES for {spec}@{dist} ...".format(spec = lut_spec.as_string(), dist = distance))
-      synth_spec, gates = ALSSMT(lut_spec, distance, self.__es_timeout).synthesize()
+      synth_spec, gates = ALSSMT(lut_spec.as_string(), distance, self.__es_timeout).synthesize()
       ys.log(" ...Done! {spec}@{dist} satisfied using {gates} gates. Synth. spec.: {synth_spec}\n".format(spec = lut_spec.as_string(), dist = distance, synth_spec = synth_spec, gates = gates))
       self.__add_lut(lut_spec, distance, synth_spec, gates)
       return synth_spec, gates
