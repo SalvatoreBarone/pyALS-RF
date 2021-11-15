@@ -18,4 +18,4 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 from src.Worker import *
 
 if __name__ == '__main__':
-Worker().work()
+  Worker().work()

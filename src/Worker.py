@@ -16,6 +16,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import sys, argparse
 from distutils.dir_util import mkpath
+from multiprocessing import cpu_count
 from pyosys import libyosys as ys
 from .Classifier import *
 from .Optimizer import *
@@ -72,7 +73,7 @@ class Worker:
     parser.add_argument("--dump", help="Dump the model", action="store_true")
     parser.add_argument("--dataset", type = str, help="specify the file name for the input dataset", default = "dataset.txt")
     parser.add_argument("--output", type = str, help="Output directory. Everything will be placed there.", default = "output/")
-    parser.add_argument("--threads", type = int, help="specify the amount of parallel worker threads.", default = 1)
+    parser.add_argument("--threads", type = int, help="specify the amount of parallel worker threads.", default = cpu_count())
     parser.add_argument("--popsize", type = int, help="NSGA-II population size.", default = 500)
     parser.add_argument("--iter", type = int, help="NSGA-II termination criteria, in terms of iterations.", default = 11)
     parser.add_argument("--pcross", type = float, help="NSGA-II crossover probability.", default = .9)

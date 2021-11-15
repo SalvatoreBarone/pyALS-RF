@@ -14,6 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
+import copy
 from pyosys import libyosys as ys
 from jinja2 import Environment, FileSystemLoader
 from distutils.dir_util import mkpath
@@ -23,75 +24,44 @@ from .DecisionBox import *
 from .ALSGraph import *
 from .ALSCatalog import *
 
-"""
-@brief The class implements a single decision trees.
-
-@details
-Although the adopted implementation does not provide any advantage when considering software implementations, this 
-class implements a decision tree using the speculative approach proposed in Amato F, Barbareschi M, Casola V, Mazzeo A,
-Romano S "Towards automatic generation of hardware classifiers". International Conference on Algorithms and
-Architectures for Parallel Processing. Springer, Cham, pp 125–132
-In this way, it is possible to mimic more effectively the effects that precision-scaling and functional approximation
-techniques have on the model used for the final hardware implementation.
-
-The speculative approach consists in a DT flattening so that the visiting is performed over every possible path.
-In particular, each DT node contains a condition that establishes if the visiting has to continue on left sub-tree or on
-right sub-tree, until a leaf is reached. Instead, in the speculative approach, predicates are performed concurrently,
-regardless of the position and depth at which nodes are located: a Boolean decision variable, which indicates whether a
-condition is fulfilled, is produced for each one of the evaluated predicates. In order to determine which leaf of the
-DT is reached, i.e., which class the input belongs to, a Boolean function, called assertion, is defined for each
-different class. Since a path that leads to a specific leaf is obtained by computing the logic-AND between the Boolean
-decision variables along that path, and since it is possible to compute the logic OR between the conditions related to
-different paths leading to leaves belonging to the same class, assertions can be defined as a sum of products Boolean
-functions. 
-
-As mentioned, this class also allows to apply the precision scaling and functional AIG-rewriting approximate-computing
-techniques on feature values representation and assertion functions, respectively, in order to reduce hardware
-requirements of the final hardware implementation.
-"""
 class DecisionTree:
   __source_dir = "./resources/vhd/"
   __bnf_vhd = "bnf.vhd"
   __vhdl_assertions_source = "assertions_block.vhd.template"
   __vhdl_decision_tree_source = "decision_tree.vhd.template"
 
-  """
-  @brief Constructor. Builds a new DecisionTree object.
-
-  @param [in] name
-              name of the tree; this should be unique amond trees belonging to the same classifier.
-
-  @param [in] root_node
-              root of the tree.
-
-  @param [in] features
-              list of the features employed by the model
-
-  @param [in] classes
-              list of the classes employed by the model
-
-  @param [in] lut_tech
-              
-  @param [in] catalog_cache
-
-  @param [in] smt_timeout
-
-  """
-  def __init__(self, name, root_node, features, classes, lut_tech, catalog_cache, smt_timeout):
+  def __init__(self, name = None, root_node = None, features = None, classes = None, lut_tech = None, catalog_cache = None, smt_timeout = None):
     self.__name = name
-    self.__root_node = root_node
-    self.__decision_boxes = []
-    self.__assertions = []
     self.__model_features = features
     self.__model_classes = classes
-    self.__get_decision_boxes()
-    self.__get_assertions()
-    design = self.__generate_design_for_als(lut_tech)
-    self.__assertions_graph = ALSGraph(design)
-    self.__assertions_catalog_entries = ALSCatalog(catalog_cache, smt_timeout).generate_catalog(design)
-    ys.run_pass("design -save {name}".format(name = self.__name), design)
+    self.__decision_boxes = []
+    if root_node:
+      self.__get_decision_boxes(root_node)
+    self.__assertions = []
+    if root_node:
+      self.__get_assertions(root_node)
     self.__current_configuration = []
-    self.set_assertions_configuration([0] * len(self.__assertions_graph.get_cells()))
+    if lut_tech:
+      design = self.__generate_design_for_als(lut_tech)
+      self.__assertions_graph = ALSGraph(design)
+      self.__assertions_catalog_entries = ALSCatalog(catalog_cache, smt_timeout).generate_catalog(design)
+      self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
+      ys.run_pass("design -save {name}".format(name = self.__name), design)
+    else:
+      self.__assertions_graph = None
+      self.__assertions_catalog_entries = None
+
+  def __deepcopy__(self, memo = None):
+    tree = DecisionTree()
+    tree.__name = copy.deepcopy(self.__name)
+    tree.__model_features = copy.deepcopy(self.__model_features)
+    tree.__model_classes = copy.deepcopy(self.__model_classes)
+    tree.__decision_boxes = copy.deepcopy(self.__decision_boxes)
+    tree.__assertions = copy.deepcopy(self.__assertions)
+    tree.__assertions_graph = copy.deepcopy(self.__assertions_graph)
+    tree.__assertions_catalog_entries = copy.deepcopy(self.__assertions_catalog_entries)
+    tree.__current_configuration = copy.deepcopy(self.__current_configuration)
+    return tree
     
   def get_name(self):
     return self.__name
@@ -188,16 +158,6 @@ class DecisionTree:
     for c in classes_score:
       c["score"] += 1 if next((sub for sub in output if sub['name'] == c["name"]), None)["value"]  else 0
   
-  """
-  @brief Generates the VHDL implementation of the decision tree.
-  
-  @details
-  Generates the VHDL implementation of the decision tree, including each of the decision-boxes and the assertion
-  function computation block.
-
-  @param [in] destination
-              path of the destination directory in which the source code will be generated
-  """
   def generate_tree_vhd(self, destination):
     file_name = destination + "/decision_tree_" + self.__name + ".vhd"
     file_loader = FileSystemLoader(self.__source_dir)
@@ -213,12 +173,6 @@ class DecisionTree:
     out_file.close()
     return file_name
 
-  """
-  @brief Generates the VHDL implementation of the assertion block for a given decision tree.
-  
-  @param [in] destination
-              path of the destination directory in which the source code will be generated
-  """
   def generate_assertions_vhd(self, destination):
     module_name = "assertions_block_" + self.__name 
     file_name = destination + "/assertions_block_" + self.__name + ".vhd"
@@ -235,12 +189,6 @@ class DecisionTree:
     out_file.close()
     return file_name, module_name
 
-  """
-  @brief Generates the Verilog implementation of the approximate assertion block for a given decision tree.
-  
-  @param [in] destination
-              path of the destination directory in which the source code will be generated
-  """
   def generate_ax_assertions_v(self, destination):
     design = ys.Design()
     ys.run_pass("design -load {}".format(self.__name), design)
@@ -253,18 +201,18 @@ class DecisionTree:
           cell.setParam(ys.IdString("\LUT"), ys.Const.from_string(c["spec"]))
     ys.run_pass("write_verilog {dir}/assertions_block_{name}.v".format(dir = destination, name = self.__name), design)    
 
-  def __get_decision_boxes(self):
+  def __get_decision_boxes(self, root_node):
     self.__decision_boxes = []
-    for node in PreOrderIter(self.__root_node):
+    for node in PreOrderIter(root_node):
       if any(node.children):
         feature = next(item for item in self.__model_features if item["name"] ==node.feature)
         self.__decision_boxes.append({
           "name" : node.name, 
           "box"  : DecisionBox(node.name, node.feature, feature["type"], node.operator, node.threshold_value)})
 
-  def __get_leaves(self):
+  def __get_leaves(self, root_node):
     leaves = []
-    for node in PreOrderIter(self.__root_node):
+    for node in PreOrderIter(root_node):
       if not any(node.children):
         leaves.append({"name" : node.name, "class" : node.score, "expression" : "(" + str(node.boolean_expression) + ")" })
     return leaves
@@ -278,9 +226,9 @@ class DecisionTree:
     else:
       return " | ".join(conditions)
 
-  def __get_assertions(self):
+  def __get_assertions(self, root_node):
     self.__assertions = []
-    leaves = self.__get_leaves()
+    leaves = self.__get_leaves(root_node)
     for class_name in self.__model_classes:
         assertion_function = self.__get_assertion(leaves, class_name)
         minimized_assertion = str(espresso_exprs(expr(assertion_function))[0]).replace("~", "not ").replace("Or","func_or").replace("And","func_and")

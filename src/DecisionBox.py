@@ -47,20 +47,31 @@ class DecisionBox:
               Number of approximate bits. This field is required only whether the precision-scaling approximate
               technique is adopted to reduce resource requirements of hardware implementations.
   """
-  def __init__(self, box_name, feature_name, data_type, operator, threashold, nab = 0):
+  def __init__(self, box_name = None, feature_name = None, data_type = None, operator = None, threashold = None, nab = 0):
     self.__name = box_name
     self.__feature_name = feature_name
     self.__data_type = data_type
-    if operator == "greaterThan":
-        self.__operator = DecisionBox.CompOperator.greaterThan
-    elif operator == "lessThan":
-      self.__operator = DecisionBox.CompOperator.lessThan
-    elif operator == "equal":
-      self.__operator = DecisionBox.CompOperator.equal
-    else:
-      raise Exception("Sorry, operator not recognized") 
+    if operator:
+      if operator == "greaterThan":
+          self.__operator = DecisionBox.CompOperator.greaterThan
+      elif operator == "lessThan":
+        self.__operator = DecisionBox.CompOperator.lessThan
+      elif operator == "equal":
+        self.__operator = DecisionBox.CompOperator.equal
+      else:
+        raise Exception("Sorry, operator not recognized") 
     self.__threshold = threashold
     self.__nab = int(nab)
+
+  def __deepcopy__(self, memo = None):
+    box = DecisionBox()
+    box.__name = copy.deepcopy(self.__name)
+    box.__feature_name = copy.deepcopy(self.__feature_name)
+    box.__data_type = copy.deepcopy(self.__data_type)
+    box.__operator = copy.deepcopy(self.__operator)
+    box.__threshold = copy.deepcopy(self.__threshold)
+    box.__nab = copy.deepcopy(self.__nab)
+    return box
 
   def get_name(self):
     return self.__name

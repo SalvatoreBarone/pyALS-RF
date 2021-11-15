@@ -14,6 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
+import copy
 import igraph as ig
 from pyosys import libyosys as ys
 from enum import Enum
@@ -26,34 +27,26 @@ class ALSGraph:
     CELL = 3,
     PRIMARY_OUTPUT = 4
 
-  def __init__(self, design, weights = None):
+  def __init__(self, design = None, weights = None):
     self.__weights = weights
-    self.__graph = ig.Graph(directed=True)
-    self.__graph_from_design(design)
-    self.__graph.vs["label"] = self.__graph.vs["name"]
-    self.__pinputs = [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.PRIMARY_INPUT]
-    self.__const0 = [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.CONSTANT_ZERO]
-    self.__const1 = [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.CONSTANT_ONE]
-    self.__cells = [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.CELL]
-    self.__poutputs = [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.PRIMARY_OUTPUT]
+    if design:
+      self.__graph = ig.Graph(directed=True)
+      self.__graph_from_design(design)
+      self.__graph.vs["label"] = self.__graph.vs["name"]
+    else:
+      self.__graph = None
 
-  def get_primary_inputs(self):
-    return self.__pinputs
-
-  def get_const0(self):
-    return self.__const0
-
-  def get_const1(self):
-    return self.__const1
+  def __deepcopy__(self, memo = None):
+    graph = ALSGraph()
+    graph.__weights = copy.deepcopy(self.__weights)
+    graph.__graph = copy.deepcopy(self.__graph)
+    return graph 
 
   def get_cells(self):
-    return self.__cells
-
-  def get_primary_outputs(self):
-    return self.__poutputs
-
-  def get_po_weights(self):
-    return [v["weight"] for v in self.__poutputs ]
+    return [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.CELL]
+    
+  def get_num_cells(self):
+    return len([v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.CELL])
 
   """
   @brief Evaluate the circuit output, using its graph representation
@@ -76,17 +69,17 @@ class ALSGraph:
   """
   def evaluate(self, inputs, configuration = None):
     cell_values = dict()
-    for c in self.__const0:
+    for c in [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.CONSTANT_ZERO]:
       cell_values[c] = False
-    for c in self.__const1:
+    for c in [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.CONSTANT_ONE]:
       cell_values[c] = True
-    assert len(self.__pinputs) == len(inputs)
-    for p in self.__pinputs:
+    
+    for p in [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.PRIMARY_INPUT]:
       cell_values[p] = next((sub for sub in inputs if sub['name'] == p["name"][1:]), None)["value"]
-    for cell in self.__cells:
+    for cell in [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.CELL]:
       self.__evaluate_cell_output(cell_values, cell, configuration)
     output = []
-    for o in self.__poutputs:
+    for o in [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.PRIMARY_OUTPUT]:
       cell_values[o] = cell_values[o.neighbors(mode="in")[0]]
       output.append({"name" : o["name"][1:], "value" : cell_values[o]})
     return output

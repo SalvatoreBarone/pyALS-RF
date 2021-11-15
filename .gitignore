@@ -2503,3 +2503,4 @@ output_ps/ax/configuration_99/decision_tree_8.vhd
 output_ps/ax/configuration_99/decision_tree_9.vhd
 output_ps/ax/configuration_99/pipe_reg.vhd
 output_ps/ax/configuration_99/voter.vhd
+.idea/

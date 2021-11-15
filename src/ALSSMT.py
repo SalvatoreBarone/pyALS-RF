@@ -62,7 +62,7 @@ class ALSSMT:
   """
   def __add_ax_function_semantic_constraints(self):
     if self.__distance == 0:
-      self.__solver.add( [ self.__B[-1][t] == z3.Xor(bool(self.__fun_spec[t]), z3.Not(self.__p)) for t in range(len(self.__fun_spec)) ] )
+      self.__solver.add( [ self.__B[-1][t] == z3.Xor(False if self.__fun_spec[t] == "0" else True, z3.Not(self.__p)) for t in range(len(self.__fun_spec)) ] )
       self.__ax = [False for i in range(len(self.__fun_spec)) ]
     else:
       self.__ax = [z3.Bool("ax_{t}".format(t = t )) for t in range(len(self.__fun_spec))]

@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import sys, csv
+import sys, csv, copy
 from xml.etree import ElementTree
 from anytree import Node
 from multiprocessing import Pool
@@ -71,6 +71,13 @@ class Classifier:
     self.__als_lut_tech = als_lut_tech
     self.__als_catalog_cache = als_catalog_cache
     self.__als_smt_timeout = als_smt_timeout
+
+  def __deepcopy__(self, memo = None):
+    classifier = Classifier(self.__als_lut_tech, self.__als_catalog_cache, self.__als_smt_timeout)
+    classifier.__trees_list_obj = copy.deepcopy(self.__trees_list_obj)
+    classifier.__model_features_list_dict = copy.deepcopy(self.__model_features_list_dict)
+    classifier.__model_classes_list_str = copy.deepcopy(self.__model_classes_list_str)
+    return classifier
  
   def parse(self, pmml_file_name):
     self.__trees_list_obj = []
@@ -174,14 +181,14 @@ class Classifier:
     return samples
 
   def evaluate_preloaded_dataset(self, samples):
-    accuracy = 0
-    for i in samples:
-      outcome = self.__evaluate(i["input"])
-      accuracy +=1 if i["outcome"] == outcome else 0
-    return accuracy * 100 / len(samples)
+    correct_outcomes = 0
+    for sample in samples:
+      correct_outcomes +=1 if sample["outcome"] == self.__evaluate(sample["input"]) else 0
+    return correct_outcomes
 
   def evaluate_test_dataset(self, csv_file):
-    return self.evaluate_preloaded_dataset(self.preload_dataset(csv_file))
+    samples = self.preload_dataset(csv_file)
+    return self.evaluate_preloaded_dataset(samples) / len(samples)
 
   def generate_ps_ax_implementations(self, destination, configurations):
     mkpath(destination)
@@ -308,7 +315,6 @@ class Classifier:
     if len(children) > 2:
       print("Only binary trees are supported. Aborting")
       sys.exit(2)
-
     for child in children: 
       boolean_expression = parent_tree_node.boolean_expression
       if boolean_expression:
@@ -330,5 +336,3 @@ class Classifier:
       else:
         new_tree_node = Node('Node_' + child.attrib['id'], parent = parent_tree_node, feature = "", operator = "", threshold_value = "", boolean_expression = boolean_expression)
         self.__get_tree_nodes_recursively(child, new_tree_node)
-
-

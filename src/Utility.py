@@ -29,11 +29,8 @@ def apply_mask_to_int(i, nab):
   return i & (~((1<<nab)-1))
 
 def list_partitioning(a_list, num_of_partitions):
-  if num_of_partitions > 1:
     list_of_list = []
     np_split = np.array_split(a_list, num_of_partitions)
     for item in np_split:
       list_of_list.append(list(item))
     return list_of_list
-  else:
-    return a_list
