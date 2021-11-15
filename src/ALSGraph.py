@@ -14,11 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import random
-from re import I
 import igraph as ig
-from igraph import layout
-from pymoo.problems.many.wfg import correct_to_01
 from pyosys import libyosys as ys
 from enum import Enum
 
