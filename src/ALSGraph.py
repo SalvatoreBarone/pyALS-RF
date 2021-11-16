@@ -153,7 +153,7 @@ class ALSGraph:
     for module in design.selected_whole_modules_warn():
       sigmap = ys.SigMap(module) # take a look at the line above the driver_of definition!
       for wire in module.selected_wires():
-        for sig in sigmap(wire).to_sigbit_set():
+        for sig in sigmap(wire).to_sigbit_vector():
           if sig.is_wire():
             if sig.wire.name.str() != wire.name.str():
               pi_index = self.__add_PI_vertex(sig.wire)
