@@ -37,6 +37,8 @@ class Optimizer:
             dataset = classifier.preload_dataset(dataset_csv)
             self._n_samples = len(dataset)
             dataset_partioned = list_partitioning(dataset, threads)
+            classifier.reset_assertion_configuration()
+            classifier.reset_nabs_configuration()
             classifiers = [ copy.deepcopy(classifier) ] * threads
             self._partitions = [ [c, d] for c, d in zip(classifiers, dataset_partioned) ]
             self._baseline_accuracy = self.__evaluate_dataset()
@@ -53,7 +55,7 @@ class Optimizer:
     class PSOnly(MOP, ElementwiseProblem):
         def __init__(self, classifier, dataset_csv, threads):
             self.total_bits = classifier.get_total_bits()
-            print(f"Baseline requirements: {self.total_bits} bist")
+            print(f"Baseline requirements: {self.total_bits} bits")
             self.als_genes_per_tree = classifier.get_als_genes_per_tree()
             self.ngenes = len( classifier.get_features())
             lower_bound = np.zeros(self.ngenes, dtype = np.uint32)
@@ -99,7 +101,7 @@ class Optimizer:
                 self._get_accuracy_loss(),
                 self._partitions[0][0].get_current_required_aig_nodes()]
 
-    class Full(ElementwiseProblem):
+    class Full(MOP, ElementwiseProblem):
         def __init__(self, classifier, dataset_csv, threads):
             super().__init__(classifier, dataset_csv, threads)
             self.total_bits = classifier.get_total_bits()
@@ -114,13 +116,13 @@ class Optimizer:
             ElementwiseProblem.__init__(n_var = self.ngenes, n_obj = 3, n_constr = 0, xl = lower_bound, xu = upper_bound)
 
         def __genotype_to_phenotype(self, X):
-            features = self._partition[0][0].get_features()
+            features = self._partitions[0][0].get_features()
             configurations = []
             count = 0
             for size in self.als_genes_per_tree:
                 configurations.append([X[i + count + len(features)] for i in range(size)])
                 count += size
-            for item in self._partition:
+            for item in self._partitions:
                 item[0].set_nabs([ {"name": f["name"], "nab" : x} for f, x in zip(features, X[:len(features)]) ])
                 item[0].set_assertions_configuration(configurations)
 
@@ -175,3 +177,4 @@ class Optimizer:
 
 def evaluate_preloaded_dataset(classifier, samples):
     return classifier.evaluate_preloaded_dataset(samples)
+

@@ -137,6 +137,10 @@ class Classifier:
     for tree in self.__trees_list_obj:
       tree.set_nabs(nabs)
 
+  def reset_nabs_configuration(self):
+    nabs = [{"name" : f["name"], "nab" : 0} for f in self.__model_features_list_dict ]
+    self.set_nabs(nabs)
+
   def get_total_bits(self):
     return sum([ t.get_total_bits() for t in self.__trees_list_obj ])
 
@@ -153,6 +157,10 @@ class Classifier:
        catalog = t.get_catalog_for_assertions()
        all_entries_available.append( [ len (e) - 1 for c in cells for e in catalog if e[0]["spec"] == c["spec"] ] )
     return [ e for te in all_entries_available for e in te ]
+
+  def reset_assertion_configuration(self):
+    for t in self.__trees_list_obj:
+      t.reset_assertion_configuration()
 
   def set_assertions_configuration(self, configurations):
     for t, c in zip(self.__trees_list_obj, configurations):

@@ -106,6 +106,9 @@ class DecisionTree:
   def get_total_retained(self):
     return 64 * len(self.__decision_boxes) - self.get_total_nabs()
 
+  def reset_assertion_configuration(self):
+    self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
+
   """
   @brief Set the current approximate configurations for the assertion block
 
@@ -115,7 +118,7 @@ class DecisionTree:
               the LUT and the approximate implementation to use should be.
   """
   def set_assertions_configuration(self, configuration):
-    self.__current_configuration = [ {"name" : l["name"], "spec" : e[c]["spec"], "gates" : e[c]["gates"] }  for c, l in zip(configuration, self.__assertions_graph.get_cells()) for e in self.__assertions_catalog_entries if e[0]["spec"] == l["spec"] ]
+    self.__current_configuration = [ {"name" : l["name"], "dist": c, "spec" : e[c]["spec"], "gates" : e[c]["gates"] }  for c, l in zip(configuration, self.__assertions_graph.get_cells()) for e in self.__assertions_catalog_entries if e[0]["spec"] == l["spec"] ]
 
   def get_current_required_aig_nodes(self):
     return sum([ c["gates"] for c in self.__current_configuration ])
@@ -154,10 +157,10 @@ class DecisionTree:
     for box in self.__decision_boxes:
       value = next(item for item in features_value if item["name"] == box["box"].get_feature())["value"]
       boxes_output.append({"name" : box["box"].get_name(), "value" : box["box"].compare(value)})
-    output = self.__assertions_graph.evaluate(boxes_output)
+    output = self.__assertions_graph.evaluate(boxes_output, self.__current_configuration)
     for c in classes_score:
       c["score"] += 1 if next((sub for sub in output if sub['name'] == c["name"]), None)["value"]  else 0
-  
+
   def generate_tree_vhd(self, destination):
     file_name = destination + "/decision_tree_" + self.__name + ".vhd"
     file_loader = FileSystemLoader(self.__source_dir)

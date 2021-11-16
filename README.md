@@ -1,2 +1,2 @@
 # EDGINESS
-Evolutionary Desing enGINe dEcision-tree claSsifierS
+Evolutionary Desing-enGINe for dEcision-tree based multiple claSsifier Systems

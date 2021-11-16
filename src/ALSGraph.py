@@ -118,13 +118,16 @@ class ALSGraph:
     out_value = cell_spec[::-1][out_idx]
     ax_cell_spec = None 
     ax_out_value = None
+    dist = 0
     if configuration == None:
       cell_values[cell] = True if out_value == "1" else False
     else:
-      ax_cell_spec = [ conf for conf in configuration if conf["name"] == cell["name"] ][0]["spec"]
-      ax_out_value = ax_cell_spec[out_idx]
+      cell_conf = [ conf for conf in configuration if conf["name"] == cell["name"] ][0]
+      dist = cell_conf["dist"]
+      ax_cell_spec = cell_conf["spec"]
+      ax_out_value = ax_cell_spec[::-1][out_idx]
       cell_values[cell] = True if ax_out_value == "1" else False
-    #print("{name} {spec} {axspec}, {inputs} = {I} ({i}) -> {o} {O} ({axo})".format(name = cell["name"], spec = cell_spec, axspec = ax_cell_spec, inputs = input_names, I = input_values, i = out_idx, o=out_value, O = cell_values[cell], axo =  ax_out_value))
+    #print("name: {name} Spec: {spec}, Dist.: {dist}, AxSpec: {axspec}, Inputs: {inputs} = {I} (Index: {i}) -> Output: {o} ({O}) AxOutput: {axo})".format(name = cell["name"], spec = cell_spec, dist = dist, axspec = ax_cell_spec, inputs = input_names, I = input_values, i = out_idx, o=out_value, O = cell_values[cell], axo =  ax_out_value))
     return cell_values[cell]
 
   def plot(self):
