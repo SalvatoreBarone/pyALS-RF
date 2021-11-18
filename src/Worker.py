@@ -58,6 +58,7 @@ class Worker:
     optimizer.print_pareto()
     optimizer.get_report(self.__report_file)
     print("Performing HDL code generation using the embedded coder.")
+    self.__classifier.generate_implementations(self.__output_dir)
     if (self.__axtechnique == Optimizer.AxTechnique.ALS):
       self.__classifier.generate_asl_ax_implementations(self.__output_dir, optimizer.get_individuals())
     elif(self.__axtechnique == Optimizer.AxTechnique.PS):
