@@ -208,7 +208,7 @@ class DecisionTree:
     self.__decision_boxes = []
     for node in PreOrderIter(root_node):
       if any(node.children):
-        feature = next(item for item in self.__model_features if item["name"] ==node.feature)
+        feature = next(item for item in self.__model_features if item["name"] == node.feature)
         self.__decision_boxes.append({
           "name" : node.name, 
           "box"  : DecisionBox(node.name, node.feature, feature["type"], node.operator, node.threshold_value)})

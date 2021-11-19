@@ -42,7 +42,7 @@ arranged in an array of N elements, with N being the number of DTs. A majority v
 winner.
 """
 class Classifier:
-  __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_1'}
+  __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_2'}
   __source_dir = "./resources/"
   # VHDL sources
   __vhdl_bnf_source = "vhd/bnf.vhd"
@@ -455,7 +455,12 @@ class Classifier:
       boolean_expression = parent_tree_node.boolean_expression
       if boolean_expression:
         boolean_expression += " & "
-      predicate = child.find("pmml:SimplePredicate", self.__namespaces)
+      predicate = None
+      compound_predicate = child.find("pmml:CompoundPredicate", self.__namespaces)
+      if compound_predicate:
+        predicate = next(item for item in compound_predicate.findall("pmml:SimplePredicate", self.__namespaces) if item.attrib["operator"] != "isMissing")
+      else:
+        predicate = child.find("pmml:SimplePredicate", self.__namespaces)
       if predicate is not None:
         feature         = predicate.attrib['field'].replace('-','_')
         operator        = predicate.attrib['operator']
@@ -468,7 +473,7 @@ class Classifier:
         else:
           boolean_expression += "~" + parent_tree_node.name
       if child.find("pmml:Node", self.__namespaces) is None:
-        new_tree_node = Node('Node_' + child.attrib['id'], parent = parent_tree_node, score = child.attrib['score'].replace('-','_'), boolean_expression = boolean_expression)
+        Node('Node_' + child.attrib['id'], parent = parent_tree_node, score = child.attrib['score'].replace('-','_'), boolean_expression = boolean_expression)
       else:
         new_tree_node = Node('Node_' + child.attrib['id'], parent = parent_tree_node, feature = "", operator = "", threshold_value = "", boolean_expression = boolean_expression)
         self.__get_tree_nodes_recursively(child, new_tree_node)
