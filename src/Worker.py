@@ -52,6 +52,7 @@ class Worker:
     self.__classifier.parse(self.__pmml_file)
     if self.__print_tree:
       self.__classifier.dump()
+      exit()
     print("Performing design-space exploration using NSGA-II. Please wait patiently, this may take quite a long time...")
     optimizer = Optimizer(self.__axtechnique, self.__classifier, self.__test_dataset, self.__n_threads, self.__nsgaii_pop_size, self.__nsgaii_iter, self.__nsgaii_cross_prob, self.__nsgaii_cross_eta, self.__nsgaii_mut_prob, self.__nsgaii_mut_eta)
     optimizer.optimize()
