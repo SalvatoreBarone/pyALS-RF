@@ -70,7 +70,7 @@ class Worker:
 
   def __cli_parser(self):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ax", type = str, help="specify the AxC technique to be adopted [ps, als, full]", default = "")
+    parser.add_argument("--ax", type = str, help="specify the AxC technique to be adopted [ps, als, full]", default = "full")
     parser.add_argument("--pmml", type = str, help="specify the input PMML file", default = "model.pmml")
     parser.add_argument("--dump", help="Dump the model", action="store_true")
     parser.add_argument("--dataset", type = str, help="specify the file name for the input dataset", default = "dataset.txt")
