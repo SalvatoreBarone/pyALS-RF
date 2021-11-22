@@ -17,12 +17,10 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import sys, csv, copy
 from xml.etree import ElementTree
 from anytree import Node
-from multiprocessing import Pool
 from jinja2 import Environment, FileSystemLoader
-from distutils.dir_util import copy_tree, mkpath
+from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
 from .DecisionTree import DecisionTree
-from .Utility import *
 
 """
 @brief Decision-tree based Multiple Classifier System, implemented in python.

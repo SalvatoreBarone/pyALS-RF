@@ -14,11 +14,9 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import sys, argparse
-from distutils.dir_util import mkpath
+import os, argparse
 from multiprocessing import cpu_count
 from pyosys import libyosys as ys
-from .Classifier import *
 from .Optimizer import *
 
 
@@ -29,7 +27,8 @@ class Worker:
     self.__pmml_file = "model.pmml"
     self.__test_dataset = "dataset.txt"
     self.__output_dir = "output"
-    self.__report_file = "/Pareto.csv"
+    self.__report_file = "/pareto_front.csv"
+    self.__pareto_view = "/pareto_front.pdf"
     self.__nsgaii_pop_size = 500
     self.__nsgaii_iter = 11
     self.__nsgaii_cross_prob = 0.9
@@ -44,10 +43,9 @@ class Worker:
     design = ys.Design()
     ys.run_pass("plugin -i ghdl", design)
 
-    
-
   def work(self):
     if self.__output_dir != ".":
+      os.system(f"rm -rf {self.__output_dir}")
       mkpath(self.__output_dir)
     self.__classifier.parse(self.__pmml_file)
     if self.__print_tree:
@@ -56,7 +54,7 @@ class Worker:
     print("Performing design-space exploration using NSGA-II. Please wait patiently, this may take quite a long time...")
     optimizer = Optimizer(self.__axtechnique, self.__classifier, self.__test_dataset, self.__n_threads, self.__nsgaii_pop_size, self.__nsgaii_iter, self.__nsgaii_max_error, self.__nsgaii_cross_prob, self.__nsgaii_cross_eta, self.__nsgaii_mut_prob, self.__nsgaii_mut_eta)
     optimizer.optimize()
-    #optimizer.print_pareto()
+    optimizer.plot_pareto(self.__pareto_view)
     optimizer.get_report(self.__report_file)
     print("Performing HDL code generation using the embedded coder.")
     self.__classifier.generate_implementations(self.__output_dir)
@@ -111,6 +109,7 @@ class Worker:
     self.__nsgaii_mut_eta = float(args.etam)
     self.__output_dir = args.output
     self.__report_file = self.__output_dir + self.__report_file
+    self.__pareto_view = self.__output_dir + self.__pareto_view
     self.__als_lut = args.lut
     self.__als_catalog = args.catalog
     self.__als_timeout = int(args.timeout)

@@ -14,14 +14,13 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import sys, copy
-import numpy as np
 from enum import Enum
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.factory import get_sampling, get_crossover, get_mutation, get_termination
 from pymoo.optimize import minimize
+import matplotlib.pyplot as plt
 from .Classifier import *
 from .Utility import *
 
@@ -142,6 +141,7 @@ class Optimizer:
 
     def __init__(self, axtechnique, classifier, test_dataset, n_threads, nsgaii_pop_size, nsgaii_iter, nsgaii_emax, nsgaii_cross_prob, nsgaii_cross_eta, nsgaii_mut_prob, nsgaii_mut_eta):
         self.__axtechnique = axtechnique
+        self.__nsgaii_emax  = nsgaii_emax
         if axtechnique == Optimizer.AxTechnique.ALS:
             self.problem = Optimizer.ALSOnly(classifier, test_dataset, n_threads, nsgaii_emax)
         elif axtechnique == Optimizer.AxTechnique.PS:
@@ -172,6 +172,21 @@ class Optimizer:
         print("Final population:\nError     Cost        Chromosome")
         for fitness, chromosome in zip(self.result.pop.get("F"), self.result.pop.get("X")):
             print(row_format.format(*fitness, *chromosome))
+
+    def plot_pareto(self, pdf_file):
+        if self.__axtechnique == Optimizer.AxTechnique.FULL:
+            # TODO: implementa con subfigure
+            pass
+        else:
+            F = self.result.pop.get("F")
+            plt.figure(figsize=(10, 10), dpi=300)
+            plt.plot(F[:,0], F[:,1], 'k.')
+            plt.axvline(x = self.__nsgaii_emax, c = 'r')
+            plt.xlim([0, 100])
+            plt.xticks(list(range(0, 100, 10)) + [self.__nsgaii_emax], list(range(0, 100, 10)) + [plt.Text(0, 0, "$e_{max}$")])
+            plt.xlabel("Classification-accuracy loss (%)")
+            plt.ylabel("# of AIG gates" if self.__axtechnique == Optimizer.AxTechnique.ALS else "# of retained bits" )
+            plt.savefig(pdf_file, bbox_inches='tight', pad_inches=0)
 
     def get_report(self, report_file):
         original_stdout = sys.stdout
