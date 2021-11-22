@@ -56,7 +56,7 @@ class Worker:
     print("Performing design-space exploration using NSGA-II. Please wait patiently, this may take quite a long time...")
     optimizer = Optimizer(self.__axtechnique, self.__classifier, self.__test_dataset, self.__n_threads, self.__nsgaii_pop_size, self.__nsgaii_iter, self.__nsgaii_cross_prob, self.__nsgaii_cross_eta, self.__nsgaii_mut_prob, self.__nsgaii_mut_eta)
     optimizer.optimize()
-    optimizer.print_pareto()
+    #optimizer.print_pareto()
     optimizer.get_report(self.__report_file)
     print("Performing HDL code generation using the embedded coder.")
     self.__classifier.generate_implementations(self.__output_dir)

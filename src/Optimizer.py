@@ -41,8 +41,8 @@ class Optimizer:
             classifier.reset_nabs_configuration()
             classifiers = [ copy.deepcopy(classifier) ] * threads
             self._partitions = [ [c, d] for c, d in zip(classifiers, dataset_partioned) ]
-            self._baseline_accuracy = self.__evaluate_dataset()
-            print("Baseline accuracy: ", self._baseline_accuracy)
+            self.baseline_accuracy = self.__evaluate_dataset()
+            print("Baseline accuracy: ", self.baseline_accuracy)
 
         def __evaluate_dataset(self):
             with Pool(self._threads) as pool:
@@ -50,7 +50,7 @@ class Optimizer:
             return sum(res) * 100 / self._n_samples
 
         def _get_accuracy_loss(self):
-            return self._baseline_accuracy - self.__evaluate_dataset()
+            return self.baseline_accuracy - self.__evaluate_dataset()
 
     class PSOnly(MOP, ElementwiseProblem):
         def __init__(self, classifier, dataset_csv, threads):
@@ -137,6 +137,7 @@ class Optimizer:
                 self._partitions[0][0].get_current_required_aig_nodes()]
 
     def __init__(self, axtechnique, classifier, test_dataset, n_threads, nsgaii_pop_size, nsgaii_iter, nsgaii_cross_prob, nsgaii_cross_eta, nsgaii_mut_prob, nsgaii_mut_eta):
+        self.__axtechnique = axtechnique
         if axtechnique == Optimizer.AxTechnique.ALS:
             self.problem = Optimizer.ALSOnly(classifier, test_dataset, n_threads)
         elif axtechnique == Optimizer.AxTechnique.PS:
@@ -157,17 +158,29 @@ class Optimizer:
         self.result = minimize(self.problem, self.algorithm, self.termination, verbose = True)
 
     def print_pareto(self):
-        row_format = "{:<10}" * (len(self.result.pop.get("F")[0])) + "{:>3}" * (len(self.result.pop.get("X")[0]))
+        if self.__axtechnique == Optimizer.AxTechnique.ALS:
+            print(f"Baseline accuracy: {self.problem.baseline_accuracy}, #gates {self.problem.total_gates}")
+        elif self.__axtechnique == Optimizer.AxTechnique.PS:
+            print(f"Baseline accuracy: {self.problem.baseline_accuracy}, #bits {self.problem.total_bits}")
+        elif self.__axtechnique == Optimizer.AxTechnique.FULL:
+            print(f"Baseline accuracy: {self.problem.baseline_accuracy}, #gates {self.problem.total_gates}, #bits {self.problem.total_bits}")
+        row_format = "{:<16}" * (len(self.result.pop.get("F")[0])) + "{:>4}" * (len(self.result.pop.get("X")[0]))
         print("Final population:\nError     Cost        Chromosome")
         for fitness, chromosome in zip(self.result.pop.get("F"), self.result.pop.get("X")):
             print(row_format.format(*fitness, *chromosome))
 
     def get_report(self, report_file):
         original_stdout = sys.stdout
-        row_format = "{:<10};" * (len(self.result.pop.get("F")[0])) + "{:>3};" * (len(self.result.pop.get("X")[0]))
+        row_format = "{:};" * (len(self.result.pop.get("F")[0])) + "{:};" * (len(self.result.pop.get("X")[0]))
         with open(report_file, "w") as file:
             sys.stdout = file
-            print("Final population:\nError     Cost        Chromosome")
+            if self.__axtechnique == Optimizer.AxTechnique.ALS:
+                print(f"Baseline accuracy: {self.problem.baseline_accuracy}, #gates {self.problem.total_gates}")
+            elif self.__axtechnique == Optimizer.AxTechnique.PS:
+                print(f"Baseline accuracy: {self.problem.baseline_accuracy}, #bits {self.problem.total_bits}")
+            elif self.__axtechnique == Optimizer.AxTechnique.FULL:
+                print(f"Baseline accuracy: {self.problem.baseline_accuracy}, #gates {self.problem.total_gates}, #bits {self.problem.total_bits}")
+            print("Final population:\nError;Cost;Chromosome")
             for fitness, chromosome in zip(self.result.pop.get("F"), self.result.pop.get("X")):
                 print(row_format.format(*fitness, *chromosome))
         sys.stdout = original_stdout
