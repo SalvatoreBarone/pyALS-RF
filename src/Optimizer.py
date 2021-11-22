@@ -32,8 +32,9 @@ class Optimizer:
         FULL = 3
 
     class MOP:
-        def __init__(self, classifier, dataset_csv, threads):
+        def __init__(self, classifier, dataset_csv, threads, emax):
             self._threads = threads
+            self.emax = emax
             dataset = classifier.preload_dataset(dataset_csv)
             self._n_samples = len(dataset)
             dataset_partioned = list_partitioning(dataset, threads)
@@ -53,7 +54,7 @@ class Optimizer:
             return self.baseline_accuracy - self.__evaluate_dataset()
 
     class PSOnly(MOP, ElementwiseProblem):
-        def __init__(self, classifier, dataset_csv, threads):
+        def __init__(self, classifier, dataset_csv, threads, emax):
             self.total_bits = classifier.get_total_bits()
             print(f"Baseline requirements: {self.total_bits} bits")
             self.als_genes_per_tree = classifier.get_als_genes_per_tree()
@@ -61,8 +62,8 @@ class Optimizer:
             print(f"# genes: {self.ngenes}")
             lower_bound = np.zeros(self.ngenes, dtype = np.uint32)
             upper_bound = np.array([53] * self.ngenes, dtype = np.uint32)
-            Optimizer.MOP.__init__(self, classifier,  dataset_csv, threads)
-            ElementwiseProblem.__init__(self, n_var = self.ngenes, n_obj = 2, n_constr = 0, xl = lower_bound, xu = upper_bound)
+            Optimizer.MOP.__init__(self, classifier,  dataset_csv, threads, emax)
+            ElementwiseProblem.__init__(self, n_var = self.ngenes, n_obj = 2, n_constr = 1, xl = lower_bound, xu = upper_bound)
 
         def __genotype_to_phenotype(self, X):
             features = self._partitions[0][0].get_features()
@@ -71,12 +72,13 @@ class Optimizer:
 
         def _evaluate(self, X, out, *args, **kwargs):
             self.__genotype_to_phenotype(X)
-            out["F"] = [
-                self._get_accuracy_loss(),
-                self._partitions[0][0].get_total_retained()]
+            err = self._get_accuracy_loss()
+            bits = self._partitions[0][0].get_total_retained()
+            out["F"] = [err, bits]
+            out["G"] = err - self.emax
 
     class ALSOnly(MOP, ElementwiseProblem):
-        def __init__(self, classifier, dataset_csv, threads):
+        def __init__(self, classifier, dataset_csv, threads, emax):
             self.total_gates = classifier.get_current_required_aig_nodes()
             print(f"Baseline requirements: {self.total_gates} gates")
             self.als_genes_per_tree = classifier.get_als_genes_per_tree()
@@ -85,8 +87,8 @@ class Optimizer:
             lower_bound = np.zeros(self.ngenes, dtype = np.uint32)
             als_ub = classifier.get_als_genes_upper_bound()
             upper_bound = np.array(als_ub, dtype = np.uint32)
-            Optimizer.MOP.__init__(self, classifier, dataset_csv, threads)
-            ElementwiseProblem.__init__(self, n_var=self.ngenes, n_obj=2, n_constr=0, xl=lower_bound, xu=upper_bound)
+            Optimizer.MOP.__init__(self, classifier, dataset_csv, threads, emax)
+            ElementwiseProblem.__init__(self, n_var=self.ngenes, n_obj=2, n_constr=1, xl=lower_bound, xu=upper_bound)
 
         def __genotype_to_phenotype(self, X):
             configurations = []
@@ -99,12 +101,13 @@ class Optimizer:
 
         def _evaluate(self, X, out, *args, **kwargs):
             self.__genotype_to_phenotype(X)
-            out["F"] = [
-                self._get_accuracy_loss(),
-                self._partitions[0][0].get_current_required_aig_nodes()]
+            err = self._get_accuracy_loss()
+            gates = self._partitions[0][0].get_current_required_aig_nodes()
+            out["F"] = [err, gates]
+            out["G"] = err - self.emax
 
     class Full(MOP, ElementwiseProblem):
-        def __init__(self, classifier, dataset_csv, threads):
+        def __init__(self, classifier, dataset_csv, threads, emax):
             super().__init__(classifier, dataset_csv, threads)
             self.total_bits = classifier.get_total_bits()
             self.total_gates = classifier.get_current_required_aig_nodes()
@@ -115,8 +118,8 @@ class Optimizer:
             lower_bound = np.zeros(self.ngenes, dtype = np.uint32)
             als_ub = [53] * len(classifier.get_features()) + classifier.get_als_genes_upper_bound()
             upper_bound = np.array(als_ub, dtype = np.uint32)
-            Optimizer.MOP.__init__(self, classifier, dataset_csv, threads)
-            ElementwiseProblem.__init__(n_var = self.ngenes, n_obj = 3, n_constr = 0, xl = lower_bound, xu = upper_bound)
+            Optimizer.MOP.__init__(self, classifier, dataset_csv, threads, emax)
+            ElementwiseProblem.__init__(n_var = self.ngenes, n_obj = 3, n_constr = 1, xl = lower_bound, xu = upper_bound)
 
         def __genotype_to_phenotype(self, X):
             features = self._partitions[0][0].get_features()
@@ -131,19 +134,20 @@ class Optimizer:
 
         def _evaluate(self, X, out, *args, **kwargs):
             self.__genotype_to_phenotype(X)
-            out["F"] = [
-                self._get_accuracy_loss(),
-                self._partitions[0][0].get_total_retained(),
-                self._partitions[0][0].get_current_required_aig_nodes()]
+            err = self._get_accuracy_loss()
+            bits = self._partitions[0][0].get_total_retained()
+            gates = self._partitions[0][0].get_current_required_aig_nodes()
+            out["F"] = [err, bits, gates]
+            out["G"] = err - self.emax
 
-    def __init__(self, axtechnique, classifier, test_dataset, n_threads, nsgaii_pop_size, nsgaii_iter, nsgaii_cross_prob, nsgaii_cross_eta, nsgaii_mut_prob, nsgaii_mut_eta):
+    def __init__(self, axtechnique, classifier, test_dataset, n_threads, nsgaii_pop_size, nsgaii_iter, nsgaii_emax, nsgaii_cross_prob, nsgaii_cross_eta, nsgaii_mut_prob, nsgaii_mut_eta):
         self.__axtechnique = axtechnique
         if axtechnique == Optimizer.AxTechnique.ALS:
-            self.problem = Optimizer.ALSOnly(classifier, test_dataset, n_threads)
+            self.problem = Optimizer.ALSOnly(classifier, test_dataset, n_threads, nsgaii_emax)
         elif axtechnique == Optimizer.AxTechnique.PS:
-            self.problem = Optimizer.PSOnly(classifier, test_dataset, n_threads)
+            self.problem = Optimizer.PSOnly(classifier, test_dataset, n_threads, nsgaii_emax)
         elif axtechnique == Optimizer.AxTechnique.FULL:
-            self.problem = Optimizer.Full(classifier, test_dataset, n_threads)
+            self.problem = Optimizer.Full(classifier, test_dataset, n_threads, nsgaii_emax)
         self.algorithm = NSGA2(
             pop_size = nsgaii_pop_size,
             n_offsprings = None,
