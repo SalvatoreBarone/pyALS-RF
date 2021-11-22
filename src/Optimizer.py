@@ -159,6 +159,11 @@ class Optimizer:
         self.result = None
 
     def optimize(self):
+        print("n_gen:         the current number of generations or iterations until this point.")
+        print("n_eval:        the number of function evaluations so far.")
+        print("n_nds:         the number of non-dominated solutions of the optima found.")
+        print("cv (min/avg):  minimum/average constraint violation in the current population")
+        print("eps/indicator: the change of the indicator (ideal, nadir, f) over the last few generations.")
         self.result = minimize(self.problem, self.algorithm, self.termination, verbose = True)
 
     def print_pareto(self):
