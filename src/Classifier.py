@@ -42,7 +42,7 @@ arranged in an array of N elements, with N being the number of DTs. A majority v
 winner.
 """
 class Classifier:
-  __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_2'}
+  __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_1'}
   __source_dir = "./resources/"
   # VHDL sources
   __vhdl_bnf_source = "vhd/bnf.vhd"
@@ -98,6 +98,7 @@ class Classifier:
     self.__model_classes_list_str = []
     tree = ElementTree.parse(pmml_file_name)
     root = tree.getroot()
+    self.__namespaces["pmml"] = get_xmlns_uri(root)
     self.__get_classes(root)
     self.__get_features(root)
     segmentation = root.find("pmml:MiningModel/pmml:Segmentation", self.__namespaces)
@@ -477,3 +478,10 @@ class Classifier:
       else:
         new_tree_node = Node('Node_' + child.attrib['id'], parent = parent_tree_node, feature = "", operator = "", threshold_value = "", boolean_expression = boolean_expression)
         self.__get_tree_nodes_recursively(child, new_tree_node)
+
+def get_xmlns_uri(elem):
+  if elem.tag[0] == "{":
+    uri, ignore, tag = elem.tag[1:].partition("}")
+  else:
+    uri = None
+  return uri
