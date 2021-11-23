@@ -41,7 +41,7 @@ class ALSSMT:
     self.__B = []  # Set of SMT variables which represent primary input and logic-AND gates
     self.__p = z3.Bool('p')  # SMT variable for the output polarity
     self.__ax = []           # Set of SMT variable which encodes the approximate function semantic
-
+    self.sel_var = None
 
   """
   @brief Generate single input assignment varying the primary-input i and the input-vector t
@@ -105,6 +105,13 @@ class ALSSMT:
     self.__p = z3.Bool('p')  # SMT variable for the output polarity
     self.__ax = []           # Set of SMT variable which encodes the approximate function semantic
 
+    self.sel_var = single_var(self.__fun_spec, self.__distance)
+    if self.sel_var is not None:
+        self.sel_out = int(self.sel_var / 2)
+        self.sel_out_p = self.sel_var % 2 == 0
+        sel_fun_spec = truth_table_column(self.sel_out, num_inputs, self.sel_out_p)
+        return "".join(["1" if bool(sel_fun_spec[i]) else "0" for i in range(len(self.__fun_spec))]), 0
+
     #* Input assignment
     #* This formulation makes use of the explicit function representation -- i.e. the Boolean function is represented in 
     #* terms of truth table values, for each of the possible 2^n input assignments. Moreover, in order to encode the 
@@ -148,3 +155,35 @@ class ALSSMT:
       #* 5. Encode the function semantic
       self.__add_ax_function_semantic_constraints()
     return self.__get_synthesized_spec(), len(self.__S[0])
+
+def hamming(s1, s2):
+  result = 0
+  if len(s1) == len(s2):
+    for x, (i, j) in enumerate(zip(s1, s2)):
+      if i != j:
+        result += 1
+  return result
+
+
+def truth_table_value(i, t):
+  if i == 0:
+    return False
+  return t % (1 << i) >= (1 << (i - 1))
+
+
+def truth_table_column(i, num_vars, p):
+  bs = [False] * (1 << num_vars)
+  for t in range(len(bs)):
+    bs[t] = truth_table_value(i, t) == p
+  return bs
+
+
+def single_var(fun_spec, out_distance):
+  num_vars = math.ceil(math.log2(len(fun_spec)))
+  fun_spec = [True if c == "1" else False for c in fun_spec]
+  for i in range(num_vars + 1):
+    if hamming(fun_spec, truth_table_column(i, num_vars, True)) <= out_distance:
+      return i * 2
+    elif hamming(fun_spec, truth_table_column(i, num_vars, False)) <= out_distance:
+      return (i * 2) + 1
+  return None
