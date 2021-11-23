@@ -14,6 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
+import time
 from enum import Enum
 from multiprocessing import Pool
 from pymoo.core.problem import ElementwiseProblem
@@ -41,8 +42,10 @@ class Optimizer:
             classifier.reset_nabs_configuration()
             classifiers = [ copy.deepcopy(classifier) ] * threads
             self._partitions = [ [c, d] for c, d in zip(classifiers, dataset_partioned) ]
+            start_time = time.time()
             self.baseline_accuracy = self.__evaluate_dataset()
-            print("Baseline accuracy: ", self.baseline_accuracy)
+            duration = time.time() - start_time
+            print(f"Baseline accuracy: {self.baseline_accuracy}. Took {duration} sec.")
 
         def __evaluate_dataset(self):
             with Pool(self._threads) as pool:
@@ -164,7 +167,11 @@ class Optimizer:
         print("n_nds:         the number of non-dominated solutions of the optima found.")
         print("cv (min/avg):  minimum/average constraint violation in the current population")
         print("eps/indicator: the change of the indicator (ideal, nadir, f) over the last few generations.")
+        start_time = time.time()
         self.result = minimize(self.problem, self.algorithm, self.termination, verbose = True)
+        duration = time.time() - start_time
+        print(f"Took {duration} sec.")
+        return duration
 
     def print_pareto(self):
         if self.__axtechnique == Optimizer.AxTechnique.ALS:
