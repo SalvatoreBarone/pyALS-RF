@@ -35,9 +35,10 @@ class ALSSMT:
     self.__distance = distance
     self.__solver = z3.Solver()
     self.__solver.set(timeout = timeout)
-    self.__S = [[],[]]       # Sets of SMT variables which represent indexes
-    self.__P = [[],[]]       # Sets of SMT variables which represent polarities
-    self.__A = [[],[]]       # Sets of SMT variables which represent login-AND gates inputs
+    self.__S = [[], []]       # Sets of SMT variables which represent indexes
+    self.__P = [[], []]       # Sets of SMT variables which represent polarities
+    self.__A = [[], []]       # Sets of SMT variables which represent login-AND gates inputs
+    self.__B = []  # Set of SMT variables which represent primary input and logic-AND gates
     self.__p = z3.Bool('p')  # SMT variable for the output polarity
     self.__ax = []           # Set of SMT variable which encodes the approximate function semantic
 
@@ -66,7 +67,7 @@ class ALSSMT:
       self.__ax = [False for i in range(len(self.__fun_spec)) ]
     else:
       self.__ax = [z3.Bool("ax_{t}".format(t = t )) for t in range(len(self.__fun_spec))]
-      self.__solver.add( [ self.__ax[t] == z3.Xor(self.__B[-1][t], (z3.Xor(z3.Not(self.__p), bool(self.__fun_spec[t])))) for t in range(len(self.__fun_spec)) ])
+      self.__solver.add( [ self.__ax[t] == z3.Xor(self.__B[-1][t], (z3.Xor(z3.Not(self.__p), False if self.__fun_spec[t] == "0" else True))) for t in range(len(self.__fun_spec)) ])
       self.__solver.add(z3.AtMost(*self.__ax, self.__distance))
 
   """
@@ -77,10 +78,8 @@ class ALSSMT:
       original_spec = [ True if self.__fun_spec[i] == "1" else False for i in range(len(self.__fun_spec)) ]
       smt_result = [ self.__solver.model()[self.__ax[i]] for i in range(len(self.__fun_spec)) ]
       final_spec = [ bool(original_spec[i]) != bool(smt_result[i]) for i in range(len(self.__fun_spec)) ]
-      #for o, s, f in zip(original_spec, smt_result, final_spec):
-      #  print ("{o}\t{s}\t{f}".format(o = o, s = s, f = f))
     return "".join(["1" if bool(final_spec[i]) else "0" for i in range(len(self.__fun_spec))]) if self.__distance > 0 else self.__fun_spec
-    
+
   """
   @brief Perform the exact synthesis of a given n-input-1-output Boolean function, using the SMT formulation.
 
@@ -97,13 +96,11 @@ class ALSSMT:
   @returns  the synthesized specification and its corresponding number of AND-gates
   """
   def synthesize(self):
-    # computing the amount of inputs, based on the given function specification
     num_inputs = math.ceil(math.log2(len(self.__fun_spec)))
     assert 2**num_inputs == len(self.__fun_spec), "Incomplete specification"
-    
-    self.__S = [[],[]]       # Sets of SMT variables which represent indexes
-    self.__P = [[],[]]       # Sets of SMT variables which represent polarities
-    self.__A = [[],[]]       # Sets of SMT variables which represent login-AND gates inputs
+    self.__S = [[], []]       # Sets of SMT variables which represent indexes
+    self.__P = [[], []]       # Sets of SMT variables which represent polarities
+    self.__A = [[], []]       # Sets of SMT variables which represent login-AND gates inputs
     self.__B = []            # Set of SMT variables which represent primary input and logic-AND gates
     self.__p = z3.Bool('p')  # SMT variable for the output polarity
     self.__ax = []           # Set of SMT variable which encodes the approximate function semantic

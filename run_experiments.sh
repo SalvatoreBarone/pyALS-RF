@@ -28,5 +28,5 @@ test_dataset_file=$(realpath $test_dataset_file)
 
 for pmml in $(find $directory -name '*.pmml' | sort);
 do
-  ./edginess --ax als --pmml $pmml --output ${pmml%.*} --dataset $test_dataset_file --catalog lut_catalog.db --popsize 50 --iter 111
+  ./edginess --ax als --catalog lut_catalog.db --lut 4 --timeout 120000 --pmml $pmml --output ${pmml%.*} --dataset $test_dataset_file --popsize 50 --iter 51 --pcross 0.8 --etac 100 --pmut 0.10 --etam 10 --emax 5
 done

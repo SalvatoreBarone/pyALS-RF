@@ -93,7 +93,7 @@ class ALSCatalog:
     for lut in luts_set:
       lut_specifications = []
       # Sinthesizing the baseline (non-approximate) LUT
-      hamming_distance = 0;
+      hamming_distance = 0
       synt_spec, gates = self.get_synthesized_lut(lut, hamming_distance)
       lut_specifications.append({"spec": synt_spec, "gates": gates})
       #  and, then, approximate ones
