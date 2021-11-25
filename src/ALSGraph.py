@@ -219,7 +219,15 @@ class ALSGraph:
                   self.__graph.add_edges([(const_0, cell_index)])
                   self.__graph.vs[cell_index]["in"].append(const_0)
                   #print("Adding direct conection {source} -> {sink}".format(source= self.__graph.vs[const_0]["name"], sink= self.__graph.vs[cell_index]["name"]))
-  
+        if Y.is_wire():
+          try:
+            vertex = self.__graph.vs.find(name = Y.as_bit().wire.name.str())
+            self.__graph.add_edges([(cell_index, vertex.index)])
+            vertex["in"].append(cell_index)
+            # print("Adding direct conection {source} -> {sink}".format(source= self.__graph.vs[vertex]["name"], sink=self.__graph.vs[cell_index]["name"]))
+          except:
+            pass
+
   def __add_cell_vertex(self, cell):
     index = [v for v in range(len(self.__graph.vs)) if self.__graph.vs[v]["name"] == cell.name.str()]
     if len(index) == 0:
@@ -232,15 +240,7 @@ class ALSGraph:
       self.__graph.vs[-1]["in"] = []
       self.__graph.vs[-1]["weight"] = None
       self.__graph.vs[-1]["color"] = "mediumspringgreen"
-      A = cell.connections_[ys.IdString("\A")]
-      Y = cell.connections_[ys.IdString("\Y")]
-      #* check whether the output signal is a wire. This means the output signal is a primary output.
-      current_vertex = len( self.__graph.vs) - 1
-      if Y.is_wire():
-        po_idx = self.__add_PO_vertex(Y.as_bit().wire)
-        self.__graph.add_edges([(current_vertex, po_idx)])
-        #print("Adding direct connection {source} -> {sink}".format(source=cell.name.str() , sink=self.__graph.vs[po_idx]["name"]))
-      return current_vertex
+      return len( self.__graph.vs) - 1
     else: return index[0]
 
   def __collect_signals_driven_by_cell(self, cell, sigmap, dict_of_driven_signals):
