@@ -33,6 +33,8 @@ class ALSGraph:
       self.__graph = ig.Graph(directed=True)
       self.__graph_from_design(design)
       self.__graph.vs["label"] = self.__graph.vs["name"]
+      # ys.run_pass("show", design)
+      # self.plot()
     else:
       self.__graph = None
 
@@ -132,7 +134,8 @@ class ALSGraph:
 
   def plot(self):
     layout = self.__graph.layout("sugiyama")
-    ig.plot(self.__graph, layout = layout)
+    layout.rotate(270)
+    ig.plot(self.__graph, layout = layout, bbox=(2000, 2000), margin=120, hovermode='closest', vertex_label_dist = 1)
 
   def __graph_from_design(self, design):
     driver_of = dict()
