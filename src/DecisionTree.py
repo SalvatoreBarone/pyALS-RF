@@ -119,6 +119,12 @@ class DecisionTree:
   def set_assertions_configuration(self, configuration):
     self.__current_configuration = [ {"name" : l["name"], "dist": c, "spec" : e[c]["spec"], "gates" : e[c]["gates"] }  for c, l in zip(configuration, self.__assertions_graph.get_cells()) for e in self.__assertions_catalog_entries if e[0]["spec"] == l["spec"] ]
 
+  def get_assertions_configuration(self):
+    return self.__current_configuration
+
+  def get_assertions_distance(self):
+    return [ c["dist"] for c in self.__current_configuration ]
+
   def get_current_required_aig_nodes(self):
     return sum([ c["gates"] for c in self.__current_configuration ])
 

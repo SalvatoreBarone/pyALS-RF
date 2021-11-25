@@ -177,8 +177,14 @@ class Classifier:
     for t, c in zip(self.__trees_list_obj, configurations):
       t.set_assertions_configuration(c)
 
+  def get_assertions_configuration(self):
+    return [ t.get_assertions_configuration() for t in self.__trees_list_obj]
+
+  def get_assertions_distance(self):
+    return [ t.get_assertions_distance() for t in self.__trees_list_obj ]
+
   def get_current_required_aig_nodes(self):
-    return sum([ t.get_current_required_aig_nodes() for t in self.__trees_list_obj ])
+    return [ t.get_current_required_aig_nodes() for t in self.__trees_list_obj ]
 
   def get_struct(self):
     struct = []
@@ -413,9 +419,7 @@ class Classifier:
         t.generate_ax_assertions_v(ax_dest)
 
   def __evaluate(self, features):
-    classes_score = []
-    for c in self.__model_classes_list_str:
-      classes_score.append({"name" : c, "score" : 0})
+    classes_score = [ {"name" : c, "score" : 0} for c in self.__model_classes_list_str ]
     for tree in self.__trees_list_obj:
       tree.evaluate(features, classes_score)
     for c in classes_score:

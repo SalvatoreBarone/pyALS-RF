@@ -35,7 +35,10 @@ class Optimizer:
         def __init__(self, classifier, dataset_csv, threads, emax):
             self._threads = threads
             self.emax = emax
+
             dataset = classifier.preload_dataset(dataset_csv)
+            print(f"Single classifier: {classifier.evaluate_preloaded_dataset(dataset) / len(dataset) * 100}")
+
             self._n_samples = len(dataset)
             dataset_partioned = list_partitioning(dataset, threads)
             classifier.reset_assertion_configuration()
@@ -81,11 +84,12 @@ class Optimizer:
 
     class ALSOnly(MOP, ElementwiseProblem):
         def __init__(self, classifier, dataset_csv, threads, emax):
-            self.total_gates = classifier.get_current_required_aig_nodes()
-            print(f"Baseline requirements: {self.total_gates} gates")
             self.als_genes_per_tree = classifier.get_als_genes_per_tree()
-            self.ngenes = sum( self.als_genes_per_tree )
-            print(f"# genes: {self.ngenes}")
+            self.ngenes = sum(self.als_genes_per_tree)
+            print(f"Genes: {self.als_genes_per_tree} Tot. #genes: {self.ngenes}")
+            gates_list = classifier.get_current_required_aig_nodes()
+            self.total_gates = sum(gates_list)
+            print(f"Baseline requirements: [{gates_list}] {self.total_gates} gates")
             lower_bound = np.zeros(self.ngenes, dtype = np.uint32)
             als_ub = classifier.get_als_genes_upper_bound()
             upper_bound = np.array(als_ub, dtype = np.uint32)
@@ -104,7 +108,7 @@ class Optimizer:
         def _evaluate(self, X, out, *args, **kwargs):
             self.__genotype_to_phenotype(X)
             err = self._get_accuracy_loss()
-            gates = self._partitions[0][0].get_current_required_aig_nodes()
+            gates = sum(self._partitions[0][0].get_current_required_aig_nodes())
             out["F"] = [err, gates]
             out["G"] = err - self.emax
 
@@ -112,11 +116,13 @@ class Optimizer:
         def __init__(self, classifier, dataset_csv, threads, emax):
             super().__init__(classifier, dataset_csv, threads)
             self.total_bits = classifier.get_total_bits()
-            self.total_gates = classifier.get_current_required_aig_nodes()
-            print(f"Baseline requirements: {self.total_bits} bits, {self.total_gates} gates")
             self.als_genes_per_tree = classifier.get_als_genes_per_tree()
-            self.ngenes = len(classifier.get_features()) + sum(self.als_genes_per_tree)
-            print(f"# genes: {self.ngenes}")
+            n_features = len(classifier.get_features())
+            self.ngenes =  n_features + sum(self.als_genes_per_tree)
+            print(f"Features: {n_features}, genes per tree: {self.als_genes_per_tree}, Tot. #genes: {self.ngenes}")
+            gates_list = classifier.get_current_required_aig_nodes()
+            self.total_gates = sum(gates_list)
+            print(f"Baseline requirements: {self.total_bits} bits, {gates_list} {self.total_gates} gates")
             lower_bound = np.zeros(self.ngenes, dtype = np.uint32)
             als_ub = [53] * len(classifier.get_features()) + classifier.get_als_genes_upper_bound()
             upper_bound = np.array(als_ub, dtype = np.uint32)
@@ -138,7 +144,7 @@ class Optimizer:
             self.__genotype_to_phenotype(X)
             err = self._get_accuracy_loss()
             bits = self._partitions[0][0].get_total_retained()
-            gates = self._partitions[0][0].get_current_required_aig_nodes()
+            gates = sum(self._partitions[0][0].get_current_required_aig_nodes())
             out["F"] = [err, bits, gates]
             out["G"] = err - self.emax
 
