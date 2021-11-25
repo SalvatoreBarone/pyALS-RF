@@ -45,7 +45,6 @@ class Worker:
 
   def work(self):
     if self.__output_dir != ".":
-      os.system(f"rm -rf {self.__output_dir}")
       mkpath(self.__output_dir)
     self.__classifier.parse(self.__pmml_file)
     if self.__print_tree:
