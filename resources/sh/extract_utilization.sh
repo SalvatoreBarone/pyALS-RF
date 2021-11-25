@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "Configuration | Total LUTs | Logic LUTs | FFs"
 for i in $(find . -name 'report_utilization.txt' | sort); 
 do 
   total_luts=$(grep -e " classifier " $i | sed "s/ \+//g" | cut -d '|' -f4); 
