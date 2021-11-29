@@ -35,10 +35,7 @@ class Optimizer:
         def __init__(self, classifier, dataset_csv, threads, emax):
             self._threads = threads
             self.emax = emax
-
             dataset = classifier.preload_dataset(dataset_csv)
-            print(f"Single classifier: {classifier.evaluate_preloaded_dataset(dataset) / len(dataset) * 100}")
-
             self._n_samples = len(dataset)
             dataset_partioned = list_partitioning(dataset, threads)
             classifier.reset_assertion_configuration()
