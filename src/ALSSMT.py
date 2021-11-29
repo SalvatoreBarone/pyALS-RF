@@ -110,7 +110,7 @@ class ALSSMT:
         self.sel_out = int(self.sel_var / 2)
         self.sel_out_p = self.sel_var % 2 == 0
         sel_fun_spec = truth_table_column(self.sel_out, num_inputs, self.sel_out_p)
-        return "".join(["1" if bool(sel_fun_spec[i]) else "0" for i in range(len(self.__fun_spec))]), 0
+        return "".join(["1" if bool(sel_fun_spec[i]) else "0" for i in range(len(self.__fun_spec))]), [[], []], [[], []], self.sel_out_p, self.sel_out
 
     #* Input assignment
     #* This formulation makes use of the explicit function representation -- i.e. the Boolean function is represented in 
@@ -154,7 +154,12 @@ class ALSSMT:
       self.__solver.push() # Create a backtracking point
       #* 5. Encode the function semantic
       self.__add_ax_function_semantic_constraints()
-    return self.__get_synthesized_spec(), len(self.__S[0])
+
+    model = self.__solver.model()
+    S = [ [ model[s].as_long() for s in self.__S[0] ], [ model[s].as_long() for s in self.__S[1] ] ]
+    P = [ [ 1 if model[p] else 0 for p in self.__P[0] ], [ 1 if model[p] else 0 for p in self.__P[1] ] ]
+    p = 1 if model[self.__p] else 0
+    return self.__get_synthesized_spec(), S, P, p, 0
 
 def hamming(s1, s2):
   result = 0

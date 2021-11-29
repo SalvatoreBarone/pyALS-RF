@@ -94,12 +94,14 @@ class ALSCatalog:
       lut_specifications = []
       # Sinthesizing the baseline (non-approximate) LUT
       hamming_distance = 0
-      synt_spec, gates = self.get_synthesized_lut(lut, hamming_distance)
+      synt_spec, S, P, out_p, out = self.get_synthesized_lut(lut, hamming_distance)
+      gates = len(S[0])
       lut_specifications.append({"spec": synt_spec, "gates": gates})
       #  and, then, approximate ones
       while gates > 0:
         hamming_distance += 1
-        synt_spec, gates = self.get_synthesized_lut(lut, hamming_distance)
+        synt_spec, S, P, out_p, out = self.get_synthesized_lut(lut, hamming_distance)
+        gates = len(S[0])
         lut_specifications.append({"spec": synt_spec, "gates": gates})
       catalog.append(lut_specifications)
     return catalog
@@ -122,37 +124,52 @@ class ALSCatalog:
   @return If the lut exists, it is returned, otherwise the function performs the exact synthesis of the lut and adds it
   to the catalog before returning it to the caller.
   """
-  def get_synthesized_lut(self, lut_spec, distance):
-    result = self.__get_lut_at_dist(lut_spec, distance)
+  def get_synthesized_lut(self, lut_spec, dist):
+    result = self.__get_lut_at_dist(lut_spec, dist)
+    spec = lut_spec.as_string()
     if result is None:
-      ys.log("Cache miss for {spec}@{dist}\n".format(spec = lut_spec.as_string(), dist = distance))
-      ys.log("Performing SMT-ES for {spec}@{dist}\n".format(spec = lut_spec.as_string(), dist = distance))
-      synth_spec, gates = ALSSMT(lut_spec.as_string(), distance, self.__es_timeout).synthesize()
-      ys.log("Done! {spec}@{dist} Satisfied using {gates} gates. Synth. spec.: {synth_spec}\n".format(spec = lut_spec.as_string(), dist = distance, synth_spec = synth_spec, gates = gates))
-      self.__add_lut(lut_spec, distance, synth_spec, gates)
-      return synth_spec, gates
+      ys.log(f"Cache miss for {spec}@{dist}\n")
+      ys.log(f"Performing SMT-ES for {spec}@{dist}\n")
+      synth_spec, S, P, out_p, out = ALSSMT(spec, dist, self.__es_timeout).synthesize()
+      gates = len(S[0])
+      ys.log(f"Done! {spec}@{dist} Satisfied using {gates} gates. Synth. spec.: {synth_spec}\n")
+      self.__add_lut(lut_spec, dist, synth_spec, S, P, out_p, out)
+      return synth_spec, S, P, out_p, out
     else:
-      ys.log("Cache hit for {spec}@{dist}, which is implemented as {synth_spec} using {gates} gates\n".format(spec = lut_spec.as_string(), dist = distance, synth_spec = result[0], gates = result[1]))
-      return result[0], result[1]
+      synth_spec = result[0]
+      gates = len(result[1])
+      ys.log(f"Cache hit for {spec}@{dist}, which is implemented as {synth_spec} using {gates} gates\n")
+      return result[0], result[1], result[2], result[3], result[4]
 
   """ 
   @brief Inits the database
   """
   def __init_db(self):
-    self.__cursor.execute("create table if not exists luts (spec text not null, distance integer not null, synth_spec text, gates integer, primary key (spec, distance))")
+    self.__cursor.execute("create table if not exists luts (spec text not null, distance integer not null, synth_spec text, S text, P text, out_p integer, out integer, primary key (spec, distance))")
     self.__connection.commit()
   
   """
   @brief Queries the database for a particular lut specification. 
   """
   def __get_lut_at_dist(self, spec, dist):
-    self.__cursor.execute("select synth_spec, gates from luts where spec = '{spec}' and distance = {dist};".format(spec = spec, dist = dist))
-    return self.__cursor.fetchone()
+    self.__cursor.execute(f"select synth_spec, S, P, out_p, out from luts where spec = '{spec}' and distance = {dist};")
+    result = self.__cursor.fetchone()
+    if result is not None:
+      print(f"{spec}, {dist}, {result[0]}, {string_to_nested_list_int(result[1])}, {string_to_nested_list_int(result[2])}, {result[3]}, {result[4]}")
+      return result[0], string_to_nested_list_int(result[1]), string_to_nested_list_int(result[2]), result[3], result[4]
+    return None
 
   """
   @brief Insert a synthesized LUT into the database
   """
-  def __add_lut(self, spec, dist, synth_spec, gates):
-    self.__cursor.execute("insert into luts (spec, distance, synth_spec, gates) values ('{spec}', {dist}, '{synth_spec}', {gates});".format(spec = spec, dist = dist, synth_spec = synth_spec, gates = gates))
+  def __add_lut(self, spec, dist, synth_spec, S, P, out_p, out):
+    self.__cursor.execute(f"insert into luts (spec, distance, synth_spec, S, P, out_p, out) values ('{spec}', {dist}, '{synth_spec}', '{S}', '{P}', {out_p}, {out});")
+    print(f"{spec}, {dist}, {synth_spec}, {S}, {P}, {out_p}, {out}")
     self.__connection.commit()
-    
+
+
+def string_to_nested_list_int(s):
+  if s == '[[], []]':
+    return [[], []]
+  l = [sl.strip('[]').split(',') for sl in s.split('], [')]
+  return [[int(i) for i in l[0]], [int(i) for i in l[1]]]
