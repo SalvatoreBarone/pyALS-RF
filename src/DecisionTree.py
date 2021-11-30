@@ -34,6 +34,7 @@ class DecisionTree:
     self.__model_features = features
     self.__model_classes = classes
     self.__decision_boxes = []
+    self.__catalog_cache = catalog_cache
     if root_node:
       self.__get_decision_boxes(root_node)
     self.__assertions = []
@@ -43,11 +44,12 @@ class DecisionTree:
     if lut_tech:
       design = self.__generate_design_for_als(lut_tech)
       self.__assertions_graph = ALSGraph(design)
-      self.__assertions_catalog_entries = ALSCatalog(catalog_cache, smt_timeout).generate_catalog(design)
+      self.__assertions_catalog_entries = ALSCatalog(self.__catalog_cache).generate_catalog(design, smt_timeout)
       self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
       ys.run_pass("design -save {name}".format(name = self.__name), design)
     else:
       self.__assertions_graph = None
+      self.__catalog = None
       self.__assertions_catalog_entries = None
 
   def __deepcopy__(self, memo = None):
@@ -58,6 +60,7 @@ class DecisionTree:
     tree.__decision_boxes = copy.deepcopy(self.__decision_boxes)
     tree.__assertions = copy.deepcopy(self.__assertions)
     tree.__assertions_graph = copy.deepcopy(self.__assertions_graph)
+    tree.__catalog_cache = copy.deepcopy(self.__catalog_cache)
     tree.__assertions_catalog_entries = copy.deepcopy(self.__assertions_catalog_entries)
     tree.__current_configuration = copy.deepcopy(self.__current_configuration)
     return tree
@@ -117,7 +120,7 @@ class DecisionTree:
               the LUT and the approximate implementation to use should be.
   """
   def set_assertions_configuration(self, configuration):
-    self.__current_configuration = [ {"name" : l["name"], "dist": c, "spec" : e[c]["spec"], "gates" : e[c]["gates"] }  for c, l in zip(configuration, self.__assertions_graph.get_cells()) for e in self.__assertions_catalog_entries if e[0]["spec"] == l["spec"] ]
+    self.__current_configuration = [ {"name" : l["name"], "dist": c, "spec" : e[0]["spec"], "axspec" : e[c]["spec"], "gates" : e[c]["gates"] } for c, l in zip(configuration, self.__assertions_graph.get_cells()) for e in self.__assertions_catalog_entries if e[0]["spec"] == l["spec"] ]
 
   def get_assertions_configuration(self):
     return self.__current_configuration

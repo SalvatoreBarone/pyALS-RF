@@ -126,7 +126,7 @@ class ALSGraph:
     else:
       cell_conf = [ conf for conf in configuration if conf["name"] == cell["name"] ][0]
       dist = cell_conf["dist"]
-      ax_cell_spec = cell_conf["spec"]
+      ax_cell_spec = cell_conf["axspec"]
       ax_out_value = ax_cell_spec[::-1][out_idx]
       cell_values[cell] = True if ax_out_value == "1" else False
     #print("name: {name} Spec: {spec}, Dist.: {dist}, AxSpec: {axspec}, Inputs: {inputs} = {I} (Index: {i}) -> Output: {o} ({O}) AxOutput: {axo})".format(name = cell["name"], spec = cell_spec, dist = dist, axspec = ax_cell_spec, inputs = input_names, I = input_values, i = out_idx, o=out_value, O = cell_values[cell], axo =  ax_out_value))

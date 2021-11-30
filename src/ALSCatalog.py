@@ -19,9 +19,8 @@ from pyosys import libyosys as ys
 from .ALSSMT import *
 
 class ALSCatalog:
-  def __init__(self, file_name, es_timeout):
+  def __init__(self, file_name):
     self.__connection = None
-    self.__es_timeout = es_timeout
     try:
       self.__connection = sqlite3.connect(file_name)
       self.__cursor = self.__connection.cursor()
@@ -79,7 +78,7 @@ class ALSCatalog:
   @note This class implements LUT caching, so the actual synthesis of a LUT is performed i.f.f. the latter is not yet
   in the database.
   """
-  def generate_catalog(self, design):
+  def generate_catalog(self, design, es_timeout):
     # Building the set of unique luts
     luts_set = set()
     for module in design.selected_whole_modules_warn():
@@ -94,13 +93,13 @@ class ALSCatalog:
       lut_specifications = []
       # Sinthesizing the baseline (non-approximate) LUT
       hamming_distance = 0
-      synt_spec, S, P, out_p, out = self.get_synthesized_lut(lut, hamming_distance)
+      synt_spec, S, P, out_p, out = self.get_synthesized_lut(lut, hamming_distance, es_timeout)
       gates = len(S[0])
       lut_specifications.append({"spec": synt_spec, "gates": gates})
       #  and, then, approximate ones
       while gates > 0:
         hamming_distance += 1
-        synt_spec, S, P, out_p, out = self.get_synthesized_lut(lut, hamming_distance)
+        synt_spec, S, P, out_p, out = self.get_synthesized_lut(lut, hamming_distance, es_timeout)
         gates = len(S[0])
         lut_specifications.append({"spec": synt_spec, "gates": gates})
       catalog.append(lut_specifications)
@@ -124,16 +123,16 @@ class ALSCatalog:
   @return If the lut exists, it is returned, otherwise the function performs the exact synthesis of the lut and adds it
   to the catalog before returning it to the caller.
   """
-  def get_synthesized_lut(self, lut_spec, dist):
-    result = self.__get_lut_at_dist(lut_spec, dist)
+  def get_synthesized_lut(self, lut_spec, dist, es_timeout):
     spec = lut_spec.as_string()
+    result = self.get_lut_at_dist(spec, dist)
     if result is None:
       ys.log(f"Cache miss for {spec}@{dist}\n")
       ys.log(f"Performing SMT-ES for {spec}@{dist}\n")
-      synth_spec, S, P, out_p, out = ALSSMT(spec, dist, self.__es_timeout).synthesize()
+      synth_spec, S, P, out_p, out = ALSSMT(spec, dist, es_timeout).synthesize()
       gates = len(S[0])
       ys.log(f"Done! {spec}@{dist} Satisfied using {gates} gates. Synth. spec.: {synth_spec}\n")
-      self.__add_lut(lut_spec, dist, synth_spec, S, P, out_p, out)
+      self.__add_lut(spec, dist, synth_spec, S, P, out_p, out)
       return synth_spec, S, P, out_p, out
     else:
       synth_spec = result[0]
@@ -151,11 +150,10 @@ class ALSCatalog:
   """
   @brief Queries the database for a particular lut specification. 
   """
-  def __get_lut_at_dist(self, spec, dist):
+  def get_lut_at_dist(self, spec, dist):
     self.__cursor.execute(f"select synth_spec, S, P, out_p, out from luts where spec = '{spec}' and distance = {dist};")
     result = self.__cursor.fetchone()
     if result is not None:
-      print(f"{spec}, {dist}, {result[0]}, {string_to_nested_list_int(result[1])}, {string_to_nested_list_int(result[2])}, {result[3]}, {result[4]}")
       return result[0], string_to_nested_list_int(result[1]), string_to_nested_list_int(result[2]), result[3], result[4]
     return None
 
