@@ -20,13 +20,12 @@ from .ALSSMT import *
 
 class ALSCatalog:
   def __init__(self, file_name):
+    self.__file_name = file_name
     self.__connection = None
     try:
-      self.__connection = sqlite3.connect(file_name)
+      self.__connection = sqlite3.connect(self.__file_name)
       self.__cursor = self.__connection.cursor()
-      print(sqlite3.version)
       self.__init_db()
-      print("Database created and successfully connected to SQLite")
     except sqlite3.Error as e:
       print(e)
       exit()
@@ -56,23 +55,7 @@ class ALSCatalog:
       ...
       {"spec": function specification (string), "gates" : AND-gates required to synthesize the spec (integer)}  <-- approx-spec at distance N
     ],
-    # LUT specs
-    [
-      {"spec": function specification (string), "gates" : AND-gates required to synthesize the spec (integer)},
-      {"spec": function specification (string), "gates" : AND-gates required to synthesize the spec (integer)},
-      {"spec": function specification (string), "gates" : AND-gates required to synthesize the spec (integer)},
-      ...
-      {"spec": function specification (string), "gates" : AND-gates required to synthesize the spec (integer)}
-    ],
     ...
-    # LUT specs
-    [
-      {"spec": function specification (string), "gates" : AND-gates required to synthesize the spec (integer)},
-      {"spec": function specification (string), "gates" : AND-gates required to synthesize the spec (integer)},
-      {"spec": function specification (string), "gates" : AND-gates required to synthesize the spec (integer)},
-      ...
-      {"spec": function specification (string), "gates" : AND-gates required to synthesize the spec (integer)}
-    ]
   ]
 
   @note This class implements LUT caching, so the actual synthesis of a LUT is performed i.f.f. the latter is not yet
@@ -87,7 +70,6 @@ class ALSCatalog:
           luts_set.add(cell.parameters[ys.IdString("\LUT")])
 
     # TODO: This for loop should be partitioned among multiple threads. 
-    #! Make sure the db connection object can be safely shared among processes
     catalog = []
     for lut in luts_set:
       lut_specifications = []
@@ -95,14 +77,19 @@ class ALSCatalog:
       hamming_distance = 0
       synt_spec, S, P, out_p, out = self.get_synthesized_lut(lut, hamming_distance, es_timeout)
       gates = len(S[0])
-      lut_specifications.append({"spec": synt_spec, "gates": gates})
+      lut_specifications.append({"spec": synt_spec, "gates": gates, "S": S, "P": P, "out_p": out_p, "out": out})
       #  and, then, approximate ones
       while gates > 0:
         hamming_distance += 1
         synt_spec, S, P, out_p, out = self.get_synthesized_lut(lut, hamming_distance, es_timeout)
         gates = len(S[0])
-        lut_specifications.append({"spec": synt_spec, "gates": gates})
+        lut_specifications.append({"spec": synt_spec, "gates": gates, "S": S, "P": P, "out_p": out_p, "out": out})
       catalog.append(lut_specifications)
+      # Speculation...
+      for i in range(1, len(lut_specifications)):
+        self.__add_lut(lut_specifications[i]["spec"], 0, lut_specifications[i]["spec"], lut_specifications[i]["S"], lut_specifications[i]["P"], lut_specifications[i]["out_p"], lut_specifications[i]["out"])
+        for j in range(i+1, len(lut_specifications)):
+          self.__add_lut(lut_specifications[i]["spec"], j-i, lut_specifications[j]["spec"], lut_specifications[j]["S"], lut_specifications[j]["P"], lut_specifications[j]["out_p"], lut_specifications[j]["out"])
     return catalog
 
   """
@@ -161,8 +148,7 @@ class ALSCatalog:
   @brief Insert a synthesized LUT into the database
   """
   def __add_lut(self, spec, dist, synth_spec, S, P, out_p, out):
-    self.__cursor.execute(f"insert into luts (spec, distance, synth_spec, S, P, out_p, out) values ('{spec}', {dist}, '{synth_spec}', '{S}', '{P}', {out_p}, {out});")
-    print(f"{spec}, {dist}, {synth_spec}, {S}, {P}, {out_p}, {out}")
+    self.__cursor.execute(f"insert or ignore into luts (spec, distance, synth_spec, S, P, out_p, out) values ('{spec}', {dist}, '{synth_spec}', '{S}', '{P}', {out_p}, {out});")
     self.__connection.commit()
 
 
