@@ -33,8 +33,6 @@ class ALSGraph:
       self.__graph = ig.Graph(directed=True)
       self.__graph_from_design(design)
       self.__graph.vs["label"] = self.__graph.vs["name"]
-      # ys.run_pass("show", design)
-      # self.plot()
     else:
       self.__graph = None
 
@@ -116,19 +114,12 @@ class ALSGraph:
       else:
         input_values.append(self.__evaluate_cell_output(cell_values, self.__graph.vs[n], configuration))
     out_idx = sum ([ 1 * 2** i if input_values[i] else 0 for i in range(len(input_values)) ])
-    cell_spec = cell["spec"]
-    out_value = cell_spec[::-1][out_idx]
-    ax_cell_spec = None 
-    ax_out_value = None
-    dist = 0
+    out_value = cell["spec"][out_idx]
     if configuration == None:
       cell_values[cell] = True if out_value == "1" else False
     else:
       cell_conf = [ conf for conf in configuration if conf["name"] == cell["name"] ][0]
-      dist = cell_conf["dist"]
-      ax_cell_spec = cell_conf["axspec"]
-      ax_out_value = ax_cell_spec[::-1][out_idx]
-      cell_values[cell] = True if ax_out_value == "1" else False
+      cell_values[cell] = True if cell_conf["axspec"][out_idx] == "1" else False
     #print("name: {name} Spec: {spec}, Dist.: {dist}, AxSpec: {axspec}, Inputs: {inputs} = {I} (Index: {i}) -> Output: {o} ({O}) AxOutput: {axo})".format(name = cell["name"], spec = cell_spec, dist = dist, axspec = ax_cell_spec, inputs = input_names, I = input_values, i = out_idx, o=out_value, O = cell_values[cell], axo =  ax_out_value))
     return cell_values[cell]
 
@@ -234,12 +225,12 @@ class ALSGraph:
   def __add_cell_vertex(self, cell):
     index = [v for v in range(len(self.__graph.vs)) if self.__graph.vs[v]["name"] == cell.name.str()]
     if len(index) == 0:
-      #print("Adding cell {cell_name}. Spec (msb first): {cell_spec}".format(cell_name=cell.name.str(), cell_spec=cell.parameters[ys.IdString("\LUT")].as_string()))
+      #print("Adding cell {cell_name}. Spec (msb first): {cell_spec}".format(cell_name=cell.name.str(), cell_spec=cell.parameters[ys.IdString("\LUT")].as_string()[::-1]))
       self.__graph.add_vertex()
       self.__graph.vs[-1]["type"] = ALSGraph.VertexType.CELL
       self.__graph.vs[-1]["name"] = cell.name.str()
       self.__graph.vs[-1]["hash"] = cell.name.hash()
-      self.__graph.vs[-1]["spec"] = cell.parameters[ys.IdString("\LUT")].as_string() 
+      self.__graph.vs[-1]["spec"] = cell.parameters[ys.IdString("\LUT")].as_string()[::-1]
       self.__graph.vs[-1]["in"] = []
       self.__graph.vs[-1]["weight"] = None
       self.__graph.vs[-1]["color"] = "mediumspringgreen"

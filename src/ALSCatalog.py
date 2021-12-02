@@ -67,7 +67,7 @@ class ALSCatalog:
     for module in design.selected_whole_modules_warn():
       for cell in module.selected_cells():
         if ys.IdString("\LUT") in cell.parameters:     
-          luts_set.add(cell.parameters[ys.IdString("\LUT")])
+          luts_set.add(cell.parameters[ys.IdString("\LUT")].as_string()[::-1])
 
     # TODO: This for loop should be partitioned among multiple threads. 
     catalog = []
@@ -111,20 +111,19 @@ class ALSCatalog:
   to the catalog before returning it to the caller.
   """
   def get_synthesized_lut(self, lut_spec, dist, es_timeout):
-    spec = lut_spec.as_string()
-    result = self.get_lut_at_dist(spec, dist)
+    result = self.get_lut_at_dist(lut_spec, dist)
     if result is None:
-      ys.log(f"Cache miss for {spec}@{dist}\n")
-      ys.log(f"Performing SMT-ES for {spec}@{dist}\n")
-      synth_spec, S, P, out_p, out = ALSSMT(spec, dist, es_timeout).synthesize()
+      ys.log(f"Cache miss for {lut_spec}@{dist}\n")
+      ys.log(f"Performing SMT-ES for {lut_spec}@{dist}\n")
+      synth_spec, S, P, out_p, out = ALSSMT(lut_spec, dist, es_timeout).synthesize()
       gates = len(S[0])
-      ys.log(f"Done! {spec}@{dist} Satisfied using {gates} gates. Synth. spec.: {synth_spec}\n")
-      self.__add_lut(spec, dist, synth_spec, S, P, out_p, out)
+      ys.log(f"Done! {lut_spec}@{dist} Satisfied using {gates} gates. Synth. spec.: {synth_spec}\n")
+      self.__add_lut(lut_spec, dist, synth_spec, S, P, out_p, out)
       return synth_spec, S, P, out_p, out
     else:
       synth_spec = result[0]
       gates = len(result[1])
-      ys.log(f"Cache hit for {spec}@{dist}, which is implemented as {synth_spec} using {gates} gates\n")
+      ys.log(f"Cache hit for {lut_spec}@{dist}, which is implemented as {synth_spec} using {gates} gates\n")
       return result[0], result[1], result[2], result[3], result[4]
 
   """ 
