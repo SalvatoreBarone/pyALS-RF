@@ -197,8 +197,12 @@ class Optimizer:
             plt.figure(figsize=(10, 10), dpi=300)
             plt.plot(F[:,0], F[:,1], 'k.')
             plt.axvline(x = self.__nsgaii_emax, c = 'r')
-            plt.xlim([0, 100])
-            plt.xticks(list(range(0, 100, 10)) + [self.__nsgaii_emax], list(range(0, 100, 10)) + [plt.Text(0, 0, "$e_{max}$")])
+            x_min = int(min(F[:,0])) - 10
+            x_min = x_min if x_min < 0 else 0
+            x_max = int(max(F[:,0])) + 10
+            x_max = x_max if x_max < 100 else 100
+            plt.xlim([ x_min, x_max ])
+            plt.xticks(list(range(x_min, x_max, 10)) + [self.__nsgaii_emax], list(range(x_min, x_max, 10)) + [plt.Text(0, 0, "$e_{max}$")])
             plt.xlabel("Classification-accuracy loss (%)")
             plt.ylabel("# of AIG gates" if self.__axtechnique == Optimizer.AxTechnique.ALS else "# of retained bits" )
             plt.savefig(pdf_file, bbox_inches='tight', pad_inches=0)

@@ -1,5 +1,4 @@
 src/__pycache__/
-lut_catalog.db
 .idea/
 Docker/edginess_shared/
 output/
