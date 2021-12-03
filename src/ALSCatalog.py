@@ -111,7 +111,7 @@ class ALSCatalog:
   to the catalog before returning it to the caller.
   """
   def get_synthesized_lut(self, lut_spec, dist, es_timeout):
-    result = self.get_lut_at_dist(lut_spec, dist)
+    result = self.__get_lut_at_dist(lut_spec, dist)
     if result is None:
       ys.log(f"Cache miss for {lut_spec}@{dist}\n")
       ys.log(f"Performing SMT-ES for {lut_spec}@{dist}\n")
@@ -136,7 +136,7 @@ class ALSCatalog:
   """
   @brief Queries the database for a particular lut specification. 
   """
-  def get_lut_at_dist(self, spec, dist):
+  def __get_lut_at_dist(self, spec, dist):
     self.__cursor.execute(f"select synth_spec, S, P, out_p, out from luts where spec = '{spec}' and distance = {dist};")
     result = self.__cursor.fetchone()
     if result is not None:

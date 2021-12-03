@@ -34,13 +34,13 @@ class ALSSMT:
     self.__fun_spec = fun_spec
     self.__distance = distance
     self.__solver = z3.Solver()
-    self.__solver.set(timeout = timeout)
+    self.__solver.set("timeout", timeout)
     self.__S = [[], []]       # Sets of SMT variables which represent indexes
     self.__P = [[], []]       # Sets of SMT variables which represent polarities
     self.__A = [[], []]       # Sets of SMT variables which represent login-AND gates inputs
-    self.__B = []  # Set of SMT variables which represent primary input and logic-AND gates
-    self.__p = z3.Bool('p')  # SMT variable for the output polarity
-    self.__ax = []           # Set of SMT variable which encodes the approximate function semantic
+    self.__B = []             # Set of SMT variables which represent primary input and logic-AND gates
+    self.__p = z3.Bool('p')   # SMT variable for the output polarity
+    self.__ax = []            # Set of SMT variable which encodes the approximate function semantic
     self.sel_var = None
 
   """

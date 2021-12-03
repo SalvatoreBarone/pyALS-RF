@@ -44,8 +44,8 @@ class Optimizer:
             self._partitions = [ [c, d] for c, d in zip(classifiers, dataset_partioned) ]
             start_time = time.time()
             self.baseline_accuracy = self.__evaluate_dataset()
-            duration = time.time() - start_time
-            print(f"Baseline accuracy: {self.baseline_accuracy}. Took {duration} sec.")
+            self.duration = time.time() - start_time
+            print(f"Baseline accuracy: {self.baseline_accuracy}. Took {self.duration} sec.")
 
         def __evaluate_dataset(self):
             with Pool(self._threads) as pool:
@@ -163,8 +163,13 @@ class Optimizer:
             eliminate_duplicates = True)
         self.termination = get_termination('n_gen', nsgaii_iter)
         self.result = None
+        eta_secs = 2 * nsgaii_pop_size * nsgaii_iter * self.problem.duration
+        eta_hours = int(eta_secs / 3600)
+        eta_min = int ((eta_secs - eta_hours*3600) / 60)
+        print(f"ETA: {eta_hours} h, {eta_min} min.")
 
     def optimize(self):
+
         print("n_gen:         the current number of generations or iterations until this point.")
         print("n_eval:        the number of function evaluations so far.")
         print("n_nds:         the number of non-dominated solutions of the optima found.")
