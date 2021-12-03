@@ -35,10 +35,9 @@ class DecisionTree:
     self.__model_classes = classes
     self.__decision_boxes = []
     self.__catalog_cache = catalog_cache
-    if root_node:
-      self.__get_decision_boxes(root_node)
     self.__assertions = []
     if root_node:
+      self.__get_decision_boxes(root_node)
       self.__get_assertions(root_node)
     self.__current_configuration = []
     if lut_tech:
@@ -259,10 +258,15 @@ class DecisionTree:
     self.__decision_boxes = []
     for node in PreOrderIter(root_node):
       if any(node.children):
-        feature = next(item for item in self.__model_features if item["name"] == node.feature)
-        self.__decision_boxes.append({
-          "name" : node.name, 
-          "box"  : DecisionBox(node.name, node.feature, feature["type"], node.operator, node.threshold_value)})
+        try:
+          feature = next(item for item in self.__model_features if item["name"] == node.feature)
+          self.__decision_boxes.append({
+            "name" : node.name,
+            "box"  : DecisionBox(node.name, node.feature, feature["type"], node.operator, node.threshold_value)})
+        except:
+          print(node.feature, "Feature not found")
+          print("Recognized model features", self.__model_features)
+          exit()
 
   def __get_leaves(self, root_node):
     leaves = []

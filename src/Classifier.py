@@ -97,8 +97,7 @@ class Classifier:
     tree = ElementTree.parse(pmml_file_name)
     root = tree.getroot()
     self.__namespaces["pmml"] = get_xmlns_uri(root)
-    self.__get_classes(root)
-    self.__get_features(root)
+    self.__get_features_and_classes(root)
     segmentation = root.find("pmml:MiningModel/pmml:Segmentation", self.__namespaces)
     if segmentation is not None:
       tree_id = 0
@@ -199,9 +198,21 @@ class Classifier:
         input_features = []
         expected_result = []
         for f in self.__model_features_list_dict:
-          input_features.append({"name" : f["name"], "value" : float(line[f["name"]])})
+          try:
+            input_features.append({"name" : f["name"], "value" : float(line[f["name"]])})
+          except:
+            print(self.__model_features_list_dict)
+            print(line)
+            print(f["name"], "feature not found in line")
+            exit()
         for c in self.__model_classes_list_str:
-          expected_result.append({"name" : c, "score" : int(line[c]) })
+          try:
+            expected_result.append({"name" : c, "score" : int(line[c]) })
+          except:
+            print(self.__model_classes_list_str)
+            print(line)
+            print(c, "class not found in line")
+            exit()
         samples.append({"input" : input_features, "outcome" : expected_result})
     return samples
 
@@ -426,19 +437,18 @@ class Classifier:
       c["score"] = 0 if c["score"] < (len(self.__trees_list_obj) / 2) else 1
     return classes_score
 
-  def __get_features(self, root):
+  def __get_features_and_classes(self, root):
     for child in root.find("pmml:DataDictionary", self.__namespaces).findall('pmml:DataField', self.__namespaces):
-      data_type = "double" if child.attrib['dataType'] == "double" else "int"
-      self.__model_features_list_dict.append({
-        "name" : child.attrib['name'].replace('-','_'), 
-        "type" : data_type})
-
-  def __get_classes(self, root):
-    for child in root.find("pmml:DataDictionary", self.__namespaces).findall('pmml:DataField', self.__namespaces):
-      if child.find("pmml:Interval", self.__namespaces) is None:
+      if child.attrib["optype"] == "continuous":
+        # the child is PROBABLY a feature
+        self.__model_features_list_dict.append({
+          "name": child.attrib['name'].replace('-', '_'),
+          "type": "double" if child.attrib['dataType'] == "double" else "int"})
+      elif child.attrib["optype"] == "categorical":
+        # the child PROBABLY specifies model-classes
         for element in child.findall("pmml:Value", self.__namespaces):
           self.__model_classes_list_str.append(element.attrib['value'].replace('-','_'))
-                  
+
   def __get_tree_model(self, tree_name, tree_model_root):
     tree = Node('Node_' + tree_model_root.attrib['id'], feature = "", operator = "", threshold_value = "", boolean_expression = "")
     self.__get_tree_nodes_recursively(tree_model_root, tree)
