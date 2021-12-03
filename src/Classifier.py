@@ -428,15 +428,10 @@ class Classifier:
 
   def __get_features(self, root):
     for child in root.find("pmml:DataDictionary", self.__namespaces).findall('pmml:DataField', self.__namespaces):
-      interval = child.find("pmml:Interval", self.__namespaces)
-      if interval is None:
-        continue
       data_type = "double" if child.attrib['dataType'] == "double" else "int"
       self.__model_features_list_dict.append({
         "name" : child.attrib['name'].replace('-','_'), 
-        "type" : data_type,
-        "min"  : interval.attrib['leftMargin'],
-        "max"  : interval.attrib['rightMargin']})
+        "type" : data_type})
 
   def __get_classes(self, root):
     for child in root.find("pmml:DataDictionary", self.__namespaces).findall('pmml:DataField', self.__namespaces):
