@@ -117,13 +117,13 @@ class ALSCatalog:
       ys.log(f"Performing SMT-ES for {lut_spec}@{dist}\n")
       synth_spec, S, P, out_p, out = ALSSMT(lut_spec, dist, es_timeout).synthesize()
       gates = len(S[0])
-      ys.log(f"Done! {lut_spec}@{dist} Satisfied using {gates} gates. Synth. spec.: {synth_spec}\n")
+      print(f"Done! {lut_spec}@{dist} Satisfied using {gates} gates. Synth. spec.: {synth_spec}")
       self.__add_lut(lut_spec, dist, synth_spec, S, P, out_p, out)
       return synth_spec, S, P, out_p, out
     else:
       synth_spec = result[0]
-      gates = len(result[1])
-      ys.log(f"Cache hit for {lut_spec}@{dist}, which is implemented as {synth_spec} using {gates} gates\n")
+      gates = len(result[1][0])
+      print(f"Cache hit for {lut_spec}@{dist}, which is implemented as {synth_spec} using {gates} gates")
       return result[0], result[1], result[2], result[3], result[4]
 
   """ 
