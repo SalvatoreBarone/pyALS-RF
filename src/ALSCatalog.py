@@ -14,6 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
+import random
 from pyosys import libyosys as ys
 from multiprocessing import Pool, cpu_count
 from .ALSCatalogCache import *
@@ -61,6 +62,7 @@ class ALSCatalog:
       for cell in module.selected_cells():
         if ys.IdString("\LUT") in cell.parameters:     
           luts_set.add(cell.parameters[ys.IdString("\LUT")].as_string()[::-1])
+    random.shuffle(luts_set)
     # return generate_catalog(self.__cache_file, luts_set, es_timeout)
     luts_to_be_synthesized = list_partitioning(list(luts_set), cpu_count())
     args = [ [self.__cache_file, luts, es_timeout] for luts in luts_to_be_synthesized ]
