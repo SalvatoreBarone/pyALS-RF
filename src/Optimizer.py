@@ -63,6 +63,7 @@ class Optimizer:
             print(f"# genes: {self.ngenes}")
             lower_bound = np.zeros(self.ngenes, dtype = np.uint32)
             upper_bound = np.array([53] * self.ngenes, dtype = np.uint32)
+            self.design_space = np.prod(upper_bound)
             Optimizer.MOP.__init__(self, classifier,  dataset_csv, emax)
             ElementwiseProblem.__init__(self, n_var = self.ngenes, n_obj = 2, n_constr = 1, xl = lower_bound, xu = upper_bound)
 
@@ -89,6 +90,7 @@ class Optimizer:
             lower_bound = np.zeros(self.ngenes, dtype = np.uint32)
             als_ub = classifier.get_als_genes_upper_bound()
             upper_bound = np.array(als_ub, dtype = np.uint32)
+            self.design_space = np.prod(upper_bound)
             Optimizer.MOP.__init__(self, classifier, dataset_csv, emax)
             ElementwiseProblem.__init__(self, n_var=self.ngenes, n_obj=2, n_constr=1, xl=lower_bound, xu=upper_bound)
 
@@ -121,6 +123,7 @@ class Optimizer:
             lower_bound = np.zeros(self.ngenes, dtype = np.uint32)
             als_ub = [53] * len(classifier.get_features()) + classifier.get_als_genes_upper_bound()
             upper_bound = np.array(als_ub, dtype = np.uint32)
+            self.design_space = np.prod(upper_bound)
             Optimizer.MOP.__init__(self, classifier, dataset_csv, emax)
             ElementwiseProblem.__init__(n_var = self.ngenes, n_obj = 3, n_constr = 1, xl = lower_bound, xu = upper_bound)
 
@@ -145,7 +148,13 @@ class Optimizer:
 
     def __init__(self, axtechnique, classifier, test_dataset, nsgaii_pop_size, nsgaii_iter, nsgaii_emax, nsgaii_cross_prob, nsgaii_cross_eta, nsgaii_mut_prob, nsgaii_mut_eta):
         self.__axtechnique = axtechnique
+        self.__nsgaii_pop_size = nsgaii_pop_size
+        self.__nsgaii_iter = nsgaii_iter
         self.__nsgaii_emax  = nsgaii_emax
+        self.__nsgaii_cross_prob = nsgaii_cross_prob
+        self.__nsgaii_cross_eta = nsgaii_cross_eta
+        self.__nsgaii_mut_prob = nsgaii_mut_prob
+        self.__nsgaii_mut_eta = nsgaii_mut_eta
         if axtechnique == Optimizer.AxTechnique.ALS:
             self.problem = Optimizer.ALSOnly(classifier, test_dataset, nsgaii_emax)
         elif axtechnique == Optimizer.AxTechnique.PS:
@@ -161,12 +170,18 @@ class Optimizer:
             eliminate_duplicates = True)
         self.termination = get_termination('n_gen', nsgaii_iter)
         self.result = None
-        eta_secs = 2 * nsgaii_pop_size * nsgaii_iter * self.problem.duration
-        self.__eta_hours = int(eta_secs / 3600)
-        self.__eta_min = int((eta_secs - self.__eta_hours * 3600) / 60)
 
     def optimize(self):
-        print(f"Performing NSGA-II using {cpu_count()} threads. Please wait patiently. This may take time (ETA: {self.__eta_hours} h, {self.__eta_min} min.)")
+        eta_secs = 2 * self.__nsgaii_pop_size * self.__nsgaii_iter * self.problem.duration
+        eta_hours = int(eta_secs / 3600)
+        eta_min = int((eta_secs - eta_hours * 3600) / 60)
+        print(f"Performing NSGA-II using {cpu_count()} threads. Please wait patiently. This may take quite a long time (ETA: {eta_hours} h, {eta_min} min.)")
+        print(f"Design space: {self.problem.design_space}")
+        print(f"Individuals:  {self.__nsgaii_pop_size}")
+        print(f"Pcross:       {self.__nsgaii_cross_prob} (suggested: 0.9)")
+        print(f"Ncross:       {self.__nsgaii_cross_eta}  (suggested: 1)")
+        print(f"Pmut:         {self.__nsgaii_mut_prob}   (suggested: {1/self.problem.ngenes}")
+        print(f"Nmut:         {self.__nsgaii_mut_eta}    (suggested: 1)")
         print("\nReported infos:")
         print("n_gen:         the current number of generations or iterations until this point.")
         print("n_eval:        the number of function evaluations so far.")

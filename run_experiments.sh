@@ -30,6 +30,6 @@ for pmml in $(find $directory -name '*.pmml' | sort);
 do
   rm -rf ${pmml%.*}
   mkdir -p ${pmml%.*}
-  ./edginess --ax als --catalog lut_catalog.db --lut 6 --timeout 120000 --pcross 0.8 --etac 100 --pmut 0.10 --etam 10 --emax 5 --popsize 50 --iter 51 --pmml $pmml --dataset $test_dataset_file --output ${pmml%.*}  | tee ${pmml%.*}/log.txt
+  ./edginess --ax als --catalog lut_catalog.db --lut 6 --timeout 120000 --pcross 0.9 --etac 1 --pmut 0.10 --etam 1 --emax 5 --popsize 100 --iter 51 --pmml $pmml --dataset $test_dataset_file --output ${pmml%.*}  | tee ${pmml%.*}/log.txt
 done
 
