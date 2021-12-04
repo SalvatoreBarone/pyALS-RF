@@ -14,21 +14,14 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import sqlite3
 from pyosys import libyosys as ys
+from .ALSCatalogCache import *
 from .ALSSMT import *
 
 class ALSCatalog:
   def __init__(self, file_name):
-    self.__file_name = file_name
-    self.__connection = None
-    try:
-      self.__connection = sqlite3.connect(self.__file_name)
-      self.__cursor = self.__connection.cursor()
-      self.__init_db()
-    except sqlite3.Error as e:
-      print(e)
-      exit()
+    self.__cache_file = file_name
+    self.__cache = ALSCatalogCache(self.__cache_file)
 
   """
   @brief Catalog generation procedure
@@ -84,12 +77,15 @@ class ALSCatalog:
         synt_spec, S, P, out_p, out = self.get_synthesized_lut(lut, hamming_distance, es_timeout)
         gates = len(S[0])
         lut_specifications.append({"spec": synt_spec, "gates": gates, "S": S, "P": P, "out_p": out_p, "out": out})
+
       catalog.append(lut_specifications)
       # Speculation...
+      luts_to_be_added = []
       for i in range(1, len(lut_specifications)):
-        self.__add_lut(lut_specifications[i]["spec"], 0, lut_specifications[i]["spec"], lut_specifications[i]["S"], lut_specifications[i]["P"], lut_specifications[i]["out_p"], lut_specifications[i]["out"])
+        luts_to_be_added.append((lut_specifications[i]["spec"], 0, lut_specifications[i]["spec"], lut_specifications[i]["S"], lut_specifications[i]["P"], lut_specifications[i]["out_p"], lut_specifications[i]["out"]))
         for j in range(i+1, len(lut_specifications)):
-          self.__add_lut(lut_specifications[i]["spec"], j-i, lut_specifications[j]["spec"], lut_specifications[j]["S"], lut_specifications[j]["P"], lut_specifications[j]["out_p"], lut_specifications[j]["out"])
+          luts_to_be_added.append((lut_specifications[i]["spec"], j-i, lut_specifications[j]["spec"], lut_specifications[j]["S"], lut_specifications[j]["P"], lut_specifications[j]["out_p"], lut_specifications[j]["out"]))
+      self.__cache.add_luts(luts_to_be_added)
     return catalog
 
   """
@@ -111,48 +107,16 @@ class ALSCatalog:
   to the catalog before returning it to the caller.
   """
   def get_synthesized_lut(self, lut_spec, dist, es_timeout):
-    result = self.__get_lut_at_dist(lut_spec, dist)
+    result = self.__cache.get_lut_at_dist(lut_spec, dist)
     if result is None:
       ys.log(f"Cache miss for {lut_spec}@{dist}\n")
-      ys.log(f"Performing SMT-ES for {lut_spec}@{dist}\n")
       synth_spec, S, P, out_p, out = ALSSMT(lut_spec, dist, es_timeout).synthesize()
       gates = len(S[0])
-      print(f"Done! {lut_spec}@{dist} Satisfied using {gates} gates. Synth. spec.: {synth_spec}")
-      self.__add_lut(lut_spec, dist, synth_spec, S, P, out_p, out)
+      print(f"{lut_spec}@{dist} synthesized as {synth_spec} using {gates} gates.")
+      self.__cache.add_lut(lut_spec, dist, synth_spec, S, P, out_p, out)
       return synth_spec, S, P, out_p, out
     else:
       synth_spec = result[0]
       gates = len(result[1][0])
       print(f"Cache hit for {lut_spec}@{dist}, which is implemented as {synth_spec} using {gates} gates")
       return result[0], result[1], result[2], result[3], result[4]
-
-  """ 
-  @brief Inits the database
-  """
-  def __init_db(self):
-    self.__cursor.execute("create table if not exists luts (spec text not null, distance integer not null, synth_spec text, S text, P text, out_p integer, out integer, primary key (spec, distance))")
-    self.__connection.commit()
-  
-  """
-  @brief Queries the database for a particular lut specification. 
-  """
-  def __get_lut_at_dist(self, spec, dist):
-    self.__cursor.execute(f"select synth_spec, S, P, out_p, out from luts where spec = '{spec}' and distance = {dist};")
-    result = self.__cursor.fetchone()
-    if result is not None:
-      return result[0], string_to_nested_list_int(result[1]), string_to_nested_list_int(result[2]), result[3], result[4]
-    return None
-
-  """
-  @brief Insert a synthesized LUT into the database
-  """
-  def __add_lut(self, spec, dist, synth_spec, S, P, out_p, out):
-    self.__cursor.execute(f"insert or ignore into luts (spec, distance, synth_spec, S, P, out_p, out) values ('{spec}', {dist}, '{synth_spec}', '{S}', '{P}', {out_p}, {out});")
-    self.__connection.commit()
-
-
-def string_to_nested_list_int(s):
-  if s == '[[], []]':
-    return [[], []]
-  l = [sl.strip('[]').split(',') for sl in s.split('], [')]
-  return [[int(i) for i in l[0]], [int(i) for i in l[1]]]

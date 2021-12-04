@@ -34,3 +34,9 @@ def list_partitioning(a_list, num_of_partitions):
     for item in np_split:
       list_of_list.append(list(item))
     return list_of_list
+
+def string_to_nested_list_int(s):
+  if s == '[[], []]':
+    return [[], []]
+  l = [sl.strip('[]').split(',') for sl in s.split('], [')]
+  return [[int(i) for i in l[0]], [int(i) for i in l[1]]]
