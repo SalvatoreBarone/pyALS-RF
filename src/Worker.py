@@ -50,12 +50,10 @@ class Worker:
     if self.__print_tree:
       self.__classifier.dump()
       exit()
-    print("Performing design-space exploration using NSGA-II. Please wait patiently, this may take quite a long time...")
-    optimizer = Optimizer(self.__axtechnique, self.__classifier, self.__test_dataset, self.__n_threads, self.__nsgaii_pop_size, self.__nsgaii_iter, self.__nsgaii_max_error, self.__nsgaii_cross_prob, self.__nsgaii_cross_eta, self.__nsgaii_mut_prob, self.__nsgaii_mut_eta)
+    optimizer = Optimizer(self.__axtechnique, self.__classifier, self.__test_dataset, self.__nsgaii_pop_size, self.__nsgaii_iter, self.__nsgaii_max_error, self.__nsgaii_cross_prob, self.__nsgaii_cross_eta, self.__nsgaii_mut_prob, self.__nsgaii_mut_eta)
     optimizer.optimize()
     optimizer.plot_pareto(self.__pareto_view)
     optimizer.get_report(self.__report_file)
-    print("Performing HDL code generation using the embedded coder.")
     self.__classifier.generate_implementations(self.__output_dir)
     if (self.__axtechnique == Optimizer.AxTechnique.ALS):
       self.__classifier.generate_asl_ax_implementations(self.__output_dir, optimizer.get_individuals())
@@ -72,7 +70,6 @@ class Worker:
     parser.add_argument("--dump", help="Dump the model", action="store_true")
     parser.add_argument("--dataset", type = str, help="specify the file name for the input dataset", default = "dataset.txt")
     parser.add_argument("--output", type = str, help="Output directory. Everything will be placed there.", default = "output/")
-    parser.add_argument("--threads", type = int, help="specify the amount of parallel worker threads.", default = cpu_count())
     parser.add_argument("--popsize", type = int, help="NSGA-II population size.", default = 500)
     parser.add_argument("--iter", type = int, help="NSGA-II termination criteria, in terms of iterations.", default = 1)
     parser.add_argument("--emax", type=float, help="Maximum-error constraint.", default = 5.0)
@@ -98,7 +95,6 @@ class Worker:
     self.__pmml_file = args.pmml
     self.__test_dataset = args.dataset
     self.__print_tree = args.dump
-    self.__n_threads = int(args.threads)
     self.__nsgaii_pop_size = int(args.popsize)
     self.__nsgaii_iter = int(args.iter)
     self.__nsgaii_max_error = float(args.emax)
@@ -115,7 +111,6 @@ class Worker:
     print("PMML file:          ", self.__pmml_file)
     print("Test dataset:       ", self.__test_dataset)
     print("Dump:               ", self.__print_tree)
-    print("Parallel workers:   ", self.__n_threads)
     print("NSGA-II pop.size:   ", self.__nsgaii_pop_size)
     print("NSGA-II iterations: ", self.__nsgaii_iter)
     print("NSGA-II max. error: ", self.__nsgaii_max_error)
