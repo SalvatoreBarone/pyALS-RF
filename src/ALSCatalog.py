@@ -62,9 +62,11 @@ class ALSCatalog:
       for cell in module.selected_cells():
         if ys.IdString("\LUT") in cell.parameters:     
           luts_set.add(cell.parameters[ys.IdString("\LUT")].as_string()[::-1])
-    random.shuffle(luts_set)
+
     # return generate_catalog(self.__cache_file, luts_set, es_timeout)
-    luts_to_be_synthesized = list_partitioning(list(luts_set), cpu_count())
+    luts_set = list(luts_set)
+    random.shuffle(luts_set)
+    luts_to_be_synthesized = list_partitioning(luts_set, cpu_count())
     args = [ [self.__cache_file, luts, es_timeout] for luts in luts_to_be_synthesized ]
     print(f"Performing catalog generation using {cpu_count()} threads. Please wait patiently. This may take time.")
     with Pool(cpu_count()) as pool:
