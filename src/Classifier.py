@@ -21,7 +21,8 @@ from anytree import Node
 from jinja2 import Environment, FileSystemLoader
 from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
-from .DecisionTree import DecisionTree
+from .DecisionTree import *
+from .FirstStepOptimizer import *
 
 """
 @brief Decision-tree based Multiple Classifier System, implemented in python.
@@ -121,11 +122,13 @@ class Classifier:
     for t in self.__trees_list_obj:
       t.dump()
 
-  def get_classes(self):
-    return self.__model_classes_list_str
+  def reset_nabs_configuration(self):
+    nabs = [{"name" : f["name"], "nab" : 0} for f in self.__model_features_list_dict ]
+    self.set_nabs(nabs)
 
-  def get_features(self):
-    return self.__model_features_list_dict
+  def reset_assertion_configuration(self):
+    for t in self.__trees_list_obj:
+      t.reset_assertion_configuration()
 
   """
   @brief Allows to set the number of approximate bits for each of the decision boxes belonging to each of the trees.
@@ -146,9 +149,22 @@ class Classifier:
     for tree in self.__trees_list_obj:
       tree.set_nabs(nabs)
 
-  def reset_nabs_configuration(self):
-    nabs = [{"name" : f["name"], "nab" : 0} for f in self.__model_features_list_dict ]
-    self.set_nabs(nabs)
+  def set_assertions_configuration(self, configurations):
+    for t, c in zip(self.__trees_list_obj, configurations):
+      t.set_assertions_configuration(c)
+
+  def set_first_stage_approximate_implementations(self, configuration):
+    for t, c in zip (self.__trees_list_obj, configuration):
+      t.set_first_stage_approximate_implementations(c)
+
+  def get_classes(self):
+    return self.__model_classes_list_str
+
+  def get_features(self):
+    return self.__model_features_list_dict
+
+  def get_num_of_trees(self):
+    return len(self.__trees_list_obj)
 
   def get_total_bits(self):
     return sum([ t.get_total_bits() for t in self.__trees_list_obj ])
@@ -167,14 +183,6 @@ class Classifier:
        all_entries_available.append( [ len (e) - 1 for c in cells for e in catalog if e[0]["spec"] == c["spec"] ] )
     return [ e for te in all_entries_available for e in te ]
 
-  def reset_assertion_configuration(self):
-    for t in self.__trees_list_obj:
-      t.reset_assertion_configuration()
-
-  def set_assertions_configuration(self, configurations):
-    for t, c in zip(self.__trees_list_obj, configurations):
-      t.set_assertions_configuration(c)
-
   def get_assertions_configuration(self):
     return [ t.get_assertions_configuration() for t in self.__trees_list_obj]
 
@@ -184,11 +192,23 @@ class Classifier:
   def get_current_required_aig_nodes(self):
     return [ t.get_current_required_aig_nodes() for t in self.__trees_list_obj ]
 
+  def get_num_of_first_stage_approximate_implementations(self):
+    return [ len(t.get_first_stage_approximate_implementations()) - 1 for t in self.__trees_list_obj ]
+
   def get_struct(self):
     struct = []
     for tree in self.__trees_list_obj:
       struct.append(tree.get_struct())
     return struct
+
+  def generate_first_step_ax_assertions(self, dataset, output_dir, nsgaii_config):
+    samples = self.preload_dataset(dataset)
+    for t in self.__trees_list_obj:
+      optimizer = FirsStageOptimizer(t, samples, nsgaii_config)
+      optimizer.optimize()
+      optimizer.plot_pareto(output_dir + "/" + t.get_name() + "_pareto_front.pdf")
+      optimizer.get_report(output_dir + "/" + t.get_name() + "_report.csv")
+      t.store_first_stage_approximate_implementations(optimizer.get_individuals())
       
   def preload_dataset(self, csv_file):
     samples = []
@@ -225,7 +245,7 @@ class Classifier:
     samples = self.preload_dataset(csv_file)
     return self.evaluate_preloaded_dataset(samples) / len(samples)
 
-  def generate_implementations(self, destination):
+  def generate_hdl_exact_implementations(self, destination):
     features = [ {"name": f["name"], "nab": 0} for f in self.__model_features_list_dict ]
     mkpath(destination)
     ax_dest = destination + "/exact/"
@@ -267,10 +287,10 @@ class Classifier:
     copy_file(self.__source_dir + self.__run_synth_file, ax_dest)
     copy_file(self.__source_dir + self.__run_sim_file, ax_dest)
     for tree in self.__trees_list_obj:
-      tree.generate_tree_vhd(ax_dest)
-      tree.generate_assertions_vhd(ax_dest)
+      tree.generate_hdl_tree(ax_dest)
+      tree.generate_hdl_exact_assertions(ax_dest)
 
-  def generate_ps_ax_implementations(self, destination, configurations):
+  def generate_hdl_ps_ax_implementations(self, destination, configurations):
     mkpath(destination)
     mkpath(destination + "/ax")
     copy_file(self.__source_dir + self.__run_all_file, destination)
@@ -315,10 +335,10 @@ class Classifier:
       copy_file(self.__source_dir + self.__run_synth_file, ax_dest)
       copy_file(self.__source_dir + self.__run_sim_file, ax_dest)
       for tree in self.__trees_list_obj:
-        tree.generate_tree_vhd(ax_dest)
-        tree.generate_assertions_vhd(ax_dest)
+        tree.generate_hdl_tree(ax_dest)
+        tree.generate_hdl_exact_assertions(ax_dest)
 
-  def generate_asl_ax_implementations(self, destination, configurations):
+  def generate_hdl_onestep_asl_ax_implementations(self, destination, configurations):
     features = [ {"name": f["name"], "nab": 0} for f in self.__model_features_list_dict]
     mkpath(destination)
     mkpath(destination + "/ax")
@@ -368,11 +388,60 @@ class Classifier:
         chunks.append([conf[i+count] for i in range(size)])
         count += size
       for t, c in zip(self.__trees_list_obj, chunks):
-        t.generate_tree_vhd(ax_dest)
+        t.generate_hdl_tree(ax_dest)
         t.set_assertions_configuration(c)
-        t.generate_ax_assertions_v(ax_dest)
+        t.generate_hdl_als_ax_assertions(ax_dest)
 
-  def generate_full_ax_implementations(self, destination, configurations):
+  def generate_hdl_twostep_asl_ax_implementations(self, destination, configurations):
+    features = [{"name": f["name"], "nab": 0} for f in self.__model_features_list_dict]
+    mkpath(destination)
+    mkpath(destination + "/ax")
+    copy_file(self.__source_dir + self.__run_all_file, destination)
+    copy_file(self.__source_dir + self.__extract_luts_file, destination)
+    copy_file(self.__source_dir + self.__extract_pwr_file, destination)
+    trees_name = [t.get_name() for t in self.__trees_list_obj]
+    file_loader = FileSystemLoader(self.__source_dir)
+    env = Environment(loader=file_loader)
+    tcl_template = env.get_template(self.__tcl_project_file)
+    classifier_template = env.get_template(self.__vhdl_classifier_template_file)
+    tb_classifier_template = env.get_template(self.__vhdl_tb_classifier_template_file)
+    classifier = classifier_template.render(
+      trees=trees_name,
+      features=features,
+      classes=self.__model_classes_list_str)
+    tb_classifier = tb_classifier_template.render(
+      features=features,
+      classes=self.__model_classes_list_str)
+    tcl_file = tcl_template.render(
+      assertions_blocks=[{"file_name": "assertions_block_" + n + ".v", "language": "Verilog"} for n in trees_name],
+      decision_trees=[{"file_name": "decision_tree_" + n + ".vhd", "language": "VHDL"} for n in trees_name])
+    for conf, i in zip(configurations, range(len(configurations))):
+      ax_dest = destination + "/ax/configuration_" + str(i)
+      mkpath(ax_dest)
+      out_file = open(ax_dest + "/classifier.vhd", "w")
+      out_file.write(classifier)
+      out_file.close()
+      out_file = open(ax_dest + "/tb_classifier.vhd", "w")
+      out_file.write(tb_classifier)
+      out_file.close()
+      out_file = open(ax_dest + "/create_project.tcl", "w")
+      out_file.write(tcl_file)
+      out_file.close()
+      copy_file(self.__source_dir + self.__vhdl_bnf_source, ax_dest)
+      copy_file(self.__source_dir + self.__vhdl_reg_source, ax_dest)
+      copy_file(self.__source_dir + self.__vhdl_decision_box_source, ax_dest)
+      copy_file(self.__source_dir + self.__vhdl_voter_source, ax_dest)
+      copy_file(self.__source_dir + self.__vhdl_debugfunc_source, ax_dest)
+      copy_file(self.__source_dir + self.__tcl_sim_file, ax_dest)
+      copy_file(self.__source_dir + self.__constraint_file, ax_dest)
+      copy_file(self.__source_dir + self.__run_synth_file, ax_dest)
+      copy_file(self.__source_dir + self.__run_sim_file, ax_dest)
+      for t, c in zip(self.__trees_list_obj, conf):
+        t.generate_hdl_tree(ax_dest)
+        t.set_first_stage_approximate_implementations(c)
+        t.generate_hdl_als_ax_assertions(ax_dest)
+
+  def generate_hdl_onestep_full_ax_implementations(self, destination, configurations):
     mkpath(destination)
     mkpath(destination + "/ax")
     copy_file(self.__source_dir + self.__run_all_file, destination)
@@ -424,9 +493,60 @@ class Classifier:
         chunks.append([conf[i+count+len(self.__model_features_list_dict)] for i in range(size)])
         count += size
       for t, c in zip(self.__trees_list_obj, chunks):
-        t.generate_tree_vhd(ax_dest)
+        t.generate_hdl_tree(ax_dest)
         t.set_assertions_configuration(c)
-        t.generate_ax_assertions_v(ax_dest)
+        t.generate_hdl_als_ax_assertions(ax_dest)
+
+  def generate_hdl_twostep_full_ax_implementations(self, destination, configurations):
+    mkpath(destination)
+    mkpath(destination + "/ax")
+    copy_file(self.__source_dir + self.__run_all_file, destination)
+    copy_file(self.__source_dir + self.__extract_luts_file, destination)
+    copy_file(self.__source_dir + self.__extract_pwr_file, destination)
+    trees_name = [ t.get_name() for t in self.__trees_list_obj ]
+    file_loader = FileSystemLoader(self.__source_dir)
+    env = Environment(loader=file_loader)
+    classifier_template = env.get_template(self.__vhdl_classifier_template_file)
+    tb_classifier_template = env.get_template(self.__vhdl_tb_classifier_template_file)
+    tcl_template = env.get_template(self.__tcl_project_file)
+    tcl_file = tcl_template.render(
+      assertions_blocks=[{"file_name": "assertions_block_" + n + ".v", "language": "Verilog"} for n in trees_name],
+      decision_trees=[{"file_name": "decision_tree_" + n + ".vhd", "language": "VHDL"} for n in trees_name])
+    for conf, i in zip(configurations, range(len(configurations))):
+      features = [ {"name": f["name"], "nab": n} for f, n in zip(self.__model_features_list_dict, conf[:len(self.__model_features_list_dict)]) ]
+      ax_dest = destination + "/ax/configuration_" + str(i)
+      mkpath(ax_dest)
+      classifier = classifier_template.render(
+        trees = trees_name,
+        features  = features,
+        classes = self.__model_classes_list_str)
+      out_file = open(ax_dest + "/classifier.vhd", "w")
+      out_file.write(classifier)
+      out_file.close()
+
+      tb_classifier = tb_classifier_template.render(
+        trees=trees_name,
+        features=features,
+        classes=self.__model_classes_list_str)
+      out_file = open(ax_dest + "/tb_classifier.vhd", "w")
+      out_file.write(tb_classifier)
+      out_file.close()
+      out_file = open(ax_dest + "/create_project.tcl", "w")
+      out_file.write(tcl_file)
+      out_file.close()
+      copy_file(self.__source_dir + self.__vhdl_bnf_source, ax_dest)
+      copy_file(self.__source_dir + self.__vhdl_reg_source, ax_dest)
+      copy_file(self.__source_dir + self.__vhdl_decision_box_source, ax_dest)
+      copy_file(self.__source_dir + self.__vhdl_voter_source, ax_dest)
+      copy_file(self.__source_dir + self.__vhdl_debugfunc_source, ax_dest)
+      copy_file(self.__source_dir + self.__tcl_sim_file, ax_dest)
+      copy_file(self.__source_dir + self.__constraint_file, ax_dest)
+      copy_file(self.__source_dir + self.__run_synth_file, ax_dest)
+      copy_file(self.__source_dir + self.__run_sim_file, ax_dest)
+      for t, c in zip(self.__trees_list_obj, conf):
+        t.generate_hdl_tree(ax_dest)
+        t.set_assertions_configuration(c + len(self.__model_features_list_dict))
+        t.generate_hdl_als_ax_assertions(ax_dest)
 
   def __evaluate(self, features):
     classes_score = [ {"name" : c, "score" : 0} for c in self.__model_classes_list_str ]

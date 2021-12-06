@@ -36,6 +36,7 @@ class DecisionTree:
     self.__decision_boxes = []
     self.__assertions = []
     self.__als_conf = als_conf
+    self.__first_stage_approximate_implementations = None
     if root_node:
       self.__get_decision_boxes(root_node)
       self.__get_assertions(root_node)
@@ -62,10 +63,17 @@ class DecisionTree:
     tree.__als_conf = copy.deepcopy(self.__als_conf)
     tree.__assertions_catalog_entries = copy.deepcopy(self.__assertions_catalog_entries)
     tree.__current_configuration = copy.deepcopy(self.__current_configuration)
+    tree.__first_stage_approximate_implementations = copy.deepcopy(self.__first_stage_approximate_implementations)
     return tree
     
   def get_name(self):
     return self.__name
+
+  def get_model_classes(self):
+    return self.__model_classes
+
+  def get_model_features(self):
+    return self.__model_features
   
   def get_decision_boxes(self):
     return self.__decision_boxes
@@ -78,6 +86,30 @@ class DecisionTree:
 
   def get_catalog_for_assertions(self):
     return self.__assertions_catalog_entries
+
+  def get_total_bits(self):
+    return 64 * len(self.__decision_boxes)
+
+  def get_total_nabs(self):
+    return sum([ box["box"].get_nab() for box in self.__decision_boxes ])
+
+  def get_total_retained(self):
+    return 64 * len(self.__decision_boxes) - self.get_total_nabs()
+
+  def get_assertions_configuration(self):
+    return self.__current_configuration
+
+  def get_first_stage_approximate_implementations(self):
+    return self.__first_stage_approximate_implementations
+
+  def get_assertions_distance(self):
+    return [ c["dist"] for c in self.__current_configuration ]
+
+  def get_current_required_aig_nodes(self):
+    return sum([ c["gates"] for c in self.__current_configuration ])
+
+  def reset_assertion_configuration(self):
+    self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
 
   """
   @brief Allows to set the number of approximate bits for each of the decision boxes belonging to the tree.
@@ -98,17 +130,8 @@ class DecisionTree:
     for box in self.__decision_boxes:
       box["box"].set_nab(next(item for item in nabs if item["name"] == box["box"].get_feature())["nab"])
 
-  def get_total_bits(self):
-    return 64 * len(self.__decision_boxes)
-
-  def get_total_nabs(self):
-    return sum([ box["box"].get_nab() for box in self.__decision_boxes ])
-
-  def get_total_retained(self):
-    return 64 * len(self.__decision_boxes) - self.get_total_nabs()
-
-  def reset_assertion_configuration(self):
-    self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
+  def store_first_stage_approximate_implementations(self, configurations):
+    self.__first_stage_approximate_implementations = configurations
 
   """
   @brief Set the current approximate configurations for the assertion block
@@ -121,14 +144,8 @@ class DecisionTree:
   def set_assertions_configuration(self, configuration):
     self.__current_configuration = [ {"name" : l["name"], "dist": c, "spec" : e[0]["spec"], "axspec" : e[c]["spec"], "gates" : e[c]["gates"], "S" : e[c]["S"], "P" : e[c]["P"], "out_p": e[c]["out_p"], "out" : e[c]["out"] } for c, l in zip(configuration, self.__assertions_graph.get_cells()) for e in self.__assertions_catalog_entries if e[0]["spec"] == l["spec"] ]
 
-  def get_assertions_configuration(self):
-    return self.__current_configuration
-
-  def get_assertions_distance(self):
-    return [ c["dist"] for c in self.__current_configuration ]
-
-  def get_current_required_aig_nodes(self):
-    return sum([ c["gates"] for c in self.__current_configuration ])
+  def set_first_stage_approximate_implementations(self, configuration):
+    self.set_assertions_configuration(self.__first_stage_approximate_implementations[configuration])
 
   def dump(self):
     print("\tName: ", self.__name)
@@ -164,11 +181,12 @@ class DecisionTree:
     for box in self.__decision_boxes:
       value = next(item for item in features_value if item["name"] == box["box"].get_feature())["value"]
       boxes_output.append({"name" : box["box"].get_name(), "value" : box["box"].compare(value)})
+    # TODO se la tecnica non è als, non usare il grafo per la valutazione della funzione asserzione, ma usa la valutazione della funziona booleana direttamente
     output = self.__assertions_graph.evaluate(boxes_output, self.__current_configuration)
     for c in classes_score:
       c["score"] += 1 if next((sub for sub in output if sub['name'] == c["name"]), None)["value"]  else 0
 
-  def generate_tree_vhd(self, destination):
+  def generate_hdl_tree(self, destination):
     file_name = destination + "/decision_tree_" + self.__name + ".vhd"
     file_loader = FileSystemLoader(self.__source_dir)
     env = Environment(loader=file_loader)
@@ -183,7 +201,7 @@ class DecisionTree:
     out_file.close()
     return file_name
 
-  def generate_assertions_vhd(self, destination):
+  def generate_hdl_exact_assertions(self, destination):
     module_name = "assertions_block_" + self.__name 
     file_name = destination + "/assertions_block_" + self.__name + ".vhd"
     file_loader = FileSystemLoader(self.__source_dir)
@@ -199,7 +217,7 @@ class DecisionTree:
     out_file.close()
     return file_name, module_name
 
-  def generate_ax_assertions_v(self, destination):
+  def generate_hdl_als_ax_assertions(self, destination):
     design = ys.Design()
     ys.run_pass(f"design -load {self.__name}", design)
     for module in design.selected_whole_modules_warn():
@@ -299,7 +317,7 @@ class DecisionTree:
     destination = "/tmp/EDGINESS/"
     mkpath(destination)
     mkpath(destination + "/vhd")
-    file_name, module_name = self.generate_assertions_vhd(destination)
+    file_name, module_name = self.generate_hdl_exact_assertions(destination)
     design = ys.Design()
     ys.run_pass("design -reset", design)
     ys.run_pass("ghdl {} {} -e {}".format(self.__source_dir + self.__bnf_vhd, file_name, module_name), design)
