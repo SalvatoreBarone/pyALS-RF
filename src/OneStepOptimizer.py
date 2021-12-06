@@ -15,7 +15,6 @@ RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import time
-
 from multiprocessing import cpu_count, Pool
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.algorithms.moo.nsga2 import NSGA2
@@ -26,7 +25,7 @@ from .Configs import *
 from .Classifier import *
 from .Utility import *
 
-class Optimizer:
+class OneStepOptimizer:
     class MOP:
         def __init__(self, classifier, dataset_csv, emax):
             self.emax = emax
@@ -60,7 +59,7 @@ class Optimizer:
             lower_bound = np.zeros(self.ngenes, dtype = np.uint32)
             upper_bound = np.array([53] * self.ngenes, dtype = np.uint32)
             self.design_space = np.prod(upper_bound)
-            Optimizer.MOP.__init__(self, classifier,  dataset_csv, emax)
+            OneStepOptimizer.MOP.__init__(self, classifier, dataset_csv, emax)
             ElementwiseProblem.__init__(self, n_var = self.ngenes, n_obj = 2, n_constr = 1, xl = lower_bound, xu = upper_bound)
 
         def __genotype_to_phenotype(self, X):
@@ -87,7 +86,7 @@ class Optimizer:
             als_ub = classifier.get_als_genes_upper_bound()
             upper_bound = np.array(als_ub, dtype = np.uint32)
             self.design_space = np.prod(upper_bound)
-            Optimizer.MOP.__init__(self, classifier, dataset_csv, emax)
+            OneStepOptimizer.MOP.__init__(self, classifier, dataset_csv, emax)
             ElementwiseProblem.__init__(self, n_var=self.ngenes, n_obj=2, n_constr=1, xl=lower_bound, xu=upper_bound)
 
         def __genotype_to_phenotype(self, X):
@@ -120,7 +119,7 @@ class Optimizer:
             als_ub = [53] * len(classifier.get_features()) + classifier.get_als_genes_upper_bound()
             upper_bound = np.array(als_ub, dtype = np.uint32)
             self.design_space = np.prod(upper_bound)
-            Optimizer.MOP.__init__(self, classifier, dataset_csv, emax)
+            OneStepOptimizer.MOP.__init__(self, classifier, dataset_csv, emax)
             ElementwiseProblem.__init__(n_var = self.ngenes, n_obj = 3, n_constr = 1, xl = lower_bound, xu = upper_bound)
 
         def __genotype_to_phenotype(self, X):
@@ -146,11 +145,11 @@ class Optimizer:
         self.__axtechnique = axtechnique
         self.__nsgaii_emax = nsgaii_conf.max_error
         if axtechnique == AxConfig.Technique.ALS:
-            self.problem = Optimizer.ALSOnly(classifier, test_dataset, nsgaii_conf.max_error)
+            self.problem = OneStepOptimizer.ALSOnly(classifier, test_dataset, nsgaii_conf.max_error)
         elif axtechnique == AxConfig.Technique.PS:
-            self.problem = Optimizer.PSOnly(classifier, test_dataset, nsgaii_conf.max_error)
+            self.problem = OneStepOptimizer.PSOnly(classifier, test_dataset, nsgaii_conf.max_error)
         elif axtechnique == AxConfig.Technique.FULL:
-            self.problem = Optimizer.Full(classifier, test_dataset, nsgaii_conf.max_error)
+            self.problem = OneStepOptimizer.Full(classifier, test_dataset, nsgaii_conf.max_error)
         self.algorithm = NSGA2(
             pop_size = nsgaii_conf.pop_size,
             n_offsprings = None,
@@ -172,11 +171,7 @@ class Optimizer:
         print("n_nds:         the number of non-dominated solutions of the optima found.")
         print("cv (min/avg):  minimum/average constraint violation in the current population")
         print("eps/indicator: the change of the convergence indicator (ideal, nadir, f) over the last few generations.")
-        start_time = time.time()
         self.result = minimize(self.problem, self.algorithm, self.termination, verbose = True)
-        duration = time.time() - start_time
-        print(f"Took {duration} sec.")
-        return duration
 
     def print_pareto(self):
         if self.__axtechnique == AxConfig.Technique.ALS:
@@ -195,7 +190,7 @@ class Optimizer:
             # TODO: implementa con subfigure
             pass
         else:
-            F = self.result.pop.get("F")
+            F = self.result.F
             plt.figure(figsize=(10, 10), dpi=300)
             plt.plot(F[:,0], F[:,1], 'k.')
             plt.axvline(x = self.__nsgaii_emax, c = 'r')
@@ -211,7 +206,7 @@ class Optimizer:
 
     def get_report(self, report_file):
         original_stdout = sys.stdout
-        row_format = "{:};" * (len(self.result.pop.get("F")[0])) + "{:};" * (len(self.result.pop.get("X")[0]))
+        row_format = "{:};" * (len(self.result.F[0])) + "{:};" * (len(self.result.X[0]))
         with open(report_file, "w") as file:
             sys.stdout = file
             if self.__axtechnique == AxConfig.Technique.ALS:
@@ -221,12 +216,12 @@ class Optimizer:
             elif self.__axtechnique == AxConfig.Technique.FULL:
                 print(f"Baseline accuracy: {self.problem.baseline_accuracy}, #gates {self.problem.total_gates}, #bits {self.problem.total_bits}")
             print("Final population:\nError;Cost;Chromosome")
-            for fitness, chromosome in zip(self.result.pop.get("F"), self.result.pop.get("X")):
+            for fitness, chromosome in zip(self.result.F, self.result.X):
                 print(row_format.format(*fitness, *chromosome))
         sys.stdout = original_stdout
 
     def get_individuals(self):
-        return self.result.pop.get("X")
+        return self.result.X
 
     def get_elapsed_time(self):
         return self.result.exec_time

@@ -47,20 +47,25 @@ class Worker:
       self.__classifier.dump()
       exit()
 
-    if self.__ax_conf.strategy == AxConfig.Strategy.ONE_STEP:
+    self.__classifier.generate_implementations(self.__output_dir)
+    if (self.__ax_conf.technique == AxConfig.Technique.PS):
       optimizer = Optimizer(self.__ax_conf.technique, self.__classifier, self.__test_dataset, self.__final_opt_conf)
       optimizer.optimize()
       optimizer.plot_pareto(self.__output_dir + self.__pareto_view)
       optimizer.get_report(self.__output_dir + self.__report_file)
-      self.__classifier.generate_implementations(self.__output_dir)
-      if (self.__ax_conf.technique == AxConfig.Technique.ALS):
-        self.__classifier.generate_asl_ax_implementations(self.__output_dir, optimizer.get_individuals())
-      elif(self.__ax_conf.technique == AxConfig.Technique.PS):
-        self.__classifier.generate_ps_ax_implementations(self.__output_dir, optimizer.get_individuals())
-      elif(self.__ax_conf.technique == AxConfig.Technique.FULL):
-        self.__classifier.generate_full_ax_implementations(self.__output_dir, optimizer.get_individuals())
+      self.__classifier.generate_ps_ax_implementations(self.__output_dir, optimizer.get_individuals())
     else:
-      pass
+      if self.__ax_conf.strategy == AxConfig.Strategy.ONE_STEP:
+        optimizer = Optimizer(self.__ax_conf.technique, self.__classifier, self.__test_dataset, self.__final_opt_conf)
+        optimizer.optimize()
+        optimizer.plot_pareto(self.__output_dir + self.__pareto_view)
+        optimizer.get_report(self.__output_dir + self.__report_file)
+        if (self.__ax_conf.technique == AxConfig.Technique.ALS):
+          self.__classifier.generate_asl_ax_implementations(self.__output_dir, optimizer.get_individuals())
+        elif(self.__ax_conf.technique == AxConfig.Technique.FULL):
+          self.__classifier.generate_full_ax_implementations(self.__output_dir, optimizer.get_individuals())
+      else:
+        pass
 
     print("All done! Take a look at the ", self.__output_dir, " directory.")
 
