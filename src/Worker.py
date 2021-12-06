@@ -102,7 +102,7 @@ class Worker:
     self.__als_conf = ALSConfig(
       config["als"]["luttech"] if "luttech" in config["als"] else "6",
       config["als"]["catalog"] if "catalog" in config["als"] else "lut_catalog.db",
-      config["als"]["timeout"] if "timeout" in config["als"] else 60000,)
+      int(config["als"]["timeout"]) if "timeout" in config["als"] else 60000,)
 
     self.__final_opt_conf = NSGAConfig(
       int(config["final-optimization"]["population_size"]) if "population_size" in config["final-optimization"] else 0,
