@@ -131,5 +131,5 @@ def get_synthesized_lut(cache_file_name, lut_spec, dist, es_timeout):
   else:
     synth_spec = result[0]
     gates = len(result[1][0])
-    print(f"Cache hit for {lut_spec}@{dist}, which is implemented as {synth_spec} using {gates} gates")
+    #print(f"Cache hit for {lut_spec}@{dist}, which is implemented as {synth_spec} using {gates} gates")
     return result[0], result[1], result[2], result[3], result[4]

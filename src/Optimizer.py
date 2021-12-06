@@ -15,22 +15,18 @@ RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import time
-from enum import Enum
+
 from multiprocessing import cpu_count, Pool
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.factory import get_sampling, get_crossover, get_mutation, get_termination
 from pymoo.optimize import minimize
 import matplotlib.pyplot as plt
+from .Configs import *
 from .Classifier import *
 from .Utility import *
 
 class Optimizer:
-    class AxTechnique(Enum):
-        ALS = 1,
-        PS = 2,
-        FULL = 3
-
     class MOP:
         def __init__(self, classifier, dataset_csv, emax):
             self.emax = emax
@@ -146,42 +142,30 @@ class Optimizer:
             out["F"] = [err, bits, gates]
             out["G"] = err - self.emax
 
-    def __init__(self, axtechnique, classifier, test_dataset, nsgaii_pop_size, nsgaii_iter, nsgaii_emax, nsgaii_cross_prob, nsgaii_cross_eta, nsgaii_mut_prob, nsgaii_mut_eta):
+    def __init__(self, axtechnique, classifier, test_dataset, nsgaii_conf):
         self.__axtechnique = axtechnique
-        self.__nsgaii_pop_size = nsgaii_pop_size
-        self.__nsgaii_iter = nsgaii_iter
-        self.__nsgaii_emax  = nsgaii_emax
-        self.__nsgaii_cross_prob = nsgaii_cross_prob
-        self.__nsgaii_cross_eta = nsgaii_cross_eta
-        self.__nsgaii_mut_prob = nsgaii_mut_prob
-        self.__nsgaii_mut_eta = nsgaii_mut_eta
-        if axtechnique == Optimizer.AxTechnique.ALS:
-            self.problem = Optimizer.ALSOnly(classifier, test_dataset, nsgaii_emax)
-        elif axtechnique == Optimizer.AxTechnique.PS:
-            self.problem = Optimizer.PSOnly(classifier, test_dataset, nsgaii_emax)
-        elif axtechnique == Optimizer.AxTechnique.FULL:
-            self.problem = Optimizer.Full(classifier, test_dataset, nsgaii_emax)
+        self.__nsgaii_emax = nsgaii_conf.max_error
+        if axtechnique == AxConfig.Technique.ALS:
+            self.problem = Optimizer.ALSOnly(classifier, test_dataset, nsgaii_conf.max_error)
+        elif axtechnique == AxConfig.Technique.PS:
+            self.problem = Optimizer.PSOnly(classifier, test_dataset, nsgaii_conf.max_error)
+        elif axtechnique == AxConfig.Technique.FULL:
+            self.problem = Optimizer.Full(classifier, test_dataset, nsgaii_conf.max_error)
         self.algorithm = NSGA2(
-            pop_size = nsgaii_pop_size,
+            pop_size = nsgaii_conf.pop_size,
             n_offsprings = None,
             sampling = get_sampling("int_random"),
-            crossover = get_crossover("int_sbx", prob = nsgaii_cross_prob, eta = nsgaii_cross_eta),
-            mutation = get_mutation("int_pm", prob = nsgaii_mut_prob, eta = nsgaii_mut_eta),
+            crossover = get_crossover("int_sbx", prob = nsgaii_conf.cross_p, eta = nsgaii_conf.cross_eta),
+            mutation = get_mutation("int_pm", prob = nsgaii_conf.mut_p, eta = nsgaii_conf.mut_eta),
             eliminate_duplicates = True)
-        self.termination = get_termination('n_gen', nsgaii_iter)
+        self.termination = get_termination('n_gen', nsgaii_conf.iterations)
         self.result = None
+        eta_secs = 2 * nsgaii_conf.pop_size * nsgaii_conf.iterations * self.problem.duration
+        self.__eta_hours = int(eta_secs / 3600)
+        self.__eta_min = int((eta_secs - self.__eta_hours * 3600) / 60)
 
     def optimize(self):
-        eta_secs = 2 * self.__nsgaii_pop_size * self.__nsgaii_iter * self.problem.duration
-        eta_hours = int(eta_secs / 3600)
-        eta_min = int((eta_secs - eta_hours * 3600) / 60)
-        print(f"Performing NSGA-II using {cpu_count()} threads. Please wait patiently. This may take quite a long time (ETA: {eta_hours} h, {eta_min} min.)")
-        print(f"Design space: {self.problem.design_space}")
-        print(f"Individuals:  {self.__nsgaii_pop_size}")
-        print(f"Pcross:       {self.__nsgaii_cross_prob} (suggested: 0.9)")
-        print(f"Ncross:       {self.__nsgaii_cross_eta}  (suggested: 1)")
-        print(f"Pmut:         {self.__nsgaii_mut_prob}   (suggested: {1/self.problem.ngenes}")
-        print(f"Nmut:         {self.__nsgaii_mut_eta}    (suggested: 1)")
+        print(f"Performing NSGA-II using {cpu_count()} threads. Please wait patiently. This may take quite a long time (ETA: {self.__eta_hours} h, {self.__eta_min} min.)")
         print("\nReported infos:")
         print("n_gen:         the current number of generations or iterations until this point.")
         print("n_eval:        the number of function evaluations so far.")
@@ -195,11 +179,11 @@ class Optimizer:
         return duration
 
     def print_pareto(self):
-        if self.__axtechnique == Optimizer.AxTechnique.ALS:
+        if self.__axtechnique == AxConfig.Technique.ALS:
             print(f"Baseline accuracy: {self.problem.baseline_accuracy}, #gates {self.problem.total_gates}")
-        elif self.__axtechnique == Optimizer.AxTechnique.PS:
+        elif self.__axtechnique == AxConfig.Technique.PS:
             print(f"Baseline accuracy: {self.problem.baseline_accuracy}, #bits {self.problem.total_bits}")
-        elif self.__axtechnique == Optimizer.AxTechnique.FULL:
+        elif self.__axtechnique == AxConfig.Technique.FULL:
             print(f"Baseline accuracy: {self.problem.baseline_accuracy}, #gates {self.problem.total_gates}, #bits {self.problem.total_bits}")
         row_format = "{:<16}" * (len(self.result.pop.get("F")[0])) + "{:>4}" * (len(self.result.pop.get("X")[0]))
         print("Final population:\nError     Cost        Chromosome")
@@ -207,7 +191,7 @@ class Optimizer:
             print(row_format.format(*fitness, *chromosome))
 
     def plot_pareto(self, pdf_file):
-        if self.__axtechnique == Optimizer.AxTechnique.FULL:
+        if self.__axtechnique == AxConfig.Technique.FULL:
             # TODO: implementa con subfigure
             pass
         else:
@@ -222,7 +206,7 @@ class Optimizer:
             plt.xlim([ x_min, x_max ])
             plt.xticks(list(range(x_min, x_max, 10)) + [self.__nsgaii_emax], list(range(x_min, x_max, 10)) + [plt.Text(0, 0, "$e_{max}$")])
             plt.xlabel("Classification-accuracy loss (%)")
-            plt.ylabel("# of AIG gates" if self.__axtechnique == Optimizer.AxTechnique.ALS else "# of retained bits" )
+            plt.ylabel("# of AIG gates" if self.__axtechnique == AxConfig.Technique.ALS else "# of retained bits" )
             plt.savefig(pdf_file, bbox_inches='tight', pad_inches=0)
 
     def get_report(self, report_file):
@@ -230,11 +214,11 @@ class Optimizer:
         row_format = "{:};" * (len(self.result.pop.get("F")[0])) + "{:};" * (len(self.result.pop.get("X")[0]))
         with open(report_file, "w") as file:
             sys.stdout = file
-            if self.__axtechnique == Optimizer.AxTechnique.ALS:
+            if self.__axtechnique == AxConfig.Technique.ALS:
                 print(f"Baseline accuracy: {self.problem.baseline_accuracy}, #gates {self.problem.total_gates}")
-            elif self.__axtechnique == Optimizer.AxTechnique.PS:
+            elif self.__axtechnique == AxConfig.Technique.PS:
                 print(f"Baseline accuracy: {self.problem.baseline_accuracy}, #bits {self.problem.total_bits}")
-            elif self.__axtechnique == Optimizer.AxTechnique.FULL:
+            elif self.__axtechnique == AxConfig.Technique.FULL:
                 print(f"Baseline accuracy: {self.problem.baseline_accuracy}, #gates {self.problem.total_gates}, #bits {self.problem.total_bits}")
             print("Final population:\nError;Cost;Chromosome")
             for fitness, chromosome in zip(self.result.pop.get("F"), self.result.pop.get("X")):

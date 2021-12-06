@@ -6,3 +6,4 @@ z3-solver
 python-igraph
 pycairo
 numpy
+configparser

@@ -29,21 +29,21 @@ class DecisionTree:
   __vhdl_assertions_source = "assertions_block.vhd.template"
   __vhdl_decision_tree_source = "decision_tree.vhd.template"
 
-  def __init__(self, name = None, root_node = None, features = None, classes = None, lut_tech = None, catalog_cache = None, smt_timeout = None):
+  def __init__(self, name = None, root_node = None, features = None, classes = None, als_conf = None):
     self.__name = name
     self.__model_features = features
     self.__model_classes = classes
     self.__decision_boxes = []
-    self.__catalog_cache = catalog_cache
     self.__assertions = []
+    self.__als_conf = als_conf
     if root_node:
       self.__get_decision_boxes(root_node)
       self.__get_assertions(root_node)
     self.__current_configuration = []
-    if lut_tech:
-      design = self.__generate_design_for_als(lut_tech)
+    if als_conf:
+      design = self.__generate_design_for_als(self.__als_conf.luttech)
       self.__assertions_graph = ALSGraph(design)
-      self.__assertions_catalog_entries = ALSCatalog(self.__catalog_cache).generate_catalog(design, smt_timeout)
+      self.__assertions_catalog_entries = ALSCatalog(self.__als_conf.catalog).generate_catalog(design, self.__als_conf.timeout)
       self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
       ys.run_pass("design -save {name}".format(name = self.__name), design)
     else:
@@ -59,7 +59,7 @@ class DecisionTree:
     tree.__decision_boxes = copy.deepcopy(self.__decision_boxes)
     tree.__assertions = copy.deepcopy(self.__assertions)
     tree.__assertions_graph = copy.deepcopy(self.__assertions_graph)
-    tree.__catalog_cache = copy.deepcopy(self.__catalog_cache)
+    tree.__als_conf = copy.deepcopy(self.__als_conf)
     tree.__assertions_catalog_entries = copy.deepcopy(self.__assertions_catalog_entries)
     tree.__current_configuration = copy.deepcopy(self.__current_configuration)
     return tree

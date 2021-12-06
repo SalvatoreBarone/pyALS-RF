@@ -15,6 +15,7 @@ RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import sys, csv, copy
+from enum import Enum
 from xml.etree import ElementTree
 from anytree import Node
 from jinja2 import Environment, FileSystemLoader
@@ -75,16 +76,14 @@ class Classifier:
                   - "nab": nab (int) number of approximate bits for the given feature representation
                 Ex.: [{"name": "feature_x", "nab" : 4}, {"name": "feature_y", "nab" : 3}, {"name": "feature_z", "nab" : 5}]
   """
-  def __init__(self, als_lut_tech, als_catalog_cache, als_smt_timeout):
+  def __init__(self, als_conf):
     self.__trees_list_obj = []
     self.__model_features_list_dict = []
     self.__model_classes_list_str = []
-    self.__als_lut_tech = als_lut_tech
-    self.__als_catalog_cache = als_catalog_cache
-    self.__als_smt_timeout = als_smt_timeout
+    self.__als_conf = als_conf
 
   def __deepcopy__(self, memo = None):
-    classifier = Classifier(self.__als_lut_tech, self.__als_catalog_cache, self.__als_smt_timeout)
+    classifier = Classifier(self.__als_conf)
     classifier.__trees_list_obj = copy.deepcopy(self.__trees_list_obj)
     classifier.__model_features_list_dict = copy.deepcopy(self.__model_features_list_dict)
     classifier.__model_classes_list_str = copy.deepcopy(self.__model_classes_list_str)
@@ -452,7 +451,7 @@ class Classifier:
   def __get_tree_model(self, tree_name, tree_model_root):
     tree = Node('Node_' + tree_model_root.attrib['id'], feature = "", operator = "", threshold_value = "", boolean_expression = "")
     self.__get_tree_nodes_recursively(tree_model_root, tree)
-    return DecisionTree(tree_name, tree, self.__model_features_list_dict, self.__model_classes_list_str, self.__als_lut_tech, self.__als_catalog_cache, self.__als_smt_timeout)
+    return DecisionTree(tree_name, tree, self.__model_features_list_dict, self.__model_classes_list_str, self.__als_conf)
 
   def __get_tree_nodes_recursively(self, element_tree_node, parent_tree_node):
     children = element_tree_node.findall("pmml:Node", self.__namespaces);
