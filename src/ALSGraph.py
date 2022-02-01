@@ -27,8 +27,7 @@ class ALSGraph:
     CELL = 3,
     PRIMARY_OUTPUT = 4
 
-  def __init__(self, design = None, weights = None):
-    self.__weights = weights
+  def __init__(self, design = None):
     if design:
       self.__graph = ig.Graph(directed=True)
       self.__graph_from_design(design)
@@ -38,9 +37,14 @@ class ALSGraph:
 
   def __deepcopy__(self, memo = None):
     graph = ALSGraph()
-    graph.__weights = copy.deepcopy(self.__weights)
     graph.__graph = copy.deepcopy(self.__graph)
     return graph 
+
+  def get_pi(self):
+    return [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.PRIMARY_INPUT]
+
+  def get_po(self):
+    return [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.PRIMARY_OUTPUT]
 
   def get_cells(self):
     return [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.CELL]
@@ -48,11 +52,21 @@ class ALSGraph:
   def get_num_cells(self):
     return len([v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.CELL])
 
+  def get_depth(self, configuration):
+    top_ord = self.__graph.topological_sorting()
+    depths = [0] * len(top_ord)
+
+    for i, v in zip(range(len(top_ord)), [self.__graph.vs[v_i] for v_i in top_ord]):
+      if v["type"] in (ALSGraph.VertexType.CELL, ALSGraph.VertexType.PRIMARY_OUTPUT):
+        depths[i] = max((configuration[p["name"]]["depth"] if p["type"] == ALSGraph.VertexType.CELL else 0) for p in v.predecessors()) + (configuration[v["name"]]["depth"] if v["type"] == ALSGraph.VertexType.CELL else 0)
+
+    return max(depths)
+
   """
   @brief Evaluate the circuit output, using its graph representation
 
   @param [in] inputs
-              circuit inputs: it must be a list of Boolean values, each to be assigned to a primary-input
+              circuit inputs: it must be a dict assigning a Boolean values to each primary-input
 
   @param [in] configuration
               Approximate configuration: list of picked luts implementations, with corresponding required AND-gates. 
@@ -73,15 +87,14 @@ class ALSGraph:
       cell_values[c] = False
     for c in [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.CONSTANT_ONE]:
       cell_values[c] = True
-    
     for p in [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.PRIMARY_INPUT]:
-      cell_values[p] = next((sub for sub in inputs if sub['name'] == p["name"][1:]), None)["value"]
+      cell_values[p] = inputs[p["name"]]
     for cell in [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.CELL]:
       self.__evaluate_cell_output(cell_values, cell, configuration)
-    output = []
+    output = dict()
     for o in [v for v in self.__graph.vs if v["type"] == ALSGraph.VertexType.PRIMARY_OUTPUT]:
       cell_values[o] = cell_values[o.neighbors(mode="in")[0]]
-      output.append({"name" : o["name"][1:], "value" : cell_values[o]})
+      output[o["name"]] = cell_values[o]
     return output
 
   """
@@ -118,7 +131,7 @@ class ALSGraph:
     if configuration == None:
       cell_values[cell] = True if out_value == "1" else False
     else:
-      cell_conf = [ conf for conf in configuration if conf["name"] == cell["name"] ][0]
+      cell_conf = configuration[cell["name"]]
       cell_values[cell] = True if cell_conf["axspec"][out_idx] == "1" else False
     #print("name: {name} Spec: {spec}, Dist.: {dist}, AxSpec: {axspec}, Inputs: {inputs} = {I} (Index: {i}) -> Output: {o} ({O}) AxOutput: {axo})".format(name = cell["name"], spec = cell_spec, dist = dist, axspec = ax_cell_spec, inputs = input_names, I = input_values, i = out_idx, o=out_value, O = cell_values[cell], axo =  ax_out_value))
     return cell_values[cell]
@@ -232,7 +245,6 @@ class ALSGraph:
       self.__graph.vs[-1]["hash"] = cell.name.hash()
       self.__graph.vs[-1]["spec"] = cell.parameters[ys.IdString("\LUT")].as_string()[::-1]
       self.__graph.vs[-1]["in"] = []
-      self.__graph.vs[-1]["weight"] = None
       self.__graph.vs[-1]["color"] = "mediumspringgreen"
       return len( self.__graph.vs) - 1
     else: return index[0]
@@ -254,7 +266,6 @@ class ALSGraph:
       self.__graph.vs[-1]["hash"] = wire.name.hash()
       self.__graph.vs[-1]["spec"] = None
       self.__graph.vs[-1]["in"] = []
-      self.__graph.vs[-1]["weight"] = None
       self.__graph.vs[-1]["color"] = "grey"
       return len( self.__graph.vs) - 1
     else: return index[0]
@@ -268,7 +279,6 @@ class ALSGraph:
       self.__graph.vs[-1]["hash"] = None
       self.__graph.vs[-1]["spec"] = None
       self.__graph.vs[-1]["in"] = []
-      self.__graph.vs[-1]["weight"] = None
       self.__graph.vs[-1]["color"] = "red"
       return len( self.__graph.vs) - 1
     else: return index[0]
@@ -282,7 +292,6 @@ class ALSGraph:
       self.__graph.vs[-1]["hash"] = None
       self.__graph.vs[-1]["spec"] = None
       self.__graph.vs[-1]["in"] = []
-      self.__graph.vs[-1]["weight"] = None
       self.__graph.vs[-1]["color"] = "red"
       return len( self.__graph.vs) - 1
     else: return index[0]
@@ -297,17 +306,6 @@ class ALSGraph:
       self.__graph.vs[-1]["hash"] = wire.name.hash()
       self.__graph.vs[-1]["spec"] = None
       self.__graph.vs[-1]["in"] = []
-      self.__graph.vs[-1]["weight"] = None
       self.__graph.vs[-1]["color"] = "whitesmoke"
-      #* check whether there is a weight specification for the signal
-      if self.__weights:
-        #* search for the cell name in the weights list, in order to get the corresponding weight
-        weight_spec = [ i for i in self.__weights if i[0] == wire.name.str().replace("\\","") ]
-        if bool(weight_spec): #* if the list is not empty, i.e. there is a weight specification for the signal...
-          self.__graph.vs[-1]["weight"] = 2**int(weight_spec[0][1]) #* we pick the weight field (as an integer). Note the weight is converted in power of two.
-        else: #* partial weights specification is not allowed
-          # TODO raise an exception
-          print("partial weights specification is not allowed")
-          exit()
       return len( self.__graph.vs) - 1
     else: return index[0]

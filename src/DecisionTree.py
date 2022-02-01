@@ -22,6 +22,7 @@ from pyeda.inter import *
 from .DecisionBox import *
 from .ALSGraph import *
 from .ALSCatalog import *
+from ALSRewriter import *
 
 class DecisionTree:
   __source_dir = "./resources/vhd/"
@@ -42,7 +43,7 @@ class DecisionTree:
       self.__get_assertions(root_node)
     self.__current_configuration = []
     if als_conf:
-      design = self.__generate_design_for_als(self.__als_conf.luttech)
+      design = self.__generate_design_for_als(self.__als_conf.cut_size)
       self.__assertions_graph = ALSGraph(design)
       self.__assertions_catalog_entries = ALSCatalog(self.__als_conf.catalog).generate_catalog(design, self.__als_conf.timeout)
       self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
@@ -111,6 +112,12 @@ class DecisionTree:
   def reset_assertion_configuration(self):
     self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
 
+  def get_als_num_of_dv(self):
+    return len(self.__assertions_graph.get_cells())
+
+  def get_als_dv_upper_bound(self):
+    return [len(e) - 1 for c in [{"name": c["name"], "spec": c["spec"]} for c in self.__assertions_graph.get_cells()] for e in self.__assertions_catalog_entries if e[0]["spec"] == c["spec"]]
+
   """
   @brief Allows to set the number of approximate bits for each of the decision boxes belonging to the tree.
 
@@ -130,8 +137,8 @@ class DecisionTree:
     for box in self.__decision_boxes:
       box["box"].set_nab(next(item for item in nabs if item["name"] == box["box"].get_feature())["nab"])
 
-  def store_first_stage_approximate_implementations(self, configurations):
-    self.__first_stage_approximate_implementations = configurations
+  # def store_first_stage_approximate_implementations(self, configurations):
+  #   self.__first_stage_approximate_implementations = configurations
 
   """
   @brief Set the current approximate configurations for the assertion block
@@ -144,8 +151,8 @@ class DecisionTree:
   def set_assertions_configuration(self, configuration):
     self.__current_configuration = [ {"name" : l["name"], "dist": c, "spec" : e[0]["spec"], "axspec" : e[c]["spec"], "gates" : e[c]["gates"], "S" : e[c]["S"], "P" : e[c]["P"], "out_p": e[c]["out_p"], "out" : e[c]["out"] } for c, l in zip(configuration, self.__assertions_graph.get_cells()) for e in self.__assertions_catalog_entries if e[0]["spec"] == l["spec"] ]
 
-  def set_first_stage_approximate_implementations(self, configuration):
-    self.set_assertions_configuration(self.__first_stage_approximate_implementations[configuration])
+  # def set_first_stage_approximate_implementations(self, configuration):
+  #   self.set_assertions_configuration(self.__first_stage_approximate_implementations[configuration])
 
   def dump(self):
     print("\tName: ", self.__name)
@@ -218,59 +225,8 @@ class DecisionTree:
     return file_name, module_name
 
   def generate_hdl_als_ax_assertions(self, destination):
-    design = ys.Design()
-    ys.run_pass(f"design -load {self.__name}", design)
-    for module in design.selected_whole_modules_warn():
-      for cell in module.selected_cells():
-        if ys.IdString("\LUT") in cell.parameters:
-          self.__cell_to_aig(module, cell)
-    ys.run_pass("clean -purge", design)
-    ys.run_pass("opt", design)
-    ys.run_pass(f"write_verilog {destination}/assertions_block_{self.__name}.v", design)
-
-  def __cell_to_aig(self, module, cell):
-    ax_cell_conf = [c for c in self.__current_configuration if c["name"] == cell.name.str()][0]
-    sigmap = ys.SigMap(module)
-    S = ax_cell_conf["S"]
-    P = ax_cell_conf["P"]
-    out_p = ax_cell_conf["out_p"]
-    out = ax_cell_conf["out"]
-
-    aig_vars = [[], [ys.SigSpec(ys.State.S0, 1)]]
-    Y = cell.connections_[ys.IdString("\Y")]
-    aig_out = ys.SigSpec(sigmap(Y).to_sigbit_vector()[0].wire)
-
-    A = cell.connections_[ys.IdString("\A")]
-    if cell.input(ys.IdString("\A")):
-      for sig in sigmap(A).to_sigbit_vector():
-        if sig.is_wire():
-          aig_vars[1].append(ys.SigSpec(sig.wire))
-        else:
-          aig_vars[1].append(ys.SigSpec(sig, 1))
-
-    aig_a_and_b = [[], []]
-    for i in range(len(S[0])):
-      a = module.addWire(ys.IdString(f"\\{cell.name.str()}_a_{i}"))
-      b = module.addWire(ys.IdString(f"\\{cell.name.str()}_b_{i}"))
-      y = module.addWire(ys.IdString(f"\\{cell.name.str()}_y_{i}"))
-      module.addAnd(ys.IdString(f"\\{cell.name.str()}_and_{i}"), ys.SigSpec(a), ys.SigSpec(b), ys.SigSpec(y))
-      aig_a_and_b[0].append(ys.SigSpec(a))
-      aig_a_and_b[1].append(ys.SigSpec(b))
-      aig_vars[1].append(ys.SigSpec(y))
-
-    for i, w in zip(range(len(aig_vars[1])), aig_vars[1]):
-      not_w = module.addWire(ys.IdString(f"\\{cell.name.str()}_not_{i}"))
-      module.addNot(ys.IdString(f"\\{cell.name.str()}_not_gate_{i}"), w, ys.SigSpec(not_w))
-      aig_vars[0].append(ys.SigSpec(not_w))
-
-    if len(S[0]) == 0:
-      module.connect(aig_out, aig_vars[out_p][out])
-    else:
-      for i in range(len(aig_a_and_b[0])):
-        for c in [0, 1]:
-          module.connect(aig_a_and_b[c][i], aig_vars[P[c][i]][S[c][i]])
-      module.connect(aig_out, aig_vars[out_p][-1])
-    module.remove(cell)
+    rewriter = ALSRewriter(self.__assertions_graph, self.__assertions_catalog_entries)
+    rewriter.rewrite_and_save(self.__name, self.__current_configuration, destination + "assertions_block_" + {self.__name})
 
   def __get_decision_boxes(self, root_node):
     self.__decision_boxes = []

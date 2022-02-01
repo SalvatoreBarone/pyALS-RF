@@ -1,9 +1,9 @@
 Jinja2
 anytree
 pyeda
-pymoo
 z3-solver
+pyboolector
 python-igraph
-pycairo
 numpy
 configparser
+liberty-parser

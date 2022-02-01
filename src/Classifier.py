@@ -14,15 +14,12 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import sys, csv, copy
-from enum import Enum
+import sys, csv
 from xml.etree import ElementTree
 from anytree import Node
 from jinja2 import Environment, FileSystemLoader
-from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
 from .DecisionTree import *
-from .FirstStepOptimizer import *
 
 """
 @brief Decision-tree based Multiple Classifier System, implemented in python.
@@ -163,6 +160,9 @@ class Classifier:
   def get_features(self):
     return self.__model_features_list_dict
 
+  def get_trees(self):
+    return self.__trees_list_obj
+
   def get_num_of_trees(self):
     return len(self.__trees_list_obj)
 
@@ -172,10 +172,10 @@ class Classifier:
   def get_total_retained(self):
     return sum([ t.get_total_retained() for t in self.__trees_list_obj ])
 
-  def get_als_genes_per_tree(self):
+  def get_als_cells_per_tree(self):
     return [ len(t.get_graph().get_cells()) for t in self.__trees_list_obj]
 
-  def get_als_genes_upper_bound(self):
+  def get_als_dv_upper_bound(self):
     all_entries_available = []
     for t in self.__trees_list_obj:
        cells = [ { "name" : c["name"], "spec" : c["spec"] } for c in t.get_graph().get_cells() ]
@@ -201,15 +201,6 @@ class Classifier:
       struct.append(tree.get_struct())
     return struct
 
-  def generate_first_step_ax_assertions(self, dataset, output_dir, nsgaii_config):
-    samples = self.preload_dataset(dataset)
-    for t in self.__trees_list_obj:
-      optimizer = FirsStageOptimizer(t, samples, nsgaii_config)
-      optimizer.optimize()
-      optimizer.plot_pareto(output_dir + "/" + t.get_name() + "_pareto_front.pdf")
-      optimizer.get_report(output_dir + "/" + t.get_name() + "_report.csv")
-      t.store_first_stage_approximate_implementations(optimizer.get_individuals())
-      
   def preload_dataset(self, csv_file):
     samples = []
     with open(csv_file, 'r') as data:
