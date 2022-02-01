@@ -16,11 +16,6 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import time
 from multiprocessing import cpu_count, Pool
-from pymoo.core.problem import ElementwiseProblem
-from pymoo.algorithms.moo.nsga2 import NSGA2
-from pymoo.factory import get_sampling, get_crossover, get_mutation, get_termination
-from pymoo.optimize import minimize
-import matplotlib.pyplot as plt
 from .Configs import *
 from .Classifier import *
 from .Utility import *

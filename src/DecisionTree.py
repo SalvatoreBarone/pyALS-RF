@@ -42,7 +42,7 @@ class DecisionTree:
       self.__get_assertions(root_node)
     self.__current_configuration = []
     if als_conf:
-      design = self.__generate_design_for_als(self.__als_conf.luttech)
+      design = self.__generate_design_for_als(self.__als_conf.cut_size)
       self.__assertions_graph = ALSGraph(design)
       self.__assertions_catalog_entries = ALSCatalog(self.__als_conf.catalog).generate_catalog(design, self.__als_conf.timeout)
       self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())

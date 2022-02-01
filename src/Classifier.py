@@ -22,7 +22,6 @@ from jinja2 import Environment, FileSystemLoader
 from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
 from .DecisionTree import *
-from .FirstStepOptimizer import *
 
 """
 @brief Decision-tree based Multiple Classifier System, implemented in python.
@@ -201,14 +200,14 @@ class Classifier:
       struct.append(tree.get_struct())
     return struct
 
-  def generate_first_step_ax_assertions(self, dataset, output_dir, nsgaii_config):
-    samples = self.preload_dataset(dataset)
-    for t in self.__trees_list_obj:
-      optimizer = FirsStageOptimizer(t, samples, nsgaii_config)
-      optimizer.optimize()
-      optimizer.plot_pareto(output_dir + "/" + t.get_name() + "_pareto_front.pdf")
-      optimizer.get_report(output_dir + "/" + t.get_name() + "_report.csv")
-      t.store_first_stage_approximate_implementations(optimizer.get_individuals())
+  # def generate_first_step_ax_assertions(self, dataset, output_dir, nsgaii_config):
+  #   samples = self.preload_dataset(dataset)
+  #   for t in self.__trees_list_obj:
+  #     optimizer = FirsStageOptimizer(t, samples, nsgaii_config)
+  #     optimizer.optimize()
+  #     optimizer.plot_pareto(output_dir + "/" + t.get_name() + "_pareto_front.pdf")
+  #     optimizer.get_report(output_dir + "/" + t.get_name() + "_report.csv")
+  #     t.store_first_stage_approximate_implementations(optimizer.get_individuals())
       
   def preload_dataset(self, csv_file):
     samples = []
