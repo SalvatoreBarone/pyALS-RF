@@ -37,7 +37,6 @@ class DecisionTree:
     self.__decision_boxes = []
     self.__assertions = []
     self.__als_conf = als_conf
-    self.__first_stage_approximate_implementations = None
     if root_node:
       self.__get_decision_boxes(root_node)
       self.__get_assertions(root_node)
@@ -64,7 +63,6 @@ class DecisionTree:
     tree.__als_conf = copy.deepcopy(self.__als_conf)
     tree.__assertions_catalog_entries = copy.deepcopy(self.__assertions_catalog_entries)
     tree.__current_configuration = copy.deepcopy(self.__current_configuration)
-    tree.__first_stage_approximate_implementations = copy.deepcopy(self.__first_stage_approximate_implementations)
     return tree
     
   def get_name(self):
@@ -100,9 +98,6 @@ class DecisionTree:
   def get_assertions_configuration(self):
     return self.__current_configuration
 
-  def get_first_stage_approximate_implementations(self):
-    return self.__first_stage_approximate_implementations
-
   def get_assertions_distance(self):
     return [ self.__current_configuration[c]["dist"] for c in self.__current_configuration.keys() ]
 
@@ -118,41 +113,12 @@ class DecisionTree:
   def get_als_dv_upper_bound(self):
     return [len(e) - 1 for c in [{"name": c["name"], "spec": c["spec"]} for c in self.__assertions_graph.get_cells()] for e in self.__assertions_catalog_entries if e[0]["spec"] == c["spec"]]
 
-  """
-  @brief Allows to set the number of approximate bits for each of the decision boxes belonging to the tree.
-
-  @param [in] nabs
-              A list of dict, each of which has the following key-value pairs:
-               - "name": name: name of the feature
-               - "nab": nab (int) number of approximate bits for the given feature representation
-              Ex.: [{"name": "feature_x", "nab" : 4}, {"name": "feature_y", "nab" : 3}, {"name": "feature_z", "nab" : 5}]
-
-  @details
-  This function allows you to set the degree of approximation to be adopted for the representation of the values of the
-  features for each of the decision-boxes of which the decision tree is composed. It is used during the design-space
-  exploration phase to evaluate the error introduced by the approximation and to estimate the corresponding gain in
-  terms of area on the silicon. 
-  """
   def set_nabs(self, nabs):
     for box in self.__decision_boxes:
-      box["box"].set_nab(next(item for item in nabs if item["name"] == box["box"].get_feature())["nab"])
+      box["box"].set_nab(nabs[box["box"].get_feature()])
 
-  # def store_first_stage_approximate_implementations(self, configurations):
-  #   self.__first_stage_approximate_implementations = configurations
-
-  """
-  @brief Set the current approximate configurations for the assertion block
-
-  @param [in] configuration
-              Approximate configuration. Aach item in the list corresponds to a LUT of the circuit, and specifies which
-              approximate variant to use for said LUT, i.e. what the Hamming distance between the exact specification of
-              the LUT and the approximate implementation to use should be.
-  """
   def set_assertions_configuration(self, configuration):
     self.__current_configuration = {l["name"]: {"dist": c, "spec": e[0]["spec"], "axspec": e[c]["spec"], "gates": e[c]["gates"], "S": e[c]["S"], "P": e[c]["P"], "out_p": e[c]["out_p"], "out": e[c]["out"], "depth": e[c]["depth"]} for c, l in zip(configuration, self.__assertions_graph.get_cells()) for e in self.__assertions_catalog_entries if e[0]["spec"] == l["spec"]}
-
-  # def set_first_stage_approximate_implementations(self, configuration):
-  #   self.set_assertions_configuration(self.__first_stage_approximate_implementations[configuration])
 
   def dump(self):
     print("\tName: ", self.__name)
@@ -163,26 +129,6 @@ class DecisionTree:
     for a in self.__assertions:
       print("\t\t", a["class"], " = ", a["expression"])
 
-  """
-  @brief Performs a classification
-
-  @param [in]     features_value
-                  A list of dict, each of which has the following key-value pairs:
-                    - "name": name: name of the feature
-                    - "value": value: (int/double) value of the feature
-                  Ex.: [{"name": "feature_x", "value" : 4}, {"name": "feature_y", "value" : 0.3}, {"name": "feature_z", "value" : 1.5}]
-
-  @param [in]     assertions
-                  governs which of the assertion variants has to be used to compute the class score
-
-  @param [in,out] classes_score
-                  A list of dict, each of which has the following key-value pairs:
-                    - "name": name: name of the class
-                    - "score": value: (int) current score of the class
-                  Ex.: [{"name": "class_x", "score" : 4}, {"name": "class_y", "score" : 0}, {"name": "class_z", "score" : 1}]
-                  The "score" value of the winning class will be incremented by one at the end of the classification
-                  procedure
-  """
   def evaluate(self, features_value, classes_score):
     boxes_output = dict()
     for box in self.__decision_boxes:
@@ -224,7 +170,7 @@ class DecisionTree:
 
   def generate_hdl_als_ax_assertions(self, destination):
     rewriter = ALSRewriter(self.__assertions_graph, self.__assertions_catalog_entries)
-    rewriter.rewrite_and_save(self.__name, self.__current_configuration, destination + "assertions_block_" + {self.__name})
+    rewriter.rewrite_and_save(self.__name, self.__current_configuration, destination + "assertions_block_" + self.__name)
 
   def __get_decision_boxes(self, root_node):
     self.__decision_boxes = []

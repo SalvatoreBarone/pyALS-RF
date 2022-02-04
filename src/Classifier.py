@@ -21,23 +21,6 @@ from jinja2 import Environment, FileSystemLoader
 from distutils.file_util import copy_file
 from .DecisionTree import *
 
-"""
-@brief Decision-tree based Multiple Classifier System, implemented in python.
-
-@details
-This class implements a Decision-tree based Multiple Classifier System as proposed in Amato F, Barbareschi M, Casola V,
-Mazzeo A, Romano S "Towards automatic generation of hardware classifiers". International Conference on Algorithms and
-Architectures for Parallel Processing. Springer, Cham, pp 125–132.
-
-This class supports both single-tree and random-forest DT-MCS. The latter are supported as long as they require
-majority-voting logic.
-
-From the software point of view, the outcome calculated by each of the trees is summed and the class that reaches a
-score that is greater than 50% is declared the winner.
-At hardware level, outcomes of the assertion functions belonging to the same class but computed by different DTs are
-arranged in an array of N elements, with N being the number of DTs. A majority voter is used to state which class is the
-winner.
-"""
 class Classifier:
   __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_1'}
   __source_dir = "./resources/"
@@ -61,19 +44,6 @@ class Classifier:
   #constraints
   __constraint_file = "constraints.xdc"
 
-  """
-  @brief Constructor function
-
-  @param  [in]  pmml_file_name (optional)
-                Path of the PMML file to be parsed
-
-  @param  [in]  nabs
-                Allows to set the number of approximate bits for each of the decision boxes belonging to the tree. It
-                must be a list of dict, each of which has the following key-value pairs:
-                  - "name": name: name of the feature
-                  - "nab": nab (int) number of approximate bits for the given feature representation
-                Ex.: [{"name": "feature_x", "nab" : 4}, {"name": "feature_y", "nab" : 3}, {"name": "feature_z", "nab" : 5}]
-  """
   def __init__(self, als_conf):
     self.__trees_list_obj = []
     self.__model_features_list_dict = []
@@ -120,28 +90,12 @@ class Classifier:
       t.dump()
 
   def reset_nabs_configuration(self):
-    nabs = [{"name" : f["name"], "nab" : 0} for f in self.__model_features_list_dict ]
-    self.set_nabs(nabs)
+    self.set_nabs({f["name"] : 0 for f in self.__model_features_list_dict })
 
   def reset_assertion_configuration(self):
     for t in self.__trees_list_obj:
       t.reset_assertion_configuration()
 
-  """
-  @brief Allows to set the number of approximate bits for each of the decision boxes belonging to each of the trees.
-
-  @param [in] nabs
-              A list of dict, each of which has the following key-value pairs:
-               - "name": name: name of the feature
-               - "nab": nab (int) number of approximate bits for the given feature representation
-              Ex.: [{"name": "feature_x", "nab" : 4}, {"name": "feature_y", "nab" : 3}, {"name": "feature_z", "nab" : 5}]
-
-  @details
-  This function allows you to set the degree of approximation to be adopted for the representation of the values of the
-  features for each of the decision-boxes of which each of the decision trees is composed. It is used during the
-  design-space exploration phase to evaluate the error introduced by the approximation and to estimate the corresponding
-  gain in terms of area on the silicon. 
-  """
   def set_nabs(self, nabs):
     for tree in self.__trees_list_obj:
       tree.set_nabs(nabs)

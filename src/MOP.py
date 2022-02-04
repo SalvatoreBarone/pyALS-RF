@@ -118,8 +118,9 @@ class SingleStepPsOnly(OptimizationBaseClass, AMOSA.Problem):
         AMOSA.Problem.__init__(self, n_vars, [AMOSA.Type.INTEGER] * n_vars, [0] * n_vars, [53] * n_vars, 2, 1)
 
     def __set_matter_configuration(self, x):
+        nabs = {f["name"]: n for f, n in zip(self.features, x[:len(self.features)])}
         for item in self.args:
-            item[0].set_nabs([{"name": f["name"], "nab": x} for f, x in zip(self.features, x)])
+            item[0].set_nabs(nabs)
 
     def evaluate(self, x, out):
         self.__set_matter_configuration(x)
@@ -166,8 +167,9 @@ class SingleStepCombined(OptimizationBaseClass, AMOSA.Problem):
         for size in self.cells_per_tree:
             configurations.append([x[i + count + len(self.features)] for i in range(size)])
             count += size
+        nabs = {f["name"]: n for f, n in zip(self.features, x[:len(self.features)])}
         for item in self.args:
-            item[0].set_nabs([{"name": f["name"], "nab": x} for f, x in zip(self.features, x[:len(self.features)])])
+            item[0].set_nabs(nabs)
             item[0].set_assertions_configuration(configurations)
 
     def evaluate(self, x, out):
@@ -243,7 +245,9 @@ class SecondStepOptimizerAlsOnly(SecondStepOptimizerBase, AMOSA.Problem):
         AMOSA.Problem.__init__(self, n_vars, [AMOSA.Type.INTEGER] * n_vars, [0] * n_vars, [ len(i) for i in self.opt_solutions_for_trees ], 2, 1)
 
     def __set_matter_configuration(self, x):
-        pass
+        configurations = [ s[c] for s, c in zip(self.opt_solutions_for_trees, x)  ]
+        for item in self.args:
+            item[0].set_assertions_configuration(configurations)
 
     def evaluate(self, x, out):
         self.__set_matter_configuration(x)
@@ -260,7 +264,11 @@ class SecondStepOptimizerCombined(SecondStepOptimizerBase, AMOSA.Problem):
         AMOSA.Problem.__init__(self, n_vars, [AMOSA.Type.INTEGER] * n_vars, [0] * n_vars, upper_bound, 3, 1)
 
     def __set_matter_configuration(self, x):
-        pass
+        nabs = { f["name"] : n for f, n in zip(self.features, x[:len(self.features)]) }
+        configurations = [ s[c] for s, c in zip(self.opt_solutions_for_trees, x[len(self.features):])  ]
+        for item in self.args:
+            item[0].set_nabs(nabs)
+            item[0].set_assertions_configuration(configurations)
 
     def evaluate(self, x, out):
         self.__set_matter_configuration(x)
