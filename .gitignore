@@ -8,3 +8,9 @@ output_full/
 venv
 log.txt
 prova/
+prova_rf/
+*.db
+
+prova_st/
+
+prova_rf_two/

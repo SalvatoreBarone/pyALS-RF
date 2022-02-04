@@ -24,29 +24,6 @@ class DecisionBox:
     equal = 2
     greaterThan = 3
     
-  """
-  @brief Constructor. Instantiates a new object.
-  
-  @param [in] box_name
-              Name of the decision box. It has to be unique within a decision tree.
-              The name of the box will be used to compute assertion functions and to generate the VHDL code.
-
-  @param [in] feature_name
-              Name of the feature that the decision box will compare against the threshold
-
-  @param [in] data_type
-              Data type, either double or integer, of the feature
-
-  @param [in] operator
-              Compare operator implemented by the considered decision box. It can be lessThan, equal or greaterThan.
-
-  @param [in] threshold
-              Threshold value against which the feature value will be compared.
-
-  @param [in] nab
-              Number of approximate bits. This field is required only whether the precision-scaling approximate
-              technique is adopted to reduce resource requirements of hardware implementations.
-  """
   def __init__(self, box_name = None, feature_name = None, data_type = None, operator = None, threashold = None, nab = 0):
     self.__name = box_name
     self.__feature_name = feature_name

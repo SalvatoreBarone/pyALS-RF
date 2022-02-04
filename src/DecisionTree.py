@@ -22,6 +22,7 @@ from pyeda.inter import *
 from .DecisionBox import *
 from .ALSGraph import *
 from .ALSCatalog import *
+from .ALSRewriter import *
 
 class DecisionTree:
   __source_dir = "./resources/vhd/"
@@ -36,15 +37,14 @@ class DecisionTree:
     self.__decision_boxes = []
     self.__assertions = []
     self.__als_conf = als_conf
-    self.__first_stage_approximate_implementations = None
     if root_node:
       self.__get_decision_boxes(root_node)
       self.__get_assertions(root_node)
     self.__current_configuration = []
     if als_conf:
-      design = self.__generate_design_for_als(self.__als_conf.luttech)
+      design = self.__generate_design_for_als(self.__als_conf.cut_size)
       self.__assertions_graph = ALSGraph(design)
-      self.__assertions_catalog_entries = ALSCatalog(self.__als_conf.catalog).generate_catalog(design, self.__als_conf.timeout)
+      self.__assertions_catalog_entries = ALSCatalog(self.__als_conf.catalog, self.__als_conf.solver).generate_catalog(design, self.__als_conf.timeout)
       self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
       ys.run_pass("design -save {name}".format(name = self.__name), design)
     else:
@@ -63,7 +63,6 @@ class DecisionTree:
     tree.__als_conf = copy.deepcopy(self.__als_conf)
     tree.__assertions_catalog_entries = copy.deepcopy(self.__assertions_catalog_entries)
     tree.__current_configuration = copy.deepcopy(self.__current_configuration)
-    tree.__first_stage_approximate_implementations = copy.deepcopy(self.__first_stage_approximate_implementations)
     return tree
     
   def get_name(self):
@@ -99,53 +98,27 @@ class DecisionTree:
   def get_assertions_configuration(self):
     return self.__current_configuration
 
-  def get_first_stage_approximate_implementations(self):
-    return self.__first_stage_approximate_implementations
-
   def get_assertions_distance(self):
-    return [ c["dist"] for c in self.__current_configuration ]
+    return [ self.__current_configuration[c]["dist"] for c in self.__current_configuration.keys() ]
 
   def get_current_required_aig_nodes(self):
-    return sum([ c["gates"] for c in self.__current_configuration ])
+    return sum([ self.__current_configuration[c]["gates"] for c in self.__current_configuration.keys() ])
 
   def reset_assertion_configuration(self):
     self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
 
-  """
-  @brief Allows to set the number of approximate bits for each of the decision boxes belonging to the tree.
+  def get_als_num_of_dv(self):
+    return len(self.__assertions_graph.get_cells())
 
-  @param [in] nabs
-              A list of dict, each of which has the following key-value pairs:
-               - "name": name: name of the feature
-               - "nab": nab (int) number of approximate bits for the given feature representation
-              Ex.: [{"name": "feature_x", "nab" : 4}, {"name": "feature_y", "nab" : 3}, {"name": "feature_z", "nab" : 5}]
+  def get_als_dv_upper_bound(self):
+    return [len(e) - 1 for c in [{"name": c["name"], "spec": c["spec"]} for c in self.__assertions_graph.get_cells()] for e in self.__assertions_catalog_entries if e[0]["spec"] == c["spec"]]
 
-  @details
-  This function allows you to set the degree of approximation to be adopted for the representation of the values of the
-  features for each of the decision-boxes of which the decision tree is composed. It is used during the design-space
-  exploration phase to evaluate the error introduced by the approximation and to estimate the corresponding gain in
-  terms of area on the silicon. 
-  """
   def set_nabs(self, nabs):
     for box in self.__decision_boxes:
-      box["box"].set_nab(next(item for item in nabs if item["name"] == box["box"].get_feature())["nab"])
+      box["box"].set_nab(nabs[box["box"].get_feature()])
 
-  def store_first_stage_approximate_implementations(self, configurations):
-    self.__first_stage_approximate_implementations = configurations
-
-  """
-  @brief Set the current approximate configurations for the assertion block
-
-  @param [in] configuration
-              Approximate configuration. Aach item in the list corresponds to a LUT of the circuit, and specifies which
-              approximate variant to use for said LUT, i.e. what the Hamming distance between the exact specification of
-              the LUT and the approximate implementation to use should be.
-  """
   def set_assertions_configuration(self, configuration):
-    self.__current_configuration = [ {"name" : l["name"], "dist": c, "spec" : e[0]["spec"], "axspec" : e[c]["spec"], "gates" : e[c]["gates"], "S" : e[c]["S"], "P" : e[c]["P"], "out_p": e[c]["out_p"], "out" : e[c]["out"] } for c, l in zip(configuration, self.__assertions_graph.get_cells()) for e in self.__assertions_catalog_entries if e[0]["spec"] == l["spec"] ]
-
-  def set_first_stage_approximate_implementations(self, configuration):
-    self.set_assertions_configuration(self.__first_stage_approximate_implementations[configuration])
+    self.__current_configuration = {l["name"]: {"dist": c, "spec": e[0]["spec"], "axspec": e[c]["spec"], "gates": e[c]["gates"], "S": e[c]["S"], "P": e[c]["P"], "out_p": e[c]["out_p"], "out": e[c]["out"], "depth": e[c]["depth"]} for c, l in zip(configuration, self.__assertions_graph.get_cells()) for e in self.__assertions_catalog_entries if e[0]["spec"] == l["spec"]}
 
   def dump(self):
     print("\tName: ", self.__name)
@@ -156,35 +129,13 @@ class DecisionTree:
     for a in self.__assertions:
       print("\t\t", a["class"], " = ", a["expression"])
 
-  """
-  @brief Performs a classification
-
-  @param [in]     features_value
-                  A list of dict, each of which has the following key-value pairs:
-                    - "name": name: name of the feature
-                    - "value": value: (int/double) value of the feature
-                  Ex.: [{"name": "feature_x", "value" : 4}, {"name": "feature_y", "value" : 0.3}, {"name": "feature_z", "value" : 1.5}]
-
-  @param [in]     assertions
-                  governs which of the assertion variants has to be used to compute the class score
-
-  @param [in,out] classes_score
-                  A list of dict, each of which has the following key-value pairs:
-                    - "name": name: name of the class
-                    - "score": value: (int) current score of the class
-                  Ex.: [{"name": "class_x", "score" : 4}, {"name": "class_y", "score" : 0}, {"name": "class_z", "score" : 1}]
-                  The "score" value of the winning class will be incremented by one at the end of the classification
-                  procedure
-  """
   def evaluate(self, features_value, classes_score):
-    boxes_output = []
+    boxes_output = dict()
     for box in self.__decision_boxes:
-      value = next(item for item in features_value if item["name"] == box["box"].get_feature())["value"]
-      boxes_output.append({"name" : box["box"].get_name(), "value" : box["box"].compare(value)})
-    # TODO se la tecnica non è als, non usare il grafo per la valutazione della funzione asserzione, ma usa la valutazione della funziona booleana direttamente
+      boxes_output["\\" + box["box"].get_name()] = box["box"].compare(features_value[box["box"].get_feature()])
     output = self.__assertions_graph.evaluate(boxes_output, self.__current_configuration)
-    for c in classes_score:
-      c["score"] += 1 if next((sub for sub in output if sub['name'] == c["name"]), None)["value"]  else 0
+    for c in classes_score.keys():
+      classes_score[c] += int(output["\\" + c])
 
   def generate_hdl_tree(self, destination):
     file_name = destination + "/decision_tree_" + self.__name + ".vhd"
@@ -218,59 +169,8 @@ class DecisionTree:
     return file_name, module_name
 
   def generate_hdl_als_ax_assertions(self, destination):
-    design = ys.Design()
-    ys.run_pass(f"design -load {self.__name}", design)
-    for module in design.selected_whole_modules_warn():
-      for cell in module.selected_cells():
-        if ys.IdString("\LUT") in cell.parameters:
-          self.__cell_to_aig(module, cell)
-    ys.run_pass("clean -purge", design)
-    ys.run_pass("opt", design)
-    ys.run_pass(f"write_verilog {destination}/assertions_block_{self.__name}.v", design)
-
-  def __cell_to_aig(self, module, cell):
-    ax_cell_conf = [c for c in self.__current_configuration if c["name"] == cell.name.str()][0]
-    sigmap = ys.SigMap(module)
-    S = ax_cell_conf["S"]
-    P = ax_cell_conf["P"]
-    out_p = ax_cell_conf["out_p"]
-    out = ax_cell_conf["out"]
-
-    aig_vars = [[], [ys.SigSpec(ys.State.S0, 1)]]
-    Y = cell.connections_[ys.IdString("\Y")]
-    aig_out = ys.SigSpec(sigmap(Y).to_sigbit_vector()[0].wire)
-
-    A = cell.connections_[ys.IdString("\A")]
-    if cell.input(ys.IdString("\A")):
-      for sig in sigmap(A).to_sigbit_vector():
-        if sig.is_wire():
-          aig_vars[1].append(ys.SigSpec(sig.wire))
-        else:
-          aig_vars[1].append(ys.SigSpec(sig, 1))
-
-    aig_a_and_b = [[], []]
-    for i in range(len(S[0])):
-      a = module.addWire(ys.IdString(f"\\{cell.name.str()}_a_{i}"))
-      b = module.addWire(ys.IdString(f"\\{cell.name.str()}_b_{i}"))
-      y = module.addWire(ys.IdString(f"\\{cell.name.str()}_y_{i}"))
-      module.addAnd(ys.IdString(f"\\{cell.name.str()}_and_{i}"), ys.SigSpec(a), ys.SigSpec(b), ys.SigSpec(y))
-      aig_a_and_b[0].append(ys.SigSpec(a))
-      aig_a_and_b[1].append(ys.SigSpec(b))
-      aig_vars[1].append(ys.SigSpec(y))
-
-    for i, w in zip(range(len(aig_vars[1])), aig_vars[1]):
-      not_w = module.addWire(ys.IdString(f"\\{cell.name.str()}_not_{i}"))
-      module.addNot(ys.IdString(f"\\{cell.name.str()}_not_gate_{i}"), w, ys.SigSpec(not_w))
-      aig_vars[0].append(ys.SigSpec(not_w))
-
-    if len(S[0]) == 0:
-      module.connect(aig_out, aig_vars[out_p][out])
-    else:
-      for i in range(len(aig_a_and_b[0])):
-        for c in [0, 1]:
-          module.connect(aig_a_and_b[c][i], aig_vars[P[c][i]][S[c][i]])
-      module.connect(aig_out, aig_vars[out_p][-1])
-    module.remove(cell)
+    rewriter = ALSRewriter(self.__assertions_graph, self.__assertions_catalog_entries)
+    rewriter.rewrite_and_save_with_configuration(self.__name, self.__current_configuration, destination + "/assertions_block_" + self.__name)
 
   def __get_decision_boxes(self, root_node):
     self.__decision_boxes = []
@@ -319,10 +219,7 @@ class DecisionTree:
     mkpath(destination + "/vhd")
     file_name, module_name = self.generate_hdl_exact_assertions(destination)
     design = ys.Design()
-    ys.run_pass("design -reset", design)
-    ys.run_pass("ghdl {} {} -e {}".format(self.__source_dir + self.__bnf_vhd, file_name, module_name), design)
-    ys.run_pass("hierarchy -check -top {}".format(module_name), design)
-    ys.run_pass("prep",  design)
-    ys.run_pass("splitnets -ports",  design)
-    ys.run_pass("synth -lut " + str(luts_tech), design)
+    ys.run_pass("tee -q design -reset", design)
+    ys.run_pass(f"tee -q ghdl {self.__source_dir + self.__bnf_vhd} {file_name} -e {module_name}", design)
+    ys.run_pass(f"tee -q hierarchy -check -top {module_name}; tee -q prep; tee -q flatten; tee -q splitnets -ports; tee -q synth -top {module_name}; tee -q flatten; tee -q clean -purge; tee -q synth -lut {luts_tech}", design)
     return design
