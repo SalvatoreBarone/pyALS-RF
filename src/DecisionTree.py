@@ -170,7 +170,7 @@ class DecisionTree:
 
   def generate_hdl_als_ax_assertions(self, destination):
     rewriter = ALSRewriter(self.__assertions_graph, self.__assertions_catalog_entries)
-    rewriter.rewrite_and_save(self.__name, self.__current_configuration, destination + "assertions_block_" + self.__name)
+    rewriter.rewrite_and_save_with_configuration(self.__name, self.__current_configuration, destination + "/assertions_block_" + self.__name)
 
   def __get_decision_boxes(self, root_node):
     self.__decision_boxes = []

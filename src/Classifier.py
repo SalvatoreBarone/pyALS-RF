@@ -330,7 +330,7 @@ class Classifier:
         t.set_assertions_configuration(c)
         t.generate_hdl_als_ax_assertions(ax_dest)
 
-  def generate_hdl_twostep_asl_ax_implementations(self, destination, configurations):
+  def generate_hdl_twostep_asl_ax_implementations(self, destination, outer_configurations, inner_configuration):
     features = [{"name": f["name"], "nab": 0} for f in self.__model_features_list_dict]
     mkpath(destination)
     mkpath(destination + "/ax")
@@ -353,7 +353,7 @@ class Classifier:
     tcl_file = tcl_template.render(
       assertions_blocks=[{"file_name": "assertions_block_" + n + ".v", "language": "Verilog"} for n in trees_name],
       decision_trees=[{"file_name": "decision_tree_" + n + ".vhd", "language": "VHDL"} for n in trees_name])
-    for conf, i in zip(configurations, range(len(configurations))):
+    for conf, i in zip(outer_configurations, range(len(outer_configurations))):
       ax_dest = destination + "/ax/configuration_" + str(i)
       mkpath(ax_dest)
       out_file = open(ax_dest + "/classifier.vhd", "w")
@@ -374,12 +374,12 @@ class Classifier:
       copy_file(self.__source_dir + self.__constraint_file, ax_dest)
       copy_file(self.__source_dir + self.__run_synth_file, ax_dest)
       copy_file(self.__source_dir + self.__run_sim_file, ax_dest)
-      for t, c in zip(self.__trees_list_obj, conf):
+      for t, i, c in zip(self.__trees_list_obj, range(len(self.__trees_list_obj)), conf):
         t.generate_hdl_tree(ax_dest)
-        t.set_first_stage_approximate_implementations(c)
+        t.set_assertions_configuration(inner_configuration[i][c])
         t.generate_hdl_als_ax_assertions(ax_dest)
 
-  def generate_hdl_onestep_full_ax_implementations(self, destination, configurations):
+  def generate_hdl_onestep_full_ax_implementations(self, destination, outer_configurations):
     mkpath(destination)
     mkpath(destination + "/ax")
     copy_file(self.__source_dir + self.__run_all_file, destination)
@@ -394,7 +394,7 @@ class Classifier:
     tcl_file = tcl_template.render(
       assertions_blocks=[{"file_name": "assertions_block_" + n + ".v", "language": "Verilog"} for n in trees_name],
       decision_trees=[{"file_name": "decision_tree_" + n + ".vhd", "language": "VHDL"} for n in trees_name])
-    for conf, i in zip(configurations, range(len(configurations))):
+    for conf, i in zip(outer_configurations, range(len(outer_configurations))):
       features = [ {"name": f["name"], "nab": n} for f, n in zip(self.__model_features_list_dict, conf[:len(self.__model_features_list_dict)]) ]
       ax_dest = destination + "/ax/configuration_" + str(i)
       mkpath(ax_dest)
@@ -435,7 +435,7 @@ class Classifier:
         t.set_assertions_configuration(c)
         t.generate_hdl_als_ax_assertions(ax_dest)
 
-  def generate_hdl_twostep_full_ax_implementations(self, destination, configurations):
+  def generate_hdl_twostep_full_ax_implementations(self, destination, outer_configurations, inner_configuration):
     mkpath(destination)
     mkpath(destination + "/ax")
     copy_file(self.__source_dir + self.__run_all_file, destination)
@@ -450,7 +450,7 @@ class Classifier:
     tcl_file = tcl_template.render(
       assertions_blocks=[{"file_name": "assertions_block_" + n + ".v", "language": "Verilog"} for n in trees_name],
       decision_trees=[{"file_name": "decision_tree_" + n + ".vhd", "language": "VHDL"} for n in trees_name])
-    for conf, i in zip(configurations, range(len(configurations))):
+    for conf, i in zip(outer_configurations, range(len(outer_configurations))):
       features = [ {"name": f["name"], "nab": n} for f, n in zip(self.__model_features_list_dict, conf[:len(self.__model_features_list_dict)]) ]
       ax_dest = destination + "/ax/configuration_" + str(i)
       mkpath(ax_dest)
@@ -481,9 +481,9 @@ class Classifier:
       copy_file(self.__source_dir + self.__constraint_file, ax_dest)
       copy_file(self.__source_dir + self.__run_synth_file, ax_dest)
       copy_file(self.__source_dir + self.__run_sim_file, ax_dest)
-      for t, c in zip(self.__trees_list_obj, conf):
+      for t, n, c in zip(self.__trees_list_obj, range(len(self.__trees_list_obj)), conf[len(self.__model_features_list_dict):]):
         t.generate_hdl_tree(ax_dest)
-        t.set_assertions_configuration(c + len(self.__model_features_list_dict))
+        t.set_assertions_configuration(inner_configuration[n][c])
         t.generate_hdl_als_ax_assertions(ax_dest)
 
   def __evaluate(self, features_value):

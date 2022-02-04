@@ -134,7 +134,9 @@ class SingleStepAlsOnly(OptimizationBaseClass, AMOSA.Problem):
         OptimizationBaseClass.__init__(self, classifier, dataset_csv, config)
         self.cells_per_tree = classifier.get_als_cells_per_tree()
         n_vars = sum(self.cells_per_tree)
-        AMOSA.Problem.__init__(self, n_vars, [AMOSA.Type.INTEGER] * n_vars, [0] * n_vars, classifier.get_als_dv_upper_bound(), 2, 1)
+        ub = classifier.get_als_dv_upper_bound()
+        print(f"{len(ub)} d.v.: {ub}")
+        AMOSA.Problem.__init__(self, n_vars, [AMOSA.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 
     def __set_matter_configuration(self, x):
         configurations = []
@@ -192,7 +194,9 @@ class FirstStepOptimizer(AMOSA.Problem):
         self.__generate_samples()
         self.total_samples = len(self.samples)
         self.args = [[g, s, [0] * n_vars] for g, s in zip(self.graphs, list_partitioning(self.samples, cpu_count()))]
-        AMOSA.Problem.__init__(self, n_vars, [AMOSA.Type.INTEGER] * n_vars, [0] * n_vars, self.decision_tree.get_als_dv_upper_bound(), 2, 1)
+        ub = self.decision_tree.get_als_dv_upper_bound()
+        print(f"Tree {self.decision_tree.get_name()}. d.v. #{len(ub)}: {ub}")
+        AMOSA.Problem.__init__(self, n_vars, [AMOSA.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 
     def __generate_samples(self):
         PI = self.graph.get_pi()
@@ -207,10 +211,14 @@ class FirstStepOptimizer(AMOSA.Problem):
                 inputs = {i["name"]: p for i, p in zip(PI, perm)}
                 self.samples.append({"input": inputs, "output": self.graph.evaluate(inputs)})
 
+    def __get_cell_configuration(self, x):
+        return {l["name"]: {"dist": c, "spec": e[0]["spec"], "axspec": e[c]["spec"], "gates": e[c]["gates"], "S": e[c]["S"], "P": e[c]["P"], "out_p": e[c]["out_p"], "out": e[c]["out"], "depth": e[c]["depth"]} for c, l in zip(x, self.graph.get_cells()) for e in self.catalog if e[0]["spec"] == l["spec"]}
+
     def __set_matter_configuration(self, x):
         self.decision_tree.set_assertions_configuration(x)
+        configuration = self.__get_cell_configuration(x)
         for a in self.args:
-            a[2] = x
+            a[2] = configuration
 
     def __get_eprob(self):
         with Pool(cpu_count()) as pool:
@@ -225,15 +233,15 @@ class FirstStepOptimizer(AMOSA.Problem):
         self.__set_matter_configuration(x)
         f1 = self.__get_eprob()
         f2 = self.decision_tree.get_current_required_aig_nodes()
-        out["F"] = [f1, f2]
-        out["G"] = [f1 - self.error_config.threshold]
+        out["f"] = [f1, f2]
+        out["g"] = [f1 - self.error_config.threshold]
 
 class SecondStepOptimizerBase(OptimizationBaseClass):
     def __init__(self, classifier, dataset_csv, config):
         OptimizationBaseClass.__init__(self, classifier, dataset_csv, config)
         self.opt_solutions_for_trees = []
         for t in self.classifier.get_trees():
-            problem = FirstStepOptimizer(t, config.fst_error_config)
+            problem = FirstStepOptimizer(t, config.fst_error_conf)
             optimizer = AMOSA(self.config.fst_amosa_conf)
             optimizer.minimize(problem)
             self.opt_solutions_for_trees.append(optimizer.pareto_set())
@@ -242,7 +250,10 @@ class SecondStepOptimizerAlsOnly(SecondStepOptimizerBase, AMOSA.Problem):
     def __init__(self, classifier, dataset_csv, config):
         SecondStepOptimizerBase.__init__(self, classifier, dataset_csv, config)
         n_vars = self.classifier.get_num_of_trees()
-        AMOSA.Problem.__init__(self, n_vars, [AMOSA.Type.INTEGER] * n_vars, [0] * n_vars, [ len(i) for i in self.opt_solutions_for_trees ], 2, 1)
+        ub = [ len(i)-1 for i in self.opt_solutions_for_trees ]
+        print(f"Baseline accuracy: {self.baseline_accuracy}.")
+        print(f"d.v. #{len(ub)}, {ub}")
+        AMOSA.Problem.__init__(self, n_vars, [AMOSA.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 
     def __set_matter_configuration(self, x):
         configurations = [ s[c] for s, c in zip(self.opt_solutions_for_trees, x)  ]
@@ -254,14 +265,16 @@ class SecondStepOptimizerAlsOnly(SecondStepOptimizerBase, AMOSA.Problem):
         f1 = self.get_accuracy_loss()
         f2 = sum(self.args[0][0].get_current_required_aig_nodes())
         out["f"] = [f1, f2]
-        out["g"] = [f1 - self.config.error_conf.threshold]
+        out["g"] = [f1 - self.config.snd_error_conf.threshold]
 
 class SecondStepOptimizerCombined(SecondStepOptimizerBase, AMOSA.Problem):
     def __init__(self, classifier, dataset_csv, config):
         SecondStepOptimizerBase.__init__(self, classifier, dataset_csv, config)
         n_vars = len(self.features) + self.classifier.get_num_of_trees()
-        upper_bound = [53] * len(self.features) + [ len(i) for i in self.opt_solutions_for_trees ]
-        AMOSA.Problem.__init__(self, n_vars, [AMOSA.Type.INTEGER] * n_vars, [0] * n_vars, upper_bound, 3, 1)
+        ub = [53] * len(self.features) + [ len(i)-1 for i in self.opt_solutions_for_trees ]
+        print(f"Baseline accuracy: {self.baseline_accuracy}.")
+        print(f"d.v. #{len(ub)}, {ub}")
+        AMOSA.Problem.__init__(self, n_vars, [AMOSA.Type.INTEGER] * n_vars, [0] * n_vars, ub, 3, 1)
 
     def __set_matter_configuration(self, x):
         nabs = { f["name"] : n for f, n in zip(self.features, x[:len(self.features)]) }
@@ -276,4 +289,4 @@ class SecondStepOptimizerCombined(SecondStepOptimizerBase, AMOSA.Problem):
         f2 = self.args[0][0].get_total_retained()
         f3 = sum(self.args[0][0].get_current_required_aig_nodes())
         out["f"] = [f1, f2, f3]
-        out["g"] = [f1 - self.config.error_conf.threshold]
+        out["g"] = [f1 - self.config.snd_error_conf.threshold]

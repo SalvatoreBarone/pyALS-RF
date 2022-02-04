@@ -55,7 +55,21 @@ class ALSRewriter:
         ys.run_pass("tee -q clean -purge", design)
         ys.run_pass("tee -q opt", design)
         ys.run_pass(f"tee -q write_verilog -noattr {destination}.v", design)
-        ys.run_pass(f"tee -q write_ilang {destination}.ilang", design)
+        ys.run_pass("design -reset", design)
+        ys.run_pass("delete", design)
+        del design
+        gc.collect()
+
+    def rewrite_and_save_with_configuration(self, design_name, configuration, destination):
+        design = ys.Design()
+        ys.run_pass(f"tee -q design -load {design_name}", design)
+        for module in design.selected_whole_modules_warn():
+            for cell in module.selected_cells():
+                if ys.IdString("\LUT") in cell.parameters:
+                    self.__cell_to_aig(configuration, module, cell)
+        ys.run_pass("tee -q clean -purge", design)
+        ys.run_pass("tee -q opt", design)
+        ys.run_pass(f"tee -q write_verilog -noattr {destination}.v", design)
         ys.run_pass("design -reset", design)
         ys.run_pass("delete", design)
         del design
@@ -67,7 +81,7 @@ class ALSRewriter:
                 zip(x, self.graph.get_cells()) for e in self.catalog if e[0]["spec"] == l["spec"]]
 
     def __cell_to_aig(self, configuration, module, cell):
-        ax_cell_conf = [c for c in configuration if c["name"] == cell.name.str()][0]
+        ax_cell_conf = configuration[cell.name.str()]
         sigmap = ys.SigMap(module)
         S = ax_cell_conf["S"]
         P = ax_cell_conf["P"]
