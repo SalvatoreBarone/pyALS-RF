@@ -14,32 +14,13 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import sys, csv, copy
-from enum import Enum
+import sys, csv
 from xml.etree import ElementTree
 from anytree import Node
 from jinja2 import Environment, FileSystemLoader
-from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
 from .DecisionTree import *
 
-"""
-@brief Decision-tree based Multiple Classifier System, implemented in python.
-
-@details
-This class implements a Decision-tree based Multiple Classifier System as proposed in Amato F, Barbareschi M, Casola V,
-Mazzeo A, Romano S "Towards automatic generation of hardware classifiers". International Conference on Algorithms and
-Architectures for Parallel Processing. Springer, Cham, pp 125–132.
-
-This class supports both single-tree and random-forest DT-MCS. The latter are supported as long as they require
-majority-voting logic.
-
-From the software point of view, the outcome calculated by each of the trees is summed and the class that reaches a
-score that is greater than 50% is declared the winner.
-At hardware level, outcomes of the assertion functions belonging to the same class but computed by different DTs are
-arranged in an array of N elements, with N being the number of DTs. A majority voter is used to state which class is the
-winner.
-"""
 class Classifier:
   __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_1'}
   __source_dir = "./resources/"
@@ -63,19 +44,6 @@ class Classifier:
   #constraints
   __constraint_file = "constraints.xdc"
 
-  """
-  @brief Constructor function
-
-  @param  [in]  pmml_file_name (optional)
-                Path of the PMML file to be parsed
-
-  @param  [in]  nabs
-                Allows to set the number of approximate bits for each of the decision boxes belonging to the tree. It
-                must be a list of dict, each of which has the following key-value pairs:
-                  - "name": name: name of the feature
-                  - "nab": nab (int) number of approximate bits for the given feature representation
-                Ex.: [{"name": "feature_x", "nab" : 4}, {"name": "feature_y", "nab" : 3}, {"name": "feature_z", "nab" : 5}]
-  """
   def __init__(self, als_conf):
     self.__trees_list_obj = []
     self.__model_features_list_dict = []
@@ -122,28 +90,12 @@ class Classifier:
       t.dump()
 
   def reset_nabs_configuration(self):
-    nabs = [{"name" : f["name"], "nab" : 0} for f in self.__model_features_list_dict ]
-    self.set_nabs(nabs)
+    self.set_nabs({f["name"] : 0 for f in self.__model_features_list_dict })
 
   def reset_assertion_configuration(self):
     for t in self.__trees_list_obj:
       t.reset_assertion_configuration()
 
-  """
-  @brief Allows to set the number of approximate bits for each of the decision boxes belonging to each of the trees.
-
-  @param [in] nabs
-              A list of dict, each of which has the following key-value pairs:
-               - "name": name: name of the feature
-               - "nab": nab (int) number of approximate bits for the given feature representation
-              Ex.: [{"name": "feature_x", "nab" : 4}, {"name": "feature_y", "nab" : 3}, {"name": "feature_z", "nab" : 5}]
-
-  @details
-  This function allows you to set the degree of approximation to be adopted for the representation of the values of the
-  features for each of the decision-boxes of which each of the decision trees is composed. It is used during the
-  design-space exploration phase to evaluate the error introduced by the approximation and to estimate the corresponding
-  gain in terms of area on the silicon. 
-  """
   def set_nabs(self, nabs):
     for tree in self.__trees_list_obj:
       tree.set_nabs(nabs)
@@ -162,6 +114,9 @@ class Classifier:
   def get_features(self):
     return self.__model_features_list_dict
 
+  def get_trees(self):
+    return self.__trees_list_obj
+
   def get_num_of_trees(self):
     return len(self.__trees_list_obj)
 
@@ -171,10 +126,10 @@ class Classifier:
   def get_total_retained(self):
     return sum([ t.get_total_retained() for t in self.__trees_list_obj ])
 
-  def get_als_genes_per_tree(self):
+  def get_als_cells_per_tree(self):
     return [ len(t.get_graph().get_cells()) for t in self.__trees_list_obj]
 
-  def get_als_genes_upper_bound(self):
+  def get_als_dv_upper_bound(self):
     all_entries_available = []
     for t in self.__trees_list_obj:
        cells = [ { "name" : c["name"], "spec" : c["spec"] } for c in t.get_graph().get_cells() ]
@@ -200,24 +155,15 @@ class Classifier:
       struct.append(tree.get_struct())
     return struct
 
-  # def generate_first_step_ax_assertions(self, dataset, output_dir, nsgaii_config):
-  #   samples = self.preload_dataset(dataset)
-  #   for t in self.__trees_list_obj:
-  #     optimizer = FirsStageOptimizer(t, samples, nsgaii_config)
-  #     optimizer.optimize()
-  #     optimizer.plot_pareto(output_dir + "/" + t.get_name() + "_pareto_front.pdf")
-  #     optimizer.get_report(output_dir + "/" + t.get_name() + "_report.csv")
-  #     t.store_first_stage_approximate_implementations(optimizer.get_individuals())
-      
   def preload_dataset(self, csv_file):
     samples = []
     with open(csv_file, 'r') as data:
       for line in csv.DictReader(data, delimiter=';'):
-        input_features = []
-        expected_result = []
+        input_features = dict()
+        expected_result = dict()
         for f in self.__model_features_list_dict:
           try:
-            input_features.append({"name" : f["name"], "value" : float(line[f["name"]])})
+            input_features[f["name"]] = float(line[f["name"]])
           except:
             print(self.__model_features_list_dict)
             print(line)
@@ -225,7 +171,7 @@ class Classifier:
             exit()
         for c in self.__model_classes_list_str:
           try:
-            expected_result.append({"name" : c, "score" : int(line[c]) })
+            expected_result[c] = int(line[c])
           except:
             print(self.__model_classes_list_str)
             print(line)
@@ -235,14 +181,7 @@ class Classifier:
     return samples
 
   def evaluate_preloaded_dataset(self, samples):
-    correct_outcomes = 0
-    for sample in samples:
-      correct_outcomes +=1 if sample["outcome"] == self.__evaluate(sample["input"]) else 0
-    return correct_outcomes
-
-  def evaluate_test_dataset(self, csv_file):
-    samples = self.preload_dataset(csv_file)
-    return self.evaluate_preloaded_dataset(samples) / len(samples)
+    return sum([ 1 if sample["outcome"] == self.__evaluate(sample["input"]) else 0 for sample in samples ])
 
   def generate_hdl_exact_implementations(self, destination):
     features = [ {"name": f["name"], "nab": 0} for f in self.__model_features_list_dict ]
@@ -547,12 +486,12 @@ class Classifier:
         t.set_assertions_configuration(c + len(self.__model_features_list_dict))
         t.generate_hdl_als_ax_assertions(ax_dest)
 
-  def __evaluate(self, features):
-    classes_score = [ {"name" : c, "score" : 0} for c in self.__model_classes_list_str ]
+  def __evaluate(self, features_value):
+    classes_score = {c : 0 for c in self.__model_classes_list_str }
     for tree in self.__trees_list_obj:
-      tree.evaluate(features, classes_score)
-    for c in classes_score:
-      c["score"] = 0 if c["score"] < (len(self.__trees_list_obj) / 2) else 1
+      tree.evaluate(features_value, classes_score)
+    for c in classes_score.keys():
+      classes_score[c] = 0 if classes_score[c] < (len(self.__trees_list_obj) / 2) else 1
     return classes_score
 
   def __get_features_and_classes(self, root):
