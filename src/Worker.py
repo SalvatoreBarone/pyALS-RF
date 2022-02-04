@@ -103,18 +103,13 @@ class Worker:
         self.ax_conf = AxConfig(
             config["approximation"]["technique"],
             config["approximation"]["strategy"])
-        print(self.ax_conf.technique, self.ax_conf.strategy)
-
         self.als_conf = ALSConfig(
             config["als"]["cut_size"] if "cut_size" in config["als"] else "4",
             config["als"]["catalog"] if "catalog" in config["als"] else "lut_catalog.db",
             config["als"]["solver"] if "solver" in config["als"] else "boolector",
             int(config["als"]["timeout"]) if "timeout" in config["als"] else 60000)
-        print(self.als_conf.cut_size, self.als_conf.catalog, self.als_conf.solver, self.als_conf.timeout)
-
         if self.ax_conf.strategy == AxConfig.Strategy.ONE_STEP:
             error_conf = ErrorConfig("eprob", float(config["singlestage"]["error_threshold"]) if "error_threshold" in config["singlestage"] else .5, 0)
-            print(error_conf.metric, error_conf.threshold, error_conf.threshold)
             amosa_conf = AMOSAConfig(
                 int(config["singlestage"]["archive_hard_limit"]) if "archive_hard_limit" in config["singlestage"] else 50,
                 int(config["singlestage"]["archive_soft_limit"]) if "archive_soft_limit" in config["singlestage"] else 100,
@@ -124,21 +119,12 @@ class Worker:
                 float(config["singlestage"]["final_temperature"]) if "final_temperature" in config["singlestage"] else 0.0000001,
                 float(config["singlestage"]["cooling_factor"]) if "cooling_factor" in config["singlestage"] else 0.8,
                 int(config["singlestage"]["annealing_iterations"]) if "annealing_iterations" in config["singlestage"] else 100)
-            print(amosa_conf.archive_hard_limit,
-                  amosa_conf.archive_soft_limit,
-                  amosa_conf.archive_gamma,
-                  amosa_conf.hill_climbing_iterations,
-                  amosa_conf.initial_temperature,
-                  amosa_conf.final_temperature,
-                  amosa_conf.cooling_factor,
-                  amosa_conf.final_temperature)
             self.singlestep_opt_conf = SingleStepOptimizerConf(error_conf, amosa_conf)
         else:
             fst_error_conf = ErrorConfig(
                 config["twostages"]["fst_error_metric"] if  "fst_error_metric" in config["twostages"] else "eprob",
                 float(config["twostages"]["fst_error_threshold"]) if "error_threshold" in config["twostages"] else .5,
                 int(config["twostages"]["fst_num_vectors"] if  "fst_num_vectors" in config["twostages"] else 0))
-            print(fst_error_conf.metric, fst_error_conf.threshold, fst_error_conf.threshold)
             fst_amosa_conf = AMOSAConfig(
                 int(config["twostages"]["fst_archive_hard_limit"]) if "fst_archive_hard_limit" in config["twostages"] else 50,
                 int(config["twostages"]["fst_archive_soft_limit"]) if "fst_archive_soft_limit" in config["twostages"] else 100,
@@ -148,20 +134,10 @@ class Worker:
                 float(config["twostages"]["fst_final_temperature"]) if "fst_final_temperature" in config["twostages"] else 0.0000001,
                 float(config["twostages"]["fst_cooling_factor"]) if "fst_cooling_factor" in config["twostages"] else 0.8,
                 int(config["twostages"]["fst_annealing_iterations"]) if "fst_annealing_iterations" in config["twostages"] else 100)
-            print(fst_amosa_conf.archive_hard_limit,
-                  fst_amosa_conf.archive_soft_limit,
-                  fst_amosa_conf.archive_gamma,
-                  fst_amosa_conf.hill_climbing_iterations,
-                  fst_amosa_conf.initial_temperature,
-                  fst_amosa_conf.final_temperature,
-                  fst_amosa_conf.cooling_factor,
-                  fst_amosa_conf.final_temperature)
-
             snd_error_conf = ErrorConfig(
                 config["twostages"]["snd_error_metric"] if "snd_error_metric" in config["twostages"] else "eprob",
                 float(config["twostages"]["snd_error_threshold"]) if "snd_error_threshold" in config["twostages"] else .5,
                 int(config["twostages"]["snd_num_vectors"] if "snd_num_vectors" in config["twostages"] else 0))
-            print(snd_error_conf.metric, snd_error_conf.threshold, snd_error_conf.threshold)
             snd_amosa_conf = AMOSAConfig(
                 int(config["twostages"]["snd_archive_hard_limit"]) if "snd_archive_hard_limit" in config["twostages"] else 50,
                 int(config["twostages"]["snd_archive_soft_limit"]) if "snd_archive_soft_limit" in config["twostages"] else 100,
@@ -171,12 +147,4 @@ class Worker:
                 float(config["twostages"]["snd_final_temperature"]) if "snd_final_temperature" in config["twostages"] else 0.0000001,
                 float(config["twostages"]["snd_cooling_factor"]) if "snd_cooling_factor" in config["twostages"] else 0.8,
                 int(config["twostages"]["snd_annealing_iterations"]) if "snd_annealing_iterations" in config["twostages"] else 100)
-            print(snd_amosa_conf.archive_hard_limit,
-                  snd_amosa_conf.archive_soft_limit,
-                  snd_amosa_conf.archive_gamma,
-                  snd_amosa_conf.hill_climbing_iterations,
-                  snd_amosa_conf.initial_temperature,
-                  snd_amosa_conf.final_temperature,
-                  snd_amosa_conf.cooling_factor,
-                  snd_amosa_conf.final_temperature)
             self.twostep_opt_conf = TwoStepsOptimizerConf(fst_error_conf, fst_amosa_conf, snd_error_conf, snd_amosa_conf)

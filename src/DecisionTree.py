@@ -22,7 +22,7 @@ from pyeda.inter import *
 from .DecisionBox import *
 from .ALSGraph import *
 from .ALSCatalog import *
-from ALSRewriter import *
+from .ALSRewriter import *
 
 class DecisionTree:
   __source_dir = "./resources/vhd/"
@@ -45,7 +45,7 @@ class DecisionTree:
     if als_conf:
       design = self.__generate_design_for_als(self.__als_conf.cut_size)
       self.__assertions_graph = ALSGraph(design)
-      self.__assertions_catalog_entries = ALSCatalog(self.__als_conf.catalog).generate_catalog(design, self.__als_conf.timeout)
+      self.__assertions_catalog_entries = ALSCatalog(self.__als_conf.catalog, self.__als_conf.solver).generate_catalog(design, self.__als_conf.timeout)
       self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
       ys.run_pass("design -save {name}".format(name = self.__name), design)
     else:
@@ -104,10 +104,10 @@ class DecisionTree:
     return self.__first_stage_approximate_implementations
 
   def get_assertions_distance(self):
-    return [ c["dist"] for c in self.__current_configuration ]
+    return [ self.__current_configuration[c]["dist"] for c in self.__current_configuration.keys() ]
 
   def get_current_required_aig_nodes(self):
-    return sum([ c["gates"] for c in self.__current_configuration ])
+    return sum([ self.__current_configuration[c]["gates"] for c in self.__current_configuration.keys() ])
 
   def reset_assertion_configuration(self):
     self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
@@ -149,7 +149,7 @@ class DecisionTree:
               the LUT and the approximate implementation to use should be.
   """
   def set_assertions_configuration(self, configuration):
-    self.__current_configuration = [ {"name" : l["name"], "dist": c, "spec" : e[0]["spec"], "axspec" : e[c]["spec"], "gates" : e[c]["gates"], "S" : e[c]["S"], "P" : e[c]["P"], "out_p": e[c]["out_p"], "out" : e[c]["out"] } for c, l in zip(configuration, self.__assertions_graph.get_cells()) for e in self.__assertions_catalog_entries if e[0]["spec"] == l["spec"] ]
+    self.__current_configuration = {l["name"]: {"dist": c, "spec": e[0]["spec"], "axspec": e[c]["spec"], "gates": e[c]["gates"], "S": e[c]["S"], "P": e[c]["P"], "out_p": e[c]["out_p"], "out": e[c]["out"], "depth": e[c]["depth"]} for c, l in zip(configuration, self.__assertions_graph.get_cells()) for e in self.__assertions_catalog_entries if e[0]["spec"] == l["spec"]}
 
   # def set_first_stage_approximate_implementations(self, configuration):
   #   self.set_assertions_configuration(self.__first_stage_approximate_implementations[configuration])
@@ -184,14 +184,12 @@ class DecisionTree:
                   procedure
   """
   def evaluate(self, features_value, classes_score):
-    boxes_output = []
+    boxes_output = dict()
     for box in self.__decision_boxes:
-      value = next(item for item in features_value if item["name"] == box["box"].get_feature())["value"]
-      boxes_output.append({"name" : box["box"].get_name(), "value" : box["box"].compare(value)})
-    # TODO se la tecnica non è als, non usare il grafo per la valutazione della funzione asserzione, ma usa la valutazione della funziona booleana direttamente
+      boxes_output["\\" + box["box"].get_name()] = box["box"].compare(features_value[box["box"].get_feature()])
     output = self.__assertions_graph.evaluate(boxes_output, self.__current_configuration)
-    for c in classes_score:
-      c["score"] += 1 if next((sub for sub in output if sub['name'] == c["name"]), None)["value"]  else 0
+    for c in classes_score.keys():
+      classes_score[c] += int(output["\\" + c])
 
   def generate_hdl_tree(self, destination):
     file_name = destination + "/decision_tree_" + self.__name + ".vhd"
@@ -275,10 +273,7 @@ class DecisionTree:
     mkpath(destination + "/vhd")
     file_name, module_name = self.generate_hdl_exact_assertions(destination)
     design = ys.Design()
-    ys.run_pass("design -reset", design)
-    ys.run_pass("ghdl {} {} -e {}".format(self.__source_dir + self.__bnf_vhd, file_name, module_name), design)
-    ys.run_pass("hierarchy -check -top {}".format(module_name), design)
-    ys.run_pass("prep",  design)
-    ys.run_pass("splitnets -ports",  design)
-    ys.run_pass("synth -lut " + str(luts_tech), design)
+    ys.run_pass("tee -q design -reset", design)
+    ys.run_pass(f"tee -q ghdl {self.__source_dir + self.__bnf_vhd} {file_name} -e {module_name}", design)
+    ys.run_pass(f"tee -q hierarchy -check -top {module_name}; tee -q prep; tee -q flatten; tee -q splitnets -ports; tee -q synth -top {module_name}; tee -q flatten; tee -q clean -purge; tee -q synth -lut {luts_tech}", design)
     return design

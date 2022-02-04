@@ -93,13 +93,13 @@ class OptimizationBaseClass:
     def __init__(self, classifier, dataset_csv, config):
         self.classifier = classifier
         self.features = self.classifier.get_features()
-        dataset = classifier.preload_dataset(dataset_csv)
-        self.n_samples = len(dataset)
+        self.dataset = classifier.preload_dataset(dataset_csv)
+        self.n_samples = len(self.dataset)
         self.config = config
         classifier.reset_assertion_configuration()
         classifier.reset_nabs_configuration()
         classifiers = [copy.deepcopy(classifier)] * cpu_count()
-        self.args = [[c, d] for c, d in zip(classifiers, list_partitioning(dataset, cpu_count()))]
+        self.args = [[c, d] for c, d in zip(classifiers, list_partitioning(self.dataset, cpu_count()))]
         self.baseline_accuracy = self.evaluate_dataset()
         print(f"Baseline accuracy: {self.baseline_accuracy}.")
 
@@ -252,7 +252,6 @@ class SecondStepOptimizerAlsOnly(SecondStepOptimizerBase, AMOSA.Problem):
         out["f"] = [f1, f2]
         out["g"] = [f1 - self.config.error_conf.threshold]
 
-
 class SecondStepOptimizerCombined(SecondStepOptimizerBase, AMOSA.Problem):
     def __init__(self, classifier, dataset_csv, config):
         SecondStepOptimizerBase.__init__(self, classifier, dataset_csv, config)
@@ -270,4 +269,3 @@ class SecondStepOptimizerCombined(SecondStepOptimizerBase, AMOSA.Problem):
         f3 = sum(self.args[0][0].get_current_required_aig_nodes())
         out["f"] = [f1, f2, f3]
         out["g"] = [f1 - self.config.error_conf.threshold]
-

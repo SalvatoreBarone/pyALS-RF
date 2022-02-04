@@ -205,11 +205,11 @@ class Classifier:
     samples = []
     with open(csv_file, 'r') as data:
       for line in csv.DictReader(data, delimiter=';'):
-        input_features = []
-        expected_result = []
+        input_features = dict()
+        expected_result = dict()
         for f in self.__model_features_list_dict:
           try:
-            input_features.append({"name" : f["name"], "value" : float(line[f["name"]])})
+            input_features[f["name"]] = float(line[f["name"]])
           except:
             print(self.__model_features_list_dict)
             print(line)
@@ -217,7 +217,7 @@ class Classifier:
             exit()
         for c in self.__model_classes_list_str:
           try:
-            expected_result.append({"name" : c, "score" : int(line[c]) })
+            expected_result[c] = int(line[c])
           except:
             print(self.__model_classes_list_str)
             print(line)
@@ -227,14 +227,7 @@ class Classifier:
     return samples
 
   def evaluate_preloaded_dataset(self, samples):
-    correct_outcomes = 0
-    for sample in samples:
-      correct_outcomes +=1 if sample["outcome"] == self.__evaluate(sample["input"]) else 0
-    return correct_outcomes
-
-  def evaluate_test_dataset(self, csv_file):
-    samples = self.preload_dataset(csv_file)
-    return self.evaluate_preloaded_dataset(samples) / len(samples)
+    return sum([ 1 if sample["outcome"] == self.__evaluate(sample["input"]) else 0 for sample in samples ])
 
   def generate_hdl_exact_implementations(self, destination):
     features = [ {"name": f["name"], "nab": 0} for f in self.__model_features_list_dict ]
@@ -539,12 +532,12 @@ class Classifier:
         t.set_assertions_configuration(c + len(self.__model_features_list_dict))
         t.generate_hdl_als_ax_assertions(ax_dest)
 
-  def __evaluate(self, features):
-    classes_score = [ {"name" : c, "score" : 0} for c in self.__model_classes_list_str ]
+  def __evaluate(self, features_value):
+    classes_score = {c : 0 for c in self.__model_classes_list_str }
     for tree in self.__trees_list_obj:
-      tree.evaluate(features, classes_score)
-    for c in classes_score:
-      c["score"] = 0 if c["score"] < (len(self.__trees_list_obj) / 2) else 1
+      tree.evaluate(features_value, classes_score)
+    for c in classes_score.keys():
+      classes_score[c] = 0 if classes_score[c] < (len(self.__trees_list_obj) / 2) else 1
     return classes_score
 
   def __get_features_and_classes(self, root):
