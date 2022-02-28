@@ -1,8 +1,0 @@
-Jinja2
-anytree
-pyeda
-pymoo
-z3-solver
-python-igraph
-pycairo
-numpy

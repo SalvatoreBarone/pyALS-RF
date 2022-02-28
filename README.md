@@ -1,9 +1,12 @@
-# EDGINESS
-Evolutionary Desing-enGINe for dEcision-tree based multiple claSsifier Systems
+# pyALS-RF
+Approximate Logic Synthesis of Random-Forest classifiers.
 
 ## Installation
-pyALS has quite a lot of dependencies. You need to install Yosys (and its dependencies), GHDL (and, again, its dependencies), and so forth.
-Before you get a headache, follow this guide step by step. I'm sure it will be very helpful.
+pyALS-rf has quite a lot of dependencies. You need to install Yosys (and its dependencies), GHDL (and, again, its dependencies), and so forth.
+Before you get a headache, ***you can use the Docker image I have made available to you [here](https://github.com/SalvatoreBarone/pyALS-docker).***  
+
+If, on the other hand, you really feel the need to install everything by hand, follow this guide step by step. 
+I'm sure it will be very helpful.
 The guide has been tested on Debian 11.
 
 ### Preliminaries
@@ -91,4 +94,4 @@ You're almost done, the last step is to install python dependencies. It's quite 
 pip3 install -r requirements.txt 
 ```
 
-## Running EDGINESS
+## Running pyALS-RF
