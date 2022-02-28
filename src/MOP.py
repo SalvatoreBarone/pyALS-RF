@@ -215,11 +215,8 @@ class FirstStepOptimizer(AMOSA.Problem):
     def __get_eprob(self):
         with Pool(cpu_count()) as pool:
             error = pool.starmap(evaluate_eprob, self.args)
-        rs = sum(error) / self.error_config.n_vectors
-        if self.error_config.n_vectors != 0:
-            return rs + 4.5 / self.error_config.n_vectors * (1 + np.sqrt(1 + 4 / 9 * self.error_config.n_vectors * rs * (1 - rs)))
-        else:
-            return rs
+        rs = sum(error) / len(self.samples)
+        return rs
 
     def evaluate(self, x, out):
         self.__set_matter_configuration(x)

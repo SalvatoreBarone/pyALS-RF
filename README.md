@@ -174,7 +174,7 @@ fst_cooling_factor =  0.9           ; It governs how quickly the temperature of 
 fst_annealing_iterations = 500      ; The amount of refinement iterations performed during the main-loop of the AMOSA heuristic, see [1]
 fst_early_termination = 20          ; Early termination window. See [2]. Set it to zero in order to disable early-termination. Default is 20.
 
-snd_error_treshold = 1              ; The error threshold, in decimal units; ***hence 1 means allowing 100% classification-accuracy loss.***
+snd_error_threshold = 1             ; The error threshold, in decimal units; ***hence 1 means allowing 100% classification-accuracy loss.***
 snd_archive_hard_limit = 30         ; Archive hard limit for the AMOSA optimization heuristic, see [1]
 snd_archive_soft_limit = 50         ; Archive soft limit for the AMOSA optimization heuristic, see [1]
 snd_archive_gamma = 2               ; Gamma parameter for the AMOSA optimization heuristic, see [1]
