@@ -95,3 +95,100 @@ pip3 install -r requirements.txt
 ```
 
 ## Running pyALS-RF
+In order to run pyALS, only a few cli parameters must be specified, since most of the configuration is done through a configuration file.
+```
+./pyals-rf  [-h] [--dump] [--config CONFIG] [--pmml PMML] [--dataset DATASET] [--output OUTPUT]
+
+optional arguments:
+  -h, --help: show this help message and exit
+  --dump:     dump the model and exit
+  --config:   path of the configuration file. Default is config.ini;
+  --pmml:     specify the input PMML file. Default is model.pmml;
+  --dataset:  specify the file name for the input dataset. Default is dataset.txt
+  --output:   the output directory, where any output will be placed. Default is output/
+```
+For instance, you can run
+```
+./edginess --config config.ini --pmml resources/pmml/random_forest.pmml --dataset resources/test_dataset/random_forest.txt --output ax_rf
+```
+
+### The configuration file
+Here, I report the basic structure of a configuration file. You will find it within the pyALS root directory.
+```
+[approximation]
+technique = als ; Approximation technique to be used. you can select among 
+                ; - als: approximate logic synthesis on assertion functions
+                ; - ps: precision-scaling on comparators
+                ; - full: both of the above-mentioned techniques
+                
+strategy = two  ; Approximation strategy. This parameter is taken into account only for als and full techniques.
+                ; You can select among 
+                ;  - one: one-step approximation strategy. All the decision-trees involved in the classification 
+                ;    are approximated simultaneously. The set of decision variables of the optimization problem 
+                ;    consists of the union of the sets of decision variables that allow each of the individual 
+                ;    trees to be optimized. Hence, it is easy for the solution space to explode quickly, but 
+                ;    (theoretically) this strategy should allow converging towards the actual optimum between 
+                ;    classification-accuracy loss and hardware resource savings.
+                ;  - two: two-step approximation strategy. Each tree is independently approximated; then, 
+                ;    the classifier as a whole is approximated. This strategy allows to drastically reduce the
+                ;    size of the solution space, but, on the other hand, it may result in sub-optimum points 
+                ;    between classification-accuracy loss and hardware resource savings.
+
+[als]
+cut_size = 4             ; specifies the "k" for AIG-cuts, or, alternatively, the k-LUTs for LUT-mapping during cut-enumeration
+catalog = lut_catalog.db ; This is the path of the file where synthesized Boolean functions are stored. You can find a ready to use cache at git@github.com:SalvatoreBarone/LUTCatalog.git
+solver = btor            ; SAT-solver to be used. It can be either btor (Boolector) or z3 (Z3-solver)
+timeout = 60000          ; Timeout (in ms) for the Exact synthesis process. You don't need to change its default value.
+
+[error]
+metric = med             ; Error metric to be used during Design-Space exploration. It can be "eprob", "awce" or "med", for error-probability, absolute worst-case error or mean error distance, respectively
+threshold = 1            ; The error threshold
+vectors = 0              ; The number of test vectors for error assessment. "0" will unlock exhaustive evaluation.
+
+[hardware]
+metric = gates, depth    ; hardware metric(s) to be optimized (gates, depth, area, power). Note that area and power refer to ASIC, and require the user to specify a liberty file for tech-map. 
+liberty = gscl45nm.lib   ; liberty file for technology mapping (if area and/or power metric are to be minimizer)
+
+[singlestage]                   ; These are configuration for the one-step approximation strategy.
+error_threshold = 1             ; The error threshold, in decimal units; hence 1 means allowing 100% classification-accuracy loss. 
+archive_hard_limit = 30         ; Archive hard limit for the AMOSA optimization heuristic, see [1]
+archive_soft_limit = 50         ; Archive soft limit for the AMOSA optimization heuristic, see [1]
+archive_gamma = 2               ; Gamma parameter for the AMOSA optimization heuristic, see [1]
+hill_climbing_iterations = 500  ; the number of iterations performed during the initial hill-climbing refinement, see [1];
+initial_temperature = 500       ; Initial temperature of the matter for the AMOSA optimization heuristic, see [1]
+final_temperature = 0.000001    ; Final temperature of the matter for the AMOSA optimization heuristic, see [1]
+cooling_factor =  0.9           ; It governs how quickly the temperature of the matter decreases during the annealing process, see [1]
+annealing_iterations = 500      ; The amount of refinement iterations performed during the main-loop of the AMOSA heuristic, see [1]
+early_termination = 20          ; Early termination window. See [2]. Set it to zero in order to disable early-termination. Default is 20.
+
+
+[twostages]                         ; These are configuration for the two-steps approximation strategy.
+fst_error_threshold = 1             ; The error threshold, in decimal units; ***hence 1 means allowing 100% error-frequency on assertion functions.***
+fst_archive_hard_limit = 30         ; Archive hard limit for the AMOSA optimization heuristic, see [1]
+fst_archive_soft_limit = 50         ; Archive soft limit for the AMOSA optimization heuristic, see [1]
+fst_archive_gamma = 2               ; Gamma parameter for the AMOSA optimization heuristic, see [1]
+fst_hill_climbing_iterations = 500  ; the number of iterations performed during the initial hill-climbing refinement, see [1];
+fst_initial_temperature = 500       ; Initial temperature of the matter for the AMOSA optimization heuristic, see [1]
+fst_final_temperature = 0.000001    ; Final temperature of the matter for the AMOSA optimization heuristic, see [1]
+fst_cooling_factor =  0.9           ; It governs how quickly the temperature of the matter decreases during the annealing process, see [1]
+fst_annealing_iterations = 500      ; The amount of refinement iterations performed during the main-loop of the AMOSA heuristic, see [1]
+fst_early_termination = 20          ; Early termination window. See [2]. Set it to zero in order to disable early-termination. Default is 20.
+
+snd_error_treshold = 1              ; The error threshold, in decimal units; ***hence 1 means allowing 100% classification-accuracy loss.***
+snd_archive_hard_limit = 30         ; Archive hard limit for the AMOSA optimization heuristic, see [1]
+snd_archive_soft_limit = 50         ; Archive soft limit for the AMOSA optimization heuristic, see [1]
+snd_archive_gamma = 2               ; Gamma parameter for the AMOSA optimization heuristic, see [1]
+snd_hill_climbing_iterations = 500  ; the number of iterations performed during the initial hill-climbing refinement, see [1];
+snd_initial_temperature = 500       ; Initial temperature of the matter for the AMOSA optimization heuristic, see [1]
+snd_final_temperature = 0.000001    ; Final temperature of the matter for the AMOSA optimization heuristic, see [1]
+snd_cooling_factor =  0.9           ; It governs how quickly the temperature of the matter decreases during the annealing process, see [1]
+snd_annealing_iterations = 500      ; The amount of refinement iterations performed during the main-loop of the AMOSA heuristic, see [1]
+snd_early_termination = 20          ; Early termination window. See [2]. Set it to zero in order to disable early-termination. Default is 20.
+```
+
+Please kindly note you have to specify the path of the file where synthesized Boolean functions are stored. You can find a ready to use cache at ```git@github.com:SalvatoreBarone/pyALS-lut-catalog.git```.
+If you do not want to use the one I mentioned, pyALS will perform exact synthesis as needed.
+
+## References
+1. Bandyopadhyay, S., Saha, S., Maulik, U., & Deb, K. (2008). A simulated annealing-based multiobjective optimization algorithm: AMOSA. IEEE transactions on evolutionary computation, 12(3), 269-283.
+2. Blank, Julian, and Kalyanmoy Deb. "A running performance metric and termination criterion for evaluating evolutionary multi-and many-objective optimization algorithms." 2020 IEEE Congress on Evolutionary Computation (CEC). IEEE, 2020.
