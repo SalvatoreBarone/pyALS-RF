@@ -129,10 +129,14 @@ class DecisionTree:
     for a in self.__assertions:
       print("\t\t", a["class"], " = ", a["expression"])
 
-  def evaluate(self, features_value, classes_score):
+  def get_boxes_output(self, features_value):
     boxes_output = dict()
     for box in self.__decision_boxes:
       boxes_output["\\" + box["box"].get_name()] = box["box"].compare(features_value[box["box"].get_feature()])
+    return boxes_output
+
+  def evaluate(self, features_value, classes_score):
+    boxes_output = self.get_boxes_output(features_value)
     output = self.__assertions_graph.evaluate(boxes_output, self.__current_configuration)
     for c in classes_score.keys():
       classes_score[c] += int(output["\\" + c])

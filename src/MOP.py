@@ -182,7 +182,7 @@ class SingleStepCombined(OptimizationBaseClass, AMOSA.Problem):
         out["g"] = [f1 - self.config.error_conf.threshold]
 
 class FirstStepOptimizer(AMOSA.Problem):
-    def __init__(self, decision_tree, error_config):
+    def __init__(self, decision_tree, preloaded_dataset, error_config):
         self.decision_tree = decision_tree
         self.error_config = error_config
         self.catalog = self.decision_tree.get_catalog_for_assertions()
@@ -191,25 +191,17 @@ class FirstStepOptimizer(AMOSA.Problem):
         n_vars = self.decision_tree.get_als_num_of_dv()
         self.decision_tree.reset_assertion_configuration()
         self.samples = []
-        self.__generate_samples()
+        self.__generate_samples(preloaded_dataset)
         self.total_samples = len(self.samples)
         self.args = [[g, s, [0] * n_vars] for g, s in zip(self.graphs, list_partitioning(self.samples, cpu_count()))]
         ub = self.decision_tree.get_als_dv_upper_bound()
         print(f"Tree {self.decision_tree.get_name()}. d.v. #{len(ub)}: {ub}")
         AMOSA.Problem.__init__(self, n_vars, [AMOSA.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 
-    def __generate_samples(self):
-        PI = self.graph.get_pi()
-        if self.error_config.n_vectors != 0:
-            for _ in range(self.error_config.n_vectors):
-                inputs = {i["name"]: bool(random.getrandbits(1)) for i in PI}
-                self.samples.append({"input": inputs, "output": self.graph.evaluate(inputs)})
-        else:
-            self.error_config.n_vectors = 2 ** len(PI)
-            permutations = [list(i) for i in itertools.product([False, True], repeat=len(PI))]
-            for perm in permutations:
-                inputs = {i["name"]: p for i, p in zip(PI, perm)}
-                self.samples.append({"input": inputs, "output": self.graph.evaluate(inputs)})
+    def __generate_samples(self, preloaded_dataset):
+        for sample in preloaded_dataset:
+            inputs = self.decision_tree.get_boxes_output(sample["input"])
+            self.samples.append({"input": inputs, "output": self.graph.evaluate(inputs)})
 
     def __get_cell_configuration(self, x):
         return {l["name"]: {"dist": c, "spec": e[0]["spec"], "axspec": e[c]["spec"], "gates": e[c]["gates"], "S": e[c]["S"], "P": e[c]["P"], "out_p": e[c]["out_p"], "out": e[c]["out"], "depth": e[c]["depth"]} for c, l in zip(x, self.graph.get_cells()) for e in self.catalog if e[0]["spec"] == l["spec"]}
@@ -241,7 +233,7 @@ class SecondStepOptimizerBase(OptimizationBaseClass):
         OptimizationBaseClass.__init__(self, classifier, dataset_csv, config)
         self.opt_solutions_for_trees = []
         for t in self.classifier.get_trees():
-            problem = FirstStepOptimizer(t, config.fst_error_conf)
+            problem = FirstStepOptimizer(t, self.dataset, config.fst_error_conf)
             optimizer = AMOSA(self.config.fst_amosa_conf)
             optimizer.minimize(problem)
             self.opt_solutions_for_trees.append(optimizer.pareto_set())
