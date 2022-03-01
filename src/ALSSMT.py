@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import math, z3, pyboolector
+import time, math, z3, pyboolector
 from pyboolector import Boolector
 from enum import Enum
 
