@@ -67,6 +67,7 @@ class Worker:
                 self.__classifier.generate_hdl_onestep_asl_ax_implementations(self.__output_dir, optimizer.pareto_set())
             elif self.ax_conf.technique == AxConfig.Technique.FULL:
                 self.__classifier.generate_hdl_onestep_full_ax_implementations(self.__output_dir, optimizer.pareto_set())
+
         elif self.ax_conf.strategy == AxConfig.Strategy.TWO_STEPS:
             if self.ax_conf.technique == AxConfig.Technique.ALS:
                 problem = SecondStepOptimizerAlsOnly(self.__classifier, self.__test_dataset, self.twostep_opt_conf)
