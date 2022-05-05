@@ -16,7 +16,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import itertools, numpy
 from multiprocessing import cpu_count, Pool
-from .AMOSA import *
+from pyAMOSA.AMOSA import *
 from .Utility import *
 
 def evaluate_preloaded_dataset(classifier, samples):

@@ -105,11 +105,41 @@ class Worker:
         self.als_conf = ALSConfig(config["als"]["cut_size"], config["als"]["catalog"], config["als"]["solver"], int(config["als"]["timeout"]))
         if self.ax_conf.strategy == AxConfig.Strategy.ONE_STEP:
             error_conf = ErrorConfig("eprob", float(config["singlestage"]["error_threshold"]), 0)
-            amosa_conf = AMOSAConfig(int(config["singlestage"]["archive_hard_limit"]), int(config["singlestage"]["archive_soft_limit"]), int(config["singlestage"]["archive_gamma"]), int(config["singlestage"]["hill_climbing_iterations"]), float(config["singlestage"]["initial_temperature"]), float(config["singlestage"]["final_temperature"]), float(config["singlestage"]["cooling_factor"]), int(config["singlestage"]["annealing_iterations"]), int(config["singlestage"]["early_termination"]))
+            amosa_conf = AMOSAConfig(
+                int(config["singlestage"]["archive_hard_limit"]),
+                int(config["singlestage"]["archive_soft_limit"]),
+                int(config["singlestage"]["archive_gamma"]),
+                int(config["singlestage"]["hill_climbing_iterations"]),
+                float(config["singlestage"]["initial_temperature"]),
+                float(config["singlestage"]["final_temperature"]),
+                float(config["singlestage"]["cooling_factor"]),
+                int(config["singlestage"]["annealing_iterations"]),
+                int(config["singlestage"]["annealing_strength"]),
+                int(config["singlestage"]["early_termination"]))
             self.singlestep_opt_conf = SingleStepOptimizerConf(error_conf, amosa_conf)
         else:
             fst_error_conf = ErrorConfig("eprob", float(config["twostages"]["fst_error_threshold"]), 0)
-            fst_amosa_conf = AMOSAConfig(int(config["twostages"]["fst_archive_hard_limit"]), int(config["twostages"]["fst_archive_soft_limit"]), int(config["twostages"]["fst_archive_gamma"]), int(config["twostages"]["fst_hill_climbing_iterations"]), float(config["twostages"]["fst_initial_temperature"]), float(config["twostages"]["fst_final_temperature"]), float(config["twostages"]["fst_cooling_factor"]), int(config["twostages"]["fst_annealing_iterations"]), int(config["twostages"]["fst_early_termination"]))
+            fst_amosa_conf = AMOSAConfig(
+                int(config["twostages"]["fst_archive_hard_limit"]),
+                int(config["twostages"]["fst_archive_soft_limit"]),
+                int(config["twostages"]["fst_archive_gamma"]),
+                int(config["twostages"]["fst_hill_climbing_iterations"]),
+                float(config["twostages"]["fst_initial_temperature"]),
+                float(config["twostages"]["fst_final_temperature"]),
+                float(config["twostages"]["fst_cooling_factor"]),
+                int(config["twostages"]["fst_annealing_iterations"]),
+                int(config["twostages"]["fst_annealing_strength"]),
+                int(config["twostages"]["fst_early_termination"]))
             snd_error_conf = ErrorConfig("eprob", float(config["twostages"]["snd_error_threshold"]), 0)
-            snd_amosa_conf = AMOSAConfig(int(config["twostages"]["snd_archive_hard_limit"]), int(config["twostages"]["snd_archive_soft_limit"]), int(config["twostages"]["snd_archive_gamma"]), int(config["twostages"]["snd_hill_climbing_iterations"]), float(config["twostages"]["snd_initial_temperature"]), float(config["twostages"]["snd_final_temperature"]), float(config["twostages"]["snd_cooling_factor"]), int(config["twostages"]["snd_annealing_iterations"]), int(config["twostages"]["snd_early_termination"]))
+            snd_amosa_conf = AMOSAConfig(
+                int(config["twostages"]["snd_archive_hard_limit"]),
+                int(config["twostages"]["snd_archive_soft_limit"]),
+                int(config["twostages"]["snd_archive_gamma"]),
+                int(config["twostages"]["snd_hill_climbing_iterations"]),
+                float(config["twostages"]["snd_initial_temperature"]),
+                float(config["twostages"]["snd_final_temperature"]),
+                float(config["twostages"]["snd_cooling_factor"]),
+                int(config["twostages"]["snd_annealing_iterations"]),
+                int(config["twostages"]["snd_annealing_strength"]),
+                int(config["twostages"]["snd_early_termination"]))
             self.twostep_opt_conf = TwoStepsOptimizerConf(fst_error_conf, fst_amosa_conf, snd_error_conf, snd_amosa_conf)
