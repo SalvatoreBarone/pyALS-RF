@@ -1,6 +1,11 @@
 # pyALS-RF
 Approximate Logic Synthesis of Random-Forest classifiers.
 
+The tool allows applying the *Catalog-based Aig-rewriting Approximate Logic Synthesis* approximation technique to decision-tree based multiple classifier systems.
+
+The technique is described in full details in 
+> [M. Barbareschi, S. Barone, N. Mazzocca and A. Moriconi, "A Catalog-based AIG-Rewriting Approach to the Design of Approximate Components" in IEEE Transactions on Emerging Topics in Computing, vol. , no. , pp. , 2022. DOI: 10.1109/TETC.2022.3170502](https://doi.ieeecomputersociety.org/10.1109/TETC.2022.3170502)
+
 ## Installation
 pyALS-rf has quite a lot of dependencies. You need to install Yosys (and its dependencies), GHDL (and, again, its dependencies), and so forth.
 Before you get a headache, ***you can use the Docker image I have made available to you [here](https://github.com/SalvatoreBarone/pyALS-docker).***  
