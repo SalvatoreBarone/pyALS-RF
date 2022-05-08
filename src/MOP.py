@@ -1,5 +1,5 @@
 """
-Copyright 2021 Salvatore Barone <salvatore.barone@unina.it>
+Copyright 2021-2022 Salvatore Barone <salvatore.barone@unina.it>
 
 This is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
@@ -14,16 +14,20 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import itertools, numpy
+import itertools, numpy, enum
 from multiprocessing import cpu_count, Pool
 from pyAMOSA.AMOSA import *
 from .Utility import *
+from enum import Enum
+
 
 def evaluate_preloaded_dataset(classifier, samples):
     return classifier.evaluate_preloaded_dataset(samples)
 
+
 def evaluate_eprob(graph, samples, configuration):
     return sum([0 if sample["output"] == graph.evaluate(sample["input"], configuration) else 1 for sample in samples])
+
 
 class AxConfig:
     class Technique(Enum):
@@ -55,11 +59,13 @@ class AxConfig:
         else:
             self.strategy = ax_strategy[strategy]
 
+
 class ErrorConfig:
     class Metric(Enum):
         EPROB = 1
         AWCE = 2
         MED = 3
+
     def __init__(self, metric, threshold, vectors, weights = None):
         error_metrics = {
             "eprob": ErrorConfig.Metric.EPROB,
@@ -77,10 +83,12 @@ class ErrorConfig:
         self.n_vectors = vectors
         self.weights = weights
 
+
 class SingleStepOptimizerConf:
     def __init__(self, error_conf, amosa_conf):
         self.error_conf = error_conf
         self.amosa_conf = amosa_conf
+
 
 class TwoStepsOptimizerConf:
     def __init__(self, fst_error_conf, fst_amosa_conf, snd_error_conf, snd_amosa_conf):
@@ -88,6 +96,7 @@ class TwoStepsOptimizerConf:
         self.fst_amosa_conf = fst_amosa_conf
         self.snd_error_conf = snd_error_conf
         self.snd_amosa_conf = snd_amosa_conf
+
 
 class OptimizationBaseClass:
     def __init__(self, classifier, dataset_csv, config):
@@ -111,6 +120,7 @@ class OptimizationBaseClass:
     def get_accuracy_loss(self):
         return self.baseline_accuracy - self.evaluate_dataset()
 
+
 class SingleStepPsOnly(OptimizationBaseClass, AMOSA.Problem):
     def __init__(self, classifier, dataset_csv, config):
         OptimizationBaseClass.__init__(self, classifier, dataset_csv, config)
@@ -128,6 +138,7 @@ class SingleStepPsOnly(OptimizationBaseClass, AMOSA.Problem):
         f2 = self.args[0][0].get_total_retained()
         out["f"] = [f1, f2]
         out["g"] = [f1 - self.config.error_conf.threshold]
+
 
 class SingleStepAlsOnly(OptimizationBaseClass, AMOSA.Problem):
     def __init__(self, classifier, dataset_csv, config):
@@ -153,6 +164,7 @@ class SingleStepAlsOnly(OptimizationBaseClass, AMOSA.Problem):
         f2 = sum(self.args[0][0].get_current_required_aig_nodes())
         out["f"] = [f1, f2]
         out["g"] = [f1 - self.config.error_conf.threshold]
+
 
 class SingleStepCombined(OptimizationBaseClass, AMOSA.Problem):
     def __init__(self, classifier, dataset_csv, config):
@@ -180,6 +192,7 @@ class SingleStepCombined(OptimizationBaseClass, AMOSA.Problem):
         f3 = sum(self.args[0][0].get_current_required_aig_nodes())
         out["f"] = [f1, f2, f3]
         out["g"] = [f1 - self.config.error_conf.threshold]
+
 
 class FirstStepOptimizer(AMOSA.Problem):
     def __init__(self, decision_tree, preloaded_dataset, error_config):
@@ -225,6 +238,7 @@ class FirstStepOptimizer(AMOSA.Problem):
         out["f"] = [f1, f2]
         out["g"] = [f1 - self.error_config.threshold]
 
+
 class SecondStepOptimizerBase(OptimizationBaseClass):
     def __init__(self, classifier, dataset_csv, config):
         OptimizationBaseClass.__init__(self, classifier, dataset_csv, config)
@@ -234,6 +248,7 @@ class SecondStepOptimizerBase(OptimizationBaseClass):
             optimizer = AMOSA(self.config.fst_amosa_conf)
             optimizer.minimize(problem)
             self.opt_solutions_for_trees.append(optimizer.pareto_set())
+
 
 class SecondStepOptimizerAlsOnly(SecondStepOptimizerBase, AMOSA.Problem):
     def __init__(self, classifier, dataset_csv, config):
@@ -255,6 +270,7 @@ class SecondStepOptimizerAlsOnly(SecondStepOptimizerBase, AMOSA.Problem):
         f2 = sum(self.args[0][0].get_current_required_aig_nodes())
         out["f"] = [f1, f2]
         out["g"] = [f1 - self.config.snd_error_conf.threshold]
+
 
 class SecondStepOptimizerCombined(SecondStepOptimizerBase, AMOSA.Problem):
     def __init__(self, classifier, dataset_csv, config):
