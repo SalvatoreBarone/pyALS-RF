@@ -23,9 +23,10 @@ from src.MOP import *
 
 def git_updater():
 	repo = git.Repo('.')
-	local_head = repo.heads.master.commit
 	repo.remotes.origin.fetch()
-	remote_head = repo.remotes.origin.refs.master.commit
+	local_head = repo.heads[0].commit
+	remote_head = repo.remotes.origin.refs[0].commit
+	print(f"{local_head} {remote_head}")
 	if remote_head != local_head:
 		print("Updating the tool is needed, that will stop the current execution. Please, run it again.")
 		repo.remotes.origin.pull()
