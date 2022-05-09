@@ -100,21 +100,14 @@ pip3 install -r requirements.txt
 ```
 
 ## Running pyALS-RF
-In order to run pyALS, only a few cli parameters must be specified, since most of the configuration is done through a configuration file.
+pyALS-rf provides several approximation flows, through a unified command line interface. You can select between the following commands:
 ```
-./pyals-rf  [-h] [--dump] [--config CONFIG] [--pmml PMML] [--dataset DATASET] [--output OUTPUT]
-
-optional arguments:
-  -h, --help: show this help message and exit
-  --dump:     dump the model and exit
-  --config:   path of the configuration file. Default is config.ini;
-  --pmml:     specify the input PMML file. Default is model.pmml;
-  --dataset:  specify the file name for the input dataset. Default is dataset.txt
-  --output:   the output directory, where any output will be placed. Default is output/
-```
-For instance, you can run
-```
-./edginess --config config.ini --pmml resources/pmml/random_forest.pmml --dataset resources/test_dataset/random_forest.txt --output ax_rf
+  bitwidth      Performs precision-scaling approximation
+  als-onestep   Performs one-step ALS approximation
+  als-twostep   Performs two-steps ALS approximation
+  full-onestep  Performs one-step full approximation (both ps and als)
+  full-twostep  Performs two-steps full approximation (both ps and als)
+  dump          just dumps the classifier and exit
 ```
 
 ### The configuration file
