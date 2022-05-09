@@ -109,6 +109,7 @@ pyALS-rf provides several approximation flows, through a unified command line in
   full-twostep  Performs two-steps full approximation (both ps and als)
   dump          just dumps the classifier and exit
 ```
+### The ```dump``` command
 
 ### The configuration file
 Here, I report the basic structure of a configuration file. You will find it within the pyALS root directory.
