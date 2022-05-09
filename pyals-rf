@@ -26,7 +26,6 @@ def git_updater():
 	repo.remotes.origin.fetch()
 	local_head = repo.heads[0].commit
 	remote_head = repo.remotes.origin.refs[0].commit
-	print(f"{local_head} {remote_head}")
 	if remote_head != local_head:
 		print("Updating the tool is needed, that will stop the current execution. Please, run it again.")
 		repo.remotes.origin.pull()
