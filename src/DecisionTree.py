@@ -41,7 +41,7 @@ class DecisionTree:
       self.__get_decision_boxes(root_node)
       self.__get_assertions(root_node)
     self.__current_configuration = []
-    if als_conf:
+    if als_conf is not None:
       design = self.__generate_design_for_als(self.__als_conf.cut_size)
       self.__assertions_graph = ALSGraph(design)
       self.__assertions_catalog_entries = ALSCatalog(self.__als_conf.catalog, self.__als_conf.solver).generate_catalog(design, self.__als_conf.timeout)
@@ -105,7 +105,8 @@ class DecisionTree:
     return sum([ self.__current_configuration[c]["gates"] for c in self.__current_configuration.keys() ])
 
   def reset_assertion_configuration(self):
-    self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
+    if self.__assertions_graph is not None:
+      self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
 
   def get_als_num_of_dv(self):
     return len(self.__assertions_graph.get_cells())
@@ -218,7 +219,7 @@ class DecisionTree:
           "minimized"  : "'0'" if assertion_function == "False" else minimized_assertion})
 
   def __generate_design_for_als(self, luts_tech):
-    destination = "/tmp/EDGINESS/"
+    destination = "/tmp/pyals-rf/"
     mkpath(destination)
     mkpath(destination + "/vhd")
     file_name, module_name = self.generate_hdl_exact_assertions(destination)

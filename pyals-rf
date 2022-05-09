@@ -15,7 +15,313 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-from src.Worker import *
+import configparser, click, git, os
+from pyosys import libyosys as ys
+from src.Classifier import *
+from src.MOP import *
+
+
+def git_updater():
+	repo = git.Repo('.')
+	local_head = repo.heads.master.commit
+	repo.remotes.origin.fetch()
+	remote_head = repo.remotes.origin.refs.master.commit
+	if remote_head != local_head:
+		print("Updating the tool is needed, that will stop the current execution. Please, run it again.")
+		repo.remotes.origin.pull()
+		exit()
+
+
+def ps_config_parser(config_file):
+	config = configparser.ConfigParser(converters={'list': lambda x: [i.strip() for i in x.split(',')]}, empty_lines_in_values=False)
+	config.read(config_file)
+	try:
+		error_conf = ErrorConfig("eprob", float(config["error"]["max_loss"]), 0)
+		amosa_conf = AMOSAConfig(
+			int(config["amosa"]["archive_hard_limit"]),
+			int(config["amosa"]["archive_soft_limit"]),
+			int(config["amosa"]["archive_gamma"]),
+			int(config["amosa"]["hill_climbing_iterations"]),
+			float(config["amosa"]["initial_temperature"]),
+			float(config["amosa"]["final_temperature"]),
+			float(config["amosa"]["cooling_factor"]),
+			int(config["amosa"]["annealing_iterations"]),
+			int(config["amosa"]["annealing_strength"]),
+			int(config["amosa"]["early_termination"]))
+		return error_conf, amosa_conf
+	except KeyError as e:
+		print(f"Field not found: {e}")
+		exit()
+
+
+def als_onestep_config_parser(config_file):
+	config = configparser.ConfigParser(converters={'list': lambda x: [i.strip() for i in x.split(',')]}, empty_lines_in_values=False)
+	config.read(config_file)
+	try:
+		als_conf = ALSConfig(config["als"]["cut_size"], config["als"]["catalog"], config["als"]["solver"], int(config["als"]["timeout"]))
+		error_conf = ErrorConfig("eprob", float(config["error"]["max_loss"]), 0)
+		amosa_conf = AMOSAConfig(
+			int(config["amosa"]["archive_hard_limit"]),
+			int(config["amosa"]["archive_soft_limit"]),
+			int(config["amosa"]["archive_gamma"]),
+			int(config["amosa"]["hill_climbing_iterations"]),
+			float(config["amosa"]["initial_temperature"]),
+			float(config["amosa"]["final_temperature"]),
+			float(config["amosa"]["cooling_factor"]),
+			int(config["amosa"]["annealing_iterations"]),
+			int(config["amosa"]["annealing_strength"]),
+			int(config["amosa"]["early_termination"]))
+		return als_conf, error_conf, amosa_conf
+	except KeyError as e:
+		print(f"Field not found: {e}")
+		exit()
+
+
+def als_twostep_config_parser(config_file):
+	config = configparser.ConfigParser(converters={'list': lambda x: [i.strip() for i in x.split(',')]}, empty_lines_in_values=False)
+	config.read(config_file)
+	try:
+		als_conf = ALSConfig(config["als"]["cut_size"], config["als"]["catalog"], config["als"]["solver"], int(config["als"]["timeout"]))
+		error_conf_1 = ErrorConfig("eprob", float(config["error"]["max_freq"]), 0)
+		error_conf_2 = ErrorConfig("eprob", float(config["error"]["max_loss"]), 0)
+		amosa_conf_1 = AMOSAConfig(
+			int(config["amosa1"]["archive_hard_limit"]),
+			int(config["amosa1"]["archive_soft_limit"]),
+			int(config["amosa1"]["archive_gamma"]),
+			int(config["amosa1"]["hill_climbing_iterations"]),
+			float(config["amosa1"]["initial_temperature"]),
+			float(config["amosa1"]["final_temperature"]),
+			float(config["amosa1"]["cooling_factor"]),
+			int(config["amosa1"]["annealing_iterations"]),
+			int(config["amosa1"]["annealing_strength"]),
+			int(config["amosa1"]["early_termination"]))
+		amosa_conf_2 = AMOSAConfig(
+			int(config["amosa2"]["archive_hard_limit"]),
+			int(config["amosa2"]["archive_soft_limit"]),
+			int(config["amosa2"]["archive_gamma"]),
+			int(config["amosa2"]["hill_climbing_iterations"]),
+			float(config["amosa2"]["initial_temperature"]),
+			float(config["amosa2"]["final_temperature"]),
+			float(config["amosa2"]["cooling_factor"]),
+			int(config["amosa2"]["annealing_iterations"]),
+			int(config["amosa2"]["annealing_strength"]),
+			int(config["amosa2"]["early_termination"]))
+		return als_conf, error_conf_1, error_conf_2, amosa_conf_1, amosa_conf_2
+	except KeyError as e:
+		print(f"Field not found: {e}")
+		exit()
+
+
+@click.group()
+def cli():
+	pass
+
+
+@click.command("dump")
+@click.option("-p", "--pmml", type=str, required=True, help="specify the input PMML file")
+def dump(pmml):
+	""" Dump the classifier and exit """
+	classifier = Classifier(None)
+	classifier.parse(pmml)
+	classifier.dump()
+	pass
+
+
+@click.command("bitwidth")
+@click.option("-c", "--config", type=str, required=True, help="path of the configuration file")
+@click.option("-p", "--pmml", type=str, required=True, help="specify the input PMML file")
+@click.option("-d", "--dataset", type=str, required=True, help="specify the file name for the input dataset")
+@click.option("-o", "--output", type=str, required=True, help="Output directory. Everything will be placed there.")
+@click.option("-i", "--improve", type=str, help="Run again the workflow  using previous Pareto set as initial archive", default=None)
+def bitwidth(config, pmml, dataset, output, improve):
+	""" Performs precision-scaling approximation """
+	if not os.path.exists(config):
+		print(f"{config}: no such file.")
+		exit()
+	if not os.path.exists(pmml):
+		print(f"{pmml}: no such file.")
+		exit()
+	if not os.path.exists(dataset):
+		print(f"{dataset}: no such file.")
+		exit()
+	if improve is not None and not os.path.exists(improve):
+		print(f"{improve}: no such file.")
+		exit()
+	if output != ".":
+		mkpath(output)
+	error_conf, amosa_conf = ps_config_parser(config)
+	classifier = Classifier(None)
+	classifier.parse(pmml)
+	classifier.generate_hdl_exact_implementations(output)
+	problem = SingleStepPsOnly(classifier, dataset, SingleStepOptimizerConf(error_conf, amosa_conf))
+	optimizer = AMOSA(amosa_conf)
+	if improve is None:
+		optimizer.random_archive(problem)
+	else:
+		optimizer.seeded_archive(problem, improve)
+	optimizer.minimize(problem)
+	optimizer.save_results(problem, output + "/report.csv")
+	optimizer.plot_pareto(problem, output + "/pareto_front.pdf")
+	optimizer.save_pareto_set(problem, output + "/configurations.csv")
+	classifier.generate_hdl_ps_ax_implementations(output, optimizer.pareto_set())
+	print(f"All done! Take a look at the {output} directory.")
+
+
+@click.command("als-onestep")
+@click.option("-c", "--config", type=str, required=True, help="path of the configuration file")
+@click.option("-p", "--pmml", type=str, required=True, help="specify the input PMML file")
+@click.option("-d", "--dataset", type=str, required=True, help="specify the file name for the input dataset")
+@click.option("-o", "--output", type=str, required=True, help="Output directory. Everything will be placed there.")
+@click.option("-i", "--improve", type=str, help="Run again the workflow  using previous Pareto set as initial archive", default=None)
+def als_onestep(config, pmml, dataset, output, improve):
+	""" Performs one-step ALS approximation """
+	if not os.path.exists(config):
+		print(f"{config}: no such file.")
+		exit()
+	if not os.path.exists(pmml):
+		print(f"{pmml}: no such file.")
+		exit()
+	if not os.path.exists(dataset):
+		print(f"{dataset}: no such file.")
+		exit()
+	if improve is not None and not os.path.exists(improve):
+		print(f"{improve}: no such file.")
+		exit()
+	if output != ".":
+		mkpath(output)
+	als_conf, error_conf, amosa_conf = als_onestep_config_parser(config)
+	classifier = Classifier(als_conf)
+	classifier.parse(pmml)
+	classifier.generate_hdl_exact_implementations(output)
+	problem = SingleStepAlsOnly(classifier, dataset, SingleStepOptimizerConf(error_conf, amosa_conf))
+	optimizer = AMOSA(amosa_conf)
+	if improve is None:
+		optimizer.random_archive(problem)
+	else:
+		optimizer.seeded_archive(problem, improve)
+	optimizer.minimize(problem)
+	optimizer.save_results(problem, output + "/report.csv")
+	optimizer.plot_pareto(problem, output + "/pareto_front.pdf")
+	optimizer.save_pareto_set(problem, output + "/configurations.csv")
+	classifier.generate_hdl_onestep_asl_ax_implementations(output, optimizer.pareto_set())
+	print(f"All done! Take a look at the {output} directory.")
+
+
+@click.command("full-onestep")
+@click.option("-c", "--config", type=str, required=True, help="path of the configuration file")
+@click.option("-p", "--pmml", type=str, required=True, help="specify the input PMML file")
+@click.option("-d", "--dataset", type=str, required=True, help="specify the file name for the input dataset")
+@click.option("-o", "--output", type=str, required=True, help="Output directory. Everything will be placed there.")
+@click.option("-i", "--improve", type=str, help="Run again the workflow  using previous Pareto set as initial archive", default=None)
+def full_onestep(config, pmml, dataset, output, improve):
+	""" Performs one-step full approximation (both ps and als) """
+	if not os.path.exists(config):
+		print(f"{config}: no such file.")
+		exit()
+	if not os.path.exists(pmml):
+		print(f"{pmml}: no such file.")
+		exit()
+	if not os.path.exists(dataset):
+		print(f"{dataset}: no such file.")
+		exit()
+	if improve is not None and not os.path.exists(improve):
+		print(f"{improve}: no such file.")
+		exit()
+	if output != ".":
+		mkpath(output)
+	als_conf, error_conf, amosa_conf = als_onestep_config_parser(config)
+	classifier = Classifier(als_conf)
+	classifier.parse(pmml)
+	classifier.generate_hdl_exact_implementations(output)
+	problem = SingleStepCombined(classifier, dataset, SingleStepOptimizerConf(error_conf, amosa_conf))
+	optimizer = AMOSA(amosa_conf)
+	if improve is None:
+		optimizer.random_archive(problem)
+	else:
+		optimizer.seeded_archive(problem, improve)
+	optimizer.minimize(problem)
+	optimizer.save_results(problem, output + "/report.csv")
+	optimizer.plot_pareto(problem, output + "/pareto_front.pdf")
+	optimizer.save_pareto_set(problem, output + "/configurations.csv")
+	classifier.generate_hdl_onestep_full_ax_implementations(output, optimizer.pareto_set())
+	print(f"All done! Take a look at the {output} directory.")
+
+
+@click.command("als-twostep")
+@click.option("-c", "--config", type=str, required=True, help="path of the configuration file")
+@click.option("-p", "--pmml", type=str, required=True, help="specify the input PMML file")
+@click.option("-d", "--dataset", type=str, required=True, help="specify the file name for the input dataset")
+@click.option("-o", "--output", type=str, required=True, help="Output directory. Everything will be placed there.")
+def als_twostep(config, pmml, dataset, output):
+	""" Performs two-steps ALS approximation """
+	if not os.path.exists(config):
+		print(f"{config}: no such file.")
+		exit()
+	if not os.path.exists(pmml):
+		print(f"{pmml}: no such file.")
+		exit()
+	if not os.path.exists(dataset):
+		print(f"{dataset}: no such file.")
+		exit()
+	if output != ".":
+		mkpath(output)
+	als_conf, error_conf_1, error_conf_2, amosa_conf_1, amosa_conf_2 = als_twostep_config_parser(config)
+	classifier = Classifier(als_conf)
+	classifier.parse(pmml)
+	classifier.generate_hdl_exact_implementations(output)
+	problem = SecondStepOptimizerAlsOnly(classifier, dataset, TwoStepsOptimizerConf(error_conf_1, amosa_conf_1, error_conf_2, amosa_conf_2))
+	optimizer = AMOSA(amosa_conf_2)
+	optimizer.random_archive(problem)
+	optimizer.minimize(problem)
+	optimizer.save_results(problem, output + "/report.csv")
+	optimizer.plot_pareto(problem, output + "/pareto_front.pdf")
+	optimizer.save_pareto_set(problem, output + "/configurations.csv")
+	classifier.generate_hdl_twostep_asl_ax_implementations(output, optimizer.pareto_set(), problem.opt_solutions_for_trees)
+	print(f"All done! Take a look at the {output} directory.")
+
+
+@click.command("full-twostep")
+@click.option("-c", "--config", type=str, required=True, help="path of the configuration file")
+@click.option("-p", "--pmml", type=str, required=True, help="specify the input PMML file")
+@click.option("-d", "--dataset", type=str, required=True, help="specify the file name for the input dataset")
+@click.option("-o", "--output", type=str, required=True, help="Output directory. Everything will be placed there.")
+def full_twostep(config, pmml, dataset, output):
+	""" Performs two-steps full approximation (both ps and als) """
+	if not os.path.exists(config):
+		print(f"{config}: no such file.")
+		exit()
+	if not os.path.exists(pmml):
+		print(f"{pmml}: no such file.")
+		exit()
+	if not os.path.exists(dataset):
+		print(f"{dataset}: no such file.")
+		exit()
+	if output != ".":
+		mkpath(output)
+	als_conf, error_conf_1, error_conf_2, amosa_conf_1, amosa_conf_2 = als_twostep_config_parser(config)
+	classifier = Classifier(als_conf)
+	classifier.parse(pmml)
+	classifier.generate_hdl_exact_implementations(output)
+	problem = SecondStepOptimizerCombined(classifier, dataset, TwoStepsOptimizerConf(error_conf_1, amosa_conf_1, error_conf_2, amosa_conf_2))
+	optimizer = AMOSA(amosa_conf_2)
+	optimizer.random_archive(problem)
+	optimizer.minimize(problem)
+	optimizer.save_results(problem, output + "/report.csv")
+	optimizer.plot_pareto(problem, output + "/pareto_front.pdf")
+	optimizer.save_pareto_set(problem, output + "/configurations.csv")
+	classifier.generate_hdl_twostep_full_ax_implementations(output, optimizer.pareto_set(), problem.opt_solutions_for_trees)
+	print(f"All done! Take a look at the {output} directory.")
+
+
+cli.add_command(dump)
+cli.add_command(bitwidth)
+cli.add_command(als_onestep)
+cli.add_command(als_twostep)
+cli.add_command(full_onestep)
+cli.add_command(full_twostep)
 
 if __name__ == '__main__':
-  Worker().work()
+	git_updater()
+	design = ys.Design()
+	ys.run_pass("plugin -i ghdl", design)
+	cli()

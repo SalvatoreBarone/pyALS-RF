@@ -7,3 +7,4 @@ python-igraph
 numpy
 configparser
 click
+git

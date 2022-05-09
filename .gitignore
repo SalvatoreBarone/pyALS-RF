@@ -1,6 +1,5 @@
 src/__pycache__/
 .idea/
-Docker/edginess_shared/
 output/
 output_ps/
 output_als/
@@ -10,7 +9,5 @@ log.txt
 prova/
 prova_rf/
 *.db
-
 prova_st/
-
 prova_rf_two/

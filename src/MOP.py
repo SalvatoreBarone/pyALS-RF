@@ -29,37 +29,6 @@ def evaluate_eprob(graph, samples, configuration):
     return sum([0 if sample["output"] == graph.evaluate(sample["input"], configuration) else 1 for sample in samples])
 
 
-class AxConfig:
-    class Technique(Enum):
-        ALS = 1,
-        PS = 2,
-        FULL = 3
-
-    class Strategy(Enum):
-        ONE_STEP = 1,
-        TWO_STEPS = 2
-
-    def __init__(self, technique, strategy):
-        ax_technique = {
-            "als": AxConfig.Technique.ALS,
-            "ps": AxConfig.Technique.PS,
-            "full": AxConfig.Technique.FULL
-        }
-        if technique not in ax_technique.keys():
-            raise ValueError("{}: Approximation technique not recognized".format(technique))
-        else:
-            self.technique = ax_technique[technique]
-        ax_strategy = {
-            "one": AxConfig.Strategy.ONE_STEP,
-            "single": AxConfig.Strategy.ONE_STEP,
-            "two": AxConfig.Strategy.TWO_STEPS,
-        }
-        if strategy not in ax_strategy.keys():
-            raise ValueError("{}: approximation strategy not recognized".format(strategy))
-        else:
-            self.strategy = ax_strategy[strategy]
-
-
 class ErrorConfig:
     class Metric(Enum):
         EPROB = 1
@@ -246,6 +215,7 @@ class SecondStepOptimizerBase(OptimizationBaseClass):
         for t in self.classifier.get_trees():
             problem = FirstStepOptimizer(t, self.dataset, config.fst_error_conf)
             optimizer = AMOSA(self.config.fst_amosa_conf)
+
             optimizer.minimize(problem)
             self.opt_solutions_for_trees.append(optimizer.pareto_set())
 

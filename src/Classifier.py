@@ -81,7 +81,7 @@ class Classifier:
   def dump(self):
     print("Features:")
     for f in self.__model_features_list_dict:
-      print("\tName: ", f["name"], ", Type: ", f["type"], ", Min: ", f["min"], ", Max: ", f["max"])
+      print("\tName: ", f["name"], ", Type: ", f["type"])
     print("\n\nClasses:")
     for c in self.__model_classes_list_str:
       print("\tName: ", c)
@@ -515,7 +515,7 @@ class Classifier:
     children = element_tree_node.findall("pmml:Node", self.__namespaces);
     if len(children) > 2:
       print("Only binary trees are supported. Aborting")
-      sys.exit(2)
+      exit()
     for child in children: 
       boolean_expression = parent_tree_node.boolean_expression
       if boolean_expression:
