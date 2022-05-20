@@ -66,3 +66,6 @@ def string_to_nested_list_int(s):
     return [[], []]
   l = [sl.strip('[]').split(',') for sl in s.split('], [')]
   return [[int(i) for i in l[0]], [int(i) for i in l[1]]]
+
+def negate(spec):
+    return spec.translate(spec.maketrans({"1": "0", "0": "1"}))

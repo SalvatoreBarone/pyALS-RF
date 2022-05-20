@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import itertools, numpy, enum
+import itertools, numpy, enum, json
 from multiprocessing import cpu_count, Pool
 from pyAMOSA.AMOSA import *
 from .Utility import *
@@ -209,20 +209,37 @@ class FirstStepOptimizer(AMOSA.Problem):
 
 
 class SecondStepOptimizerBase(OptimizationBaseClass):
-    def __init__(self, classifier, dataset_csv, config):
+    def __init__(self, classifier, dataset_csv, config, improve, out_dir):
         OptimizationBaseClass.__init__(self, classifier, dataset_csv, config)
         self.opt_solutions_for_trees = []
-        for t in self.classifier.get_trees():
-            problem = FirstStepOptimizer(t, self.dataset, config.fst_error_conf)
-            optimizer = AMOSA(self.config.fst_amosa_conf)
-
-            optimizer.minimize(problem)
-            self.opt_solutions_for_trees.append(optimizer.pareto_set())
+        new_seeds = []
+        if improve is None:
+            for t in self.classifier.get_trees():
+                problem = FirstStepOptimizer(t, self.dataset, config.fst_error_conf)
+                optimizer = AMOSA(self.config.fst_amosa_conf)
+                optimizer.random_archive(problem)
+                optimizer.minimize(problem)
+                new_seeds.append(optimizer.pareto_set().tolist())
+                self.opt_solutions_for_trees.append(optimizer.pareto_set())
+        else:
+            seeds = json.load(open(improve))
+            for t, s in zip(self.classifier.get_trees(), seeds):
+                problem = FirstStepOptimizer(t, self.dataset, config.fst_error_conf)
+                optimizer = AMOSA(self.config.fst_amosa_conf)
+                s = optimizer.get_seeds_from_nested_list(problem, s)
+                optimizer.seeded_archive(problem, s)
+                optimizer.minimize(problem)
+                new_seeds.append(optimizer.pareto_set().tolist())
+                self.opt_solutions_for_trees.append(optimizer.pareto_set())
+        print(new_seeds)
+        json_string = json.dumps(new_seeds)
+        with open(out_dir + '/first_step_seeds.json', 'w') as outfile:
+            outfile.write(json_string)
 
 
 class SecondStepOptimizerAlsOnly(SecondStepOptimizerBase, AMOSA.Problem):
-    def __init__(self, classifier, dataset_csv, config):
-        SecondStepOptimizerBase.__init__(self, classifier, dataset_csv, config)
+    def __init__(self, classifier, dataset_csv, config, improve, outdir):
+        SecondStepOptimizerBase.__init__(self, classifier, dataset_csv, config, improve, outdir)
         n_vars = self.classifier.get_num_of_trees()
         ub = [ len(i)-1 for i in self.opt_solutions_for_trees ]
         print(f"Baseline accuracy: {self.baseline_accuracy}.")
@@ -243,8 +260,8 @@ class SecondStepOptimizerAlsOnly(SecondStepOptimizerBase, AMOSA.Problem):
 
 
 class SecondStepOptimizerCombined(SecondStepOptimizerBase, AMOSA.Problem):
-    def __init__(self, classifier, dataset_csv, config):
-        SecondStepOptimizerBase.__init__(self, classifier, dataset_csv, config)
+    def __init__(self, classifier, dataset_csv, config, improve, outdir):
+        SecondStepOptimizerBase.__init__(self, classifier, dataset_csv, config, improve, outdir)
         n_vars = len(self.features) + self.classifier.get_num_of_trees()
         ub = [53] * len(self.features) + [ len(i)-1 for i in self.opt_solutions_for_trees ]
         print(f"Baseline accuracy: {self.baseline_accuracy}.")

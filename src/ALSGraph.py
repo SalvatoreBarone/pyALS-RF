@@ -19,6 +19,7 @@ import igraph as ig
 from pyosys import libyosys as ys
 from enum import Enum
 
+
 class ALSGraph:
   class VertexType(Enum):
     CONSTANT_ZERO = 0, 
@@ -55,7 +56,6 @@ class ALSGraph:
   def get_depth(self, configuration):
     top_ord = self.__graph.topological_sorting()
     depths = [0] * len(top_ord)
-
     for i, v in zip(range(len(top_ord)), [self.__graph.vs[v_i] for v_i in top_ord]):
       if v["type"] in (ALSGraph.VertexType.CELL, ALSGraph.VertexType.PRIMARY_OUTPUT):
         depths[i] = max((configuration[p["name"]]["depth"] if p["type"] == ALSGraph.VertexType.CELL else 0) for p in v.predecessors()) + (configuration[v["name"]]["depth"] if v["type"] == ALSGraph.VertexType.CELL else 0)
@@ -101,6 +101,11 @@ class ALSGraph:
     layout = self.__graph.layout("sugiyama")
     layout.rotate(270)
     ig.plot(self.__graph, layout = layout, bbox=(2000, 2000), margin=120, hovermode='closest', vertex_label_dist = 1)
+
+  def save(self, file_name):
+    layout = self.__graph.layout("sugiyama")
+    layout.rotate(270)
+    ig.plot(self.__graph, layout = layout, bbox=(2000, 2000), margin=120, hovermode='closest', vertex_label_dist = 1, target = file_name)
 
   def __graph_from_design(self, design):
     driver_of = dict()
