@@ -27,9 +27,12 @@ def git_updater():
 	local_head = repo.heads[0].commit
 	remote_head = repo.remotes.origin.refs[0].commit
 	if remote_head != local_head:
-		print("Updating the tool is needed, that will stop the current execution. Please, run it again.")
+		print("Updating the tool...")
 		repo.remotes.origin.pull()
-		exit()
+		for submodule in repo.submodules:
+			submodule.update(init = True, recursive = True)
+		return True
+	return False
 
 
 def ps_config_parser(config_file):
@@ -58,7 +61,7 @@ def als_onestep_config_parser(config_file):
 	config = configparser.ConfigParser(converters={'list': lambda x: [i.strip() for i in x.split(',')]}, empty_lines_in_values=False)
 	config.read(config_file)
 	try:
-		als_conf = ALSConfig(config["als"]["cut_size"], config["als"]["catalog"], config["als"]["solver"], int(config["als"]["timeout"]))
+		als_conf = ALSConfig(config["als"]["cut_size"], config["als"]["solver"], int(config["als"]["timeout"]))
 		error_conf = ErrorConfig("eprob", float(config["error"]["max_loss"]), 0)
 		amosa_conf = AMOSAConfig(
 			int(config["amosa"]["archive_hard_limit"]),
@@ -81,7 +84,7 @@ def als_twostep_config_parser(config_file):
 	config = configparser.ConfigParser(converters={'list': lambda x: [i.strip() for i in x.split(',')]}, empty_lines_in_values=False)
 	config.read(config_file)
 	try:
-		als_conf = ALSConfig(config["als"]["cut_size"], config["als"]["catalog"], config["als"]["solver"], int(config["als"]["timeout"]))
+		als_conf = ALSConfig(config["als"]["cut_size"], config["als"]["solver"], int(config["als"]["timeout"]))
 		error_conf_1 = ErrorConfig("eprob", float(config["error"]["max_freq"]), 0)
 		error_conf_2 = ErrorConfig("eprob", float(config["error"]["max_loss"]), 0)
 		amosa_conf_1 = AMOSAConfig(
@@ -321,7 +324,10 @@ cli.add_command(full_onestep)
 cli.add_command(full_twostep)
 
 if __name__ == '__main__':
-	git_updater()
-	design = ys.Design()
-	ys.run_pass("plugin -i ghdl", design)
-	cli()
+	if git_updater():
+		os.execv(sys.argv[0], sys.argv)
+	else:
+		design = ys.Design()
+		ys.run_pass("plugin -i ghdl", design)
+		cli()
+
