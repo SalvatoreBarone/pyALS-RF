@@ -346,13 +346,10 @@ cli.add_command(full_onestep)
 cli.add_command(full_twosteps)
 
 if __name__ == '__main__':
-	# if git_updater():
-	# 	os.execv(sys.argv[0], sys.argv)
-	# else:
-	# 	design = ys.Design()
-	# 	ys.run_pass("plugin -i ghdl", design)
-	# 	cli()
-	design = ys.Design()
-	ys.run_pass("plugin -i ghdl", design)
-	cli()
+	if git_updater():
+		os.execv(sys.argv[0], sys.argv)
+	else:
+		design = ys.Design()
+		ys.run_pass("plugin -i ghdl", design)
+		cli()
 
