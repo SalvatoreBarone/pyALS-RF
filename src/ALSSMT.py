@@ -253,12 +253,9 @@ class ALSSMT_Boolector:
         return self.__get_synthesized_spec(), S, P, p, 0
 
 def hamming(s1, s2):
-    result = 0
-    if len(s1) == len(s2):
-        for x, (i, j) in enumerate(zip(s1, s2)):
-            if i != j:
-                result += 1
-    return result
+    assert len(s1) == len(s2), "specs must be equal in lenght"
+    return sum([1 for x, y in zip(s1, s2) if x != y])
+
 
 def truth_table_value(i, t):
     if i == 0:
