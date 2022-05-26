@@ -108,19 +108,15 @@ class DecisionTree:
 		if self.__assertions_graph is not None:
 			self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
 
-	def get_als_num_of_dv(self):
-		return len(self.__assertions_graph.get_cells())
-
 	def get_als_dv_upper_bound(self):
-		return [len(e) - 1 for c in [{"name": c["name"], "spec": c["spec"]} for c in self.__assertions_graph.get_cells()] for e in self.__assertions_catalog_entries if e[0]["spec"] == c["spec"]]
+		return [len(e) - 1 for c in [{"name": c["name"], "spec": c["spec"]} for c in self.__assertions_graph.get_cells()] for e in self.__assertions_catalog_entries if e[0]["spec"] == c["spec"] or negate(e[0]["spec"]) == c["spec"]]
 
 	def set_nabs(self, nabs):
 		for box in self.__decision_boxes:
 			box["box"].set_nab(nabs[box["box"].get_feature()])
 
 	def set_assertions_configuration(self, configuration):
-		matter = {}
-		assert len(configuration) == len(self.__assertions_graph.get_cells()), f"wrong amount of variables. Needed {len(self.__assertions_graph.get_cells())}, get {len(configuration)}"
+		assert len(configuration) == self.__assertions_graph.get_num_cells(), f"wrong amount of variables. Needed {self.__assertions_graph.get_num_cells()}, get {len(configuration)}"
 		assert len(self.__assertions_catalog_entries) > 0, "Catalog cannot be empty"
 		matter = {}
 		for c, l in zip(configuration, self.__assertions_graph.get_cells()):
@@ -129,11 +125,10 @@ class DecisionTree:
 					matter[l["name"]] = {"dist": c, "spec": e[0]["spec"], "axspec": e[c]["spec"],
 										 "gates": e[c]["gates"], "S": e[c]["S"], "P": e[c]["P"], "out_p": e[c]["out_p"],
 										 "out": e[c]["out"], "depth": e[c]["depth"]}
-				if negate(e[0]["spec"]) == l["spec"]:
+				elif negate(e[0]["spec"]) == l["spec"]:
 					matter[l["name"]] = {"dist": c, "spec": negate(e[0]["spec"]), "axspec": negate(e[c]["spec"]),
 										 "gates": e[c]["gates"], "S": e[c]["S"], "P": e[c]["P"],
 										 "out_p": 1 - e[c]["out_p"], "out": e[c]["out"], "depth": e[c]["depth"]}
-
 		self.__current_configuration = matter
 
 	def dump(self):

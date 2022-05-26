@@ -166,33 +166,30 @@ class SingleStepCombined(OptimizationBaseClass, AMOSA.Problem):
 class FirstStepOptimizer(AMOSA.Problem):
     def __init__(self, decision_tree, preloaded_dataset, error_config):
         self.decision_tree = decision_tree
-        self.error_config = error_config
-        self.catalog = self.decision_tree.get_catalog_for_assertions()
-        self.graph = self.decision_tree.get_graph()
-        self.graphs = [copy.deepcopy(self.graph)] * cpu_count()
-        n_vars = self.decision_tree.get_als_num_of_dv()
-        self.decision_tree.reset_assertion_configuration()
-        self.samples = []
-        self.__generate_samples(preloaded_dataset)
-        self.total_samples = len(self.samples)
-        self.args = [[g, s, [0] * n_vars] for g, s in zip(self.graphs, list_partitioning(self.samples, cpu_count()))]
+        graph = self.decision_tree.get_graph()
+        n_vars = graph.get_num_cells()
         ub = self.decision_tree.get_als_dv_upper_bound()
+
+        self.error_config = error_config
+        self.decision_tree.reset_assertion_configuration()
+        self.samples = self.generate_samples(graph, preloaded_dataset)
+        self.total_samples = len(self.samples)
+        self.args = [[g, s, [0] * n_vars] for g, s in zip([copy.deepcopy(graph)] * cpu_count(), list_partitioning(self.samples, cpu_count()))]
+
         print(f"Tree {self.decision_tree.get_name()}. d.v. #{len(ub)}: {ub}")
         AMOSA.Problem.__init__(self, n_vars, [AMOSA.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 
-    def __generate_samples(self, preloaded_dataset):
+    def generate_samples(self, graph, preloaded_dataset):
+        samples = []
         for sample in preloaded_dataset:
             inputs = self.decision_tree.get_boxes_output(sample["input"])
-            self.samples.append({"input": inputs, "output": self.graph.evaluate(inputs)})
-
-    def __get_cell_configuration(self, x):
-        return {l["name"]: {"dist": c, "spec": e[0]["spec"], "axspec": e[c]["spec"], "gates": e[c]["gates"], "S": e[c]["S"], "P": e[c]["P"], "out_p": e[c]["out_p"], "out": e[c]["out"], "depth": e[c]["depth"]} for c, l in zip(x, self.graph.get_cells()) for e in self.catalog if e[0]["spec"] == l["spec"]}
+            samples.append({"input": inputs, "output": graph.evaluate(inputs)})
+        return samples
 
     def __set_matter_configuration(self, x):
         self.decision_tree.set_assertions_configuration(x)
-        configuration = self.__get_cell_configuration(x)
         for a in self.args:
-            a[2] = configuration
+            a[2] = self.decision_tree.get_assertions_configuration()
 
     def __get_eprob(self):
         with Pool(cpu_count()) as pool:
