@@ -206,37 +206,30 @@ class FirstStepOptimizer(AMOSA.Problem):
 
 
 class SecondStepOptimizerBase(OptimizationBaseClass):
-    def __init__(self, classifier, dataset_csv, config, improve, out_dir):
+    def __init__(self, classifier, dataset_csv, config, improve, resume, out_dir):
         OptimizationBaseClass.__init__(self, classifier, dataset_csv, config)
         self.opt_solutions_for_trees = []
-        new_seeds = []
-        if improve is None:
-            for t in self.classifier.get_trees():
-                problem = FirstStepOptimizer(t, self.dataset, config.fst_error_conf)
-                optimizer = AMOSA(self.config.fst_amosa_conf)
-                optimizer.random_archive(problem)
-                optimizer.minimize(problem)
-                new_seeds.append(optimizer.pareto_set().tolist())
-                self.opt_solutions_for_trees.append(optimizer.pareto_set())
-        else:
-            seeds = json.load(open(improve))
-            for t, s in zip(self.classifier.get_trees(), seeds):
-                problem = FirstStepOptimizer(t, self.dataset, config.fst_error_conf)
-                optimizer = AMOSA(self.config.fst_amosa_conf)
-                s = optimizer.get_seeds_from_nested_list(problem, s)
-                optimizer.seeded_archive(problem, s)
-                optimizer.minimize(problem)
-                new_seeds.append(optimizer.pareto_set().tolist())
-                self.opt_solutions_for_trees.append(optimizer.pareto_set())
-        print(new_seeds)
-        json_string = json.dumps(new_seeds)
-        with open(out_dir + '/first_step_seeds.json', 'w') as outfile:
-            outfile.write(json_string)
+        for t in self.classifier.get_trees():
+            problem = FirstStepOptimizer(t, self.dataset, config.fst_error_conf)
+            optimizer = AMOSA(self.config.fst_amosa_conf)
+            if not resume:
+                if improve is None:
+                    optimizer.random_archive(problem)
+                else:
+                    optimizer.archive_from_json(f"{out_dir}/final_archive_{t.get_name()}.json")
+                optimizer.minimize(problem, f"{out_dir}/checkpoint_{t.get_name()}.json")
+            else:
+                optimizer.minimize_from_checkpoint(problem, f"{out_dir}/checkpoint_{t.get_name()}.json")
+            optimizer.save_results(problem, f"{out_dir}/report_{t.get_name()}.csv")
+            optimizer.plot_pareto(problem, f"{out_dir}/pareto_front_{t.get_name()}.pdf")
+            optimizer.save_pareto_set(problem, f"{out_dir}/pareto_set_{t.get_name()}.csv")
+            optimizer.archive_to_json(f"{out_dir}/final_archive_{t.get_name()}.json")
+            self.opt_solutions_for_trees.append(optimizer.pareto_set())
 
 
 class SecondStepOptimizerAlsOnly(SecondStepOptimizerBase, AMOSA.Problem):
-    def __init__(self, classifier, dataset_csv, config, improve, outdir):
-        SecondStepOptimizerBase.__init__(self, classifier, dataset_csv, config, improve, outdir)
+    def __init__(self, classifier, dataset_csv, config, improve, resume, outdir):
+        SecondStepOptimizerBase.__init__(self, classifier, dataset_csv, config, improve, resume, outdir)
         n_vars = self.classifier.get_num_of_trees()
         ub = [ len(i)-1 for i in self.opt_solutions_for_trees ]
         print(f"Baseline accuracy: {self.baseline_accuracy}.")
@@ -257,8 +250,8 @@ class SecondStepOptimizerAlsOnly(SecondStepOptimizerBase, AMOSA.Problem):
 
 
 class SecondStepOptimizerCombined(SecondStepOptimizerBase, AMOSA.Problem):
-    def __init__(self, classifier, dataset_csv, config, improve, outdir):
-        SecondStepOptimizerBase.__init__(self, classifier, dataset_csv, config, improve, outdir)
+    def __init__(self, classifier, dataset_csv, config, improve, resume, outdir):
+        SecondStepOptimizerBase.__init__(self, classifier, dataset_csv, config, improve, resume, outdir)
         n_vars = len(self.features) + self.classifier.get_num_of_trees()
         ub = [53] * len(self.features) + [ len(i)-1 for i in self.opt_solutions_for_trees ]
         print(f"Baseline accuracy: {self.baseline_accuracy}.")
