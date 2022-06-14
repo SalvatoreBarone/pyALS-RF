@@ -69,10 +69,12 @@ class Classifier:
     if segmentation is not None:
       tree_id = 0
       for segment in segmentation.findall("pmml:Segment", self.__namespaces):
+        print(f"Parsing tree {tree_id}... ", end = "", flush = True)
         tree_model_root = segment.find("pmml:TreeModel", self.__namespaces).find("pmml:Node", self.__namespaces)
         tree = self.__get_tree_model(str(tree_id), tree_model_root)
         self.__trees_list_obj.append(tree)
         tree_id += 1
+        print("\rDone")
     else:
       tree_model_root = root.find("pmml:TreeModel", self.__namespaces).find("pmml:Node", self.__namespaces)
       tree = self.__get_tree_model("0", tree_model_root)

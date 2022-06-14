@@ -25,10 +25,10 @@ from .ALSCatalog import *
 from .ALSRewriter import *
 
 class DecisionTree:
-	__source_dir = "./resources/vhd/"
-	__bnf_vhd = "bnf.vhd"
-	__vhdl_assertions_source = "assertions_block.vhd.template"
-	__vhdl_decision_tree_source = "decision_tree.vhd.template"
+	source_dir = "./resources/vhd/"
+	bnf_vhd = "bnf.vhd"
+	vhdl_assertions_source = "assertions_block.vhd.template"
+	vhdl_decision_tree_source = "decision_tree.vhd.template"
 
 	def __init__(self, name = None, root_node = None, features = None, classes = None, als_conf = None):
 		self.__name = name
@@ -154,9 +154,9 @@ class DecisionTree:
 
 	def generate_hdl_tree(self, destination):
 		file_name = destination + "/decision_tree_" + self.__name + ".vhd"
-		file_loader = FileSystemLoader(self.__source_dir)
+		file_loader = FileSystemLoader(self.source_dir)
 		env = Environment(loader=file_loader)
-		template = env.get_template(self.__vhdl_decision_tree_source)
+		template = env.get_template(self.vhdl_decision_tree_source)
 		output = template.render(
 			tree_name = self.__name,
 			features  = self.__model_features,
@@ -170,9 +170,9 @@ class DecisionTree:
 	def generate_hdl_exact_assertions(self, destination):
 		module_name = "assertions_block_" + self.__name
 		file_name = destination + "/assertions_block_" + self.__name + ".vhd"
-		file_loader = FileSystemLoader(self.__source_dir)
+		file_loader = FileSystemLoader(self.source_dir)
 		env = Environment(loader=file_loader)
-		template = env.get_template(self.__vhdl_assertions_source)
+		template = env.get_template(self.vhdl_assertions_source)
 		output = template.render(
 			tree_name = self.__name,
 			boxes = [b["name"] for b in self.__decision_boxes],
@@ -235,6 +235,6 @@ class DecisionTree:
 		file_name, module_name = self.generate_hdl_exact_assertions(destination)
 		design = ys.Design()
 		ys.run_pass("tee -q design -reset", design)
-		ys.run_pass(f"tee -q ghdl {self.__source_dir + self.__bnf_vhd} {file_name} -e {module_name}", design)
+		ys.run_pass(f"tee -q ghdl {self.source_dir + self.bnf_vhd} {file_name} -e {module_name}", design)
 		ys.run_pass(f"tee -q hierarchy -check -top {module_name}; tee -q prep; tee -q flatten; tee -q splitnets -ports; tee -q synth -top {module_name}; tee -q flatten; tee -q clean -purge; tee -q synth -lut {luts_tech}", design)
 		return design

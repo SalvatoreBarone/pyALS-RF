@@ -206,20 +206,15 @@ class FirstStepOptimizer(AMOSA.Problem):
 
 
 class SecondStepOptimizerBase(OptimizationBaseClass):
-    def __init__(self, classifier, dataset_csv, config, improve, resume, out_dir):
+    def __init__(self, classifier, dataset_csv, config, improve, out_dir):
         OptimizationBaseClass.__init__(self, classifier, dataset_csv, config)
         self.opt_solutions_for_trees = []
         for t in self.classifier.get_trees():
             problem = FirstStepOptimizer(t, self.dataset, config.fst_error_conf)
             optimizer = AMOSA(self.config.fst_amosa_conf)
-            if not resume:
-                if improve is None:
-                    optimizer.random_archive(problem)
-                else:
-                    optimizer.archive_from_json(f"{out_dir}/final_archive_{t.get_name()}.json")
-                optimizer.minimize(problem, f"{out_dir}/checkpoint_{t.get_name()}.json")
-            else:
-                optimizer.minimize_from_checkpoint(problem, f"{out_dir}/checkpoint_{t.get_name()}.json")
+            optimizer.hill_climb_checkpoint_file = f"{out_dir}/first_step_hillclimb_checkpoint_{t.get_name()}.json"
+            optimizer.minimize_checkpoint_file = f"{out_dir}/first_step_hminimize_checkpoint{t.get_name()}.json"
+            optimizer.run(problem, improve, False)
             optimizer.save_results(problem, f"{out_dir}/report_{t.get_name()}.csv")
             optimizer.plot_pareto(problem, f"{out_dir}/pareto_front_{t.get_name()}.pdf")
             optimizer.save_pareto_set(problem, f"{out_dir}/pareto_set_{t.get_name()}.csv")
@@ -228,8 +223,8 @@ class SecondStepOptimizerBase(OptimizationBaseClass):
 
 
 class SecondStepOptimizerAlsOnly(SecondStepOptimizerBase, AMOSA.Problem):
-    def __init__(self, classifier, dataset_csv, config, improve, resume, outdir):
-        SecondStepOptimizerBase.__init__(self, classifier, dataset_csv, config, improve, resume, outdir)
+    def __init__(self, classifier, dataset_csv, config, improve, outdir):
+        SecondStepOptimizerBase.__init__(self, classifier, dataset_csv, config, improve, outdir)
         n_vars = self.classifier.get_num_of_trees()
         ub = [ len(i)-1 for i in self.opt_solutions_for_trees ]
         print(f"Baseline accuracy: {self.baseline_accuracy}.")
@@ -250,8 +245,8 @@ class SecondStepOptimizerAlsOnly(SecondStepOptimizerBase, AMOSA.Problem):
 
 
 class SecondStepOptimizerCombined(SecondStepOptimizerBase, AMOSA.Problem):
-    def __init__(self, classifier, dataset_csv, config, improve, resume, outdir):
-        SecondStepOptimizerBase.__init__(self, classifier, dataset_csv, config, improve, resume, outdir)
+    def __init__(self, classifier, dataset_csv, config, improve, outdir):
+        SecondStepOptimizerBase.__init__(self, classifier, dataset_csv, config, improve, outdir)
         n_vars = len(self.features) + self.classifier.get_num_of_trees()
         ub = [53] * len(self.features) + [ len(i)-1 for i in self.opt_solutions_for_trees ]
         print(f"Baseline accuracy: {self.baseline_accuracy}.")

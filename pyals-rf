@@ -137,8 +137,7 @@ def dump(pmml):
 @click.option("--dataset", type=str, required=True, help="specify the file name for the input dataset")
 @click.option("--output", type=str, required=True, help="Output directory. Everything will be placed there.")
 @click.option("--improve", type=str, help="Run again the workflow  using previous Pareto set as initial archive", default=None)
-@click.option("--resume",  is_flag=True,                help="Resume the execution")
-def bitwidth(config, pmml, dataset, output, improve, resume):
+def bitwidth(config, pmml, dataset, output, improve):
 	""" Performs precision-scaling approximation """
 	if not os.path.exists(config):
 		print(f"{config}: no such file.")
@@ -160,14 +159,7 @@ def bitwidth(config, pmml, dataset, output, improve, resume):
 	classifier.generate_hdl_exact_implementations(output)
 	problem = SingleStepPsOnly(classifier, dataset, SingleStepOptimizerConf(error_conf, amosa_conf))
 	optimizer = AMOSA(amosa_conf)
-	if not resume:
-		if improve is None:
-			optimizer.random_archive(problem)
-		else:
-			optimizer.archive_from_json(problem, improve)
-		optimizer.minimize(problem, output + "/checkpoint.json")
-	else:
-		optimizer.minimize_from_checkpoint(problem, output + "/checkpoint.json")
+	optimizer.run(problem, improve)
 	optimizer.save_results(problem, output + "/report.csv")
 	optimizer.plot_pareto(problem, output + "/pareto_front.pdf")
 	optimizer.save_pareto_set(problem, output + "/configurations.csv")
@@ -183,8 +175,7 @@ def bitwidth(config, pmml, dataset, output, improve, resume):
 @click.option("--dataset", type=str, required=True, help="specify the file name for the input dataset")
 @click.option("--output", type=str, required=True, help="Output directory. Everything will be placed there.")
 @click.option("--improve", type=str, help="Run again the workflow  using previous Pareto set as initial archive", default=None)
-@click.option("--resume",  is_flag=True,                help="Resume the execution")
-def als_onestep(config, catalog, pmml, dataset, output, improve, resume):
+def als_onestep(config, catalog, pmml, dataset, output, improve):
 	""" Performs one-step ALS approximation """
 	if not os.path.exists(config):
 		print(f"{config}: no such file.")
@@ -210,14 +201,7 @@ def als_onestep(config, catalog, pmml, dataset, output, improve, resume):
 	classifier.generate_hdl_exact_implementations(output)
 	problem = SingleStepAlsOnly(classifier, dataset, SingleStepOptimizerConf(error_conf, amosa_conf))
 	optimizer = AMOSA(amosa_conf)
-	if not resume:
-		if improve is None:
-			optimizer.random_archive(problem)
-		else:
-			optimizer.archive_from_json(problem, improve)
-		optimizer.minimize(problem, output + "/checkpoint.json")
-	else:
-		optimizer.minimize_from_checkpoint(problem, output + "/checkpoint.json")
+	optimizer.run(problem, improve)
 	optimizer.save_results(problem, output + "/report.csv")
 	optimizer.plot_pareto(problem, output + "/pareto_front.pdf")
 	optimizer.save_pareto_set(problem, output + "/configurations.csv")
@@ -233,8 +217,7 @@ def als_onestep(config, catalog, pmml, dataset, output, improve, resume):
 @click.option("--dataset", type=str, required=True, help="specify the file name for the input dataset")
 @click.option("--output", type=str, required=True, help="Output directory. Everything will be placed there.")
 @click.option("--improve", type=str, help="Run again the workflow  using previous Pareto set as initial archive", default=None)
-@click.option("--resume",  is_flag=True,                help="Resume the execution")
-def full_onestep(config, catalog, pmml, dataset, output, improve, resume):
+def full_onestep(config, catalog, pmml, dataset, output, improve):
 	""" Performs one-step full approximation (both ps and als) """
 	if not os.path.exists(config):
 		print(f"{config}: no such file.")
@@ -260,14 +243,7 @@ def full_onestep(config, catalog, pmml, dataset, output, improve, resume):
 	classifier.generate_hdl_exact_implementations(output)
 	problem = SingleStepCombined(classifier, dataset, SingleStepOptimizerConf(error_conf, amosa_conf))
 	optimizer = AMOSA(amosa_conf)
-	if not resume:
-		if improve is None:
-			optimizer.random_archive(problem)
-		else:
-			optimizer.archive_from_json(problem, improve)
-		optimizer.minimize(problem, output + "/checkpoint.json")
-	else:
-		optimizer.minimize_from_checkpoint(problem, output + "/checkpoint.json")
+	optimizer.run(problem, improve)
 	optimizer.save_results(problem, output + "/report.csv")
 	optimizer.plot_pareto(problem, output + "/pareto_front.pdf")
 	optimizer.save_pareto_set(problem, output + "/configurations.csv")
@@ -283,8 +259,7 @@ def full_onestep(config, catalog, pmml, dataset, output, improve, resume):
 @click.option("--dataset", type=str, required=True, help="specify the file name for the input dataset")
 @click.option("--output", type=str, required=True, help="Output directory. Everything will be placed there.")
 @click.option("--improve", type=str, help="Run again the workflow  using previous Pareto set as initial archive", default=None)
-@click.option("--resume",  is_flag=True,  help="Resume the execution")
-def als_twosteps(config, catalog, pmml, dataset, output, improve, resume):
+def als_twosteps(config, catalog, pmml, dataset, output, improve):
 	""" Performs two-steps ALS approximation """
 	if not os.path.exists(config):
 		print(f"{config}: no such file.")
@@ -301,17 +276,20 @@ def als_twosteps(config, catalog, pmml, dataset, output, improve, resume):
 	if output != ".":
 		mkpath(output)
 	als_conf, error_conf_1, error_conf_2, amosa_conf_1, amosa_conf_2 = als_twostep_config_parser(config)
+	print("Configuration read successfully")
 	als_conf.catalog = catalog
 	classifier = Classifier(als_conf)
+	print("Creating classifier object...")
 	classifier.parse(pmml)
+	print("PMML parsing completed")
 	classifier.generate_hdl_exact_implementations(output)
-	problem = SecondStepOptimizerAlsOnly(classifier, dataset, TwoStepsOptimizerConf(error_conf_1, amosa_conf_1, error_conf_2, amosa_conf_2), improve, resume, output)
+	print("HDL generation (accurate) completed")
+	problem = SecondStepOptimizerAlsOnly(classifier, dataset, TwoStepsOptimizerConf(error_conf_1, amosa_conf_1, error_conf_2, amosa_conf_2), improve, output)
+	print("Assertion generation (approximate) completed")
 	optimizer = AMOSA(amosa_conf_2)
-	if resume:
-		optimizer.minimize_from_checkpoint(problem, f"{output}/checkpoint.json")
-	else:
-		optimizer.random_archive(problem)
-		optimizer.minimize(problem, f"{output}/checkpoint.json")
+	optimizer.hill_climb_checkpoint_file = f"{output}/second_step_hillclimb_checkpoint.json"
+	optimizer.minimize_checkpoint_file = f"{output}/second_step_hminimize_checkpoint.json"
+	optimizer.run(problem)
 	optimizer.save_results(problem, output + "/report.csv")
 	optimizer.plot_pareto(problem, output + "/pareto_front.pdf")
 	optimizer.save_pareto_set(problem, output + "/configurations.csv")
@@ -327,8 +305,7 @@ def als_twosteps(config, catalog, pmml, dataset, output, improve, resume):
 @click.option("--dataset", type=str, required=True, help="specify the file name for the input dataset")
 @click.option("--output", type=str, required=True, help="Output directory. Everything will be placed there.")
 @click.option("--improve", type=str, help="Run again the workflow  using previous Pareto set as initial archive", default=None)
-@click.option("--resume",  is_flag=True, help="Resume the execution")
-def full_twosteps(config, catalog, pmml, dataset, output, improve, resume):
+def full_twosteps(config, catalog, pmml, dataset, output, improve):
 	""" Performs two-steps full approximation (both ps and als) """
 	if not os.path.exists(config):
 		print(f"{config}: no such file.")
@@ -349,13 +326,11 @@ def full_twosteps(config, catalog, pmml, dataset, output, improve, resume):
 	classifier = Classifier(als_conf)
 	classifier.parse(pmml)
 	classifier.generate_hdl_exact_implementations(output)
-	problem = SecondStepOptimizerCombined(classifier, dataset, TwoStepsOptimizerConf(error_conf_1, amosa_conf_1, error_conf_2, amosa_conf_2), improve, resume, output)
+	problem = SecondStepOptimizerCombined(classifier, dataset, TwoStepsOptimizerConf(error_conf_1, amosa_conf_1, error_conf_2, amosa_conf_2), improve, output)
 	optimizer = AMOSA(amosa_conf_2)
-	if resume:
-		optimizer.minimize_from_checkpoint(problem, f"{output}/checkpoint.json")
-	else:
-		optimizer.random_archive(problem)
-		optimizer.minimize(problem, f"{output}/checkpoint.json")
+	optimizer.hill_climb_checkpoint_file = f"{output}/second_step_hillclimb_checkpoint.json"
+	optimizer.minimize_checkpoint_file = f"{output}/second_step_hminimize_checkpoint.json"
+	optimizer.run(problem)
 	optimizer.save_results(problem, output + "/report.csv")
 	optimizer.plot_pareto(problem, output + "/pareto_front.pdf")
 	optimizer.save_pareto_set(problem, output + "/configurations.csv")
@@ -372,9 +347,9 @@ cli.add_command(full_onestep)
 cli.add_command(full_twosteps)
 
 if __name__ == '__main__':
-	if git_updater():
-		os.execv(sys.argv[0], sys.argv)
-	else:
+	#if git_updater():
+	#	os.execv(sys.argv[0], sys.argv)
+	#else:
 		design = ys.Design()
 		ys.run_pass("plugin -i ghdl", design)
 		cli()
