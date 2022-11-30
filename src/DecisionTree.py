@@ -20,9 +20,7 @@ from distutils.dir_util import mkpath
 from anytree import PreOrderIter
 from pyeda.inter import *
 from .DecisionBox import *
-from .ALSGraph import *
-from .ALSCatalog import *
-from .ALSRewriter import *
+from pyalslib import ALSGraph, ALSCatalog, ALSRewriter
 
 class DecisionTree:
 	source_dir = "./resources/vhd/"
