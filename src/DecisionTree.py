@@ -20,7 +20,7 @@ from distutils.dir_util import mkpath
 from anytree import PreOrderIter
 from pyeda.inter import *
 from .DecisionBox import *
-from pyalslib import ALSGraph, ALSCatalog, ALSRewriter
+from pyalslib import ALSGraph, ALSCatalog, ALSRewriter, negate
 
 class DecisionTree:
 	source_dir = "./resources/vhd/"
@@ -42,7 +42,7 @@ class DecisionTree:
 		if als_conf is not None:
 			design = self.__generate_design_for_als(self.__als_conf.cut_size)
 			self.__assertions_graph = ALSGraph(design)
-			self.__assertions_catalog_entries = ALSCatalog(self.__als_conf.catalog, self.__als_conf.solver).generate_catalog(design, self.__als_conf.timeout)
+			self.__assertions_catalog_entries = ALSCatalog(self.__als_conf.lut_cache, self.__als_conf.solver).generate_catalog(lut_set, self.__als_conf.timeout)
 			self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
 			ys.run_pass("design -save {name}".format(name = self.__name), design)
 		else:
@@ -88,7 +88,7 @@ class DecisionTree:
 		return 64 * len(self.__decision_boxes)
 
 	def get_total_nabs(self):
-		return sum([ box["box"].get_nab() for box in self.__decision_boxes ])
+		return sum(box["box"].get_nab() for box in self.__decision_boxes)
 
 	def get_total_retained(self):
 		return 64 * len(self.__decision_boxes) - self.get_total_nabs()
@@ -100,7 +100,7 @@ class DecisionTree:
 		return [ self.__current_configuration[c]["dist"] for c in self.__current_configuration.keys() ]
 
 	def get_current_required_aig_nodes(self):
-		return sum([ self.__current_configuration[c]["gates"] for c in self.__current_configuration.keys() ])
+		return sum(self.__current_configuration[c]["gates"] for c in self.__current_configuration.keys())
 
 	def reset_assertion_configuration(self):
 		if self.__assertions_graph is not None:
@@ -139,10 +139,7 @@ class DecisionTree:
 			print("\t\t", a["class"], " = ", a["expression"])
 
 	def get_boxes_output(self, features_value):
-		boxes_output = dict()
-		for box in self.__decision_boxes:
-			boxes_output["\\" + box["box"].get_name()] = box["box"].compare(features_value[box["box"].get_feature()])
-		return boxes_output
+		return {"\\" + box["box"].get_name(): box["box"].compare(features_value[box["box"].get_feature()]) for box in self.__decision_boxes}
 
 	def evaluate(self, features_value, classes_score):
 		boxes_output = self.get_boxes_output(features_value)
@@ -151,7 +148,7 @@ class DecisionTree:
 			classes_score[c] += int(output["\\" + c])
 
 	def generate_hdl_tree(self, destination):
-		file_name = destination + "/decision_tree_" + self.__name + ".vhd"
+		file_name = f"{destination}/decision_tree_{self.__name}.vhd"
 		file_loader = FileSystemLoader(self.source_dir)
 		env = Environment(loader=file_loader)
 		template = env.get_template(self.vhdl_decision_tree_source)
@@ -160,14 +157,13 @@ class DecisionTree:
 			features  = self.__model_features,
 			classes = self.__model_classes,
 			boxes = [ b["box"].get_struct() for b in self.__decision_boxes ])
-		out_file = open(file_name, "w")
-		out_file.write(output)
-		out_file.close()
+		with open(file_name, "w") as out_file:
+			out_file.write(output)
 		return file_name
 
 	def generate_hdl_exact_assertions(self, destination):
-		module_name = "assertions_block_" + self.__name
-		file_name = destination + "/assertions_block_" + self.__name + ".vhd"
+		module_name = f"assertions_block_{self.__name}"
+		file_name = f"{destination}/assertions_block_{self.__name}.vhd"
 		file_loader = FileSystemLoader(self.source_dir)
 		env = Environment(loader=file_loader)
 		template = env.get_template(self.vhdl_assertions_source)
@@ -176,14 +172,13 @@ class DecisionTree:
 			boxes = [b["name"] for b in self.__decision_boxes],
 			classes = self.__model_classes,
 			assertions = self.__assertions)
-		out_file = open(file_name, "w")
-		out_file.write(output)
-		out_file.close()
+		with open(file_name, "w") as out_file:
+			out_file.write(output)
 		return file_name, module_name
 
 	def generate_hdl_als_ax_assertions(self, destination):
 		rewriter = ALSRewriter(self.__assertions_graph, self.__assertions_catalog_entries)
-		rewriter.rewrite_and_save_with_configuration(self.__name, self.__current_configuration, destination + "/assertions_block_" + self.__name)
+		rewriter.rewrite_and_save_with_configuration(self.__name, self.__current_configuration, f"{destination}/assertions_block_{self.__name}")
 
 	def __get_decision_boxes(self, root_node):
 		self.__decision_boxes = []
@@ -200,15 +195,11 @@ class DecisionTree:
 					exit()
 
 	def __get_leaves(self, root_node):
-		leaves = []
-		for node in PreOrderIter(root_node):
-			if not any(node.children):
-				leaves.append({"name" : node.name, "class" : node.score, "expression" : "(" + str(node.boolean_expression) + ")" })
-		return leaves
+		return [{"name": node.name, "class": node.score, "expression": f"({str(node.boolean_expression)})"} for node in PreOrderIter(root_node) if not any(node.children)]
 
 	def __get_assertion(self, leaf_set, class_name):
 		conditions = [item["expression"] for item in leaf_set if item["class"] == class_name]
-		if len(conditions) == 0:
+		if not conditions:
 			return "False"
 		elif len(conditions) == 1:
 			return conditions[0]
@@ -229,7 +220,7 @@ class DecisionTree:
 	def __generate_design_for_als(self, luts_tech):
 		destination = "/tmp/pyals-rf/"
 		mkpath(destination)
-		mkpath(destination + "/vhd")
+		mkpath(f"{destination}/vhd")
 		file_name, module_name = self.generate_hdl_exact_assertions(destination)
 		design = ys.Design()
 		ys.run_pass("tee -q design -reset", design)

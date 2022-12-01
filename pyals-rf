@@ -15,10 +15,18 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import configparser, click, git, os, pyamosa
+import click, git, os, pyamosa
 from pyosys import libyosys as ys
-from src.Classifier import *
-from src.MOP import *
+from pyalslib import check_for_file, check_for_optional_file
+from src.ConfigParser import *
+from src.PsConfigParser import *
+from src.OneStepConfigParser import *
+from src.TwoStepsConfigParser import *
+from src.PsMop import *
+from src.SingleStepAlsMop import *
+from src.SingleStepCombined import *
+from src.SecondStepAlsMop import *
+from src.SecondStepCombinedMop import *
 
 
 def git_updater():
@@ -35,304 +43,181 @@ def git_updater():
         return True
     return False
 
-
-def ps_config_parser(config_file):
-    config = configparser.ConfigParser(converters={'list': lambda x: [i.strip() for i in x.split(',')]}, empty_lines_in_values=False)
-    config.read(config_file)
-    try:
-        error_conf = ErrorConfig("eprob", float(config["error"]["max_loss"]), 0)
-        amosa_conf = pyamosa.Optimizer.Config(
-            int(config["amosa"]["archive_hard_limit"]),
-            int(config["amosa"]["archive_soft_limit"]),
-            int(config["amosa"]["archive_gamma"]),
-            int(config["amosa"]["hill_climbing_iterations"]),
-            float(config["amosa"]["initial_temperature"]),
-            float(config["amosa"]["final_temperature"]),
-            float(config["amosa"]["cooling_factor"]),
-            int(config["amosa"]["annealing_iterations"]),
-            int(config["amosa"]["annealing_strength"]),
-            int(config["amosa"]["early_termination"]))
-        return error_conf, amosa_conf
-    except KeyError as e:
-        print(f"Field not found: {e}")
-        exit()
-
-
-def als_onestep_config_parser(config_file):
-    config = configparser.ConfigParser(converters={'list': lambda x: [i.strip() for i in x.split(',')]}, empty_lines_in_values=False)
-    config.read(config_file)
-    try:
-        als_conf = ALSConfig(config["als"]["cut_size"], "", config["als"]["solver"], int(config["als"]["timeout"]))
-        error_conf = ErrorConfig("eprob", float(config["error"]["max_loss"]), 0)
-        amosa_conf = pyamosa.Optimizer.Config(
-            int(config["amosa"]["archive_hard_limit"]),
-            int(config["amosa"]["archive_soft_limit"]),
-            int(config["amosa"]["archive_gamma"]),
-            int(config["amosa"]["hill_climbing_iterations"]),
-            float(config["amosa"]["initial_temperature"]),
-            float(config["amosa"]["final_temperature"]),
-            float(config["amosa"]["cooling_factor"]),
-            int(config["amosa"]["annealing_iterations"]),
-            int(config["amosa"]["annealing_strength"]),
-            int(config["amosa"]["early_termination"]))
-        return als_conf, error_conf, amosa_conf
-    except KeyError as e:
-        print(f"Field not found: {e}")
-        exit()
-
-
-def als_twostep_config_parser(config_file):
-    config = configparser.ConfigParser(converters={'list': lambda x: [i.strip() for i in x.split(',')]}, empty_lines_in_values=False)
-    config.read(config_file)
-    try:
-        als_conf = ALSConfig(config["als"]["cut_size"], "", config["als"]["solver"], int(config["als"]["timeout"]))
-        error_conf_1 = ErrorConfig("eprob", float(config["error"]["max_freq"]), 0)
-        error_conf_2 = ErrorConfig("eprob", float(config["error"]["max_loss"]), 0)
-        amosa_conf_1 = pyamosa.Optimizer.Config(
-            int(config["amosa1"]["archive_hard_limit"]),
-            int(config["amosa1"]["archive_soft_limit"]),
-            int(config["amosa1"]["archive_gamma"]),
-            int(config["amosa1"]["hill_climbing_iterations"]),
-            float(config["amosa1"]["initial_temperature"]),
-            float(config["amosa1"]["final_temperature"]),
-            float(config["amosa1"]["cooling_factor"]),
-            int(config["amosa1"]["annealing_iterations"]),
-            int(config["amosa1"]["annealing_strength"]),
-            int(config["amosa1"]["early_termination"]))
-        amosa_conf_2 = pyamosa.Optimizer.Config(
-            int(config["amosa2"]["archive_hard_limit"]),
-            int(config["amosa2"]["archive_soft_limit"]),
-            int(config["amosa2"]["archive_gamma"]),
-            int(config["amosa2"]["hill_climbing_iterations"]),
-            float(config["amosa2"]["initial_temperature"]),
-            float(config["amosa2"]["final_temperature"]),
-            float(config["amosa2"]["cooling_factor"]),
-            int(config["amosa2"]["annealing_iterations"]),
-            int(config["amosa2"]["annealing_strength"]),
-            int(config["amosa2"]["early_termination"]))
-        return als_conf, error_conf_1, error_conf_2, amosa_conf_1, amosa_conf_2
-    except KeyError as e:
-        print(f"Field not found: {e}")
-        exit()
-
-
 @click.group()
 def cli():
     pass
 
 
 @click.command("dump")
-@click.option("-p", "--pmml", type=str, required=True, help="specify the input PMML file")
-def dump(pmml):
-    """ Dump the classifier and exit """
+@click.argument('pmmlfile', type=click.Path(exists=True, dir_okay=False))
+def dump(pmmlfile):
+    """
+    Dump the classifier and exit
+    
+    PMMLFILE is the PMML file describing the model
+    """
     classifier = Classifier(None)
-    classifier.parse(pmml)
+    classifier.parse(pmmlfile)
     classifier.dump()
 
 
 @click.command("bitwidth")
-@click.option("--config", type=str, required=True, help="path of the configuration file")
-@click.option("--pmml", type=str, required=True, help="specify the input PMML file")
-@click.option("--dataset", type=str, required=True, help="specify the file name for the input dataset")
-@click.option("--output", type=str, required=True, help="Output directory. Everything will be placed there.")
-@click.option("--improve", type=str, help="Run again the workflow  using previous Pareto set as initial archive", default=None)
-def bitwidth(config, pmml, dataset, output, improve):
-    """ Performs precision-scaling approximation """
-    if not os.path.exists(config):
-        print(f"{config}: no such file.")
-        exit()
-    if not os.path.exists(pmml):
-        print(f"{pmml}: no such file.")
-        exit()
-    if not os.path.exists(dataset):
-        print(f"{dataset}: no such file.")
-        exit()
-    if improve is not None and not os.path.exists(improve):
-        print(f"{improve}: no such file.")
-        exit()
-    if output != ".":
-        mkpath(output)
-    error_conf, amosa_conf = ps_config_parser(config)
-    classifier = Classifier(None)
-    classifier.parse(pmml)
-    classifier.generate_hdl_exact_implementations(output)
-    problem = SingleStepPsOnly(classifier, dataset, SingleStepOptimizerConf(error_conf, amosa_conf))
-    optimizer = pyamosa.Optimizer(amosa_conf)
+@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
+def bitwidth(configfile):
+    """
+    Performs precision-scaling approximation
+    
+    CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
+    """
+    configuration = PSConfigParser(configfile)
+    check_for_file(configuration.pmml)
+    check_for_file(configuration.error_conf.test_dataset)
+    if configuration.outdir != ".":
+        mkpath(configuration.outdir)
+    classifier = Classifier(configuration.als_conf)
+    classifier.parse(configuration.pmml)
+    classifier.generate_hdl_exact_implementations(configuration.outdir)
+    problem = PsMop(classifier, configuration.error_conf.test_dataset)
+    optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
+    improve = None
+    if os.path.exists(f"{configuration.outdir}/final_archive.json"):
+        print("Using results from previous runs as a starting point.")
+        improve = f"{configuration.outdir}/final_archive.json"
     optimizer.run(problem, improve)
-    optimizer.save_results(problem, f"{output}/report.csv")
-    optimizer.plot_pareto(problem, f"{output}/pareto_front.pdf")
-    optimizer.archive_to_json(f"{output}/final_archive.json")
-    classifier.generate_hdl_ps_ax_implementations(output, optimizer.pareto_set())
-    print(f"All done! Take a look at the {output} directory.")
+    optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
+    optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
+    optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
+    classifier.generate_hdl_ps_ax_implementations(configuration.outdir, optimizer.pareto_set())
+    print(f"All done! Take a look at the {configuration.outdir} directory.")
 
 
 @click.command("als-onestep")
-@click.option("--config", type=str, required=True, help="path of the configuration file")
-@click.option("--catalog", type=str, required=True, help="path of the LUT catalog file")
-@click.option("--pmml", type=str, required=True, help="specify the input PMML file")
-@click.option("--dataset", type=str, required=True, help="specify the file name for the input dataset")
-@click.option("--output", type=str, required=True, help="Output directory. Everything will be placed there.")
-@click.option("--improve", type=str, help="Run again the workflow  using previous Pareto set as initial archive", default=None)
-def als_onestep(config, catalog, pmml, dataset, output, improve):
-    """ Performs one-step ALS approximation """
-    if not os.path.exists(config):
-        print(f"{config}: no such file.")
-        exit()
-    if not os.path.exists(catalog):
-        print(f"{catalog}: no such file.")
-        exit()
-    if not os.path.exists(pmml):
-        print(f"{pmml}: no such file.")
-        exit()
-    if not os.path.exists(dataset):
-        print(f"{dataset}: no such file.")
-        exit()
-    if improve is not None and not os.path.exists(improve):
-        print(f"{improve}: no such file.")
-        exit()
-    if output != ".":
-        mkpath(output)
-    als_conf, error_conf, amosa_conf = als_onestep_config_parser(config)
-    als_conf.catalog = catalog
-    classifier = Classifier(als_conf)
-    classifier.parse(pmml)
-    classifier.generate_hdl_exact_implementations(output)
-    problem = SingleStepAlsOnly(classifier, dataset, SingleStepOptimizerConf(error_conf, amosa_conf))
-    optimizer = pyamosa.Optimizer(amosa_conf)
+@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
+def als_onestep(configfile):
+    """
+    Performs one-step ALS approximation
+    
+    CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
+    """
+    configuration = OneStepConfigParser(configfile)
+    check_for_file(configuration.pmml)
+    check_for_file(configuration.error_conf.test_dataset)
+    check_for_file(configuration.als_conf.lut_cache)
+    if configuration.outdir != ".":
+        mkpath(configuration.outdir)
+
+    classifier = Classifier(configuration.als_conf)
+    classifier.parse(configuration.pmml)
+    classifier.generate_hdl_exact_implementations(configuration.outdir)
+    problem = SingleStepAlsMop(classifier, configuration.error_conf.test_dataset)
+    optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
+    improve = None
+    if os.path.exists(f"{configuration.outdir}/final_archive.json"):
+        print("Using results from previous runs as a starting point.")
+        improve = f"{configuration.outdir}/final_archive.json"
     optimizer.run(problem, improve)
-    optimizer.save_results(problem, f"{output}/report.csv")
-    optimizer.plot_pareto(problem, f"{output}/pareto_front.pdf")
-    optimizer.archive_to_json(f"{output}/final_archive.json")
-    classifier.generate_hdl_onestep_asl_ax_implementations(output, optimizer.pareto_set())
-    print(f"All done! Take a look at the {output} directory.")
+    optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
+    optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
+    optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
+    classifier.generate_hdl_onestep_asl_ax_implementations(configuration.outdir, optimizer.pareto_set())
+    print(f"All done! Take a look at the {configuration.outdir} directory.")
 
 
 @click.command("full-onestep")
-@click.option("--config", type=str, required=True, help="path of the configuration file")
-@click.option("--catalog", type=str, required=True, help="path of the LUT catalog file")
-@click.option("--pmml", type=str, required=True, help="specify the input PMML file")
-@click.option("--dataset", type=str, required=True, help="specify the file name for the input dataset")
-@click.option("--output", type=str, required=True, help="Output directory. Everything will be placed there.")
-@click.option("--improve", type=str, help="Run again the workflow  using previous Pareto set as initial archive", default=None)
-def full_onestep(config, catalog, pmml, dataset, output, improve):
-    """ Performs one-step full approximation (both ps and als) """
-    if not os.path.exists(config):
-        print(f"{config}: no such file.")
-        exit()
-    if not os.path.exists(catalog):
-        print(f"{catalog}: no such file.")
-        exit()
-    if not os.path.exists(pmml):
-        print(f"{pmml}: no such file.")
-        exit()
-    if not os.path.exists(dataset):
-        print(f"{dataset}: no such file.")
-        exit()
-    if improve is not None and not os.path.exists(improve):
-        print(f"{improve}: no such file.")
-        exit()
-    if output != ".":
-        mkpath(output)
-    als_conf, error_conf, amosa_conf = als_onestep_config_parser(config)
-    als_conf.catalog = catalog
-    classifier = Classifier(als_conf)
-    classifier.parse(pmml)
-    classifier.generate_hdl_exact_implementations(output)
-    problem = SingleStepCombined(classifier, dataset, SingleStepOptimizerConf(error_conf, amosa_conf))
-    optimizer = pyamosa.Optimizer(amosa_conf)
+@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
+def full_onestep(configfile):
+    """
+    Performs one-step full approximation (both ps and als)
+    
+    CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
+    """
+    configuration = OneStepConfigParser(configfile)
+    check_for_file(configuration.pmml)
+    check_for_file(configuration.error_conf.test_dataset)
+    check_for_file(configuration.als_conf.lut_cache)
+    if configuration.outdir != ".":
+        mkpath(configuration.outdir)
+    classifier = Classifier(configuration.als_conf)
+    classifier.parse(configuration.pmml)
+    classifier.generate_hdl_exact_implementations(configuration.outdir)
+    problem = SingleStepCombined(classifier, configuration.error_conf.test_dataset)
+    optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
+    improve = None
+    if os.path.exists(f"{configuration.outdir}/final_archive.json"):
+        print("Using results from previous runs as a starting point.")
+        improve = f"{configuration.outdir}/final_archive.json"
     optimizer.run(problem, improve)
-    optimizer.save_results(problem, f"{output}/report.csv")
-    optimizer.plot_pareto(problem, f"{output}/pareto_front.pdf")
-    optimizer.archive_to_json(f"{output}/final_archive.json")
-    classifier.generate_hdl_onestep_full_ax_implementations(output, optimizer.pareto_set())
-    print(f"All done! Take a look at the {output} directory.")
+    optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
+    optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
+    optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
+    classifier.generate_hdl_onestep_full_ax_implementations(configuration.outdir, optimizer.pareto_set())
+    print(f"All done! Take a look at the {configuration.outdir} directory.")
 
 
 @click.command("als-twosteps")
-@click.option("--config", type=str, required=True, help="path of the configuration file")
-@click.option("--catalog", type=str, required=True, help="path of the LUT catalog file")
-@click.option("--pmml", type=str, required=True, help="specify the input PMML file")
-@click.option("--dataset", type=str, required=True, help="specify the file name for the input dataset")
-@click.option("--output", type=str, required=True, help="Output directory. Everything will be placed there.")
-@click.option("--improve", type=str, help="Run again the workflow  using previous Pareto set as initial archive", default=None)
-def als_twosteps(config, catalog, pmml, dataset, output, improve):
-    """ Performs two-steps ALS approximation """
-    if not os.path.exists(config):
-        print(f"{config}: no such file.")
-        exit()
-    if not os.path.exists(catalog):
-        print(f"{catalog}: no such file.")
-        exit()
-    if not os.path.exists(pmml):
-        print(f"{pmml}: no such file.")
-        exit()
-    if not os.path.exists(dataset):
-        print(f"{dataset}: no such file.")
-        exit()
-    if output != ".":
-        mkpath(output)
-    als_conf, error_conf_1, error_conf_2, amosa_conf_1, amosa_conf_2 = als_twostep_config_parser(config)
-    print("Configuration read successfully")
-    als_conf.catalog = catalog
-    classifier = Classifier(als_conf)
+@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
+def als_twosteps(configfile):
+    """
+    Performs two-steps ALS approximation
+    
+    CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
+    """
+    configuration = TwoStepsConfigParser(configfile)
+    check_for_file(configuration.pmml)
+    check_for_file(configuration.error_conf.test_dataset)
+    check_for_file(configuration.als_conf.lut_cache)
+    check_for_optional_file(configuration.error_conf.dataset)
+    if configuration.outdir != ".":
+        mkpath(configuration.outdir)
+    classifier = Classifier(configuration.als_conf)
     print("Creating classifier object...")
-    classifier.parse(pmml)
+    classifier.parse(configuration.pmml)
     print("PMML parsing completed")
-    classifier.generate_hdl_exact_implementations(output)
+    classifier.generate_hdl_exact_implementations(configuration.outdir)
     print("HDL generation (accurate) completed")
-    problem = SecondStepOptimizerAlsOnly(classifier, dataset, TwoStepsOptimizerConf(error_conf_1, amosa_conf_1, error_conf_2, amosa_conf_2), improve, output)
+    problem = SecondStepOptimizerAlsOnly(classifier, configuration.error_conf.test_dataset, TwoStepsOptimizerConf(error_conf_1, amosa_conf_1, error_conf_2, amosa_conf_2), improve, output)
     print("Assertion generation (approximate) completed")
-    optimizer = pyamosa.Optimizer(amosa_conf_2)
-    optimizer.hill_climb_checkpoint_file = f"{output}/second_step_hillclimb_checkpoint.json"
-    optimizer.minimize_checkpoint_file = f"{output}/second_step_hminimize_checkpoint.json"
-    optimizer.cache_dir = f"{output}/.second_step_cache"
+    optimizer = pyamosa.Optimizer(configuration.snd_optimizer_conf)
+    optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/second_step_hillclimb_checkpoint.json"
+    optimizer.minimize_checkpoint_file = f"{configuration.outdir}/second_step_hminimize_checkpoint.json"
+    optimizer.cache_dir = f"{configuration.outdir}/.second_step_cache"
     optimizer.run(problem)
-    optimizer.save_results(problem, f"{output}/report.csv")
-    optimizer.plot_pareto(problem, f"{output}/pareto_front.pdf")
-    optimizer.archive_to_json(f"{output}/final_archive.json")
-    classifier.generate_hdl_twostep_asl_ax_implementations(output, optimizer.pareto_set(), problem.opt_solutions_for_trees)
-    print(f"All done! Take a look at the {output} directory.")
+    optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
+    optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
+    optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
+    classifier.generate_hdl_twostep_asl_ax_implementations(configuration.outdir, optimizer.pareto_set(), problem.opt_solutions_for_trees)
+    print(f"All done! Take a look at the {configuration.outdir} directory.")
 
 
 @click.command("full-twosteps")
-@click.option("--config", type=str, required=True, help="path of the configuration file")
-@click.option("--catalog", type=str, required=True, help="path of the LUT catalog file")
-@click.option("--pmml", type=str, required=True, help="specify the input PMML file")
-@click.option("--dataset", type=str, required=True, help="specify the file name for the input dataset")
-@click.option("--output", type=str, required=True, help="Output directory. Everything will be placed there.")
-@click.option("--improve", type=str, help="Run again the workflow  using previous Pareto set as initial archive", default=None)
-def full_twosteps(config, catalog, pmml, dataset, output, improve):
-    """ Performs two-steps full approximation (both ps and als) """
-    if not os.path.exists(config):
-        print(f"{config}: no such file.")
-        exit()
-    if not os.path.exists(catalog):
-        print(f"{catalog}: no such file.")
-        exit()
-    if not os.path.exists(pmml):
-        print(f"{pmml}: no such file.")
-        exit()
-    if not os.path.exists(dataset):
-        print(f"{dataset}: no such file.")
-        exit()
-    if output != ".":
-        mkpath(output)
-    als_conf, error_conf_1, error_conf_2, amosa_conf_1, amosa_conf_2 = als_twostep_config_parser(config)
-    als_conf.catalog = catalog
-    classifier = Classifier(als_conf)
-    classifier.parse(pmml)
-    classifier.generate_hdl_exact_implementations(output)
-    problem = SecondStepOptimizerCombined(classifier, dataset, TwoStepsOptimizerConf(error_conf_1, amosa_conf_1, error_conf_2, amosa_conf_2), improve, output)
-    optimizer = pyamosa.Optimizer(amosa_conf_2)
-    optimizer.hill_climb_checkpoint_file = f"{output}/second_step_hillclimb_checkpoint.json"
-    optimizer.minimize_checkpoint_file = f"{output}/second_step_hminimize_checkpoint.json"
-    optimizer.cache_dir = f"{output}/.second_step_cache"
+@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
+def full_twosteps(configfile):
+    """
+    Performs two-steps full approximation (both ps and als)
+
+    CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
+    """
+    configuration = TwoStepsConfigParser(configfile)
+    check_for_file(configuration.pmml)
+    check_for_file(configuration.error_conf.test_dataset)
+    check_for_file(configuration.als_conf.lut_cache)
+    check_for_optional_file(configuration.error_conf.dataset)
+    if configuration.outdir != ".":
+        mkpath(configuration.outdir)
+    classifier = Classifier(configuration.als_conf)
+    classifier.parse(configuration.pmml)
+    classifier.generate_hdl_exact_implementations(configuration.outdir)
+    problem = SecondStepOptimizerCombined(classifier, configuration.error_conf.test_dataset, TwoStepsOptimizerConf(error_conf_1, amosa_conf_1, error_conf_2, amosa_conf_2), improve, output)
+    optimizer = pyamosa.Optimizer(configuration.snd_optimizer_conf)
+    optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/second_step_hillclimb_checkpoint.json"
+    optimizer.minimize_checkpoint_file = f"{configuration.outdir}/second_step_hminimize_checkpoint.json"
+    optimizer.cache_dir = f"{configuration.outdir}/.second_step_cache"
     optimizer.run(problem)
-    optimizer.save_results(problem, f"{output}/report.csv")
-    optimizer.plot_pareto(problem, f"{output}/pareto_front.pdf")
-    optimizer.archive_to_json(f"{output}/final_archive.json")
-    classifier.generate_hdl_twostep_full_ax_implementations(output, optimizer.pareto_set(), problem.opt_solutions_for_trees)
-    print(f"All done! Take a look at the {output} directory.")
+    optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
+    optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
+    optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
+    classifier.generate_hdl_twostep_full_ax_implementations(configuration.outdir, optimizer.pareto_set(), problem.opt_solutions_for_trees)
+    print(f"All done! Take a look at the {configuration.outdir} directory.")
 
 
 cli.add_command(dump)
