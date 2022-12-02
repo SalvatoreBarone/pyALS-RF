@@ -36,9 +36,11 @@ class FirstStepAlsMop(Optimizer.Problem):
 
     def generate_samples(self, graph, preloaded_dataset):
         samples = []
+        lut_io_info = {}
         for sample in preloaded_dataset:
             inputs = self.decision_tree.get_boxes_output(sample["input"])
-            samples.append({"input": inputs, "output": graph.evaluate(inputs)})
+            output, _ = graph.evaluate(inputs, lut_io_info)
+            samples.append({"input": inputs, "output": output})
         return samples
 
     def __set_matter_configuration(self, x):
@@ -56,4 +58,4 @@ class FirstStepAlsMop(Optimizer.Problem):
         f1 = self.__get_eprob()
         f2 = self.decision_tree.get_current_required_aig_nodes()
         out["f"] = [f1, f2]
-        out["g"] = [f1 - self.error_config.threshold]
+        out["g"] = [f1 - self.error_config.max_eprob]

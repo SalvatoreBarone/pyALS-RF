@@ -18,8 +18,9 @@ from .BaseMop import *
 from pyamosa import Optimizer
 
 class SingleStepAlsMop(BaseMop, Optimizer.Problem):
-    def __init__(self, classifier, dataset_csv):
-        BaseMop.__init__(self, classifier, dataset_csv)
+    def __init__(self, classifier, error_config):
+        self.error_config = error_config
+        BaseMop.__init__(self, classifier, self.error_config.test_dataset)
         self.cells_per_tree = classifier.get_als_cells_per_tree()
         n_vars = sum(self.cells_per_tree)
         ub = classifier.get_als_dv_upper_bound()
@@ -40,4 +41,4 @@ class SingleStepAlsMop(BaseMop, Optimizer.Problem):
         f1 = self.get_accuracy_loss()
         f2 = sum(self.args[0][0].get_current_required_aig_nodes())
         out["f"] = [f1, f2]
-        out["g"] = [f1 - self.config.error_conf.threshold]
+        out["g"] = [f1 - self.error_config.max_loss_perc]

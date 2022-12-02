@@ -18,17 +18,25 @@ from .BaseMop import *
 from .FirstStepAlsMop import *
 
 class SecondStepBaseMop(BaseMop):
-    def __init__(self, classifier, dataset_csv, config, improve, out_dir):
-        BaseMop.__init__(self, classifier, dataset_csv, config)
+    def __init__(self, classifier, error_conf, opt_conf, out_dir):
+        self.error_conf = error_conf
+        self.opt_conf = opt_conf
+        BaseMop.__init__(self, classifier, self.error_conf.test_dataset)
         self.opt_solutions_for_trees = []
         for t in self.classifier.get_trees():
-            problem = FirstStepAlsMop(t, self.dataset, config.fst_error_conf)
-            optimizer = Optimizer(self.config.fst_amosa_conf)
-            optimizer.hill_climb_checkpoint_file = f"{out_dir}/first_step_hillclimb_checkpoint_{t.get_name()}.json"
-            optimizer.minimize_checkpoint_file = f"{out_dir}/first_step_hminimize_checkpoint{t.get_name()}.json"
-            optimizer.cache_dir = f"{out_dir}/.cache_{t.get_name()}"
+            problem = FirstStepAlsMop(t, self.dataset, self.error_conf)
+            optimizer = Optimizer(self.opt_conf)
+            t_outdir = f"{out_dir}/{t.get_name()}"
+            mkpath(t_outdir)
+            optimizer.hill_climb_checkpoint_file = f"{t_outdir}/first_step_hillclimb_checkpoint.json"
+            optimizer.minimize_checkpoint_file = f"{t_outdir}/first_step_hminimize_checkpoint.json"
+            optimizer.cache_dir = f"{t_outdir}/.cache"
+            improve = None
+            if os.path.exists(f"{t_outdir}/final_archive.json"):
+                print("Using results from previous runs as a starting point.")
+                improve = f"{t_outdir}/final_archive.json"
             optimizer.run(problem, improve, False)
-            optimizer.save_results(problem, f"{out_dir}/report_{t.get_name()}.csv")
-            optimizer.plot_pareto(problem, f"{out_dir}/pareto_front_{t.get_name()}.pdf")
-            optimizer.archive_to_json(f"{out_dir}/final_archive_{t.get_name()}.json")
+            optimizer.archive_to_csv(problem, f"{t_outdir}/report.csv")
+            optimizer.plot_pareto(problem, f"{t_outdir}/pareto_front.pdf")
+            optimizer.archive_to_json(f"{t_outdir}/final_archive.json")
             self.opt_solutions_for_trees.append(optimizer.pareto_set())

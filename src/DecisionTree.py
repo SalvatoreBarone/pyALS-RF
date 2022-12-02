@@ -47,11 +47,11 @@ class DecisionTree:
         self.__assertions_catalog_entries = None
         self.__current_configuration = []
         if als_conf is not None:
-            yosys_helper = self.__generate_design_for_als(self.__als_conf.cut_size)
-            self.__assertions_graph = ALSGraph(yosys_helper.design)
-            self.__assertions_catalog_entries = ALSCatalog(self.__als_conf.lut_cache, self.__als_conf.solver).generate_catalog(yosys_helper.get_luts_set(), self.__als_conf.timeout)
+            self.yosys_helper = self.__generate_design_for_als(self.__als_conf.cut_size)
+            self.__assertions_graph = ALSGraph(self.yosys_helper.design)
+            self.__assertions_catalog_entries = ALSCatalog(self.__als_conf.lut_cache, self.__als_conf.solver).generate_catalog(self.yosys_helper.get_luts_set(), self.__als_conf.timeout)
             self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
-            yosys_helper.save_design(self.__name)
+            self.yosys_helper.save_design(self.__name)
             
 
     def __deepcopy__(self, memo = None):
@@ -182,9 +182,12 @@ class DecisionTree:
         return file_name, module_name
 
     def generate_hdl_als_ax_assertions(self, destination):
-        rewriter = ALSRewriter(self.__assertions_graph, self.__assertions_catalog_entries)
-        rewriter.rewrite_and_save_with_configuration(self.__name, self.__current_configuration, f"{destination}/assertions_block_{self.__name}")
-
+        self.yosys_helper.load_design(self.__name)
+        self.yosys_helper.to_aig(self.__current_configuration)
+        self.yosys_helper.clean()
+        self.yosys_helper.opt()
+        self.yosys_helper.write_verilog(f"{destination}/assertions_block_{self.__name}")
+        
     def __get_decision_boxes(self, root_node):
         self.__decision_boxes = []
         for node in PreOrderIter(root_node):

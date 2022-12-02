@@ -34,7 +34,7 @@ def als_one_step(configfile):
     classifier = Classifier(configuration.als_conf)
     classifier.parse(configuration.pmml)
     classifier.generate_hdl_exact_implementations(configuration.outdir)
-    problem = SingleStepAlsMop(classifier, configuration.error_conf.test_dataset)
+    problem = SingleStepAlsMop(classifier, configuration.error_conf)
     optimizer = Optimizer(configuration.optimizer_conf)
     improve = None
     if os.path.exists(f"{configuration.outdir}/final_archive.json"):
@@ -64,7 +64,7 @@ def als_two_steps(configfile):
     print("PMML parsing completed")
     classifier.generate_hdl_exact_implementations(configuration.outdir)
     print("HDL generation (accurate) completed")
-    problem = SecondStepAlsMop(classifier, configuration.error_conf.test_dataset, TwoStepsOptimizerConf(error_conf_1, amosa_conf_1, error_conf_2, amosa_conf_2), improve, output)
+    problem = SecondStepAlsMop(classifier, configuration.error_conf, configuration.fst_optimizer_conf, configuration.outdir)
     print("Assertion generation (approximate) completed")
     optimizer = Optimizer(configuration.snd_optimizer_conf)
     optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/second_step_hillclimb_checkpoint.json"

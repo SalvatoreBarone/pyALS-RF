@@ -28,7 +28,7 @@ class TwoStepsConfigParser:
             test_dataset = search_subfield_in_config(configuration, "error", "test_dataset", True),
             max_eprob = search_subfield_in_config(configuration, "error", "max_eprob", True),
             nvectors = search_subfield_in_config(configuration, "error", "nvectors", True),
-            dataset = search_subfield_in_config(configuration, "error", "dataset", True))
+            dataset = search_subfield_in_config(configuration, "error", "dataset", False))
 
         self.als_conf = ALSConfig(
             lut_cache = search_subfield_in_config(configuration, "als", "cache", True),

@@ -17,8 +17,9 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 from .SecondStepBaseMop import *
 
 class SecondStepAlsMop(SecondStepBaseMop, Optimizer.Problem):
-    def __init__(self, classifier, dataset_csv, config, improve, outdir):
-        SecondStepBaseMop.__init__(self, classifier, dataset_csv, config, improve, outdir)
+
+    def __init__(self, classifier, error_config, fst_opt_conf, outdir):
+        SecondStepBaseMop.__init__(self, classifier, error_config, fst_opt_conf, outdir)
         n_vars = self.classifier.get_num_of_trees()
         ub = [ len(i)-1 for i in self.opt_solutions_for_trees ]
         print(f"Baseline accuracy: {self.baseline_accuracy}.")
@@ -35,4 +36,4 @@ class SecondStepAlsMop(SecondStepBaseMop, Optimizer.Problem):
         f1 = self.get_accuracy_loss()
         f2 = sum(self.args[0][0].get_current_required_aig_nodes())
         out["f"] = [f1, f2]
-        out["g"] = [f1 - self.config.snd_error_conf.threshold]
+        out["g"] = [f1 - self.error_conf.max_loss_perc]

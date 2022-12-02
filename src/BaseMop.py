@@ -23,7 +23,8 @@ def evaluate_preloaded_dataset(classifier, samples):
     return classifier.evaluate_preloaded_dataset(samples)
 
 def evaluate_eprob(graph, samples, configuration):
-    return sum(0 if sample["output"] == graph.evaluate(sample["input"], configuration) else 1 for sample in samples)
+    lut_info = {}
+    return sum(0 if sample["output"] == graph.evaluate(sample["input"], lut_info, configuration)[0] else 1 for sample in samples)
 
 class BaseMop:
     def __init__(self, classifier, dataset_csv):
