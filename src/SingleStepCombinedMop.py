@@ -18,12 +18,15 @@ from .BaseMop import *
 from pyamosa import Optimizer
 
 class SingleStepCombinedMop(BaseMop, Optimizer.Problem):
-    def __init__(self, classifier, dataset_csv):
-        BaseMop.__init__(self, classifier, dataset_csv)
+    def __init__(self, classifier, error_config):
+        self.error_config = error_config
+        BaseMop.__init__(self, classifier, self.error_config.test_dataset)
         self.cells_per_tree = classifier.get_als_cells_per_tree()
         n_features = len(self.features)
         n_cells = sum(self.cells_per_tree)
         n_vars = n_features + n_cells
+        ub = [53] *  n_features + classifier.get_als_dv_upper_bound()
+        print(f"d.v. #{len(ub)}, {ub}")
         Optimizer.Problem.__init__(self, n_vars, [Optimizer.Type.INTEGER] * n_vars, [0] * n_vars,  [53] *  n_features + classifier.get_als_dv_upper_bound(), 3, 1)
 
     def __set_matter_configuration(self, x):
@@ -38,8 +41,9 @@ class SingleStepCombinedMop(BaseMop, Optimizer.Problem):
             item[0].set_assertions_configuration(configurations)
 
     def evaluate(self, x, out):
+        self.__set_matter_configuration(x)
         f1 = self.get_accuracy_loss()
         f2 = self.args[0][0].get_total_retained()
         f3 = sum(self.args[0][0].get_current_required_aig_nodes())
         out["f"] = [f1, f2, f3]
-        out["g"] = [f1 - self.config.error_conf.threshold]
+        out["g"] = [f1 - self.error_config.max_loss_perc]

@@ -75,237 +75,43 @@ I'm sure it will be very helpful.
 # Running pyALS-RF
 pyALS-rf provides several approximation flows, through a unified command line interface. You can select between the following commands:
 ```
-  bitwidth      Performs precision-scaling approximation
-  als-onestep   Performs one-step ALS approximation
-  als-twostep   Performs two-steps ALS approximation
-  full-onestep  Performs one-step full approximation (both ps and als)
-  full-twostep  Performs two-steps full approximation (both ps and als)
-  dump          just dumps the classifier and exit
+  ps        Performs precision-scaling approximation
+  als       Performs ALS approximation
+  full      Performs ps and als combined
 ```
+
+see
+```
+./pyals-rf --help
+```
+and
+```
+./pyals-rf COMMAND --help
+```
+for more details.
 
 Please kindly note you have to specify the path of the file where synthesized Boolean functions are stored.
 You can find a ready to use cache at ```git@github.com:SalvatoreBarone/pyALS-lut-catalog```.
 If you do not want to use the one I mentioned, pyALS-rf will perform the exact synthesis as needed.
 
-### The ```dump``` command
-
-This command just dumps the classifier, then exit. It is for debugging purpose.
-
-Example:
-```
-./pyals-rf dump --pmml example/pmml/random_forest.pmml
-```
-
-### The ``` bitwidth ``` command
-It allows performing the approximation flow from
-
-> [Barbareschi, M., Barone, S. & Mazzocca, N. Advancing synthesis of decision tree-based multiple classifier systems: an approximate computing case study. Knowl Inf Syst 63, 1577–1596 (2021)](https://doi.org/10.1007/s10115-021-01565-5)
-
-Usage:
-```
-pyals-rf bitwidth [OPTIONS]
-```
-Options:
-```
-  -c, --config TEXT   path of the configuration file  [required]
-  -p, --pmml TEXT     specify the input PMML file  [required]
-  -d, --dataset TEXT  specify the file name for the input dataset  [required]
-  -o, --output TEXT   Output directory. Everything will be placed there. [required]
-  -i, --improve TEXT  Run again the workflow  using previous Pareto set as initial archive
-```
-Esample:
-```
-./pyals-rf bitwidth --pmml example/pmml/random_forest.pmml --dataset example/test_dataset/random_forest.txt --config example/configs/config_ps.ini --output output_rf/
-```
-
-### The ``` als-onestep ``` command
-
-One-step approximation strategy, using approximate logic synthesis on assertion functions.
-All the decision-trees involved in the classification are approximated simultaneously. 
-The set of decision variables of the optimization problem consists of the union of the sets of decision variables that
-allow each of the individual trees to be optimized. Hence, it is easy for the solution space to explode quickly, but 
-(theoretically) this strategy should allow converging towards the actual optimum between classification-accuracy loss
-and hardware resource savings.
-
-Usage: 
-```
-pyals-rf als-onestep [OPTIONS]
-```
-Options:
-```
-  -c, --config TEXT   path of the configuration file  [required]
-  -p, --pmml TEXT     specify the input PMML file  [required]
-  -d, --dataset TEXT  specify the file name for the input dataset  [required]
-  -o, --output TEXT   Output directory. Everything will be placed there. [required]
-  -i, --improve TEXT  Run again the workflow  using previous Pareto set as initial archive
-  --help              Show this message and exit.
-```
-Esample:
-```
-./pyals-rf als-onestep --pmml example/pmml/random_forest.pmml --dataset example/test_dataset/random_forest.txt --config example/configs/config_ps.ini --output output_rf/
-```
-
-### The ``` full-onestep ``` command
-
-One-step approximation strategy, using both the precision scaling of features, and the approximate logic synthesis on assertion functions.
-All the decision-trees involved in the classification are approximated simultaneously. 
-The set of decision variables of the optimization problem consists of the union of the sets of decision variables that
-allow each of the individual trees to be optimized. Hence, it is easy for the solution space to explode quickly, but 
-(theoretically) this strategy should allow converging towards the actual optimum between classification-accuracy loss
-and hardware resource savings.
-
-Usage: 
-```
-pyals-rf full-onestep [OPTIONS]
-```
-Options:
-```
-  -c, --config TEXT   path of the configuration file  [required]
-  -p, --pmml TEXT     specify the input PMML file  [required]
-  -d, --dataset TEXT  specify the file name for the input dataset  [required]
-  -o, --output TEXT   Output directory. Everything will be placed there. [required]
-  -i, --improve TEXT  Run again the workflow  using previous Pareto set as initial archive
-  --help              Show this message and exit.
-```
-Esample:
-```
-./pyals-rf full-onestep --pmml example/pmml/random_forest.pmml --dataset example/test_dataset/random_forest.txt --config example/configs/config_ps.ini --output output_rf/
-```
-
-### The ``` als-twostep ``` command
-
-Two-step approximation strategy, using approximate logic synthesis on assertion functions.
-Each tree is independently approximated; then, the classifier as a whole is approximated. 
-This strategy allows to drastically reduce the size of the solution space, but, on the other hand, it may result in
-sub-optimum points between classification-accuracy loss and hardware resource savings.
-
-Usage: 
-```
-pyals-rf als-twostep [OPTIONS]
-```
-Options:
-```
-  -c, --config TEXT   path of the configuration file  [required]
-  -p, --pmml TEXT     specify the input PMML file  [required]
-  -d, --dataset TEXT  specify the file name for the input dataset  [required]
-  -o, --output TEXT   Output directory. Everything will be placed there. [required]
-  -i, --improve TEXT  Run again the workflow  using previous Pareto set as initial archive
-  --help              Show this message and exit.
-```
-Esample:
-```
-./pyals-rf als-twostep --pmml example/pmml/random_forest.pmml --dataset example/test_dataset/random_forest.txt --config example/configs/config_ps.ini --output output_rf/
-```
-
-### The ``` full-twostep ``` command
-Two-step approximation strategy, using both the precision scaling of features, and the approximate logic synthesis on assertion functions.
-Each tree is independently approximated; then, the classifier as a whole is approximated. 
-This strategy allows to drastically reduce the size of the solution space, but, on the other hand, it may result in
-sub-optimum points between classification-accuracy loss and hardware resource savings.
-
-Usage: 
-```
-pyals-rf full-twostep [OPTIONS]
-```
-Options:
-```
-  -c, --config TEXT   path of the configuration file  [required]
-  -p, --pmml TEXT     specify the input PMML file  [required]
-  -d, --dataset TEXT  specify the file name for the input dataset  [required]
-  -o, --output TEXT   Output directory. Everything will be placed there. [required]
-  -i, --improve TEXT  Run again the workflow  using previous Pareto set as initial archive
-  --help              Show this message and exit.
-```
-Esample:
-```
-./pyals-rf full-twostep --pmml example/pmml/random_forest.pmml --dataset example/test_dataset/random_forest.txt --config example/configs/config_ps.ini --output output_rf/
-```
-
-### The configuration file
+## The configuration file
 Here, I report the basic structure of a configuration file. You will find it within the pyALS root directory.
 
 
-#### Configuration file for the ```bitwidth``` command
-```
-[error]
-max_loss = 5                    ; the error threshold, in terms of classification accuracy loss
-
-[amosa]
-archive_hard_limit = 30         ; Archive hard limit for the AMOSA optimization heuristic, see [1]
-archive_soft_limit = 50         ; Archive soft limit for the AMOSA optimization heuristic, see [1]
-archive_gamma = 2               ; Gamma parameter for the AMOSA optimization heuristic, see [1]
-hill_climbing_iterations = 250  ; the number of iterations performed during the initial hill-climbing refinement, see [1];
-initial_temperature = 500       ; Initial temperature of the matter for the AMOSA optimization heuristic, see [1]
-final_temperature = 0.000001    ; Final temperature of the matter for the AMOSA optimization heuristic, see [1]
-cooling_factor =  0.9           ; It governs how quickly the temperature of the matter decreases during the annealing process, see [1]
-annealing_iterations = 600      ; The amount of refinement iterations performed during the main-loop of the AMOSA heuristic, see [1]
-annealing_strength = 1          ; Governs the strength of random perturbations during the annealing phase; specifically, the number of variables whose value is affected by perturbation.
-early_termination = 20          ; Early termination window. See [2]. Set it to zero in order to disable early-termination. Default is 20.
+### Configuration file for the ```ps``` command
 ```
 
-#### Configuration file for the ```als-onestep``` and ```full-onestep``` commands
+```
+
+### Configuration file for the ```als``` and ```full``` commands
 
 ```
-[als]
-cut_size = 4                    ; specifies the "k" for AIG-cuts, or, alternatively, the k-LUTs for LUT-mapping during cut-enumeration
-catalog = lut_catalog.db        ; This is the path of the file where synthesized Boolean functions are stored. You can find a ready to use cache at git@github.com:SalvatoreBarone/LUTCatalog.git
-solver = btor                   ; SAT-solver to be used. It can be either btor (Boolector) or z3 (Z3-solver)
-timeout = 60000                 ; Timeout (in ms) for the Exact synthesis process. You don't need to change its default value.
 
-[error]
-max_loss = 5                    ; the error threshold, in terms of classification accuracy loss
-
-[amosa]
-archive_hard_limit = 30         ; Archive hard limit for the AMOSA optimization heuristic, see [1]
-archive_soft_limit = 50         ; Archive soft limit for the AMOSA optimization heuristic, see [1]
-archive_gamma = 2               ; Gamma parameter for the AMOSA optimization heuristic, see [1]
-hill_climbing_iterations = 250  ; the number of iterations performed during the initial hill-climbing refinement, see [1];
-initial_temperature = 500       ; Initial temperature of the matter for the AMOSA optimization heuristic, see [1]
-final_temperature = 0.000001    ; Final temperature of the matter for the AMOSA optimization heuristic, see [1]
-cooling_factor =  0.9           ; It governs how quickly the temperature of the matter decreases during the annealing process, see [1]
-annealing_iterations = 600      ; The amount of refinement iterations performed during the main-loop of the AMOSA heuristic, see [1]
-annealing_strength = 1          ; Governs the strength of random perturbations during the annealing phase; specifically, the number of variables whose value is affected by perturbation.
-early_termination = 20          ; Early termination window. See [2]. Set it to zero in order to disable early-termination. Default is 20.
 ```
 
 #### Configuration file for the ```als-twostep``` and ```full-twostep``` commands
 
 ```
-[als]
-cut_size = 4                    ; specifies the "k" for AIG-cuts, or, alternatively, the k-LUTs for LUT-mapping during cut-enumeration
-catalog = lut_catalog.db        ; This is the path of the file where synthesized Boolean functions are stored. You can find a ready to use cache at git@github.com:SalvatoreBarone/LUTCatalog.git
-solver = btor                   ; SAT-solver to be used. It can be either btor (Boolector) or z3 (Z3-solver)
-timeout = 60000                 ; Timeout (in ms) for the Exact synthesis process. You don't need to change its default value.
-
-[error]
-max_freq = 10                   ; the maximum allowed error frequency for approximate assertion functions
-max_loss = 5                    ; the error threshold, in terms of classification accuracy loss
-
-;; options for the first stage optimizer
-[amosa1]                        
-archive_hard_limit = 30         ; Archive hard limit for the AMOSA optimization heuristic, see [1]
-archive_soft_limit = 50         ; Archive soft limit for the AMOSA optimization heuristic, see [1]
-archive_gamma = 2               ; Gamma parameter for the AMOSA optimization heuristic, see [1]
-hill_climbing_iterations = 250  ; the number of iterations performed during the initial hill-climbing refinement, see [1];
-initial_temperature = 500       ; Initial temperature of the matter for the AMOSA optimization heuristic, see [1]
-final_temperature = 0.000001    ; Final temperature of the matter for the AMOSA optimization heuristic, see [1]
-cooling_factor =  0.9           ; It governs how quickly the temperature of the matter decreases during the annealing process, see [1]
-annealing_iterations = 600      ; The amount of refinement iterations performed during the main-loop of the AMOSA heuristic, see [1]
-annealing_strength = 1          ; Governs the strength of random perturbations during the annealing phase; specifically, the number of variables whose value is affected by perturbation.
-early_termination = 20          ; Early termination window. See [2]. Set it to zero in order to disable early-termination. Default is 20.
-
-;; options for the second stage optimizer
-[amosa2]                        
-archive_hard_limit = 30         ; Archive hard limit for the AMOSA optimization heuristic, see [1]
-archive_soft_limit = 50         ; Archive soft limit for the AMOSA optimization heuristic, see [1]
-archive_gamma = 2               ; Gamma parameter for the AMOSA optimization heuristic, see [1]
-hill_climbing_iterations = 250  ; the number of iterations performed during the initial hill-climbing refinement, see [1];
-initial_temperature = 500       ; Initial temperature of the matter for the AMOSA optimization heuristic, see [1]
-final_temperature = 0.000001    ; Final temperature of the matter for the AMOSA optimization heuristic, see [1]
-cooling_factor =  0.9           ; It governs how quickly the temperature of the matter decreases during the annealing process, see [1]
-annealing_iterations = 600      ; The amount of refinement iterations performed during the main-loop of the AMOSA heuristic, see [1]
-annealing_strength = 1          ; Governs the strength of random perturbations during the annealing phase; specifically, the number of variables whose value is affected by perturbation.
-early_termination = 20          ; Early termination window. See [2]. Set it to zero in order to disable early-termination. Default is 20.
 
 ```
 

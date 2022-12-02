@@ -23,6 +23,7 @@ class SecondStepBaseMop(BaseMop):
         self.opt_conf = opt_conf
         BaseMop.__init__(self, classifier, self.error_conf.test_dataset)
         self.opt_solutions_for_trees = []
+        assert len(self.classifier.get_trees()) > 1, "The two steps approach is available only for randon forest classifiers"
         for t in self.classifier.get_trees():
             problem = FirstStepAlsMop(t, self.dataset, self.error_conf)
             optimizer = Optimizer(self.opt_conf)
@@ -35,7 +36,7 @@ class SecondStepBaseMop(BaseMop):
             if os.path.exists(f"{t_outdir}/final_archive.json"):
                 print("Using results from previous runs as a starting point.")
                 improve = f"{t_outdir}/final_archive.json"
-            optimizer.run(problem, improve, False)
+            optimizer.run(problem, improve)
             optimizer.archive_to_csv(problem, f"{t_outdir}/report.csv")
             optimizer.plot_pareto(problem, f"{t_outdir}/pareto_front.pdf")
             optimizer.archive_to_json(f"{t_outdir}/final_archive.json")

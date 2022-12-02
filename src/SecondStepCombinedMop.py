@@ -18,11 +18,10 @@ from .SecondStepBaseMop import *
 
 
 class SecondStepCombinedMop(SecondStepBaseMop, Optimizer.Problem):
-    def __init__(self, classifier, dataset_csv, config, improve, outdir):
-        SecondStepBaseMop.__init__(self, classifier, dataset_csv, config, improve, outdir)
+    def __init__(self, classifier, error_config, fst_opt_conf, outdir):
+        SecondStepBaseMop.__init__(self, classifier, error_config, fst_opt_conf, outdir)
         n_vars = len(self.features) + self.classifier.get_num_of_trees()
         ub = [53] * len(self.features) + [ len(i)-1 for i in self.opt_solutions_for_trees ]
-        print(f"Baseline accuracy: {self.baseline_accuracy}.")
         print(f"d.v. #{len(ub)}, {ub}")
         Optimizer.Problem.__init__(self, n_vars, [Optimizer.Type.INTEGER] * n_vars, [0] * n_vars, ub, 3, 1)
 
@@ -39,4 +38,4 @@ class SecondStepCombinedMop(SecondStepBaseMop, Optimizer.Problem):
         f2 = self.args[0][0].get_total_retained()
         f3 = sum(self.args[0][0].get_current_required_aig_nodes())
         out["f"] = [f1, f2, f3]
-        out["g"] = [f1 - self.config.snd_error_conf.threshold]
+        out["g"] = [f1 - self.error_conf.max_loss_perc]

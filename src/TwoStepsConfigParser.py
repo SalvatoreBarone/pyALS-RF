@@ -26,7 +26,7 @@ class TwoStepsConfigParser:
         self.error_conf = ErrorConfig(
             max_loss_perc = search_subfield_in_config(configuration, "error", "max_loss_perc", True),
             test_dataset = search_subfield_in_config(configuration, "error", "test_dataset", True),
-            max_eprob = search_subfield_in_config(configuration, "error", "max_eprob", True),
+            max_eprob = search_subfield_in_config(configuration, "error", "max_eprob_perc", True),
             nvectors = search_subfield_in_config(configuration, "error", "nvectors", True),
             dataset = search_subfield_in_config(configuration, "error", "dataset", False))
 

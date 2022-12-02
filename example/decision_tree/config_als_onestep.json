@@ -7,7 +7,7 @@
         "solver"   : "btor"
     },
     "error": {
-        "max_loss_perc" : 5,
+        "max_loss_perc" : 100,
         "test_dataset": "example/decision_tree/dataset.txt"
     },
     "optimizer" : {

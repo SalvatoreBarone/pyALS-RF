@@ -22,7 +22,6 @@ class SecondStepAlsMop(SecondStepBaseMop, Optimizer.Problem):
         SecondStepBaseMop.__init__(self, classifier, error_config, fst_opt_conf, outdir)
         n_vars = self.classifier.get_num_of_trees()
         ub = [ len(i)-1 for i in self.opt_solutions_for_trees ]
-        print(f"Baseline accuracy: {self.baseline_accuracy}.")
         print(f"d.v. #{len(ub)}, {ub}")
         Optimizer.Problem.__init__(self, n_vars, [Optimizer.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 

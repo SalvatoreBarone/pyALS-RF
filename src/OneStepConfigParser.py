@@ -26,7 +26,7 @@ class OneStepConfigParser:
         self.error_conf = ErrorConfig(
             max_loss_perc = search_subfield_in_config(configuration, "error", "max_loss_perc", True),
             test_dataset = search_subfield_in_config(configuration, "error", "test_dataset", True),
-            max_eprob = search_subfield_in_config(configuration, "error", "max_eprob", False),
+            max_eprob = search_subfield_in_config(configuration, "error", "max_eprob_perc", False),
             nvectors = search_subfield_in_config(configuration, "error", "nvectors", False),
             dataset = search_subfield_in_config(configuration, "error", "dataset", False))
 

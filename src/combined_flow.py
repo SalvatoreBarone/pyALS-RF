@@ -34,7 +34,7 @@ def full_one_step(configfile):
     classifier = Classifier(configuration.als_conf)
     classifier.parse(configuration.pmml)
     classifier.generate_hdl_exact_implementations(configuration.outdir)
-    problem = SingleStepCombinedMop(classifier, configuration.error_conf.test_dataset)
+    problem = SingleStepCombinedMop(classifier, configuration.error_conf)
     optimizer = Optimizer(configuration.optimizer_conf)
     improve = None
     if os.path.exists(f"{configuration.outdir}/final_archive.json"):
@@ -60,9 +60,13 @@ def full_two_steps(configfile):
     if configuration.outdir != ".":
         mkpath(configuration.outdir)
     classifier = Classifier(configuration.als_conf)
+    print("Creating classifier object...")
     classifier.parse(configuration.pmml)
+    print("PMML parsing completed")
     classifier.generate_hdl_exact_implementations(configuration.outdir)
-    problem = SecondStepCombinedMop(classifier, configuration.error_conf.test_dataset, TwoStepsOptimizerConf(error_conf_1, amosa_conf_1, error_conf_2, amosa_conf_2), improve, output)
+    print("HDL generation (accurate) completed")
+    problem = SecondStepCombinedMop(classifier, configuration.error_conf, configuration.fst_optimizer_conf, configuration.outdir)
+    print("Assertion generation (approximate) completed")
     optimizer = Optimizer(configuration.snd_optimizer_conf)
     optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/second_step_hillclimb_checkpoint.json"
     optimizer.minimize_checkpoint_file = f"{configuration.outdir}/second_step_hminimize_checkpoint.json"

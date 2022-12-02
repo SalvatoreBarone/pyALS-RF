@@ -1,16 +1,16 @@
 {
     "model" : "example/random_forest/model.pmml",
-    "outdir" : "results_dt",
+    "outdir" : "results_rf10_2s",
     "als" : {
         "cache"    : "lut_catalog.db",
         "cut_size" : 4,
         "solver"   : "btor"
     },
     "error": {
-        "max_eprob" : 0.5,
+        "max_eprob_perc" : 50,
         "nvectors" : 1000,
-        "dataset" : "",
-        "max_loss_perc" : 5,
+        "_dataset" : "",
+        "max_loss_perc" : 100,
         "test_dataset": "example/random_forest/dataset.txt"
     },
     "optimizer" : [
