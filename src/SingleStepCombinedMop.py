@@ -17,7 +17,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 from .BaseMop import *
 from pyamosa import Optimizer
 
-class SingleStepCombined(BaseMop, Optimizer.Problem):
+class SingleStepCombinedMop(BaseMop, Optimizer.Problem):
     def __init__(self, classifier, dataset_csv):
         BaseMop.__init__(self, classifier, dataset_csv)
         self.cells_per_tree = classifier.get_als_cells_per_tree()

@@ -17,7 +17,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 from .SecondStepBaseMop import *
 
 
-class SecondStepOptimizerCombined(SecondStepBaseMop, Optimizer.Problem):
+class SecondStepCombinedMop(SecondStepBaseMop, Optimizer.Problem):
     def __init__(self, classifier, dataset_csv, config, improve, outdir):
         SecondStepBaseMop.__init__(self, classifier, dataset_csv, config, improve, outdir)
         n_vars = len(self.features) + self.classifier.get_num_of_trees()

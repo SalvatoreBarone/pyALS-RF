@@ -15,18 +15,11 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import click, git, os, pyamosa
-from pyosys import libyosys as ys
-from pyalslib import check_for_file, check_for_optional_file
-from src.ConfigParser import *
-from src.PsConfigParser import *
-from src.OneStepConfigParser import *
-from src.TwoStepsConfigParser import *
-from src.PsMop import *
-from src.SingleStepAlsMop import *
-from src.SingleStepCombined import *
-from src.SecondStepAlsMop import *
-from src.SecondStepCombinedMop import *
+import click, git, os
+from src.Classifier import Classifier
+from src.ps_flow import ps_flow
+from src.als_flow import als_one_step, als_two_steps
+from src.combined_flow import full_one_step, full_two_steps
 
 
 def git_updater():
@@ -98,111 +91,18 @@ def full(configfile, onestep):
     CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
     """
     if onestep:
-
-    configuration = OneStepConfigParser(configfile)
-    check_for_file(configuration.pmml)
-    check_for_file(configuration.error_conf.test_dataset)
-    check_for_file(configuration.als_conf.lut_cache)
-    if configuration.outdir != ".":
-        mkpath(configuration.outdir)
-    classifier = Classifier(configuration.als_conf)
-    classifier.parse(configuration.pmml)
-    classifier.generate_hdl_exact_implementations(configuration.outdir)
-    problem = SingleStepCombined(classifier, configuration.error_conf.test_dataset)
-    optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
-    improve = None
-    if os.path.exists(f"{configuration.outdir}/final_archive.json"):
-        print("Using results from previous runs as a starting point.")
-        improve = f"{configuration.outdir}/final_archive.json"
-    optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/{optimizer.hill_climb_checkpoint_file}"
-    optimizer.minimize_checkpoint_file = f"{configuration.outdir}/{optimizer.minimize_checkpoint_file}"
-    optimizer.cache_dir = f"{configuration.outdir}/{optimizer.cache_dir}"
-    optimizer.run(problem, improve)
-    optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
-    optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
-    optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
-    classifier.generate_hdl_onestep_full_ax_implementations(configuration.outdir, optimizer.pareto_set())
-    print(f"All done! Take a look at the {configuration.outdir} directory.")
-
-
-@click.command("als-twosteps")
-@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-def als_twosteps(configfile):
-    """
-    Performs two-steps ALS approximation
-    
-    CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
-    """
-    configuration = TwoStepsConfigParser(configfile)
-    check_for_file(configuration.pmml)
-    check_for_file(configuration.error_conf.test_dataset)
-    check_for_file(configuration.als_conf.lut_cache)
-    check_for_optional_file(configuration.error_conf.dataset)
-    if configuration.outdir != ".":
-        mkpath(configuration.outdir)
-    classifier = Classifier(configuration.als_conf)
-    print("Creating classifier object...")
-    classifier.parse(configuration.pmml)
-    print("PMML parsing completed")
-    classifier.generate_hdl_exact_implementations(configuration.outdir)
-    print("HDL generation (accurate) completed")
-    problem = SecondStepOptimizerAlsOnly(classifier, configuration.error_conf.test_dataset, TwoStepsOptimizerConf(error_conf_1, amosa_conf_1, error_conf_2, amosa_conf_2), improve, output)
-    print("Assertion generation (approximate) completed")
-    optimizer = pyamosa.Optimizer(configuration.snd_optimizer_conf)
-    optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/second_step_hillclimb_checkpoint.json"
-    optimizer.minimize_checkpoint_file = f"{configuration.outdir}/second_step_hminimize_checkpoint.json"
-    optimizer.cache_dir = f"{configuration.outdir}/.second_step_cache"
-    optimizer.run(problem)
-    optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
-    optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
-    optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
-    classifier.generate_hdl_twostep_asl_ax_implementations(configuration.outdir, optimizer.pareto_set(), problem.opt_solutions_for_trees)
-    print(f"All done! Take a look at the {configuration.outdir} directory.")
-
-
-@click.command("full-twosteps")
-@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-def full_twosteps(configfile):
-    """
-    Performs two-steps full approximation (both ps and als)
-
-    CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
-    """
-    configuration = TwoStepsConfigParser(configfile)
-    check_for_file(configuration.pmml)
-    check_for_file(configuration.error_conf.test_dataset)
-    check_for_file(configuration.als_conf.lut_cache)
-    check_for_optional_file(configuration.error_conf.dataset)
-    if configuration.outdir != ".":
-        mkpath(configuration.outdir)
-    classifier = Classifier(configuration.als_conf)
-    classifier.parse(configuration.pmml)
-    classifier.generate_hdl_exact_implementations(configuration.outdir)
-    problem = SecondStepOptimizerCombined(classifier, configuration.error_conf.test_dataset, TwoStepsOptimizerConf(error_conf_1, amosa_conf_1, error_conf_2, amosa_conf_2), improve, output)
-    optimizer = pyamosa.Optimizer(configuration.snd_optimizer_conf)
-    optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/second_step_hillclimb_checkpoint.json"
-    optimizer.minimize_checkpoint_file = f"{configuration.outdir}/second_step_hminimize_checkpoint.json"
-    optimizer.cache_dir = f"{configuration.outdir}/.second_step_cache"
-    optimizer.run(problem)
-    optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
-    optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
-    optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
-    classifier.generate_hdl_twostep_full_ax_implementations(configuration.outdir, optimizer.pareto_set(), problem.opt_solutions_for_trees)
-    print(f"All done! Take a look at the {configuration.outdir} directory.")
-
+        full_one_step(configfile)
+    else:
+        full_two_steps(configfile)
 
 cli.add_command(dump)
 cli.add_command(bitwidth)
-cli.add_command(als_onestep)
-cli.add_command(als_twosteps)
-cli.add_command(full_onestep)
-cli.add_command(full_twosteps)
+cli.add_command(als)
+cli.add_command(full)
 
 if __name__ == '__main__':
 	#if git_updater():
 	#	os.execv(sys.argv[0], sys.argv)
 	#else:
-		design = ys.Design()
-		ys.run_pass("plugin -i ghdl", design)
 		cli()
 
