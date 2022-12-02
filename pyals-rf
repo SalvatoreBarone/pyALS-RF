@@ -61,7 +61,7 @@ def dump(pmmlfile):
     classifier.dump()
 
 
-@click.command("bitwidth")
+@click.command("ps")
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
 def bitwidth(configfile):
     """
@@ -69,68 +69,36 @@ def bitwidth(configfile):
     
     CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
     """
-    configuration = PSConfigParser(configfile)
-    check_for_file(configuration.pmml)
-    check_for_file(configuration.error_conf.test_dataset)
-    if configuration.outdir != ".":
-        mkpath(configuration.outdir)
-    classifier = Classifier(configuration.als_conf)
-    classifier.parse(configuration.pmml)
-    classifier.generate_hdl_exact_implementations(configuration.outdir)
-    problem = PsMop(classifier, configuration.error_conf.test_dataset)
-    optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
-    improve = None
-    if os.path.exists(f"{configuration.outdir}/final_archive.json"):
-        print("Using results from previous runs as a starting point.")
-        improve = f"{configuration.outdir}/final_archive.json"
-    optimizer.run(problem, improve)
-    optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
-    optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
-    optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
-    classifier.generate_hdl_ps_ax_implementations(configuration.outdir, optimizer.pareto_set())
-    print(f"All done! Take a look at the {configuration.outdir} directory.")
+    ps_flow(configfile)
+    
 
 
-@click.command("als-onestep")
+@click.command("als")
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-def als_onestep(configfile):
+@click.option("-1", "--onestep", is_flag = True, help = "Enables the one-step approximation flow")
+def als(configfile, onestep):
     """
-    Performs one-step ALS approximation
+    Performs ALS approximation
     
     CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
     """
-    configuration = OneStepConfigParser(configfile)
-    check_for_file(configuration.pmml)
-    check_for_file(configuration.error_conf.test_dataset)
-    check_for_file(configuration.als_conf.lut_cache)
-    if configuration.outdir != ".":
-        mkpath(configuration.outdir)
-
-    classifier = Classifier(configuration.als_conf)
-    classifier.parse(configuration.pmml)
-    classifier.generate_hdl_exact_implementations(configuration.outdir)
-    problem = SingleStepAlsMop(classifier, configuration.error_conf.test_dataset)
-    optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
-    improve = None
-    if os.path.exists(f"{configuration.outdir}/final_archive.json"):
-        print("Using results from previous runs as a starting point.")
-        improve = f"{configuration.outdir}/final_archive.json"
-    optimizer.run(problem, improve)
-    optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
-    optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
-    optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
-    classifier.generate_hdl_onestep_asl_ax_implementations(configuration.outdir, optimizer.pareto_set())
-    print(f"All done! Take a look at the {configuration.outdir} directory.")
+    if onestep:
+        als_one_step(configfile)
+    else:
+        als_two_steps(configfile)
 
 
-@click.command("full-onestep")
+@click.command("full")
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-def full_onestep(configfile):
+@click.option("-1", "--onestep", is_flag = True, help = "Enables the one-step approximation flow")
+def full(configfile, onestep):
     """
-    Performs one-step full approximation (both ps and als)
+    Performs full approximation (both ps and als)
     
     CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
     """
+    if onestep:
+
     configuration = OneStepConfigParser(configfile)
     check_for_file(configuration.pmml)
     check_for_file(configuration.error_conf.test_dataset)
@@ -146,6 +114,9 @@ def full_onestep(configfile):
     if os.path.exists(f"{configuration.outdir}/final_archive.json"):
         print("Using results from previous runs as a starting point.")
         improve = f"{configuration.outdir}/final_archive.json"
+    optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/{optimizer.hill_climb_checkpoint_file}"
+    optimizer.minimize_checkpoint_file = f"{configuration.outdir}/{optimizer.minimize_checkpoint_file}"
+    optimizer.cache_dir = f"{configuration.outdir}/{optimizer.cache_dir}"
     optimizer.run(problem, improve)
     optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
     optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")

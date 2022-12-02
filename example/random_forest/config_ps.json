@@ -7,8 +7,8 @@
         "solver"   : "btor"
     },
     "error": {
-        "max_loss" : 5,
-        "dataset": "example/random_forest/dataset.txt"
+        "max_loss_perc" : 5,
+        "test_dataset": "example/random_forest/dataset.txt"
     },
     "optimizer" : {
         "archive_hard_limit"       : 20,

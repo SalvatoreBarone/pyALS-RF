@@ -18,8 +18,9 @@ from .BaseMop import *
 from pyamosa import Optimizer
 
 class PsMop(BaseMop, Optimizer.Problem):
-    def __init__(self, classifier, dataset_csv):
-        BaseMop.__init__(self, classifier, dataset_csv)
+    def __init__(self, classifier, error_conf):
+        self.error_conf = error_conf
+        BaseMop.__init__(self, classifier, self.error_conf.test_dataset)
         n_vars = len(classifier.get_features())
         Optimizer.Problem.__init__(self, n_vars, [Optimizer.Type.INTEGER] * n_vars, [0] * n_vars, [53] * n_vars, 2, 1)
 
@@ -33,4 +34,4 @@ class PsMop(BaseMop, Optimizer.Problem):
         f1 = self.get_accuracy_loss()
         f2 = self.args[0][0].get_total_retained()
         out["f"] = [f1, f2]
-        out["g"] = [f1 - self.config.error_conf.threshold]
+        out["g"] = [f1 - self.error_conf.max_loss_perc]

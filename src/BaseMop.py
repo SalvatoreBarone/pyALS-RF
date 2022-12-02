@@ -33,10 +33,10 @@ class BaseMop:
         self.n_samples = len(self.dataset)
         classifier.reset_assertion_configuration()
         classifier.reset_nabs_configuration()
-        classifiers = [copy.deepcopy(classifier)] * cpu_count()
+        classifiers = [copy.deepcopy(classifier) for _ in range(cpu_count())]
         self.args = [[c, d] for c, d in zip(classifiers, list_partitioning(self.dataset, cpu_count()))]
         self.baseline_accuracy = self.evaluate_dataset()
-        print(f"Baseline accuracy: {self.baseline_accuracy}.")
+        print(f"Baseline accuracy: {self.baseline_accuracy} %")
 
     def evaluate_dataset(self):
         with Pool(cpu_count()) as pool:
