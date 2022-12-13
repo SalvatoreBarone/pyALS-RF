@@ -1,3 +1,5 @@
+pyamosa
+pyalslib
 Jinja2
 anytree
 pyeda
