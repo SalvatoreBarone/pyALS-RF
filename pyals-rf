@@ -23,18 +23,23 @@ from src.combined_flow import full_one_step, full_two_steps
 
 
 def git_updater():
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    repo = git.Repo(dir_path)
-    repo.remotes.origin.fetch()
-    local_head = repo.heads[0].commit
-    remote_head = repo.remotes.origin.refs[0].commit
-    if remote_head != local_head:
-        print("Updating the tool...")
-        repo.remotes.origin.pull()
-        for submodule in repo.submodules:
-            submodule.update(init = True, recursive = True)
-        return True
-    return False
+    try:
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        repo = git.Repo(dir_path)
+        repo.remotes.origin.fetch()
+        local_head = repo.heads[0].commit
+        remote_head = repo.remotes.origin.refs[0].commit
+        if remote_head != local_head:
+            print("Updating the tool...")
+            repo.remotes.origin.pull()
+            for submodule in repo.submodules:
+                submodule.update(init = True, recursive = True)
+            return True
+        return False
+    except git.exc.GitCommandError as e:
+        print(e)
+        print("\n*** Ensure you have access to the internet! ***\n")
+        return False
 
 @click.group()
 def cli():
