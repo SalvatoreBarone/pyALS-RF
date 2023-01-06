@@ -29,7 +29,7 @@ def to_one_hot(x):
         x_one_hot.append(next_el)
     return x_one_hot
 
-def dtgen(clf, dataset, outputdir, outcome, skip_header, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha):
+def dtgen(clf, dataset, outputdir, outcome, skip_header, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap):
     
     data = np.genfromtxt(dataset, delimiter=',', skip_header = 1 if skip_header else 0)
     learning_set_size = int(np.ceil(data.shape[0] * fraction))
@@ -81,13 +81,14 @@ def dtgen(clf, dataset, outputdir, outcome, skip_header, fraction, depth, predic
                 max_leaf_nodes = max_leaf_nodes,
                 min_impurity_decrease = min_impurity_decrease,
                 ccp_alpha = ccp_alpha,
+                bootstrap = not disable_bootstrap,
                 n_jobs = -1,
                 verbose = 1).fit(list(learning_attributes), list(learning_classes))
-    elif clf == "bag":
-        model = ensemble.BaggingClassifier(
-            n_estimators = predictors,
-            n_jobs = -1,
-            verbose = 1).fit(list(learning_attributes), list(learning_classes))
+    # elif clf == "bag":
+    #     model = ensemble.BaggingClassifier(
+    #         n_estimators = predictors,
+    #         n_jobs = -1,
+    #         verbose = 1).fit(list(learning_attributes), list(learning_classes))
 
     c_ans = sum(pred == ans for pred, ans in zip(model.predict(test_attributes), test_classes))
     print(f"Classifier accuracy: {c_ans / len(test_classes)}")
@@ -95,7 +96,7 @@ def dtgen(clf, dataset, outputdir, outcome, skip_header, fraction, depth, predic
     mkpath(outputdir)
 
     original_stdout = sys.stdout
-    with open(f"{outputdir}/test_dataset_4_pyALS_rf.csv", "w") as file:
+    with open(f"{outputdir}/test_dataset_4_pyALS-rf.csv", "w") as file:
         sys.stdout = file
         print(*attributes_name, *classes_name, sep=",")
         for a, c  in zip(test_attributes, test_classes_one_hot):
