@@ -19,6 +19,7 @@ import click, git, os, sys
 from src.Classifier import Classifier
 from src.ps_flow import ps_flow
 from src.als_flow import als_one_step, als_two_steps
+from src.als_wc_flow import als_wc_one_step, als_wc_two_steps
 from src.combined_flow import full_one_step, full_two_steps
 from src.DtGenConfigParser import *
 from src.dtgen import dtgen
@@ -85,6 +86,22 @@ def als(approach, configfile):
         als_one_step(configfile)
     elif approach == "divided":
         als_two_steps(configfile)
+        
+
+@click.command("als-wc")
+@click.argument('approach', type = click.Choice(["whole", "divided"]))
+@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
+def als_wc(approach, configfile):
+    """
+    Performs ALS approximation
+    
+    CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
+    """
+    if approach == "whole":
+        als_wc_one_step(configfile)
+    elif approach == "divided":
+        als_wc_two_steps(configfile)
+        
 
 
 @click.command("full")
@@ -103,7 +120,7 @@ def full(approach, configfile):
 
 
 @click.command("learn")
-@click.argument('clf', type = click.Choice(["dt", "rf", "wc"]), default = "rf")
+@click.argument('clf', type = click.Choice(["dt", "rf", "bag", "wc"]), default = "rf")
 @click.argument('dataset', type=click.Path(exists=True, dir_okay=False))
 @click.argument('outputdir', type=click.Path(dir_okay=True), default = "output")
 @click.option("-c", "--separator", type=str, default = ",", help="Separator character in the dataset file")
@@ -134,6 +151,7 @@ def learning(clf, dataset, outputdir, separator, outcome, skip_header, fraction,
 cli.add_command(dump)
 cli.add_command(bitwidth)
 cli.add_command(als)
+cli.add_command(als_wc)
 cli.add_command(full)
 cli.add_command(learning)
 

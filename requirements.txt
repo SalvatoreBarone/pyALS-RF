@@ -22,6 +22,7 @@ pyparsing
 python-dateutil
 python-igraph
 scikit-learn
+sklearn2pmml
 scipy
 setuptools-scm
 six

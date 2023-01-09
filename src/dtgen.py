@@ -18,6 +18,7 @@ import sys, random, numpy as np, graphviz
 from distutils.dir_util import mkpath
 from nyoka import skl_to_pmml
 from sklearn import tree, pipeline, ensemble
+import sklearn2pmml
 
 def to_one_hot(x):
     x_one_hot = []
@@ -67,10 +68,15 @@ def save_test_dataset_to_csv(filename, attributes_name, test_attributes, classes
     sys.stdout = original_stdout  
     
 def graphviz_export(model, attributes_name, classes_name, outputdir):
-    for i in range(len(model.estimators_)):
-        dot_data = tree.export_graphviz(model.estimators_[i], feature_names = attributes_name, class_names = classes_name, filled=True, rounded=True)
+    if isinstance(model, (ensemble.RandomForestClassifier, ensemble.BaggingClassifier)):
+        for i in range(len(model.estimators_)):
+            dot_data = tree.export_graphviz(model.estimators_[i], feature_names = attributes_name, class_names = classes_name, filled=True, rounded=True)
+            graph = graphviz.Source(dot_data)
+            graph.render(directory = f"{outputdir}/export", filename = f'tree_{i}.gv')
+    else:
+        dot_data = tree.export_graphviz(model, feature_names = attributes_name, class_names = classes_name, filled=True, rounded=True)
         graph = graphviz.Source(dot_data)
-        graph.render(directory = f"{outputdir}/export", filename = f'tree_{i}.gv')
+        graph.render(directory = f"{outputdir}/export", filename = 'tree.gv')
     
 
 def dtgen(clf, dataset, outputdir, separator, outcome, skip_header, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap):
@@ -96,6 +102,12 @@ def dtgen(clf, dataset, outputdir, separator, outcome, skip_header, fraction, de
                 max_leaf_nodes = max_leaf_nodes,
                 min_impurity_decrease = min_impurity_decrease,
                 ccp_alpha = ccp_alpha,
+                bootstrap = not disable_bootstrap,
+                n_jobs = -1,
+                verbose = 1).fit(list(learning_attributes), list(learning_labels))
+    elif clf == "bag":
+        model = ensemble.BaggingClassifier(
+                n_estimators = predictors,
                 bootstrap = not disable_bootstrap,
                 n_jobs = -1,
                 verbose = 1).fit(list(learning_attributes), list(learning_labels))
@@ -127,7 +139,7 @@ def dtgen(clf, dataset, outputdir, separator, outcome, skip_header, fraction, de
         
     print(f"Classification accuracy: {sum(pred == ans for pred, ans in zip(model.predict(test_attributes), test_labels)) / len(test_labels)}")
     mkpath(outputdir)
-    pipe = pipeline.Pipeline([('clf', model)])
-    skl_to_pmml(pipeline = pipe, col_names = attributes_name, pmml_f_name = f"{outputdir}/{clf}_{predictors}.pmml" if predictors > 1 else f"{outputdir}/{clf}.pmml")
+    pipe = sklearn2pmml.PMMLPipeline([("classifier", model)])
+    sklearn2pmml.sklearn2pmml(pipe, f"{outputdir}/{clf}_{predictors}.pmml" if predictors > 1 else f"{outputdir}/{clf}.pmml", with_repr = True)
     save_test_dataset_to_csv(f"{outputdir}/test_dataset_4_pyALS-rf.csv", attributes_name, test_attributes, classes_name, test_labels_one_hot)
     graphviz_export(model, attributes_name, classes_name, outputdir)
