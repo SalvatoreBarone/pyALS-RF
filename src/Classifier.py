@@ -22,7 +22,7 @@ from distutils.file_util import copy_file
 from .DecisionTree import *
 
 class Classifier:
-  __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_1'}
+  __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_4'}
   __source_dir = "./resources/"
   # VHDL sources
   __vhdl_bnf_source = "vhd/bnf.vhd"
@@ -519,16 +519,18 @@ class Classifier:
         for element in child.findall("pmml:Value", self.__namespaces):
           self.__model_classes_list_str.append(element.attrib['value'].replace('-','_'))
 
-  def __get_tree_model(self, tree_name, tree_model_root):
-    tree = Node('Node_' + tree_model_root.attrib['id'], feature = "", operator = "", threshold_value = "", boolean_expression = "")
-    self.__get_tree_nodes_recursively(tree_model_root, tree)
+  def __get_tree_model(self, tree_name, tree_model_root, id = 0):
+    print( tree_model_root.attrib)
+    tree = Node(f"Node_{tree_model_root.attrib['id']}" if "id" in tree_model_root.attrib else f"Node_{id}" , feature = "", operator = "", threshold_value = "", boolean_expression = "")
+    self.__get_tree_nodes_recursively(tree_model_root, tree, id)
     return DecisionTree(tree_name, tree, self.__model_features_list_dict, self.__model_classes_list_str, self.__als_conf)
 
-  def __get_tree_nodes_recursively(self, element_tree_node, parent_tree_node):
+  def __get_tree_nodes_recursively(self, element_tree_node, parent_tree_node, id = 0):
     children = element_tree_node.findall("pmml:Node", self.__namespaces);
-    if len(children) > 2:
-      print("Only binary trees are supported. Aborting")
+    for i, child in enumerate(children):
+      print(i, dir(child))
       exit()
+    assert len(children) == 2, f"Only binary trees are supported. Aborting. {children}"
     for child in children: 
       boolean_expression = parent_tree_node.boolean_expression
       if boolean_expression:
@@ -550,10 +552,10 @@ class Classifier:
         else:
           boolean_expression += f"~{parent_tree_node.name}"
       if child.find("pmml:Node", self.__namespaces) is None:
-        Node('Node_' + child.attrib['id'], parent = parent_tree_node, score = child.attrib['score'].replace('-','_'), boolean_expression = boolean_expression)
+        Node(f"Node_{child.attrib['id']}" if "id" in child.attrib else f"Node_{id}", parent = parent_tree_node, score = child.attrib['score'].replace('-','_'), boolean_expression = boolean_expression)
       else:
-        new_tree_node = Node('Node_' + child.attrib['id'], parent = parent_tree_node, feature = "", operator = "", threshold_value = "", boolean_expression = boolean_expression)
-        self.__get_tree_nodes_recursively(child, new_tree_node)
+        new_tree_node = Node(f"Node_{child.attrib['id']}" if "id" in child.attrib else f"Node_{id}", parent = parent_tree_node, feature = "", operator = "", threshold_value = "", boolean_expression = boolean_expression)
+        self.__get_tree_nodes_recursively(child, new_tree_node, id + 1)
 
 def get_xmlns_uri(elem):
   if elem.tag[0] == "{":

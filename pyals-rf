@@ -80,6 +80,8 @@ def als(approach, configfile):
     """
     Performs ALS approximation
     
+    APPROACH can be either "whole" or "divided"
+    
     CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
     """
     if approach == "whole":
@@ -93,7 +95,9 @@ def als(approach, configfile):
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
 def als_wc(approach, configfile):
     """
-    Performs ALS approximation
+    Performs ALS-WC approximation
+    
+    APPROACH can be either "whole" or "divided"
     
     CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
     """
@@ -110,6 +114,8 @@ def als_wc(approach, configfile):
 def full(approach, configfile):
     """
     Performs full approximation (both ps and als)
+    
+    APPROACH can be either "whole" or "divided"
     
     CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
     """
@@ -141,9 +147,11 @@ def learning(clf, dataset, outputdir, separator, outcome, skip_header, fraction,
     """
     Generates a decision tree/ random forest / bagging from CSV data.
 
-    CLF is the classifier type: "dt" stands for decision tree, "rf" for random forest, "bag" for bagging.
+    CLF is the classifier type: "dt" stands for decision tree, "rf" for random forest, "bag" for bagging, "wc" for worst-case speculation on random-forest/bagging classifiers.
 
     DATASET is the csv file to be used as a learning set.
+    
+    OUTPUTDIR is the path of the output directory.
     """
     dtgen(clf, dataset, outputdir, separator, outcome, skip_header, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap)
 

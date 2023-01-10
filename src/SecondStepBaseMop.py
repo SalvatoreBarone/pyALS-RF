@@ -23,7 +23,7 @@ class SecondStepBaseMop(BaseMop):
         self.opt_conf = opt_conf
         BaseMop.__init__(self, classifier, self.error_conf.test_dataset)
         self.opt_solutions_for_trees = []
-        assert len(self.classifier.get_trees()) > 1, "The two steps approach is available only for randon forest classifiers"
+        assert len(self.classifier.get_trees()) > 1, "The two steps approach is available only for random forest/bagging classifiers"
         for t in self.classifier.get_trees():
             problem = FirstStepAlsMop(t, self.dataset, self.error_conf)
             optimizer = Optimizer(self.opt_conf)
