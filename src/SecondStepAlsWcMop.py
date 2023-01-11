@@ -21,14 +21,13 @@ class SecondStepAlsWcMop(SecondStepWcBaseMop, Optimizer.Problem):
     def __init__(self, classifier, error_config, fst_opt_conf, outdir):
         SecondStepWcBaseMop.__init__(self, classifier, error_config, fst_opt_conf, outdir)
         n_vars = self.classifier.get_num_of_trees()
-        # TODO pick the correct upper bound
-        ub = [ len(i)-1 for i in self.opt_solutions_for_trees ]
+        ub = [ len(self.first_step_optimizer.pareto_set()) for _ in range(n_vars) ]
         print(f"#vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
         Optimizer.Problem.__init__(self, n_vars, [Optimizer.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 
     def __set_matter_configuration(self, x):
-        # TODO set the matter configuration
-        configurations = [ s[c] for s, c in zip(self.opt_solutions_for_trees, x)  ]
+        pareto_set = self.first_step_optimizer.pareto_set()
+        configurations = [ pareto_set[c] for c in x ]
         for item in self.args:
             item[0].set_assertions_configuration(configurations)
 

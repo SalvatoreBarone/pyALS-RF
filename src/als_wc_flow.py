@@ -65,15 +65,15 @@ def als_wc_two_steps(configfile):
     print("PMML parsing completed")
     classifier.generate_hdl_exact_implementations(configuration.outdir)
     print("HDL generation (accurate) completed")
-    problem = SecondStepAlsWcMop(classifier, configuration.error_conf, configuration.fst_optimizer_conf, configuration.outdir)
+    second_step_problem = SecondStepAlsWcMop(classifier, configuration.error_conf, configuration.fst_optimizer_conf, configuration.outdir)
     print("Assertion generation (approximate) completed")
-    optimizer = Optimizer(configuration.snd_optimizer_conf)
-    optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/second_step_hillclimb_checkpoint.json"
-    optimizer.minimize_checkpoint_file = f"{configuration.outdir}/second_step_hminimize_checkpoint.json"
-    optimizer.cache_dir = f"{configuration.outdir}/.second_step_cache"
-    optimizer.run(problem)
-    optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
-    optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
-    optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
-    classifier.generate_hdl_twostep_asl_ax_implementations(configuration.outdir, optimizer.pareto_set(), problem.opt_solutions_for_trees)
+    second_step_optimizer = Optimizer(configuration.snd_optimizer_conf)
+    second_step_optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/second_step_hillclimb_checkpoint.json"
+    second_step_optimizer.minimize_checkpoint_file = f"{configuration.outdir}/second_step_hminimize_checkpoint.json"
+    second_step_optimizer.cache_dir = f"{configuration.outdir}/.second_step_cache"
+    second_step_optimizer.run(second_step_problem)
+    second_step_optimizer.archive_to_csv(second_step_problem, f"{configuration.outdir}/report.csv")
+    second_step_optimizer.plot_pareto(second_step_problem, f"{configuration.outdir}/pareto_front.pdf")
+    second_step_optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
+    classifier.generate_hdl_twostep_asl_wc_ax_implementations(configuration.outdir, second_step_optimizer.pareto_set(), second_step_problem.first_step_optimizer.pareto_set())
     print(f"All done! Take a look at the {configuration.outdir} directory.")

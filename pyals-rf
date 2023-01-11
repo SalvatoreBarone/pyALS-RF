@@ -74,54 +74,54 @@ def bitwidth(configfile):
 
 
 @click.command("als")
-@click.argument('approach', type = click.Choice(["whole", "divided"]))
+@click.argument('approach', type = click.Choice(["whole", "split"]))
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
 def als(approach, configfile):
     """
     Performs ALS approximation
     
-    APPROACH can be either "whole" or "divided"
+    APPROACH can be either "whole" or "split"
     
     CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
     """
     if approach == "whole":
         als_one_step(configfile)
-    elif approach == "divided":
+    elif approach == "split":
         als_two_steps(configfile)
         
 
 @click.command("als-wc")
-@click.argument('approach', type = click.Choice(["whole", "divided"]))
+@click.argument('approach', type = click.Choice(["whole", "split"]))
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
 def als_wc(approach, configfile):
     """
     Performs ALS-WC approximation
     
-    APPROACH can be either "whole" or "divided"
+    APPROACH can be either "whole" or "split"
     
     CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
     """
     if approach == "whole":
         als_wc_one_step(configfile)
-    elif approach == "divided":
+    elif approach == "split":
         als_wc_two_steps(configfile)
         
 
 
 @click.command("full")
-@click.argument('approach', type = click.Choice(["whole", "divided"]))
+@click.argument('approach', type = click.Choice(["whole", "split"]))
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
 def full(approach, configfile):
     """
     Performs full approximation (both ps and als)
     
-    APPROACH can be either "whole" or "divided"
+    APPROACH can be either "whole" or "split"
     
     CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
     """
     if approach == "whole":
         full_one_step(configfile)
-    elif approach == "divided":
+    elif approach == "split":
         full_two_steps(configfile)
 
 

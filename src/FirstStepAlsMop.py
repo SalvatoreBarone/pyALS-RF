@@ -25,7 +25,6 @@ class FirstStepAlsMop(Optimizer.Problem):
         graph = self.decision_tree.get_graph()
         n_vars = graph.get_num_cells()
         ub = self.decision_tree.get_als_dv_upper_bound()
-        print(f"d.v. #{len(ub)}, {ub}")
         self.error_config = error_config
         self.decision_tree.reset_assertion_configuration()
         self.samples = self.generate_samples(graph, preloaded_dataset)
