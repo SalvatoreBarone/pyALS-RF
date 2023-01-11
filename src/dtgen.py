@@ -14,11 +14,11 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import sys, random, numpy as np, graphviz
+import sys, random, numpy as np, graphviz, sklearn2pmml
 from distutils.dir_util import mkpath
 from nyoka import skl_to_pmml
 from sklearn import tree, pipeline, ensemble
-import sklearn2pmml
+from .DtGenConfigParser import DtGenConfigParser
 
 def to_one_hot(x):
     x_one_hot = []
@@ -30,41 +30,38 @@ def to_one_hot(x):
         x_one_hot.append(next_el)
     return x_one_hot
 
-def get_sets(dataset_file, separator, outcome_col, skip_header, fraction):
-    data = np.genfromtxt(dataset_file, delimiter = separator, skip_header = 1 if skip_header else 0)
+def get_sets(dataset_file, config, fraction):
+    data = np.genfromtxt(dataset_file, delimiter = config.separator, skip_header = 1 if config.skip_header else 0)
     learning_set_size = int(np.ceil(data.shape[0] * fraction))
     learning_vectors_indexes = random.sample(range(int(data.shape[0])), learning_set_size)
     test_vectors_indexes = [x for x in range(data.shape[0]) if x not in learning_vectors_indexes]
-    if outcome_col is None:
-        outcome_col = -1
-    classes = np.copy(data[:, outcome_col])
+    if config.outcome_col is None:
+        config.outcome_col = -1
+    classes = np.copy(data[:, config.outcome_col])
     n_classes = len(set(classes))
-    attributes = np.delete(data, outcome_col, axis = 1)
+    attributes = np.delete(data, config.outcome_col, axis = 1)
     classes_one_hot = np.array(to_one_hot(classes))
     classes.reshape((attributes.shape[0],))
     classes_one_hot.reshape((attributes.shape[0], n_classes))
-    attributes_name = [ f"attribute_{i}" for i in range(int(attributes.shape[1]))]
-    classes_name = [ f"class_{i}" for i in range(n_classes)]
     learning_attributes = attributes[learning_vectors_indexes, :]
     learning_labels = classes[learning_vectors_indexes]
+    learning_labels = [ str(config.classes_name[l]) for l in learning_labels ]
     # learning_classes_one_hot = classes_one_hot[learning_vectors_indexes, :]
     test_attributes = attributes[test_vectors_indexes, :]
     test_labels = classes[test_vectors_indexes]
+    test_labels = [ str(config.classes_name[l]) for l in test_labels ]
     test_labels_one_hot = classes_one_hot[test_vectors_indexes, :]
-    # print(f"Number of attributes: {int(attributes.shape[1])}")
-    # print(f"Number of classes: {n_classes}")
-    # print(f"Learning set size is ceil({data.shape[0]} * {fraction}) = {learning_set_size}")
-    # print(f"Testing set size is {len(test_vectors_indexes)}")
 
-    return attributes_name, classes_name, learning_attributes, learning_labels, test_attributes, test_labels, test_labels_one_hot
+
+    return learning_attributes, learning_labels, test_attributes, test_labels, test_labels_one_hot
 
 def save_test_dataset_to_csv(filename, attributes_name, test_attributes, classes_name, test_labels_one_hot):
     original_stdout = sys.stdout
     with open(filename, "w") as file:
         sys.stdout = file
-        print(*attributes_name, *classes_name, sep=",")
+        print(*attributes_name, *classes_name, sep=";")
         for a, c  in zip(test_attributes, test_labels_one_hot):
-            print(*a, *c, sep=",")
+            print(*a, *c, sep=";")
     sys.stdout = original_stdout  
     
 def graphviz_export(model, attributes_name, classes_name, outputdir):
@@ -79,8 +76,14 @@ def graphviz_export(model, attributes_name, classes_name, outputdir):
         graph.render(directory = f"{outputdir}/export", filename = 'tree.gv')
     
 
-def dtgen(clf, dataset, outputdir, separator, outcome, skip_header, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap):
-    attributes_name, classes_name, learning_attributes, learning_labels, test_attributes, test_labels, test_labels_one_hot = get_sets(dataset, separator, outcome, skip_header, fraction)
+def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap):
+
+    config = DtGenConfigParser(configfile)
+
+    print(config.attributes_name, config.classes_name)
+    
+    learning_attributes, learning_labels, test_attributes, test_labels, test_labels_one_hot = get_sets(dataset, config, fraction)
+
     if clf == "dt":
         model = tree.DecisionTreeClassifier(
                 max_depth = depth,
@@ -102,12 +105,6 @@ def dtgen(clf, dataset, outputdir, separator, outcome, skip_header, fraction, de
                 max_leaf_nodes = max_leaf_nodes,
                 min_impurity_decrease = min_impurity_decrease,
                 ccp_alpha = ccp_alpha,
-                bootstrap = not disable_bootstrap,
-                n_jobs = -1,
-                verbose = 1).fit(list(learning_attributes), list(learning_labels))
-    elif clf == "bag":
-        model = ensemble.BaggingClassifier(
-                n_estimators = predictors,
                 bootstrap = not disable_bootstrap,
                 n_jobs = -1,
                 verbose = 1).fit(list(learning_attributes), list(learning_labels))
@@ -138,8 +135,20 @@ def dtgen(clf, dataset, outputdir, separator, outcome, skip_header, fraction, de
             model.estimators_[i] = st
         
     print(f"Classification accuracy: {sum(pred == ans for pred, ans in zip(model.predict(test_attributes), test_labels)) / len(test_labels)}")
+    
     mkpath(outputdir)
-    pipe = sklearn2pmml.PMMLPipeline([("classifier", model)])
-    sklearn2pmml.sklearn2pmml(pipe, f"{outputdir}/{clf}_{predictors}.pmml" if predictors > 1 else f"{outputdir}/{clf}.pmml", with_repr = True)
-    save_test_dataset_to_csv(f"{outputdir}/test_dataset_4_pyALS-rf.csv", attributes_name, test_attributes, classes_name, test_labels_one_hot)
-    graphviz_export(model, attributes_name, classes_name, outputdir)
+    
+    pmml_file = f"{outputdir}/{clf}_{predictors}.pmml" if predictors > 1 else f"{outputdir}/{clf}.pmml"
+    print(f"Exporting PMML model to {pmml_file} ...")
+    pipe = pipeline.Pipeline([('clf', model)])
+    skl_to_pmml(pipeline = pipe, col_names = config.attributes_name, pmml_f_name = pmml_file )
+    # pipe = sklearn2pmml.PMMLPipeline([("classifier", model)])
+    # sklearn2pmml.sklearn2pmml(pipe, pmml_file, with_repr = True)
+    
+    test_dataset_csv = f"{outputdir}/test_dataset_4_pyALS-rf.csv"
+    print(f"Exporting the test dataset to {test_dataset_csv} ...")
+    save_test_dataset_to_csv(test_dataset_csv, config.attributes_name, test_attributes, config.classes_name.values(), test_labels_one_hot)
+    print(f"Exporting graphviz draws of leaned trees to {outputdir}/export ...")
+    graphviz_export(model, config.attributes_name, list(config.classes_name.values()), outputdir)
+    print("Done!")
+    

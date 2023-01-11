@@ -16,34 +16,24 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 from .BaseMop import *
 from pyamosa import Optimizer
-
+import numpy as np
 class SingleStepAlsWcMop(BaseMop, Optimizer.Problem):
     def __init__(self, classifier, error_config):
         self.error_config = error_config
         BaseMop.__init__(self, classifier, self.error_config.test_dataset)
         self.cells_per_tree = classifier.get_als_cells_per_tree()
-        # TODO check whether all the trees have the same amount of cells
+        # check whether all the trees have the same amount of cells
+        print(f"self.cells_per_tree[0]: {self.cells_per_tree[0]}")
         for i in range(1, len(self.cells_per_tree)):
-            assert len(self.cells_per_tree[0]) == len(self.cells_per_tree[i]), "Tree {i} has a different amount of cells"
+            print(f"self.cells_per_tree[{i}]: {self.cells_per_tree[i]}")
+            assert self.cells_per_tree[0] == self.cells_per_tree[i], "Tree {i} has a different amount of cells"
         n_vars = self.cells_per_tree[0]
-        # TODO pick only the actual subset of upper bounds
-        print(n_vars, ub)
-        ub = classifier.get_als_dv_upper_bound()
-        ub = ub[:n_vars-1]
-        print(ub)
-        exit()
-        
-        
-        print(f"{len(ub)} d.v.: {ub}")
+        ub = classifier.get_als_dv_upper_bound()[:n_vars]
+        print(f"#vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
         Optimizer.Problem.__init__(self, n_vars, [Optimizer.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 
     def __set_matter_configuration(self, x):
-        configurations = []
-        count = 0
-        # TODO set matter configuration
-        for size in self.cells_per_tree:
-            configurations.append([x[i + count] for i in range(size)])
-            count += size
+        configurations = [x for _ in range(self.args[0][0].get_num_of_trees())]
         for item in self.args:
             item[0].set_assertions_configuration(configurations)
 

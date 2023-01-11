@@ -15,7 +15,7 @@ RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 from .SecondStepWcBaseMop import *
-
+import numpy as np
 class SecondStepAlsWcMop(SecondStepWcBaseMop, Optimizer.Problem):
 
     def __init__(self, classifier, error_config, fst_opt_conf, outdir):
@@ -23,7 +23,7 @@ class SecondStepAlsWcMop(SecondStepWcBaseMop, Optimizer.Problem):
         n_vars = self.classifier.get_num_of_trees()
         # TODO pick the correct upper bound
         ub = [ len(i)-1 for i in self.opt_solutions_for_trees ]
-        print(f"d.v. #{len(ub)}, {ub}")
+        print(f"#vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
         Optimizer.Problem.__init__(self, n_vars, [Optimizer.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 
     def __set_matter_configuration(self, x):

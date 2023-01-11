@@ -16,6 +16,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 from .BaseMop import *
 from pyamosa import Optimizer
+import numpy as np
 
 
 class FirstStepAlsMop(Optimizer.Problem):
@@ -30,8 +31,7 @@ class FirstStepAlsMop(Optimizer.Problem):
         self.samples = self.generate_samples(graph, preloaded_dataset)
         self.total_samples = len(self.samples)
         self.args = [[g, s, [0] * n_vars] for g, s in zip([copy.deepcopy(graph)] * cpu_count(), list_partitioning(self.samples, cpu_count()))]
-
-        print(f"Tree {self.decision_tree.get_name()}. d.v. #{len(ub)}: {ub}")
+        print(f"Tree {self.decision_tree.get_name()}. #vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
         Optimizer.Problem.__init__(self, n_vars, [Optimizer.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 
     def generate_samples(self, graph, preloaded_dataset):

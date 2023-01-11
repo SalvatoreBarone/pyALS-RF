@@ -47,7 +47,7 @@ def als_wc_one_step(configfile):
     optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
     optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
     optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
-    classifier.generate_hdl_onestep_asl_ax_implementations(configuration.outdir, optimizer.pareto_set())
+    classifier.generate_hdl_onestep_asl_wc_ax_implementations(configuration.outdir, optimizer.pareto_set())
     print(f"All done! Take a look at the {configuration.outdir} directory.")
 
 

@@ -120,19 +120,42 @@ class DecisionTree:
     def set_assertions_configuration(self, configuration):
         assert len(configuration) == self.__assertions_graph.get_num_cells(), f"wrong amount of variables. Needed {self.__assertions_graph.get_num_cells()}, get {len(configuration)}"
         assert len(self.__assertions_catalog_entries) > 0, "Catalog cannot be empty"
+        
         matter = {}
         for c, l in zip(configuration, self.__assertions_graph.get_cells()):
             for e in self.__assertions_catalog_entries:
-                if e[0]["spec"] == l["spec"]:
-                    matter[l["name"]] = {"dist": c, "spec": e[0]["spec"], "axspec": e[c]["spec"],
-                                         "gates": e[c]["gates"], "S": e[c]["S"], "P": e[c]["P"], "out_p": e[c]["out_p"],
-                                         "out": e[c]["out"], "depth": e[c]["depth"]}
-                elif negate(e[0]["spec"]) == l["spec"]:
-                    matter[l["name"]] = {"dist": c, "spec": negate(e[0]["spec"]), "axspec": negate(e[c]["spec"]),
-                                         "gates": e[c]["gates"], "S": e[c]["S"], "P": e[c]["P"],
-                                         "out_p": 1 - e[c]["out_p"], "out": e[c]["out"], "depth": e[c]["depth"]}
+                try:    
+                    if e[0]["spec"] == l["spec"]:
+                        matter[l["name"]] = {
+                            "dist": c,
+                            "spec": e[0]["spec"],
+                            "axspec": e[c]["spec"],
+                            "gates": e[c]["gates"],
+                            "S": e[c]["S"],
+                            "P": e[c]["P"],
+                            "out_p": e[c]["out_p"],
+                            "out": e[c]["out"],
+                            "depth": e[c]["depth"]}
+                    elif negate(e[0]["spec"]) == l["spec"]:
+                        matter[l["name"]] = {
+                            "dist": c,
+                            "spec": negate(e[0]["spec"]),
+                            "axspec": negate(e[c]["spec"]),
+                            "gates": e[c]["gates"],
+                            "S": e[c]["S"],
+                            "P": e[c]["P"],
+                            "out_p": 1 - e[c]["out_p"],
+                            "out": e[c]["out"],
+                            "depth": e[c]["depth"]}
+                except IndexError as err:
+                    print(err)
+                    print(f"Configuration: {configuration}")
+                    print(f"Configuration value: {c}")
+                    print(f"Cell: {l}")
+                    print(f"Catalog Entry: {e}")
+                    exit()
         self.__current_configuration = matter
-
+        
     def dump(self):
         print("\tName: ", self.__name)
         print("\tBoxes:")

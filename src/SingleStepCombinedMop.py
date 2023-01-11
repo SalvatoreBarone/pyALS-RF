@@ -16,7 +16,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 from .BaseMop import *
 from pyamosa import Optimizer
-
+import numpy as np
 class SingleStepCombinedMop(BaseMop, Optimizer.Problem):
     def __init__(self, classifier, error_config):
         self.error_config = error_config
@@ -26,7 +26,7 @@ class SingleStepCombinedMop(BaseMop, Optimizer.Problem):
         n_cells = sum(self.cells_per_tree)
         n_vars = n_features + n_cells
         ub = [53] *  n_features + classifier.get_als_dv_upper_bound()
-        print(f"d.v. #{len(ub)}, {ub}")
+        print(f"#vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
         Optimizer.Problem.__init__(self, n_vars, [Optimizer.Type.INTEGER] * n_vars, [0] * n_vars,  [53] *  n_features + classifier.get_als_dv_upper_bound(), 3, 1)
 
     def __set_matter_configuration(self, x):
