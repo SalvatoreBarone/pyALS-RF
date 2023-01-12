@@ -21,8 +21,8 @@ class SecondStepAlsMop(SecondStepBaseMop, Optimizer.Problem):
     def __init__(self, classifier, error_config, fst_opt_conf, outdir):
         SecondStepBaseMop.__init__(self, classifier, error_config, fst_opt_conf, outdir)
         n_vars = self.classifier.get_num_of_trees()
-        ub = [ len(i)-1 for i in self.opt_solutions_for_trees ]
-        print(f"#vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
+        ub = [ len(i) for i in self.opt_solutions_for_trees ]
+        print(f"Second step optimization #vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
         Optimizer.Problem.__init__(self, n_vars, [Optimizer.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 
     def __set_matter_configuration(self, x):

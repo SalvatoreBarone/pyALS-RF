@@ -122,7 +122,7 @@ class DecisionTree:
         assert len(self.__assertions_catalog_entries) > 0, "Catalog cannot be empty"
         
         matter = {}
-        for c, l in zip(configuration, self.__assertions_graph.get_cells()):
+        for i, (c, l) in enumerate(zip(configuration, self.__assertions_graph.get_cells())):
             for e in self.__assertions_catalog_entries:
                 try:    
                     if e[0]["spec"] == l["spec"]:
@@ -148,11 +148,16 @@ class DecisionTree:
                             "out": e[c]["out"],
                             "depth": e[c]["depth"]}
                 except IndexError as err:
+                    ub = self.get_als_dv_upper_bound()
                     print(err)
                     print(f"Configuration: {configuration}")
-                    print(f"Configuration value: {c}")
+                    print(f"Upper bound: {ub}")
+                    print(f"Configuration[{i}]: {c}")
+                    print(f"Upper bound[{i}]: {ub[i]}")
                     print(f"Cell: {l}")
-                    print(f"Catalog Entry: {e}")
+                    print(f"Catalog Entries #: {len(e)}")
+                    print(f"Catalog Entries: {e}")
+                    
                     exit()
         self.__current_configuration = matter
         

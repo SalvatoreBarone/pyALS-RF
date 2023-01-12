@@ -23,6 +23,14 @@ class SecondStepWcBaseMop(BaseMop):
         self.opt_conf = opt_conf
         BaseMop.__init__(self, classifier, self.error_conf.test_dataset)
         assert len(self.classifier.get_trees()) > 1, "The two steps approach is available only for random forest/bagging classifiers"
+
+        self.cells_per_tree = classifier.get_als_cells_per_tree()
+        # check whether all the trees have the same amount of cells
+        print(f"self.cells_per_tree[0]: {self.cells_per_tree[0]}")
+        for i in range(1, len(self.cells_per_tree)):
+            #print(f"self.cells_per_tree[{i}]: {self.cells_per_tree[i]}")
+            assert self.cells_per_tree[0] == self.cells_per_tree[i], "Tree {i} has a different amount of cells. Please condiser re-generating your pmml file using the 'learn wc' command"
+
         t = self.classifier.get_trees()[0]
         self.first_step_problem = FirstStepAlsMop(t, self.dataset, self.error_conf)
         self.first_step_optimizer = Optimizer(self.opt_conf)
