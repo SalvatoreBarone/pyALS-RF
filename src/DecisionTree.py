@@ -42,12 +42,14 @@ class DecisionTree:
         if root_node:
             self.__get_decision_boxes(root_node)
             self.__get_assertions(root_node)
+        self.yosys_helper = None
         self.__assertions_graph = None
         self.__catalog = None
         self.__assertions_catalog_entries = None
         self.__current_configuration = []
         if als_conf is not None:
-            self.yosys_helper = self.__generate_design_for_als(self.__als_conf.cut_size)
+            self.yosys_helper = YosysHelper()
+            self.__generate_design_for_als(self.__als_conf.cut_size)
             self.__assertions_graph = ALSGraph(self.yosys_helper.design)
             self.__assertions_catalog_entries = ALSCatalog(self.__als_conf.lut_cache, self.__als_conf.solver).generate_catalog(self.yosys_helper.get_luts_set(), self.__als_conf.timeout)
             self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
@@ -65,10 +67,14 @@ class DecisionTree:
         tree.__als_conf = copy.deepcopy(self.__als_conf)
         tree.__assertions_catalog_entries = copy.deepcopy(self.__assertions_catalog_entries)
         tree.__current_configuration = copy.deepcopy(self.__current_configuration)
+        #tree.yosys_helper = copy.deepcopy(self.yosys_helper) # this is not copyed to avoid pickling errors
         return tree
 
     def get_name(self):
         return self.__name
+
+    def set_name(self, name):
+        self.__name = name
 
     def get_model_classes(self):
         return self.__model_classes
@@ -150,14 +156,16 @@ class DecisionTree:
                 except IndexError as err:
                     ub = self.get_als_dv_upper_bound()
                     print(err)
+                    print(f"Tree: {self.__name}")
                     print(f"Configuration: {configuration}")
+                    print(f"Configuration length: {len(configuration)}")
                     print(f"Upper bound: {ub}")
+                    print(f"Upper bound length: {len(ub)}")
                     print(f"Configuration[{i}]: {c}")
                     print(f"Upper bound[{i}]: {ub[i]}")
                     print(f"Cell: {l}")
                     print(f"Catalog Entries #: {len(e)}")
                     print(f"Catalog Entries: {e}")
-                    
                     exit()
         self.__current_configuration = matter
         
@@ -209,8 +217,8 @@ class DecisionTree:
             out_file.write(output)
         return file_name, module_name
 
-    def generate_hdl_als_ax_assertions(self, destination):
-        self.yosys_helper.load_design(self.__name)
+    def generate_hdl_als_ax_assertions(self, destination, design_name = None):
+        self.yosys_helper.load_design(self.__name if design_name is None else design_name)
         self.yosys_helper.to_aig(self.__current_configuration)
         self.yosys_helper.clean()
         self.yosys_helper.opt()
@@ -258,9 +266,8 @@ class DecisionTree:
         mkpath(destination)
         mkpath(f"{destination}/vhd")
         file_name, module_name = self.generate_hdl_exact_assertions(destination)
-        helper = helper = YosysHelper()
-        helper.load_ghdl()
-        helper.reset()
-        helper.ghdl_read_and_elaborate([self.bnf_vhd, file_name], module_name)
-        helper.prep_design(luts_tech)
-        return helper
+        self.yosys_helper.load_ghdl()
+        self.yosys_helper.reset()
+        self.yosys_helper.ghdl_read_and_elaborate([self.bnf_vhd, file_name], module_name)
+        self.yosys_helper.prep_design(luts_tech)
+        
