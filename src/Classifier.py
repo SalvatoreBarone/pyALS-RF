@@ -55,10 +55,8 @@ class Classifier:
     def __deepcopy__(self, memo=None):
         classifier = Classifier(self.__als_conf)
         classifier.__trees_list_obj = copy.deepcopy(self.__trees_list_obj)
-        classifier.__model_features_list_dict = copy.deepcopy(
-            self.__model_features_list_dict)
-        classifier.__model_classes_list_str = copy.deepcopy(
-            self.__model_classes_list_str)
+        classifier.__model_features_list_dict = copy.deepcopy(self.__model_features_list_dict)
+        classifier.__model_classes_list_str = copy.deepcopy(self.__model_classes_list_str)
         return classifier
 
     def parse(self, pmml_file_name):
@@ -69,13 +67,11 @@ class Classifier:
         root = tree.getroot()
         self.__namespaces["pmml"] = get_xmlns_uri(root)
         self.__get_features_and_classes(root)
-        segmentation = root.find(
-            "pmml:MiningModel/pmml:Segmentation", self.__namespaces)
+        segmentation = root.find("pmml:MiningModel/pmml:Segmentation", self.__namespaces)
         if segmentation is not None:
             for tree_id, segment in enumerate(segmentation.findall("pmml:Segment", self.__namespaces)):
                 print(f"Parsing tree {tree_id}... ")
-                tree_model_root = segment.find("pmml:TreeModel", self.__namespaces).find(
-                    "pmml:Node", self.__namespaces)
+                tree_model_root = segment.find("pmml:TreeModel", self.__namespaces).find("pmml:Node", self.__namespaces)
                 tree = self.__get_tree_model(str(tree_id), tree_model_root)
                 self.__trees_list_obj.append(tree)
                 print("\rDone")
@@ -84,6 +80,33 @@ class Classifier:
                 "pmml:Node", self.__namespaces)
             tree = self.__get_tree_model("0", tree_model_root)
             self.__trees_list_obj.append(tree)
+
+    def wc_parse(self, pmml_file_name):
+        self.__trees_list_obj = []
+        self.__model_features_list_dict = []
+        self.__model_classes_list_str = []
+        tree = ElementTree.parse(pmml_file_name)
+        root = tree.getroot()
+        self.__namespaces["pmml"] = get_xmlns_uri(root)
+        self.__get_features_and_classes(root)
+        segmentation = root.find("pmml:MiningModel/pmml:Segmentation", self.__namespaces)
+        assert segmentation is not None, "This mode is suitable only for WC DT-based MCSs"
+        
+        segments = segmentation.findall("pmml:Segment", self.__namespaces)
+        tree = None
+        for tree_id, segment in enumerate(segments):
+            print(f"Parsing tree {tree_id}... ")
+            if tree is None:
+                tree_model_root = segment.find("pmml:TreeModel", self.__namespaces).find("pmml:Node", self.__namespaces)
+                tree = self.__get_tree_model("tree_0", tree_model_root)
+            print("\rDone")
+        self.__trees_list_obj = [tree] + [ copy.deepcopy(tree) for _ in range(len(segments) - 1) ]
+        for i, t in enumerate(self.__trees_list_obj[1:]):
+            t.set_name(f"tree_{i+1}")
+
+    def wc_fix_ys_helper(self):
+        for t in self.__trees_list_obj[1:]:
+            t.yosys_helper = copy.deepcopy(self.__trees_list_obj[0].yosys_helper)
 
     def dump(self):
         print("Features:")
@@ -579,7 +602,7 @@ class Classifier:
             self.set_assertions_configuration(assertions_conf)
             for t in self.__trees_list_obj:
                 t.generate_hdl_tree(ax_dest)
-                t.generate_hdl_als_ax_assertions(ax_dest)
+                t.generate_hdl_als_ax_assertions(ax_dest, "tree_0")
 
     def generate_hdl_twostep_asl_wc_ax_implementations(self, destination, outer_configurations, inner_configuration):
         features = [{"name": f["name"], "nab": 0}
@@ -636,7 +659,7 @@ class Classifier:
             self.set_assertions_configuration(assertions_conf)
             for t in self.__trees_list_obj:
                 t.generate_hdl_tree(ax_dest)
-                t.generate_hdl_als_ax_assertions(ax_dest)
+                t.generate_hdl_als_ax_assertions(ax_dest, "tree_0")
 
     def __evaluate(self, features_value):
         classes_score = {c: 0 for c in self.__model_classes_list_str}
@@ -660,8 +683,7 @@ class Classifier:
                     self.__model_classes_list_str.append(element.attrib['value'].replace('-', '_'))
 
     def __get_tree_model(self, tree_name, tree_model_root, id=0):
-        tree = Node(f"Node_{tree_model_root.attrib['id']}" if "id" in tree_model_root.attrib else f"Node_{id}",
-                    feature="", operator="", threshold_value="", boolean_expression="")
+        tree = Node(f"Node_{tree_model_root.attrib['id']}" if "id" in tree_model_root.attrib else f"Node_{id}", feature="", operator="", threshold_value="", boolean_expression="")
         self.__get_tree_nodes_recursively(tree_model_root, tree, id)
         return DecisionTree(tree_name, tree, self.__model_features_list_dict, self.__model_classes_list_str, self.__als_conf)
 

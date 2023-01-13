@@ -25,8 +25,8 @@ class SingleStepAlsWcMop(BaseMop, Optimizer.Problem):
         # check whether all the trees have the same amount of cells
         print(f"self.cells_per_tree[0]: {self.cells_per_tree[0]}")
         for i in range(1, len(self.cells_per_tree)):
-            print(f"self.cells_per_tree[{i}]: {self.cells_per_tree[i]}")
-            assert self.cells_per_tree[0] == self.cells_per_tree[i], "Tree {i} has a different amount of cells"
+            #print(f"self.cells_per_tree[{i}]: {self.cells_per_tree[i]}")
+            assert self.cells_per_tree[0] == self.cells_per_tree[i], "Tree {i} has a different amount of cells. Please condiser re-generating your pmml file using the 'learn wc' command"
         n_vars = self.cells_per_tree[0]
         ub = classifier.get_als_dv_upper_bound()[:n_vars]
         print(f"#vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")

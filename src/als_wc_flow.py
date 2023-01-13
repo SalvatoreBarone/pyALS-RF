@@ -32,7 +32,7 @@ def als_wc_one_step(configfile):
     if configuration.outdir != ".":
         mkpath(configuration.outdir)
     classifier = Classifier(configuration.als_conf)
-    classifier.parse(configuration.pmml)
+    classifier.wc_parse(configuration.pmml)
     classifier.generate_hdl_exact_implementations(configuration.outdir)
     problem = SingleStepAlsWcMop(classifier, configuration.error_conf)
     optimizer = Optimizer(configuration.optimizer_conf)
@@ -47,6 +47,7 @@ def als_wc_one_step(configfile):
     optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
     optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
     optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
+    classifier.wc_fix_ys_helper()
     classifier.generate_hdl_onestep_asl_wc_ax_implementations(configuration.outdir, optimizer.pareto_set())
     print(f"All done! Take a look at the {configuration.outdir} directory.")
 
@@ -61,7 +62,7 @@ def als_wc_two_steps(configfile):
         mkpath(configuration.outdir)
     classifier = Classifier(configuration.als_conf)
     print("Creating classifier object...")
-    classifier.parse(configuration.pmml)
+    classifier.wc_parse(configuration.pmml)
     print("PMML parsing completed")
     classifier.generate_hdl_exact_implementations(configuration.outdir)
     print("HDL generation (accurate) completed")
@@ -75,5 +76,6 @@ def als_wc_two_steps(configfile):
     second_step_optimizer.archive_to_csv(second_step_problem, f"{configuration.outdir}/report.csv")
     second_step_optimizer.plot_pareto(second_step_problem, f"{configuration.outdir}/pareto_front.pdf")
     second_step_optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
+    classifier.wc_fix_ys_helper()
     classifier.generate_hdl_twostep_asl_wc_ax_implementations(configuration.outdir, second_step_optimizer.pareto_set(), second_step_problem.first_step_optimizer.pareto_set())
     print(f"All done! Take a look at the {configuration.outdir} directory.")

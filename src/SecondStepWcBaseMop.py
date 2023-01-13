@@ -23,6 +23,7 @@ class SecondStepWcBaseMop(BaseMop):
         self.opt_conf = opt_conf
         BaseMop.__init__(self, classifier, self.error_conf.test_dataset)
         assert len(self.classifier.get_trees()) > 1, "The two steps approach is available only for random forest/bagging classifiers"
+
         t = self.classifier.get_trees()[0]
         self.first_step_problem = FirstStepAlsMop(t, self.dataset, self.error_conf)
         self.first_step_optimizer = Optimizer(self.opt_conf)
