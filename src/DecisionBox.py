@@ -16,8 +16,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import copy
 from enum import Enum
-from .Utility import *
-
+from pyalslib import double_to_hex, apply_mask_to_double, apply_mask_to_int
 class DecisionBox:
   class CompOperator(Enum):
     lessThan = 1
@@ -77,7 +76,7 @@ class DecisionBox:
     if self.__data_type == "double":
       return str(double_to_hex(self.__threshold))[2:]
     else:
-      return str(hex(int(self.__threshold)))[2:]
+      return hex(int(self.__threshold))[2:]
 
   def get_struct(self):
     c_operator = "=="
@@ -93,7 +92,7 @@ class DecisionBox:
     if self.__data_type == "double":
       hex_threshold = str(double_to_hex(float(self.__threshold)))[2:]
     else: 
-      hex_threshold = str(hex(int(self.__threshold)))[2:]
+      hex_threshold = hex(int(self.__threshold))[2:]
     return {"name"          : self.__name,
             "feature"       : self.__feature_name,
             "data_type"     : self.__data_type,
@@ -112,26 +111,23 @@ class DecisionBox:
     if self.__data_type == "double":
       # Both the input value and the threshold are masked according to the configured number of approximate bits before
       # the comparison takes place.
-      if self.__nab != 0:
-        input_to_compare = apply_mask_to_double(float(input), self.__nab) 
-        threshold = apply_mask_to_double(float(self.__threshold), self.__nab)
-      else:
+      if self.__nab == 0:
         # Whether no approximation is required, input and threshold are simply converted to the suitable data-type.
         input_to_compare = float(input) 
         threshold = float(self.__threshold)
-    else:
-      # Both the input value and the threshold are masked according to the configured number of approximate bits before
-      # the comparison takes place.
-      if self.__nab != 0:
-        input_to_compare = apply_mask_to_int(int(input), self.__nab) 
-        threshold = apply_mask_to_int(int(self.__threshold), self.__nab)
       else:
-        # Whether no approximation is required, input and threshold are simply converted to the suitable data-type.
-        input_to_compare = int(input) 
-        threshold = int(self.__threshold)
+        input_to_compare = apply_mask_to_double(float(input), self.__nab) 
+        threshold = apply_mask_to_double(float(self.__threshold), self.__nab)
+    elif self.__nab != 0:
+      input_to_compare = apply_mask_to_int(int(input), self.__nab) 
+      threshold = apply_mask_to_int(int(self.__threshold), self.__nab)
+    else:
+      # Whether no approximation is required, input and threshold are simply converted to the suitable data-type.
+      input_to_compare = int(input) 
+      threshold = int(self.__threshold)
     if self.__operator == DecisionBox.CompOperator.greaterThan:
-      return bool(input_to_compare > threshold)
+      return input_to_compare > threshold
     elif self.__operator == DecisionBox.CompOperator.lessThan:
-      return bool(input_to_compare < threshold)
+      return input_to_compare < threshold
     else: 
-      return bool(input_to_compare == threshold)
+      return input_to_compare == threshold

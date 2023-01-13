@@ -30,7 +30,93 @@ Please, cite us!
   publisher={IEEE}
 }
 ```
-## Installation
+
+# Using the ready-to-use docker container
+pyALS has quite a lot of dependencies. You need to install Yosys (and its dependencies), GHDL (and, again, its dependencies), and so forth.
+Before you get a headache, ***you can use the Docker image I have made available to you [here](https://hub.docker.com/r/salvatorebarone/pyals-docker-image).***  
+
+Please, use the following script to run the container, that allows specifying which catalog and which folder to share with the container.
+```bash
+#!/bin/bash
+
+usage() {
+  echo "Usage: $0 -c catalog -s path_to_shared_folder";
+  exit 1;
+}
+
+while getopts "c:s:" o; do
+    case "${o}" in
+        c)
+            catalog=${OPTARG}
+            ;;
+        s)
+            shared=${OPTARG}
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+if [ -z "${catalog}" ] || [ -z "${shared}" ] ; then
+    usage
+fi
+
+catalog=`realpath ${catalog}`
+shared=`realpath ${shared}`
+[ ! -d $shared ] && mkdir -p $shared
+xhost local:docker
+docker run --rm -e DISPLAY=unix$DISPLAY -v /tmp/.X11-unix/:/tmp/.X11-unix -v ${catalog}:/root/lut_catalog.db -v ${shared}:/root/shared -w /root --privileged -it salvatorebarone/pyals-docker-image /bin/zsh
+```
+
+If, on the other hand, you really feel the need to install everything by hand, follow the guide below step by step. 
+I'm sure it will be very helpful.
+# Running pyALS-RF
+pyALS-rf provides several approximation flows, through a unified command line interface. You can select between the following commands:
+```
+  ps        Performs precision-scaling approximation
+  als       Performs ALS approximation
+  full      Performs ps and als combined
+```
+
+see
+```
+./pyals-rf --help
+```
+and
+```
+./pyals-rf COMMAND --help
+```
+for more details.
+
+Please kindly note you have to specify the path of the file where synthesized Boolean functions are stored.
+You can find a ready to use cache at ```git@github.com:SalvatoreBarone/pyALS-lut-catalog```.
+If you do not want to use the one I mentioned, pyALS-rf will perform the exact synthesis as needed.
+
+## The configuration file
+Here, I report the basic structure of a configuration file. You will find it within the pyALS root directory.
+
+
+### Configuration file for the ```ps``` command
+```
+
+```
+
+### Configuration file for the ```als``` and ```full``` commands
+
+```
+
+```
+
+#### Configuration file for the ```als-twostep``` and ```full-twostep``` commands
+
+```
+
+```
+
+
+# Manual Installation
 pyALS-rf has quite a lot of dependencies. You need to install Yosys (and its dependencies), GHDL (and, again, its dependencies), and so forth.
 Before you get a headache, ***you can use the Docker image I have made available to you [here](https://hub.docker.com/r/salvatorebarone/pyals-docker-image).***  
 
@@ -38,7 +124,7 @@ If, on the other hand, you really feel the need to install everything by hand, f
 I'm sure it will be very helpful.
 The guide has been tested on Debian 11.
 
-### Preliminaries
+## Preliminaries
 You need to install some basic dependencies. So, run
 ```
 # apt-get install --fix-missing -y git bison clang cmake curl flex fzf g++ gnat gawk libffi-dev libreadline-dev libsqlite3-dev  libssl-dev make p7zip-full pkg-config python3 python3-dev python3-pip tcl-dev vim-nox wget xdot zlib1g-dev zlib1g-dev zsh libboost-dev libboost-filesystem-dev libboost-graph-dev libboost-iostreams-dev libboost-program-options-dev libboost-python-dev libboost-serialization-dev libboost-system-dev libboost-thread-dev
@@ -53,7 +139,7 @@ You also need to create some symbolic links.
 Please, kindly note you are required to amend any differences concerning the python version. I'm using python 3.9 here.
 
 
-### Installing Yosys
+## Installing Yosys
 First, you need to clone Yosys from its public repository
 ```
 $ git clone https://github.com/YosysHQ/yosys
@@ -98,7 +184,7 @@ $ make -j `nproc`
 # ln -s `realpath yosys-abc` /usr/bin
 ```
 
-### Installing GHDL
+## Installing GHDL
 GHDL and its Yosys plugin are required to process VHDL-encoded designs. 
 Please, kindly note that you will be able to successfully install the GHDL Yosys plugin only if you successfully installed Yosys. 
 Let's install GHDL first. As always, you need to clone GHDL from ist public repository and compile it.
@@ -117,248 +203,29 @@ $ make
 # make install
 ```
 
-### Installing python dependencies
-You're almost done, the last step is to install python dependencies. It's quite simple, and you just need to issue the following command from within the pyALS directory.
+## Installing python dependencies
+You're almost done. The last step is to install python dependencies. Some of them can be installed automatically, some others must be installed manually.Let's start with the latter ones. 
+
+You must install the [pyAMOSA](https://github.com/SalvatoreBarone/pyAMOSA) module
 ```
+$ git clone https://github.com/SalvatoreBarone/pyAMOSA.git
+$ cd pyAMOSA
+# python3 setup.py install
+$ cd ..
+```
+and the [pyALSlib](https://github.com/SalvatoreBarone/pyALSlib) module
+```
+$ git clone https://github.com/SalvatoreBarone/pyALSlib.git
+$ cd pyALSlib
+# python3 setup.py install
+$ cd ..
+```
+
+Pertaining to other dependencies, installing them is quite simple, and you just need to issue the following command from within the pyALS directory.
+```bash
 pip3 install -r requirements.txt 
 ```
 
-## Running pyALS-RF
-pyALS-rf provides several approximation flows, through a unified command line interface. You can select between the following commands:
-```
-  bitwidth      Performs precision-scaling approximation
-  als-onestep   Performs one-step ALS approximation
-  als-twostep   Performs two-steps ALS approximation
-  full-onestep  Performs one-step full approximation (both ps and als)
-  full-twostep  Performs two-steps full approximation (both ps and als)
-  dump          just dumps the classifier and exit
-```
-
-Please kindly note you have to specify the path of the file where synthesized Boolean functions are stored.
-You can find a ready to use cache at ```git@github.com:SalvatoreBarone/pyALS-lut-catalog```.
-If you do not want to use the one I mentioned, pyALS-rf will perform the exact synthesis as needed.
-
-### The ```dump``` command
-
-This command just dumps the classifier, then exit. It is for debugging purpose.
-
-Example:
-```
-./pyals-rf dump --pmml example/pmml/random_forest.pmml
-```
-
-### The ``` bitwidth ``` command
-It allows performing the approximation flow from
-
-> [Barbareschi, M., Barone, S. & Mazzocca, N. Advancing synthesis of decision tree-based multiple classifier systems: an approximate computing case study. Knowl Inf Syst 63, 1577–1596 (2021)](https://doi.org/10.1007/s10115-021-01565-5)
-
-Usage:
-```
-pyals-rf bitwidth [OPTIONS]
-```
-Options:
-```
-  -c, --config TEXT   path of the configuration file  [required]
-  -p, --pmml TEXT     specify the input PMML file  [required]
-  -d, --dataset TEXT  specify the file name for the input dataset  [required]
-  -o, --output TEXT   Output directory. Everything will be placed there. [required]
-  -i, --improve TEXT  Run again the workflow  using previous Pareto set as initial archive
-```
-Esample:
-```
-./pyals-rf bitwidth --pmml example/pmml/random_forest.pmml --dataset example/test_dataset/random_forest.txt --config example/configs/config_ps.ini --output output_rf/
-```
-
-### The ``` als-onestep ``` command
-
-One-step approximation strategy, using approximate logic synthesis on assertion functions.
-All the decision-trees involved in the classification are approximated simultaneously. 
-The set of decision variables of the optimization problem consists of the union of the sets of decision variables that
-allow each of the individual trees to be optimized. Hence, it is easy for the solution space to explode quickly, but 
-(theoretically) this strategy should allow converging towards the actual optimum between classification-accuracy loss
-and hardware resource savings.
-
-Usage: 
-```
-pyals-rf als-onestep [OPTIONS]
-```
-Options:
-```
-  -c, --config TEXT   path of the configuration file  [required]
-  -p, --pmml TEXT     specify the input PMML file  [required]
-  -d, --dataset TEXT  specify the file name for the input dataset  [required]
-  -o, --output TEXT   Output directory. Everything will be placed there. [required]
-  -i, --improve TEXT  Run again the workflow  using previous Pareto set as initial archive
-  --help              Show this message and exit.
-```
-Esample:
-```
-./pyals-rf als-onestep --pmml example/pmml/random_forest.pmml --dataset example/test_dataset/random_forest.txt --config example/configs/config_ps.ini --output output_rf/
-```
-
-### The ``` full-onestep ``` command
-
-One-step approximation strategy, using both the precision scaling of features, and the approximate logic synthesis on assertion functions.
-All the decision-trees involved in the classification are approximated simultaneously. 
-The set of decision variables of the optimization problem consists of the union of the sets of decision variables that
-allow each of the individual trees to be optimized. Hence, it is easy for the solution space to explode quickly, but 
-(theoretically) this strategy should allow converging towards the actual optimum between classification-accuracy loss
-and hardware resource savings.
-
-Usage: 
-```
-pyals-rf full-onestep [OPTIONS]
-```
-Options:
-```
-  -c, --config TEXT   path of the configuration file  [required]
-  -p, --pmml TEXT     specify the input PMML file  [required]
-  -d, --dataset TEXT  specify the file name for the input dataset  [required]
-  -o, --output TEXT   Output directory. Everything will be placed there. [required]
-  -i, --improve TEXT  Run again the workflow  using previous Pareto set as initial archive
-  --help              Show this message and exit.
-```
-Esample:
-```
-./pyals-rf full-onestep --pmml example/pmml/random_forest.pmml --dataset example/test_dataset/random_forest.txt --config example/configs/config_ps.ini --output output_rf/
-```
-
-### The ``` als-twostep ``` command
-
-Two-step approximation strategy, using approximate logic synthesis on assertion functions.
-Each tree is independently approximated; then, the classifier as a whole is approximated. 
-This strategy allows to drastically reduce the size of the solution space, but, on the other hand, it may result in
-sub-optimum points between classification-accuracy loss and hardware resource savings.
-
-Usage: 
-```
-pyals-rf als-twostep [OPTIONS]
-```
-Options:
-```
-  -c, --config TEXT   path of the configuration file  [required]
-  -p, --pmml TEXT     specify the input PMML file  [required]
-  -d, --dataset TEXT  specify the file name for the input dataset  [required]
-  -o, --output TEXT   Output directory. Everything will be placed there. [required]
-  -i, --improve TEXT  Run again the workflow  using previous Pareto set as initial archive
-  --help              Show this message and exit.
-```
-Esample:
-```
-./pyals-rf als-twostep --pmml example/pmml/random_forest.pmml --dataset example/test_dataset/random_forest.txt --config example/configs/config_ps.ini --output output_rf/
-```
-
-### The ``` full-twostep ``` command
-Two-step approximation strategy, using both the precision scaling of features, and the approximate logic synthesis on assertion functions.
-Each tree is independently approximated; then, the classifier as a whole is approximated. 
-This strategy allows to drastically reduce the size of the solution space, but, on the other hand, it may result in
-sub-optimum points between classification-accuracy loss and hardware resource savings.
-
-Usage: 
-```
-pyals-rf full-twostep [OPTIONS]
-```
-Options:
-```
-  -c, --config TEXT   path of the configuration file  [required]
-  -p, --pmml TEXT     specify the input PMML file  [required]
-  -d, --dataset TEXT  specify the file name for the input dataset  [required]
-  -o, --output TEXT   Output directory. Everything will be placed there. [required]
-  -i, --improve TEXT  Run again the workflow  using previous Pareto set as initial archive
-  --help              Show this message and exit.
-```
-Esample:
-```
-./pyals-rf full-twostep --pmml example/pmml/random_forest.pmml --dataset example/test_dataset/random_forest.txt --config example/configs/config_ps.ini --output output_rf/
-```
-
-### The configuration file
-Here, I report the basic structure of a configuration file. You will find it within the pyALS root directory.
-
-
-#### Configuration file for the ```bitwidth``` command
-```
-[error]
-max_loss = 5                    ; the error threshold, in terms of classification accuracy loss
-
-[amosa]
-archive_hard_limit = 30         ; Archive hard limit for the AMOSA optimization heuristic, see [1]
-archive_soft_limit = 50         ; Archive soft limit for the AMOSA optimization heuristic, see [1]
-archive_gamma = 2               ; Gamma parameter for the AMOSA optimization heuristic, see [1]
-hill_climbing_iterations = 250  ; the number of iterations performed during the initial hill-climbing refinement, see [1];
-initial_temperature = 500       ; Initial temperature of the matter for the AMOSA optimization heuristic, see [1]
-final_temperature = 0.000001    ; Final temperature of the matter for the AMOSA optimization heuristic, see [1]
-cooling_factor =  0.9           ; It governs how quickly the temperature of the matter decreases during the annealing process, see [1]
-annealing_iterations = 600      ; The amount of refinement iterations performed during the main-loop of the AMOSA heuristic, see [1]
-annealing_strength = 1          ; Governs the strength of random perturbations during the annealing phase; specifically, the number of variables whose value is affected by perturbation.
-early_termination = 20          ; Early termination window. See [2]. Set it to zero in order to disable early-termination. Default is 20.
-```
-
-#### Configuration file for the ```als-onestep``` and ```full-onestep``` commands
-
-```
-[als]
-cut_size = 4                    ; specifies the "k" for AIG-cuts, or, alternatively, the k-LUTs for LUT-mapping during cut-enumeration
-catalog = lut_catalog.db        ; This is the path of the file where synthesized Boolean functions are stored. You can find a ready to use cache at git@github.com:SalvatoreBarone/LUTCatalog.git
-solver = btor                   ; SAT-solver to be used. It can be either btor (Boolector) or z3 (Z3-solver)
-timeout = 60000                 ; Timeout (in ms) for the Exact synthesis process. You don't need to change its default value.
-
-[error]
-max_loss = 5                    ; the error threshold, in terms of classification accuracy loss
-
-[amosa]
-archive_hard_limit = 30         ; Archive hard limit for the AMOSA optimization heuristic, see [1]
-archive_soft_limit = 50         ; Archive soft limit for the AMOSA optimization heuristic, see [1]
-archive_gamma = 2               ; Gamma parameter for the AMOSA optimization heuristic, see [1]
-hill_climbing_iterations = 250  ; the number of iterations performed during the initial hill-climbing refinement, see [1];
-initial_temperature = 500       ; Initial temperature of the matter for the AMOSA optimization heuristic, see [1]
-final_temperature = 0.000001    ; Final temperature of the matter for the AMOSA optimization heuristic, see [1]
-cooling_factor =  0.9           ; It governs how quickly the temperature of the matter decreases during the annealing process, see [1]
-annealing_iterations = 600      ; The amount of refinement iterations performed during the main-loop of the AMOSA heuristic, see [1]
-annealing_strength = 1          ; Governs the strength of random perturbations during the annealing phase; specifically, the number of variables whose value is affected by perturbation.
-early_termination = 20          ; Early termination window. See [2]. Set it to zero in order to disable early-termination. Default is 20.
-```
-
-#### Configuration file for the ```als-twostep``` and ```full-twostep``` commands
-
-```
-[als]
-cut_size = 4                    ; specifies the "k" for AIG-cuts, or, alternatively, the k-LUTs for LUT-mapping during cut-enumeration
-catalog = lut_catalog.db        ; This is the path of the file where synthesized Boolean functions are stored. You can find a ready to use cache at git@github.com:SalvatoreBarone/LUTCatalog.git
-solver = btor                   ; SAT-solver to be used. It can be either btor (Boolector) or z3 (Z3-solver)
-timeout = 60000                 ; Timeout (in ms) for the Exact synthesis process. You don't need to change its default value.
-
-[error]
-max_freq = 10                   ; the maximum allowed error frequency for approximate assertion functions
-max_loss = 5                    ; the error threshold, in terms of classification accuracy loss
-
-;; options for the first stage optimizer
-[amosa1]                        
-archive_hard_limit = 30         ; Archive hard limit for the AMOSA optimization heuristic, see [1]
-archive_soft_limit = 50         ; Archive soft limit for the AMOSA optimization heuristic, see [1]
-archive_gamma = 2               ; Gamma parameter for the AMOSA optimization heuristic, see [1]
-hill_climbing_iterations = 250  ; the number of iterations performed during the initial hill-climbing refinement, see [1];
-initial_temperature = 500       ; Initial temperature of the matter for the AMOSA optimization heuristic, see [1]
-final_temperature = 0.000001    ; Final temperature of the matter for the AMOSA optimization heuristic, see [1]
-cooling_factor =  0.9           ; It governs how quickly the temperature of the matter decreases during the annealing process, see [1]
-annealing_iterations = 600      ; The amount of refinement iterations performed during the main-loop of the AMOSA heuristic, see [1]
-annealing_strength = 1          ; Governs the strength of random perturbations during the annealing phase; specifically, the number of variables whose value is affected by perturbation.
-early_termination = 20          ; Early termination window. See [2]. Set it to zero in order to disable early-termination. Default is 20.
-
-;; options for the second stage optimizer
-[amosa2]                        
-archive_hard_limit = 30         ; Archive hard limit for the AMOSA optimization heuristic, see [1]
-archive_soft_limit = 50         ; Archive soft limit for the AMOSA optimization heuristic, see [1]
-archive_gamma = 2               ; Gamma parameter for the AMOSA optimization heuristic, see [1]
-hill_climbing_iterations = 250  ; the number of iterations performed during the initial hill-climbing refinement, see [1];
-initial_temperature = 500       ; Initial temperature of the matter for the AMOSA optimization heuristic, see [1]
-final_temperature = 0.000001    ; Final temperature of the matter for the AMOSA optimization heuristic, see [1]
-cooling_factor =  0.9           ; It governs how quickly the temperature of the matter decreases during the annealing process, see [1]
-annealing_iterations = 600      ; The amount of refinement iterations performed during the main-loop of the AMOSA heuristic, see [1]
-annealing_strength = 1          ; Governs the strength of random perturbations during the annealing phase; specifically, the number of variables whose value is affected by perturbation.
-early_termination = 20          ; Early termination window. See [2]. Set it to zero in order to disable early-termination. Default is 20.
-
-```
 
 ## References
 1. Bandyopadhyay, S., Saha, S., Maulik, U., & Deb, K. (2008). A simulated annealing-based multiobjective optimization algorithm: AMOSA. IEEE transactions on evolutionary computation, 12(3), 269-283.
