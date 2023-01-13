@@ -51,6 +51,8 @@ class Classifier:
         self.__model_features_list_dict = []
         self.__model_classes_list_str = []
         self.__als_conf = als_conf
+        dir_path = os.path.dirname(os.path.abspath(__file__))
+        self.source_dir =  f"{dir_path}/{self.__source_dir}"
 
     def __deepcopy__(self, memo=None):
         classifier = Classifier(self.__als_conf)
@@ -215,10 +217,10 @@ class Classifier:
         mkpath(destination)
         ax_dest = f"{destination}/exact/"
         mkpath(ax_dest)
-        copy_file(self.__source_dir + self.__extract_luts_file, ax_dest)
-        copy_file(self.__source_dir + self.__extract_pwr_file, ax_dest)
+        copy_file(self.source_dir + self.__extract_luts_file, ax_dest)
+        copy_file(self.source_dir + self.__extract_pwr_file, ax_dest)
         trees_name = [t.get_name() for t in self.__trees_list_obj]
-        file_loader = FileSystemLoader(self.__source_dir)
+        file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         template = env.get_template(self.__vhdl_classifier_template_file)
         tb_classifier_template = env.get_template(
@@ -246,15 +248,15 @@ class Classifier:
             classes=self.__model_classes_list_str)
         with open(f"{ax_dest}/tb_classifier.vhd", "w") as out_file:
             out_file.write(tb_classifier)
-        copy_file(self.__source_dir + self.__vhdl_bnf_source, ax_dest)
-        copy_file(self.__source_dir + self.__vhdl_reg_source, ax_dest)
-        copy_file(self.__source_dir + self.__vhdl_decision_box_source, ax_dest)
-        copy_file(self.__source_dir + self.__vhdl_voter_source, ax_dest)
-        copy_file(self.__source_dir + self.__vhdl_debugfunc_source, ax_dest)
-        copy_file(self.__source_dir + self.__tcl_sim_file, ax_dest)
-        copy_file(self.__source_dir + self.__constraint_file, ax_dest)
-        copy_file(self.__source_dir + self.__run_synth_file, ax_dest)
-        copy_file(self.__source_dir + self.__run_sim_file, ax_dest)
+        copy_file(self.source_dir + self.__vhdl_bnf_source, ax_dest)
+        copy_file(self.source_dir + self.__vhdl_reg_source, ax_dest)
+        copy_file(self.source_dir + self.__vhdl_decision_box_source, ax_dest)
+        copy_file(self.source_dir + self.__vhdl_voter_source, ax_dest)
+        copy_file(self.source_dir + self.__vhdl_debugfunc_source, ax_dest)
+        copy_file(self.source_dir + self.__tcl_sim_file, ax_dest)
+        copy_file(self.source_dir + self.__constraint_file, ax_dest)
+        copy_file(self.source_dir + self.__run_synth_file, ax_dest)
+        copy_file(self.source_dir + self.__run_sim_file, ax_dest)
         for tree in self.__trees_list_obj:
             tree.generate_hdl_tree(ax_dest)
             tree.generate_hdl_exact_assertions(ax_dest)
@@ -262,11 +264,11 @@ class Classifier:
     def generate_hdl_ps_ax_implementations(self, destination, configurations):
         mkpath(destination)
         mkpath(f"{destination}/ax")
-        copy_file(self.__source_dir + self.__run_all_file, destination)
-        copy_file(self.__source_dir + self.__extract_luts_file, destination)
-        copy_file(self.__source_dir + self.__extract_pwr_file, destination)
+        copy_file(self.source_dir + self.__run_all_file, destination)
+        copy_file(self.source_dir + self.__extract_luts_file, destination)
+        copy_file(self.source_dir + self.__extract_pwr_file, destination)
         trees_name = [t.get_name() for t in self.__trees_list_obj]
-        file_loader = FileSystemLoader(self.__source_dir)
+        file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         tcl_template = env.get_template(self.__tcl_project_file)
         classifier_template = env.get_template(
@@ -300,15 +302,15 @@ class Classifier:
                 classes=self.__model_classes_list_str)
             with open(f"{ax_dest}/tb_classifier.vhd", "w") as out_file:
                 out_file.write(tb_classifier)
-            copy_file(self.__source_dir + self.__vhdl_bnf_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_reg_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_decision_box_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_voter_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_debugfunc_source, ax_dest)
-            copy_file(self.__source_dir + self.__tcl_sim_file, ax_dest)
-            copy_file(self.__source_dir + self.__constraint_file, ax_dest)
-            copy_file(self.__source_dir + self.__run_synth_file, ax_dest)
-            copy_file(self.__source_dir + self.__run_sim_file, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_bnf_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_reg_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_decision_box_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_voter_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_debugfunc_source, ax_dest)
+            copy_file(self.source_dir + self.__tcl_sim_file, ax_dest)
+            copy_file(self.source_dir + self.__constraint_file, ax_dest)
+            copy_file(self.source_dir + self.__run_synth_file, ax_dest)
+            copy_file(self.source_dir + self.__run_sim_file, ax_dest)
             for tree in self.__trees_list_obj:
                 tree.generate_hdl_tree(ax_dest)
                 tree.generate_hdl_exact_assertions(ax_dest)
@@ -318,11 +320,11 @@ class Classifier:
                     for f in self.__model_features_list_dict]
         mkpath(destination)
         mkpath(f"{destination}/ax")
-        copy_file(self.__source_dir + self.__run_all_file, destination)
-        copy_file(self.__source_dir + self.__extract_luts_file, destination)
-        copy_file(self.__source_dir + self.__extract_pwr_file, destination)
+        copy_file(self.source_dir + self.__run_all_file, destination)
+        copy_file(self.source_dir + self.__extract_luts_file, destination)
+        copy_file(self.source_dir + self.__extract_pwr_file, destination)
         trees_name = [t.get_name() for t in self.__trees_list_obj]
-        file_loader = FileSystemLoader(self.__source_dir)
+        file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         tcl_template = env.get_template(self.__tcl_project_file)
         classifier_template = env.get_template(
@@ -354,15 +356,15 @@ class Classifier:
                 out_file.write(tb_classifier)
             with open(f"{ax_dest}/create_project.tcl", "w") as out_file:
                 out_file.write(tcl_file)
-            copy_file(self.__source_dir + self.__vhdl_bnf_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_reg_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_decision_box_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_voter_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_debugfunc_source, ax_dest)
-            copy_file(self.__source_dir + self.__tcl_sim_file, ax_dest)
-            copy_file(self.__source_dir + self.__constraint_file, ax_dest)
-            copy_file(self.__source_dir + self.__run_synth_file, ax_dest)
-            copy_file(self.__source_dir + self.__run_sim_file, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_bnf_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_reg_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_decision_box_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_voter_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_debugfunc_source, ax_dest)
+            copy_file(self.source_dir + self.__tcl_sim_file, ax_dest)
+            copy_file(self.source_dir + self.__constraint_file, ax_dest)
+            copy_file(self.source_dir + self.__run_synth_file, ax_dest)
+            copy_file(self.source_dir + self.__run_sim_file, ax_dest)
             chunks = []
             count = 0
             for size in [len(t.get_graph().get_cells()) for t in self.__trees_list_obj]:
@@ -378,11 +380,11 @@ class Classifier:
                     for f in self.__model_features_list_dict]
         mkpath(destination)
         mkpath(f"{destination}/ax")
-        copy_file(self.__source_dir + self.__run_all_file, destination)
-        copy_file(self.__source_dir + self.__extract_luts_file, destination)
-        copy_file(self.__source_dir + self.__extract_pwr_file, destination)
+        copy_file(self.source_dir + self.__run_all_file, destination)
+        copy_file(self.source_dir + self.__extract_luts_file, destination)
+        copy_file(self.source_dir + self.__extract_pwr_file, destination)
         trees_name = [t.get_name() for t in self.__trees_list_obj]
-        file_loader = FileSystemLoader(self.__source_dir)
+        file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         tcl_template = env.get_template(self.__tcl_project_file)
         classifier_template = env.get_template(
@@ -414,15 +416,15 @@ class Classifier:
                 out_file.write(tb_classifier)
             with open(f"{ax_dest}/create_project.tcl", "w") as out_file:
                 out_file.write(tcl_file)
-            copy_file(self.__source_dir + self.__vhdl_bnf_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_reg_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_decision_box_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_voter_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_debugfunc_source, ax_dest)
-            copy_file(self.__source_dir + self.__tcl_sim_file, ax_dest)
-            copy_file(self.__source_dir + self.__constraint_file, ax_dest)
-            copy_file(self.__source_dir + self.__run_synth_file, ax_dest)
-            copy_file(self.__source_dir + self.__run_sim_file, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_bnf_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_reg_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_decision_box_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_voter_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_debugfunc_source, ax_dest)
+            copy_file(self.source_dir + self.__tcl_sim_file, ax_dest)
+            copy_file(self.source_dir + self.__constraint_file, ax_dest)
+            copy_file(self.source_dir + self.__run_synth_file, ax_dest)
+            copy_file(self.source_dir + self.__run_sim_file, ax_dest)
             for t, i, c in zip(self.__trees_list_obj, range(len(self.__trees_list_obj)), conf):
                 t.generate_hdl_tree(ax_dest)
                 t.set_assertions_configuration(inner_configuration[i][c])
@@ -432,11 +434,11 @@ class Classifier:
     def generate_hdl_onestep_full_ax_implementations(self, destination, outer_configurations):
         mkpath(destination)
         mkpath(f"{destination}/ax")
-        copy_file(self.__source_dir + self.__run_all_file, destination)
-        copy_file(self.__source_dir + self.__extract_luts_file, destination)
-        copy_file(self.__source_dir + self.__extract_pwr_file, destination)
+        copy_file(self.source_dir + self.__run_all_file, destination)
+        copy_file(self.source_dir + self.__extract_luts_file, destination)
+        copy_file(self.source_dir + self.__extract_pwr_file, destination)
         trees_name = [t.get_name() for t in self.__trees_list_obj]
-        file_loader = FileSystemLoader(self.__source_dir)
+        file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         classifier_template = env.get_template(
             self.__vhdl_classifier_template_file)
@@ -471,15 +473,15 @@ class Classifier:
                 out_file.write(tb_classifier)
             with open(f"{ax_dest}/create_project.tcl", "w") as out_file:
                 out_file.write(tcl_file)
-            copy_file(self.__source_dir + self.__vhdl_bnf_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_reg_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_decision_box_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_voter_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_debugfunc_source, ax_dest)
-            copy_file(self.__source_dir + self.__tcl_sim_file, ax_dest)
-            copy_file(self.__source_dir + self.__constraint_file, ax_dest)
-            copy_file(self.__source_dir + self.__run_synth_file, ax_dest)
-            copy_file(self.__source_dir + self.__run_sim_file, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_bnf_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_reg_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_decision_box_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_voter_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_debugfunc_source, ax_dest)
+            copy_file(self.source_dir + self.__tcl_sim_file, ax_dest)
+            copy_file(self.source_dir + self.__constraint_file, ax_dest)
+            copy_file(self.source_dir + self.__run_synth_file, ax_dest)
+            copy_file(self.source_dir + self.__run_sim_file, ax_dest)
             chunks = []
             count = 0
             for size in [len(t.get_graph().get_cells()) for t in self.__trees_list_obj]:
@@ -494,11 +496,11 @@ class Classifier:
     def generate_hdl_twostep_full_ax_implementations(self, destination, outer_configurations, inner_configuration):
         mkpath(destination)
         mkpath(f"{destination}/ax")
-        copy_file(self.__source_dir + self.__run_all_file, destination)
-        copy_file(self.__source_dir + self.__extract_luts_file, destination)
-        copy_file(self.__source_dir + self.__extract_pwr_file, destination)
+        copy_file(self.source_dir + self.__run_all_file, destination)
+        copy_file(self.source_dir + self.__extract_luts_file, destination)
+        copy_file(self.source_dir + self.__extract_pwr_file, destination)
         trees_name = [t.get_name() for t in self.__trees_list_obj]
-        file_loader = FileSystemLoader(self.__source_dir)
+        file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         classifier_template = env.get_template(
             self.__vhdl_classifier_template_file)
@@ -533,15 +535,15 @@ class Classifier:
                 out_file.write(tb_classifier)
             with open(f"{ax_dest}/create_project.tcl", "w") as out_file:
                 out_file.write(tcl_file)
-            copy_file(self.__source_dir + self.__vhdl_bnf_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_reg_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_decision_box_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_voter_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_debugfunc_source, ax_dest)
-            copy_file(self.__source_dir + self.__tcl_sim_file, ax_dest)
-            copy_file(self.__source_dir + self.__constraint_file, ax_dest)
-            copy_file(self.__source_dir + self.__run_synth_file, ax_dest)
-            copy_file(self.__source_dir + self.__run_sim_file, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_bnf_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_reg_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_decision_box_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_voter_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_debugfunc_source, ax_dest)
+            copy_file(self.source_dir + self.__tcl_sim_file, ax_dest)
+            copy_file(self.source_dir + self.__constraint_file, ax_dest)
+            copy_file(self.source_dir + self.__run_synth_file, ax_dest)
+            copy_file(self.source_dir + self.__run_sim_file, ax_dest)
             for t, n, c in zip(self.__trees_list_obj, range(len(self.__trees_list_obj)), conf[len(self.__model_features_list_dict):]):
                 t.generate_hdl_tree(ax_dest)
                 t.set_assertions_configuration(inner_configuration[n][c])
@@ -552,11 +554,11 @@ class Classifier:
                     for f in self.__model_features_list_dict]
         mkpath(destination)
         mkpath(f"{destination}/ax")
-        copy_file(self.__source_dir + self.__run_all_file, destination)
-        copy_file(self.__source_dir + self.__extract_luts_file, destination)
-        copy_file(self.__source_dir + self.__extract_pwr_file, destination)
+        copy_file(self.source_dir + self.__run_all_file, destination)
+        copy_file(self.source_dir + self.__extract_luts_file, destination)
+        copy_file(self.source_dir + self.__extract_pwr_file, destination)
         trees_name = [t.get_name() for t in self.__trees_list_obj]
-        file_loader = FileSystemLoader(self.__source_dir)
+        file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         tcl_template = env.get_template(self.__tcl_project_file)
         classifier_template = env.get_template(
@@ -588,15 +590,15 @@ class Classifier:
                 out_file.write(tb_classifier)
             with open(f"{ax_dest}/create_project.tcl", "w") as out_file:
                 out_file.write(tcl_file)
-            copy_file(self.__source_dir + self.__vhdl_bnf_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_reg_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_decision_box_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_voter_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_debugfunc_source, ax_dest)
-            copy_file(self.__source_dir + self.__tcl_sim_file, ax_dest)
-            copy_file(self.__source_dir + self.__constraint_file, ax_dest)
-            copy_file(self.__source_dir + self.__run_synth_file, ax_dest)
-            copy_file(self.__source_dir + self.__run_sim_file, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_bnf_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_reg_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_decision_box_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_voter_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_debugfunc_source, ax_dest)
+            copy_file(self.source_dir + self.__tcl_sim_file, ax_dest)
+            copy_file(self.source_dir + self.__constraint_file, ax_dest)
+            copy_file(self.source_dir + self.__run_synth_file, ax_dest)
+            copy_file(self.source_dir + self.__run_sim_file, ax_dest)
             
             assertions_conf = [conf for _ in range(len(self.__trees_list_obj))]
             self.set_assertions_configuration(assertions_conf)
@@ -609,11 +611,11 @@ class Classifier:
                     for f in self.__model_features_list_dict]
         mkpath(destination)
         mkpath(f"{destination}/ax")
-        copy_file(self.__source_dir + self.__run_all_file, destination)
-        copy_file(self.__source_dir + self.__extract_luts_file, destination)
-        copy_file(self.__source_dir + self.__extract_pwr_file, destination)
+        copy_file(self.source_dir + self.__run_all_file, destination)
+        copy_file(self.source_dir + self.__extract_luts_file, destination)
+        copy_file(self.source_dir + self.__extract_pwr_file, destination)
         trees_name = [t.get_name() for t in self.__trees_list_obj]
-        file_loader = FileSystemLoader(self.__source_dir)
+        file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         tcl_template = env.get_template(self.__tcl_project_file)
         classifier_template = env.get_template(
@@ -645,15 +647,15 @@ class Classifier:
                 out_file.write(tb_classifier)
             with open(f"{ax_dest}/create_project.tcl", "w") as out_file:
                 out_file.write(tcl_file)
-            copy_file(self.__source_dir + self.__vhdl_bnf_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_reg_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_decision_box_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_voter_source, ax_dest)
-            copy_file(self.__source_dir + self.__vhdl_debugfunc_source, ax_dest)
-            copy_file(self.__source_dir + self.__tcl_sim_file, ax_dest)
-            copy_file(self.__source_dir + self.__constraint_file, ax_dest)
-            copy_file(self.__source_dir + self.__run_synth_file, ax_dest)
-            copy_file(self.__source_dir + self.__run_sim_file, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_bnf_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_reg_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_decision_box_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_voter_source, ax_dest)
+            copy_file(self.source_dir + self.__vhdl_debugfunc_source, ax_dest)
+            copy_file(self.source_dir + self.__tcl_sim_file, ax_dest)
+            copy_file(self.source_dir + self.__constraint_file, ax_dest)
+            copy_file(self.source_dir + self.__run_synth_file, ax_dest)
+            copy_file(self.source_dir + self.__run_sim_file, ax_dest)
 
             assertions_conf = [ inner_configuration[c] for c in outer_conf ]
             self.set_assertions_configuration(assertions_conf)
