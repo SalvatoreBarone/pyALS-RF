@@ -25,7 +25,7 @@ from .DecisionTree import *
 
 class Classifier:
     __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_4'}
-    __source_dir = "./resources/"
+    __source_dir = "../resources/"
     # VHDL sources
     __vhdl_bnf_source = "vhd/bnf.vhd"
     __vhdl_reg_source = "vhd/pipe_reg.vhd"
