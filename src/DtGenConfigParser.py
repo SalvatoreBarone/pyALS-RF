@@ -27,4 +27,7 @@ class DtGenConfigParser:
 		self.skip_header = search_field_in_config(configuration, "skip_header", False, True)
 		self.attributes_name = search_field_in_config(configuration, "attributes_name", True)
 		classes_name = search_field_in_config(configuration, "classes_name", True)
-		self.classes_name = { int(k): v for k, v in classes_name.items() }
+		try:
+			self.classes_name = { int(k): v for k, v in classes_name.items() }
+		except ValueError:
+			self.classes_name = classes_name

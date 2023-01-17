@@ -80,8 +80,6 @@ def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, crit
 
     config = DtGenConfigParser(configfile)
 
-    print(config.attributes_name, config.classes_name)
-    
     learning_attributes, learning_labels, test_attributes, test_labels, test_labels_one_hot = get_sets(dataset, config, fraction)
 
     if clf == "dt":
