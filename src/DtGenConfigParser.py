@@ -21,13 +21,8 @@ from .ConfigParser import *
 class DtGenConfigParser:
 	def __init__(self, config_file):
 		configuration = json.load(open(config_file))
-
 		self.separator = search_field_in_config(configuration, "separator", False, ",")
 		self.outcome_col = search_field_in_config(configuration, "outcome_col", False, None)
 		self.skip_header = search_field_in_config(configuration, "skip_header", False, True)
 		self.attributes_name = search_field_in_config(configuration, "attributes_name", True)
-		classes_name = search_field_in_config(configuration, "classes_name", True)
-		try:
-			self.classes_name = { int(k): v for k, v in classes_name.items() }
-		except ValueError:
-			self.classes_name = classes_name
+		self.classes_name = search_field_in_config(configuration, "classes_name", True)
