@@ -71,7 +71,7 @@ def get_sets(dataset_file, config, fraction):
         # learning_labels = [ config.classes_name[int(o)] for o in outcomes[learning_vectors_indexes] ]
         # test_labels = [ config.classes_name[int(o)] for o in outcomes[test_vectors_indexes] ]
         learning_labels = outcomes[learning_vectors_indexes]
-    test_labels = outcomes[test_vectors_indexes]
+        test_labels = outcomes[test_vectors_indexes]
 
     test_labels_one_hot = outcomes_one_hot[test_vectors_indexes, :]
     
