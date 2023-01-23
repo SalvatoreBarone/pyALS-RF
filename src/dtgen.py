@@ -63,9 +63,16 @@ def get_sets(dataset_file, config, fraction):
     test_vectors_indexes = [x for x in range(attributes.shape[0]) if x not in learning_vectors_indexes]
     
     learning_attributes = attributes[learning_vectors_indexes, :]
-    learning_labels = outcomes[learning_vectors_indexes]
     test_attributes = attributes[test_vectors_indexes, :]
+    if isinstance(config.classes_name, dict):
+        learning_labels = [ config.classes_name[o] for o in outcomes[learning_vectors_indexes] ]
+        test_labels = [ config.classes_name[o] for o in outcomes[test_vectors_indexes] ]
+    elif isinstance(config.classes_name, (list, tuple)):
+        # learning_labels = [ config.classes_name[int(o)] for o in outcomes[learning_vectors_indexes] ]
+        # test_labels = [ config.classes_name[int(o)] for o in outcomes[test_vectors_indexes] ]
+        learning_labels = outcomes[learning_vectors_indexes]
     test_labels = outcomes[test_vectors_indexes]
+
     test_labels_one_hot = outcomes_one_hot[test_vectors_indexes, :]
     
     return learning_attributes, learning_labels, test_attributes, test_labels, test_labels_one_hot
