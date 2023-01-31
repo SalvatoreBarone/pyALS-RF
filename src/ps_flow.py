@@ -14,8 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import os
-from pyamosa import Optimizer
+import os, pyamosa
 from pyalslib import check_for_file
 from src.PsConfigParser import *
 from src.PsMop import *
@@ -30,7 +29,7 @@ def ps_flow(configfile):
     classifier.parse(configuration.pmml)
     classifier.generate_hdl_exact_implementations(configuration.outdir)
     problem = PsMop(classifier, configuration.error_conf)
-    optimizer = Optimizer(configuration.optimizer_conf)
+    optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
     improve = None
     if os.path.exists(f"{configuration.outdir}/final_archive.json"):
         print("Using results from previous runs as a starting point.")
@@ -38,7 +37,8 @@ def ps_flow(configfile):
     optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/{optimizer.hill_climb_checkpoint_file}"
     optimizer.minimize_checkpoint_file = f"{configuration.outdir}/{optimizer.minimize_checkpoint_file}"
     optimizer.cache_dir = f"{configuration.outdir}/{optimizer.cache_dir}"
-    optimizer.run(problem, improve)
+    configuration.termination_criterion.info()
+    optimizer.run(problem, termination_criterion = configuration.termination_criterion, improve = improve)
     optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
     optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
     optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")

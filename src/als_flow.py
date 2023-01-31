@@ -14,9 +14,8 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import os
+import os, pyamosa
 from distutils.dir_util import mkpath
-from pyamosa import Optimizer
 from pyalslib import check_for_file, check_for_optional_file
 from .Classifier import Classifier
 from .OneStepConfigParser import OneStepConfigParser
@@ -35,7 +34,7 @@ def als_one_step(configfile):
     classifier.parse(configuration.pmml)
     classifier.generate_hdl_exact_implementations(configuration.outdir)
     problem = SingleStepAlsMop(classifier, configuration.error_conf)
-    optimizer = Optimizer(configuration.optimizer_conf)
+    optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
     improve = None
     if os.path.exists(f"{configuration.outdir}/final_archive.json"):
         print("Using results from previous runs as a starting point.")
@@ -43,7 +42,7 @@ def als_one_step(configfile):
     optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/{optimizer.hill_climb_checkpoint_file}"
     optimizer.minimize_checkpoint_file = f"{configuration.outdir}/{optimizer.minimize_checkpoint_file}"
     optimizer.cache_dir = f"{configuration.outdir}/{optimizer.cache_dir}"
-    optimizer.run(problem, improve)
+    optimizer.run(problem, termination_criterion = configuration.termination_criterion, improve = improve)
     optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
     optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
     optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
@@ -64,13 +63,13 @@ def als_two_steps(configfile):
     print("PMML parsing completed")
     classifier.generate_hdl_exact_implementations(configuration.outdir)
     print("HDL generation (accurate) completed")
-    problem = SecondStepAlsMop(classifier, configuration.error_conf, configuration.fst_optimizer_conf, configuration.outdir)
+    problem = SecondStepAlsMop(classifier, configuration.error_conf, configuration.fst_optimizer_conf, configuration.fst_termination_criterion, configuration.outdir)
     print("Assertion generation (approximate) completed")
-    optimizer = Optimizer(configuration.snd_optimizer_conf)
+    optimizer = pyamosa.Optimizer(configuration.snd_optimizer_conf)
     optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/second_step_hillclimb_checkpoint.json"
     optimizer.minimize_checkpoint_file = f"{configuration.outdir}/second_step_hminimize_checkpoint.json"
     optimizer.cache_dir = f"{configuration.outdir}/.second_step_cache"
-    optimizer.run(problem)
+    optimizer.run(problem, termination_criterion = configuration.snd_termination_criterion)
     optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
     optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
     optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")

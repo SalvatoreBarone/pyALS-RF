@@ -18,7 +18,7 @@ from .BaseMop import *
 from .FirstStepAlsMop import *
 
 class SecondStepBaseMop(BaseMop):
-    def __init__(self, classifier, error_conf, opt_conf, out_dir):
+    def __init__(self, classifier, error_conf, opt_conf, term_criterion, out_dir):
         self.error_conf = error_conf
         self.opt_conf = opt_conf
         BaseMop.__init__(self, classifier, self.error_conf.test_dataset)
@@ -26,7 +26,7 @@ class SecondStepBaseMop(BaseMop):
         assert len(self.classifier.get_trees()) > 1, "The two steps approach is available only for random forest/bagging classifiers"
         for t in self.classifier.get_trees():
             problem = FirstStepAlsMop(t, self.dataset, self.error_conf)
-            optimizer = Optimizer(self.opt_conf)
+            optimizer = pyamosa.Optimizer(self.opt_conf)
             t_outdir = f"{out_dir}/{t.get_name()}"
             mkpath(t_outdir)
             optimizer.hill_climb_checkpoint_file = f"{t_outdir}/first_step_hillclimb_checkpoint.json"
@@ -36,7 +36,8 @@ class SecondStepBaseMop(BaseMop):
             if os.path.exists(f"{t_outdir}/final_archive.json"):
                 print("Using results from previous runs as a starting point.")
                 improve = f"{t_outdir}/final_archive.json"
-            optimizer.run(problem, improve)
+            term_criterion.info()
+            optimizer.run(problem, termination_criterion = term_criterion, improve = improve)
             optimizer.archive_to_csv(problem, f"{t_outdir}/report.csv")
             optimizer.plot_pareto(problem, f"{t_outdir}/pareto_front.pdf")
             optimizer.archive_to_json(f"{t_outdir}/final_archive.json")

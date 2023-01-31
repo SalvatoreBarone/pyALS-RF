@@ -16,14 +16,14 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 from .SecondStepWcBaseMop import *
 import numpy as np
-class SecondStepAlsWcMop(SecondStepWcBaseMop, Optimizer.Problem):
+class SecondStepAlsWcMop(SecondStepWcBaseMop, pyamosa.Problem):
 
-    def __init__(self, classifier, error_config, fst_opt_conf, outdir):
-        SecondStepWcBaseMop.__init__(self, classifier, error_config, fst_opt_conf, outdir)
+    def __init__(self, classifier, error_config, fst_opt_conf, fst_opt_term_criterion, outdir):
+        SecondStepWcBaseMop.__init__(self, classifier, error_config, fst_opt_conf, fst_opt_term_criterion, outdir)
         n_vars = self.classifier.get_num_of_trees()
         ub = [len(self.first_step_optimizer.pareto_set())] * n_vars
         print(f"Second step optimization (WC) #vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
-        Optimizer.Problem.__init__(self, n_vars, [Optimizer.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
+        pyamosa.Problem.__init__(self, n_vars, [pyamosa.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 
     def __set_matter_configuration(self, x):
         pareto_set = self.first_step_optimizer.pareto_set()

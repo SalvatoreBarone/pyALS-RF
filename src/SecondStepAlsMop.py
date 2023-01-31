@@ -16,14 +16,14 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 from .SecondStepBaseMop import *
 import numpy as np
-class SecondStepAlsMop(SecondStepBaseMop, Optimizer.Problem):
+class SecondStepAlsMop(SecondStepBaseMop, pyamosa.Problem):
 
-    def __init__(self, classifier, error_config, fst_opt_conf, outdir):
-        SecondStepBaseMop.__init__(self, classifier, error_config, fst_opt_conf, outdir)
+    def __init__(self, classifier, error_config, fst_opt_conf, fst_opt_term_criterion, outdir):
+        SecondStepBaseMop.__init__(self, classifier, error_config, fst_opt_conf, fst_opt_term_criterion, outdir)
         n_vars = self.classifier.get_num_of_trees()
         ub = [ len(i) for i in self.opt_solutions_for_trees ]
         print(f"Second step optimization #vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
-        Optimizer.Problem.__init__(self, n_vars, [Optimizer.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
+        pyamosa.Problem.__init__(self, n_vars, [pyamosa.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 
     def __set_matter_configuration(self, x):
         configurations = [ s[c] for s, c in zip(self.opt_solutions_for_trees, x)  ]

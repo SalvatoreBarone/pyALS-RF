@@ -15,14 +15,14 @@ RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 from .BaseMop import *
-from pyamosa import Optimizer
+import pyamosa
 
-class PsMop(BaseMop, Optimizer.Problem):
+class PsMop(BaseMop, pyamosa.Problem):
     def __init__(self, classifier, error_conf):
         self.error_conf = error_conf
         BaseMop.__init__(self, classifier, self.error_conf.test_dataset)
         n_vars = len(classifier.get_features())
-        Optimizer.Problem.__init__(self, n_vars, [Optimizer.Type.INTEGER] * n_vars, [0] * n_vars, [53] * n_vars, 2, 1)
+        pyamosa.Problem.__init__(self, n_vars, [pyamosa.Type.INTEGER] * n_vars, [0] * n_vars, [53] * n_vars, 2, 1)
 
     def __set_matter_configuration(self, x):
         nabs = {f["name"]: n for f, n in zip(self.features, x[:len(self.features)])}

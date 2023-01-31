@@ -15,9 +15,8 @@ RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 from .BaseMop import *
-from pyamosa import Optimizer
-import numpy as np
-class SingleStepAlsWcMop(BaseMop, Optimizer.Problem):
+import numpy as np, pyamosa
+class SingleStepAlsWcMop(BaseMop, pyamosa.Problem):
     def __init__(self, classifier, error_config):
         self.error_config = error_config
         BaseMop.__init__(self, classifier, self.error_config.test_dataset)
@@ -30,7 +29,7 @@ class SingleStepAlsWcMop(BaseMop, Optimizer.Problem):
         n_vars = self.cells_per_tree[0]
         ub = classifier.get_als_dv_upper_bound()[:n_vars]
         print(f"#vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
-        Optimizer.Problem.__init__(self, n_vars, [Optimizer.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
+        pyamosa.Problem.__init__(self, n_vars, [pyamosa.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 
     def __set_matter_configuration(self, x):
         configurations = [x for _ in range(self.args[0][0].get_num_of_trees())]

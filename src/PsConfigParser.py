@@ -14,8 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import json
-from pyamosa import Optimizer
+import json, pyamosa
 from pyalslib import ALSConfig
 from .ErrorConfig import ErrorConfig
 from .ConfigParser import *
@@ -43,16 +42,27 @@ class PSConfigParser:
         optimizer_conf = search_field_in_config(configuration, "optimizer", True)
         assert isinstance(optimizer_conf, dict), "the 'optimizer' field of the config file is not valid"
 
-        self.optimizer_conf = Optimizer.Config(
+        self.optimizer_conf = pyamosa.Config(
                 archive_hard_limit = int(search_field_in_config(optimizer_conf, "archive_hard_limit", True)),
                 archive_soft_limit = int(search_field_in_config(optimizer_conf, "archive_soft_limit", True)),
                 archive_gamma = int(search_field_in_config(optimizer_conf, "archive_gamma", True)),
                 clustering_max_iterations = int(search_field_in_config(optimizer_conf, "clustering_iterations", True)),
                 hill_climbing_iterations = int(search_field_in_config(optimizer_conf, "hill_climbing_iterations", True)),
                 initial_temperature = float(search_field_in_config(optimizer_conf, "initial_temperature", True)),
-                final_temperature = float(search_field_in_config(optimizer_conf, "final_temperature", True)),
                 cooling_factor = float(search_field_in_config(optimizer_conf, "cooling_factor", True)),
                 annealing_iterations = int(search_field_in_config(optimizer_conf, "annealing_iterations", True)),
                 annealing_strength = int(search_field_in_config(optimizer_conf, "annealing_strength", True)),
-                early_termination_window = int(search_field_in_config(optimizer_conf, "early_termination", True)),
-                multiprocessing_enabled = bool(search_field_in_config(optimizer_conf, "multiprocess_enabled", True)))
+                multiprocessing_enabled = bool(search_field_in_config(optimizer_conf, "multiprocess_enabled", False, False)))
+
+        optimizer_min_temperature = search_field_in_config(optimizer_conf, "min_temperature", False, None)
+        optimizer_stop_phy_window = search_field_in_config(optimizer_conf, "early_termination", False, None)
+        optimizer_max_duration = search_field_in_config(optimizer_conf, "max_duration", False, None)
+        if optimizer_min_temperature is not None:
+            self.termination_criterion = pyamosa.StopMinTemperature(optimizer_min_temperature)
+        elif optimizer_stop_phy_window is not None:
+            self.termination_criterion = pyamosa.StopPhyWindow(optimizer_stop_phy_window)
+        elif optimizer_max_duration is not None:
+            self.termination_criterion = pyamosa.StopMaxTime(optimizer_max_duration)
+        else:
+            print("You should set a termination criterion!")
+            exit() 
