@@ -37,6 +37,7 @@ class SecondStepWcBaseMop(BaseMop):
             print("Using results from previous runs as a starting point.")
             improve = f"{t_outdir}/final_archive.json"
         fst_opt_term_criterion.info()
+        print(f"Evaluating EP using {len(self.first_step_problem.samples)} vectors")
         self.first_step_optimizer.run(self.first_step_problem, termination_criterion = fst_opt_term_criterion, improve = improve)
         self.first_step_optimizer.archive_to_csv(self.first_step_problem, f"{t_outdir}/report.csv")
         self.first_step_optimizer.plot_pareto(self.first_step_problem, f"{t_outdir}/pareto_front.pdf")

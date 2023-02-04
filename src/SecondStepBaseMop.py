@@ -37,6 +37,7 @@ class SecondStepBaseMop(BaseMop):
                 print("Using results from previous runs as a starting point.")
                 improve = f"{t_outdir}/final_archive.json"
             term_criterion.info()
+            print(f"Evaluating EP using {len(problem.samples)} vectors")
             optimizer.run(problem, termination_criterion = term_criterion, improve = improve)
             optimizer.archive_to_csv(problem, f"{t_outdir}/report.csv")
             optimizer.plot_pareto(problem, f"{t_outdir}/pareto_front.pdf")
