@@ -54,7 +54,7 @@ class TwoStepsConfigParser:
                 annealing_strength = int(search_field_in_config(optimizer_conf[0], "annealing_strength", True)),
                 multiprocessing_enabled = bool(search_field_in_config(optimizer_conf[0], "multiprocess_enabled", False, False)))
 
-        optimizer_min_temperature = search_field_in_config(optimizer_conf[0], "min_temperature", False, None)
+        optimizer_min_temperature = search_field_in_config(optimizer_conf[0], "final_temperature", False, None)
         optimizer_stop_phy_window = search_field_in_config(optimizer_conf[0], "early_termination", False, None)
         optimizer_max_duration = search_field_in_config(optimizer_conf[0], "max_duration", False, None)
         
@@ -71,7 +71,7 @@ class TwoStepsConfigParser:
                 annealing_iterations = int(search_field_in_config(optimizer_conf[1], "annealing_iterations", True)),
                 multiprocessing_enabled = bool(search_field_in_config(optimizer_conf[1], "multiprocess_enabled", False, False)))
 
-        optimizer_min_temperature = search_field_in_config(optimizer_conf[1], "min_temperature", False, None)
+        optimizer_min_temperature = search_field_in_config(optimizer_conf[1], "final_temperature", False, None)
         optimizer_stop_phy_window = search_field_in_config(optimizer_conf[1], "early_termination", False, None)
         optimizer_max_duration = search_field_in_config(optimizer_conf[1], "max_duration", False, None)
 
