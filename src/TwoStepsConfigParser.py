@@ -57,16 +57,8 @@ class TwoStepsConfigParser:
         optimizer_min_temperature = search_field_in_config(optimizer_conf[0], "min_temperature", False, None)
         optimizer_stop_phy_window = search_field_in_config(optimizer_conf[0], "early_termination", False, None)
         optimizer_max_duration = search_field_in_config(optimizer_conf[0], "max_duration", False, None)
-        if optimizer_max_duration is not None:
-            self.fst_termination_criterion = pyamosa.StopMaxTime(optimizer_max_duration)
-        elif optimizer_stop_phy_window is not None:
-            self.fst_termination_criterion = pyamosa.StopPhyWindow(optimizer_stop_phy_window)
-        elif optimizer_min_temperature is not None:
-            self.fst_termination_criterion = pyamosa.StopMinTemperature(optimizer_min_temperature)
-        else:
-            print("You should set a termination criterion!")
-            exit()     
-
+        
+        self.fst_termination_criterion = pyamosa.CombinedStopCriterion(optimizer_max_duration, optimizer_min_temperature, optimizer_stop_phy_window)
 
         self.snd_optimizer_conf = pyamosa.Config(
                 archive_hard_limit = int(search_field_in_config(optimizer_conf[1], "archive_hard_limit", True)),
@@ -82,13 +74,5 @@ class TwoStepsConfigParser:
         optimizer_min_temperature = search_field_in_config(optimizer_conf[1], "min_temperature", False, None)
         optimizer_stop_phy_window = search_field_in_config(optimizer_conf[1], "early_termination", False, None)
         optimizer_max_duration = search_field_in_config(optimizer_conf[1], "max_duration", False, None)
-        if optimizer_max_duration is not None:
-            self.snd_termination_criterion = pyamosa.StopMaxTime(optimizer_max_duration)
-        elif optimizer_stop_phy_window is not None:
-            self.snd_termination_criterion = pyamosa.StopPhyWindow(optimizer_stop_phy_window)
-        elif optimizer_min_temperature is not None:
-            self.snd_termination_criterion = pyamosa.StopMinTemperature(optimizer_min_temperature)
-        else:
-            print("You should set a termination criterion!")
-            exit()    
-        
+
+        self.snd_termination_criterion = pyamosa.CombinedStopCriterion(optimizer_max_duration, optimizer_min_temperature, optimizer_stop_phy_window)

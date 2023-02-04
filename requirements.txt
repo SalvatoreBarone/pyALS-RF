@@ -15,7 +15,7 @@ nyoka
 packaging
 Pillow
 pyalslib
-pyamosa>=1.2.0
+pyamosa>=1.3.0
 pyboolector
 pyeda
 pyparsing

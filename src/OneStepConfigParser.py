@@ -57,13 +57,5 @@ class OneStepConfigParser:
         optimizer_min_temperature = search_field_in_config(optimizer_conf, "min_temperature", False, None)
         optimizer_stop_phy_window = search_field_in_config(optimizer_conf, "early_termination", False, None)
         optimizer_max_duration = search_field_in_config(optimizer_conf, "max_duration", False, None)
-        
-        if optimizer_max_duration is not None:
-            self.termination_criterion = pyamosa.StopMaxTime(optimizer_max_duration)
-        elif optimizer_stop_phy_window is not None:
-            self.termination_criterion = pyamosa.StopPhyWindow(optimizer_stop_phy_window)
-        elif optimizer_min_temperature is not None:
-            self.termination_criterion = pyamosa.StopMinTemperature(optimizer_min_temperature)
-        else:
-            print("You should set a termination criterion!")
-            exit()     
+
+        self.termination_criterion = pyamosa.CombinedStopCriterion(optimizer_max_duration, optimizer_min_temperature, optimizer_stop_phy_window)
