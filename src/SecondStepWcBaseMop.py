@@ -28,10 +28,11 @@ class SecondStepWcBaseMop(BaseMop):
         self.first_step_problem = FirstStepAlsMop(t, self.dataset, self.error_conf)
         self.first_step_optimizer = pyamosa.Optimizer(self.fst_opt_conf)
         t_outdir = f"{out_dir}/wc_tree"
+        print(t_outdir)
         mkpath(t_outdir)
         self.first_step_optimizer.hill_climb_checkpoint_file = f"{t_outdir}/first_step_hillclimb_checkpoint.json"
-        self.first_step_optimizer.minimize_checkpoint_file = f"{t_outdir}/first_step_hminimize_checkpoint.json"
-        self.first_step_optimizer.cache_dir = f"{t_outdir}/.cache"
+        self.first_step_optimizer.minimize_checkpoint_file = f"{t_outdir}/first_step_minimize_checkpoint.json"
+        self.first_step_optimizer.cache_dir = f"{t_outdir}/.first_step_cache"
         improve = None
         if os.path.exists(f"{t_outdir}/final_archive.json"):
             print("Using results from previous runs as a starting point.")

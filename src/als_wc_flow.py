@@ -70,7 +70,7 @@ def als_wc_two_steps(configfile):
     print("Assertion generation (approximate) completed")
     second_step_optimizer = pyamosa.Optimizer(configuration.snd_optimizer_conf)
     second_step_optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/second_step_hillclimb_checkpoint.json"
-    second_step_optimizer.minimize_checkpoint_file = f"{configuration.outdir}/second_step_hminimize_checkpoint.json"
+    second_step_optimizer.minimize_checkpoint_file = f"{configuration.outdir}/second_step_minimize_checkpoint.json"
     second_step_optimizer.cache_dir = f"{configuration.outdir}/.second_step_cache"
     configuration.snd_termination_criterion.info()
     second_step_optimizer.run(second_step_problem, termination_criterion = configuration.snd_termination_criterion)
