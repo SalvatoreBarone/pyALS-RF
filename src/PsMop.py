@@ -31,7 +31,7 @@ class PsMop(BaseMop, pyamosa.Problem):
 
     def evaluate(self, x, out):
         self.__set_matter_configuration(x)
-        f1 = self.get_accuracy_loss()
+        f1 = self.get_accuracy_loss_noals()
         f2 = self.args[0][0].get_total_retained()
         out["f"] = [f1, f2]
         out["g"] = [f1 - self.error_conf.max_loss_perc]

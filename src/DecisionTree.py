@@ -180,6 +180,9 @@ class DecisionTree:
 
     def get_boxes_output(self, features_value):
         return {"\\" + box["box"].get_name(): box["box"].compare(features_value[box["box"].get_feature()]) for box in self.__decision_boxes}
+    
+    def get_boxes_output_noals(self, features_value):
+        return {box["box"].get_name(): box["box"].compare(features_value[box["box"].get_feature()]) for box in self.__decision_boxes}
 
     def evaluate(self, features_value, classes_score):
         boxes_output = self.get_boxes_output(features_value)
@@ -187,6 +190,11 @@ class DecisionTree:
         output, _ = self.__assertions_graph.evaluate(boxes_output, lut_io_info, self.__current_configuration)
         for c in classes_score.keys():
             classes_score[c] += int(output["\\" + c])
+            
+    def evaluate_noals(self, features_value, classes_score):
+        boxes_output = self.get_boxes_output_noals(features_value)
+        for a in self.__assertions:
+            classes_score[a["class" ]] += 1 if eval(a["expression"], boxes_output) else 0
 
     def generate_hdl_tree(self, destination):
         file_name = f"{destination}/decision_tree_{self.__name}.vhd"
@@ -255,11 +263,11 @@ class DecisionTree:
         leaves = self.__get_leaves(root_node)
         for class_name in self.__model_classes:
             assertion_function = self.__get_assertion(leaves, class_name)
-            minimized_assertion = str(espresso_exprs(expr(assertion_function))[0]).replace("~", "not ").replace("Or","func_or").replace("And","func_and")
+            hdl_expression = str(espresso_exprs(expr(assertion_function))[0]).replace("~", "not ").replace("Or","func_or").replace("And","func_and")
             self.__assertions.append({
                 "class"      : class_name,
-                "expression" : assertion_function,
-                "minimized"  : "'0'" if assertion_function == "False" else minimized_assertion})
+                "expression" : assertion_function.replace("~", "not ").replace("|", "or").replace("&", "and"),
+                "minimized"  : "'0'" if assertion_function == "False" else hdl_expression})
 
     def __generate_design_for_als(self, luts_tech):
         destination = "/tmp/pyals-rf/"

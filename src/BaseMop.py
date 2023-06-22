@@ -22,6 +22,9 @@ from .Classifier import *
 def evaluate_preloaded_dataset(classifier, samples):
     return classifier.evaluate_preloaded_dataset(samples)
 
+def evaluate_preloaded_dataset_noals(classifier, samples):
+    return classifier.evaluate_preloaded_dataset_noals(samples)
+
 def evaluate_eprob(graph, samples, configuration):
     lut_info = {}
     return sum(0 if sample["output"] == graph.evaluate(sample["input"], lut_info, configuration)[0] else 1 for sample in samples)
@@ -44,6 +47,14 @@ class BaseMop:
         with Pool(self.ncpus) as pool:
             res = pool.starmap(evaluate_preloaded_dataset, self.args)
         return sum(res) * 100 / self.n_samples
+    
+    def evaluate_dataset_noals(self):
+        with Pool(self.ncpus) as pool:
+            res = pool.starmap(evaluate_preloaded_dataset_noals, self.args)
+        return sum(res) * 100 / self.n_samples
 
     def get_accuracy_loss(self):
         return self.baseline_accuracy - self.evaluate_dataset()
+    
+    def get_accuracy_loss_noals(self):
+        return self.baseline_accuracy - self.evaluate_dataset_noals()

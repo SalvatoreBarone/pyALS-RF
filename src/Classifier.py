@@ -210,6 +210,9 @@ class Classifier:
 
     def evaluate_preloaded_dataset(self, samples):
         return sum(1 if sample["outcome"] == self.__evaluate(sample["input"]) else 0 for sample in samples)
+    
+    def evaluate_preloaded_dataset_noals(self, samples):
+        return sum(1 if sample["outcome"] == self.__evaluate_noals(sample["input"]) else 0 for sample in samples)
 
     def generate_hdl_exact_implementations(self, destination):
         features = [{"name": f["name"], "nab": 0}
@@ -667,6 +670,15 @@ class Classifier:
         classes_score = {c: 0 for c in self.__model_classes_list_str}
         for tree in self.__trees_list_obj:
             tree.evaluate(features_value, classes_score)
+        for c in classes_score:
+            classes_score[c] = 0 if classes_score[c] < (
+                len(self.__trees_list_obj) / 2) else 1
+        return classes_score
+    
+    def __evaluate_noals(self, features_value):
+        classes_score = {c: 0 for c in self.__model_classes_list_str}
+        for tree in self.__trees_list_obj:
+            tree.evaluate_noals(features_value, classes_score)
         for c in classes_score:
             classes_score[c] = 0 if classes_score[c] < (
                 len(self.__trees_list_obj) / 2) else 1
