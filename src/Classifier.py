@@ -61,7 +61,7 @@ class Classifier:
         classifier.__model_classes_list_str = copy.deepcopy(self.__model_classes_list_str)
         return classifier
 
-    def parse(self, pmml_file_name):
+    def parse(self, pmml_file_name, ncpus):
         self.__trees_list_obj = []
         self.__model_features_list_dict = []
         self.__model_classes_list_str = []
@@ -74,16 +74,16 @@ class Classifier:
             for tree_id, segment in enumerate(segmentation.findall("pmml:Segment", self.__namespaces)):
                 print(f"Parsing tree {tree_id}... ")
                 tree_model_root = segment.find("pmml:TreeModel", self.__namespaces).find("pmml:Node", self.__namespaces)
-                tree = self.__get_tree_model(str(tree_id), tree_model_root)
+                tree = self.__get_tree_model(str(tree_id), tree_model_root, ncpus)
                 self.__trees_list_obj.append(tree)
                 print("\rDone")
         else:
             tree_model_root = root.find("pmml:TreeModel", self.__namespaces).find(
                 "pmml:Node", self.__namespaces)
-            tree = self.__get_tree_model("0", tree_model_root)
+            tree = self.__get_tree_model("0", tree_model_root, ncpus)
             self.__trees_list_obj.append(tree)
 
-    def wc_parse(self, pmml_file_name):
+    def wc_parse(self, pmml_file_name, ncpus):
         self.__trees_list_obj = []
         self.__model_features_list_dict = []
         self.__model_classes_list_str = []
@@ -100,7 +100,7 @@ class Classifier:
             print(f"Parsing tree {tree_id}... ")
             if tree is None:
                 tree_model_root = segment.find("pmml:TreeModel", self.__namespaces).find("pmml:Node", self.__namespaces)
-                tree = self.__get_tree_model("tree_0", tree_model_root)
+                tree = self.__get_tree_model("tree_0", tree_model_root, ncpus)
             print("\rDone")
         self.__trees_list_obj = [tree] + [ copy.deepcopy(tree) for _ in range(len(segments) - 1) ]
         for i, t in enumerate(self.__trees_list_obj[1:]):
@@ -684,10 +684,10 @@ class Classifier:
                 for element in child.findall("pmml:Value", self.__namespaces):
                     self.__model_classes_list_str.append(element.attrib['value'].replace('-', '_'))
 
-    def __get_tree_model(self, tree_name, tree_model_root, id=0):
+    def __get_tree_model(self, tree_name, tree_model_root, ncpus, id=0):
         tree = Node(f"Node_{tree_model_root.attrib['id']}" if "id" in tree_model_root.attrib else f"Node_{id}", feature="", operator="", threshold_value="", boolean_expression="")
         self.__get_tree_nodes_recursively(tree_model_root, tree, id)
-        return DecisionTree(tree_name, tree, self.__model_features_list_dict, self.__model_classes_list_str, self.__als_conf)
+        return DecisionTree(tree_name, tree, self.__model_features_list_dict, self.__model_classes_list_str, self.__als_conf, ncpus)
 
     def __get_tree_nodes_recursively(self, element_tree_node, parent_tree_node, id=0):
         children = element_tree_node.findall("pmml:Node", self.__namespaces)

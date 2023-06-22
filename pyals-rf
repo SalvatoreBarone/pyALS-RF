@@ -17,7 +17,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import click, git, os, sys
 from git import RemoteProgress
-
+from multiprocessing import cpu_count
 from src.Classifier import Classifier
 from src.ps_flow import ps_flow
 from src.als_flow import als_one_step, als_two_steps
@@ -78,20 +78,24 @@ def dump(pmmlfile):
 
 @click.command("ps")
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-def bitwidth(configfile):
+@click.option("--ncpus", type = int, help = "Set the number of parallel jobs to be used turing DSE. By default, pyALS uses every CPU core.", default = None)
+def bitwidth(configfile, ncpus):
     """
     Performs precision-scaling approximation
     
     CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
     """
-    ps_flow(configfile)
+    if ncpus is None:
+        ncpus = cpu_count()
+    ps_flow(configfile, ncpus)
     
 
 
 @click.command("als")
 @click.argument('approach', type = click.Choice(["whole", "split"]))
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-def als(approach, configfile):
+@click.option("--ncpus", type = int, help = "Set the number of parallel jobs to be used turing DSE. By default, pyALS uses every CPU core.", default = None)
+def als(approach, configfile, ncpus):
     """
     Performs ALS approximation
     
@@ -99,16 +103,19 @@ def als(approach, configfile):
     
     CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
     """
+    if ncpus is None:
+        ncpus = cpu_count()
     if approach == "whole":
-        als_one_step(configfile)
+        als_one_step(configfile, ncpus)
     elif approach == "split":
-        als_two_steps(configfile)
+        als_two_steps(configfile, ncpus)
         
 
 @click.command("als-wc")
 @click.argument('approach', type = click.Choice(["whole", "split"]))
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-def als_wc(approach, configfile):
+@click.option("--ncpus", type = int, help = "Set the number of parallel jobs to be used turing DSE. By default, pyALS uses every CPU core.", default = None)
+def als_wc(approach, configfile, ncpus):
     """
     Performs ALS-WC approximation
     
@@ -116,17 +123,20 @@ def als_wc(approach, configfile):
     
     CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
     """
+    if ncpus is None:
+        ncpus = cpu_count()
     if approach == "whole":
-        als_wc_one_step(configfile)
+        als_wc_one_step(configfile, ncpus)
     elif approach == "split":
-        als_wc_two_steps(configfile)
+        als_wc_two_steps(configfile, ncpus)
         
 
 
 @click.command("full")
 @click.argument('approach', type = click.Choice(["whole", "split"]))
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-def full(approach, configfile):
+@click.option("--ncpus", type = int, help = "Set the number of parallel jobs to be used turing DSE. By default, pyALS uses every CPU core.", default = None)
+def full(approach, configfile, ncpus):
     """
     Performs full approximation (both ps and als)
     
@@ -134,10 +144,12 @@ def full(approach, configfile):
     
     CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
     """
+    if ncpus is None:
+        ncpus = cpu_count()
     if approach == "whole":
-        full_one_step(configfile)
+        full_one_step(configfile, ncpus)
     elif approach == "split":
-        full_two_steps(configfile)
+        full_two_steps(configfile, ncpus)
 
 
 @click.command("learn")

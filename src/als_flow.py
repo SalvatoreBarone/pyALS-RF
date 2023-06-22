@@ -23,7 +23,7 @@ from .TwoStepsConfigParser import TwoStepsConfigParser
 from .SingleStepAlsMop import SingleStepAlsMop
 from .SecondStepAlsMop import SecondStepAlsMop
 
-def als_one_step(configfile):
+def als_one_step(configfile, ncpus):
     configuration = OneStepConfigParser(configfile)
     check_for_file(configuration.pmml)
     check_for_file(configuration.error_conf.test_dataset)
@@ -31,9 +31,9 @@ def als_one_step(configfile):
     if configuration.outdir != ".":
         mkpath(configuration.outdir)
     classifier = Classifier(configuration.als_conf)
-    classifier.parse(configuration.pmml)
+    classifier.parse(configuration.pmml, ncpus)
     classifier.generate_hdl_exact_implementations(configuration.outdir)
-    problem = SingleStepAlsMop(classifier, configuration.error_conf)
+    problem = SingleStepAlsMop(classifier, configuration.error_conf, ncpus)
     optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
     improve = None
     if os.path.exists(f"{configuration.outdir}/final_archive.json"):
@@ -49,7 +49,7 @@ def als_one_step(configfile):
     classifier.generate_hdl_onestep_asl_ax_implementations(configuration.outdir, optimizer.pareto_set())
     print(f"All done! Take a look at the {configuration.outdir} directory.")
 
-def als_two_steps(configfile):
+def als_two_steps(configfile, ncpus):
     configuration = TwoStepsConfigParser(configfile)
     check_for_file(configuration.pmml)
     check_for_file(configuration.error_conf.test_dataset)
@@ -59,11 +59,11 @@ def als_two_steps(configfile):
         mkpath(configuration.outdir)
     classifier = Classifier(configuration.als_conf)
     print("Creating classifier object...")
-    classifier.parse(configuration.pmml)
+    classifier.parse(configuration.pmml, ncpus)
     print("PMML parsing completed")
     classifier.generate_hdl_exact_implementations(configuration.outdir)
     print("HDL generation (accurate) completed")
-    problem = SecondStepAlsMop(classifier, configuration.error_conf, configuration.fst_optimizer_conf, configuration.fst_termination_criterion, configuration.outdir)
+    problem = SecondStepAlsMop(classifier, configuration.error_conf, configuration.fst_optimizer_conf, configuration.fst_termination_criterion, configuration.outdir, ncpus)
     print("Assertion generation (approximate) completed")
     optimizer = pyamosa.Optimizer(configuration.snd_optimizer_conf)
     optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/second_step_hillclimb_checkpoint.json"

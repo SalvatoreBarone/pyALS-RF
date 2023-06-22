@@ -18,9 +18,9 @@ from .BaseMop import *
 import pyamosa
 
 class PsMop(BaseMop, pyamosa.Problem):
-    def __init__(self, classifier, error_conf):
+    def __init__(self, classifier, error_conf, ncpus):
         self.error_conf = error_conf
-        BaseMop.__init__(self, classifier, self.error_conf.test_dataset)
+        BaseMop.__init__(self, classifier, self.error_conf.test_dataset, ncpus)
         n_vars = len(classifier.get_features())
         pyamosa.Problem.__init__(self, n_vars, [pyamosa.Type.INTEGER] * n_vars, [0] * n_vars, [53] * n_vars, 2, 1)
 

@@ -19,16 +19,16 @@ from pyalslib import check_for_file
 from src.PsConfigParser import *
 from src.PsMop import *
 
-def ps_flow(configfile):
+def ps_flow(configfile, ncpus):
     configuration = PSConfigParser(configfile)
     check_for_file(configuration.pmml)
     check_for_file(configuration.error_conf.test_dataset)
     if configuration.outdir != ".":
         mkpath(configuration.outdir)
     classifier = Classifier(configuration.als_conf)
-    classifier.parse(configuration.pmml)
+    classifier.parse(configuration.pmml, ncpus)
     classifier.generate_hdl_exact_implementations(configuration.outdir)
-    problem = PsMop(classifier, configuration.error_conf)
+    problem = PsMop(classifier, configuration.error_conf, ncpus)
     optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
     improve = None
     if os.path.exists(f"{configuration.outdir}/final_archive.json"):

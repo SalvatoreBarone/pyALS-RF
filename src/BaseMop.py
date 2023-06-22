@@ -27,20 +27,21 @@ def evaluate_eprob(graph, samples, configuration):
     return sum(0 if sample["output"] == graph.evaluate(sample["input"], lut_info, configuration)[0] else 1 for sample in samples)
 
 class BaseMop:
-    def __init__(self, classifier, dataset_csv):
+    def __init__(self, classifier, dataset_csv, ncpus):
         self.classifier = classifier
         self.features = self.classifier.get_features()
         self.dataset = classifier.preload_dataset(dataset_csv)
         self.n_samples = len(self.dataset)
+        self.ncpus = ncpus
         classifier.reset_assertion_configuration()
         classifier.reset_nabs_configuration()
-        classifiers = [copy.deepcopy(classifier) for _ in range(cpu_count())]
-        self.args = [[c, d] for c, d in zip(classifiers, list_partitioning(self.dataset, cpu_count()))]
+        classifiers = [copy.deepcopy(classifier) for _ in range(ncpus)]
+        self.args = [[c, d] for c, d in zip(classifiers, list_partitioning(self.dataset, ncpus))]
         self.baseline_accuracy = self.evaluate_dataset()
         print(f"Baseline accuracy: {self.baseline_accuracy} %")
 
     def evaluate_dataset(self):
-        with Pool(cpu_count()) as pool:
+        with Pool(self.ncpus) as pool:
             res = pool.starmap(evaluate_preloaded_dataset, self.args)
         return sum(res) * 100 / self.n_samples
 

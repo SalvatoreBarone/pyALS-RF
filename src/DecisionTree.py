@@ -22,14 +22,14 @@ from anytree import PreOrderIter
 from pyeda.inter import *
 from .DecisionBox import *
 from pyalslib import YosysHelper, ALSGraph, ALSCatalog, ALSRewriter, negate
-
+from multiprocessing import cpu_count
 class DecisionTree:
     __source_dir = "../resources/vhd/"
     __bnf_vhd = "bnf.vhd"
     __vhdl_assertions_source_template = "assertions_block.vhd.template"
     __vhdl_decision_tree_source_template = "decision_tree.vhd.template"
 
-    def __init__(self, name = None, root_node = None, features = None, classes = None, als_conf = None):
+    def __init__(self, name = None, root_node = None, features = None, classes = None, als_conf = None, ncpus = cpu_count()):
         dir_path = os.path.dirname(os.path.abspath(__file__))
         self.source_dir =  f"{dir_path}/{self.__source_dir}"
         self.bnf_vhd = f"{self.source_dir}{self.__bnf_vhd}"
@@ -51,7 +51,7 @@ class DecisionTree:
             self.yosys_helper = YosysHelper()
             self.__generate_design_for_als(self.__als_conf.cut_size)
             self.__assertions_graph = ALSGraph(self.yosys_helper.design)
-            self.__assertions_catalog_entries = ALSCatalog(self.__als_conf.lut_cache, self.__als_conf.solver).generate_catalog(self.yosys_helper.get_luts_set(), self.__als_conf.timeout)
+            self.__assertions_catalog_entries = ALSCatalog(self.__als_conf.lut_cache, self.__als_conf.solver).generate_catalog(self.yosys_helper.get_luts_set(), self.__als_conf.timeout, ncpus)
             self.set_assertions_configuration([0] * self.__assertions_graph.get_num_cells())
             self.yosys_helper.save_design(self.__name)
             

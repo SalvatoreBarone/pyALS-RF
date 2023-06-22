@@ -18,10 +18,10 @@ from .BaseMop import *
 from .FirstStepAlsMop import *
 
 class SecondStepBaseMop(BaseMop):
-    def __init__(self, classifier, error_conf, opt_conf, term_criterion, out_dir):
+    def __init__(self, classifier, error_conf, opt_conf, term_criterion, out_dir, ncpus):
         self.error_conf = error_conf
         self.opt_conf = opt_conf
-        BaseMop.__init__(self, classifier, self.error_conf.test_dataset)
+        BaseMop.__init__(self, classifier, self.error_conf.test_dataset, ncpus)
         self.opt_solutions_for_trees = []
         assert len(self.classifier.get_trees()) > 1, "The two steps approach is available only for random forest/bagging classifiers"
         for t in self.classifier.get_trees():

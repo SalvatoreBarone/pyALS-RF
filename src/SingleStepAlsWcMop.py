@@ -17,9 +17,9 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 from .BaseMop import *
 import numpy as np, pyamosa
 class SingleStepAlsWcMop(BaseMop, pyamosa.Problem):
-    def __init__(self, classifier, error_config):
+    def __init__(self, classifier, error_config, ncpus):
         self.error_config = error_config
-        BaseMop.__init__(self, classifier, self.error_config.test_dataset)
+        BaseMop.__init__(self, classifier, self.error_config.test_dataset, ncpus)
         self.cells_per_tree = classifier.get_als_cells_per_tree()
         # check whether all the trees have the same amount of cells
         print(f"self.cells_per_tree[0]: {self.cells_per_tree[0]}")
