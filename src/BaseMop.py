@@ -40,7 +40,7 @@ class BaseMop:
         classifier.reset_nabs_configuration()
         classifiers = [copy.deepcopy(classifier) for _ in range(ncpus)]
         self.args = [[c, d] for c, d in zip(classifiers, list_partitioning(self.dataset, ncpus))]
-        self.baseline_accuracy = self.evaluate_dataset()
+        self.baseline_accuracy = self.evaluate_dataset_noals()
         print(f"Baseline accuracy: {self.baseline_accuracy} %")
 
     def evaluate_dataset(self):
