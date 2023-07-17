@@ -54,8 +54,8 @@ class PSConfigParser:
                 annealing_strength = int(search_field_in_config(optimizer_conf, "annealing_strength", True)),
                 multiprocessing_enabled = bool(search_field_in_config(optimizer_conf, "multiprocess_enabled", False, False)))
 
-        optimizer_min_temperature = search_field_in_config(optimizer_conf, "min_temperature", False, None)
-        optimizer_stop_phy_window = search_field_in_config(optimizer_conf, "early_termination", False, None)
+        optimizer_min_temperature = search_field_in_config(optimizer_conf, "final_temperature", True, 1e-7)
+        optimizer_stop_phy_window = search_field_in_config(optimizer_conf, "early_termination", False, 10)
         optimizer_max_duration = search_field_in_config(optimizer_conf, "max_duration", False, None)
         self.termination_criterion = pyamosa.CombinedStopCriterion(optimizer_max_duration, optimizer_min_temperature, optimizer_stop_phy_window)
         
