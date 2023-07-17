@@ -37,6 +37,7 @@ def ps_flow(configfile, ncpus):
     optimizer.hill_climb_checkpoint_file = f"{configuration.outdir}/{optimizer.hill_climb_checkpoint_file}"
     optimizer.minimize_checkpoint_file = f"{configuration.outdir}/{optimizer.minimize_checkpoint_file}"
     optimizer.cache_dir = f"{configuration.outdir}/{optimizer.cache_dir}"
+    print("Termination criterion:")
     configuration.termination_criterion.info()
     optimizer.run(problem, termination_criterion = configuration.termination_criterion, improve = improve)
     optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
