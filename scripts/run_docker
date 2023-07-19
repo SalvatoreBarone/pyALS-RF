@@ -1,0 +1,29 @@
+#!/bin/bash
+
+usage() {
+  echo "Usage: $0 -c catalog -s path_to_shared_folder";
+  exit 1;
+}
+
+while getopts "c:s:" o; do
+    case "${o}" in
+        c)
+            catalog=${OPTARG}
+            ;;
+        s)
+            shared=${OPTARG}
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+if [ -z "${catalog}" ] || [ -z "${shared}" ] ; then
+    usage
+fi
+
+catalog=$(realpath $catalog)
+shared=$(realpath $shared)
+docker run --rm -v $PWD:/home/user/pyALS-RF  -v /home/ssaa/Git/pyALSlib:/home/user/pyALSlib-dbg -v ${catalog}:/home/user/lut_catalog.db -v ${shared}:/home/user/shared -w /home/user -it salvatorebarone/pyals-docker-image /bin/zsh
