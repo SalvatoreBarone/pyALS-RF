@@ -14,12 +14,12 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import sys
-import csv
+import numpy as np, csv, sys
 from xml.etree import ElementTree
 from anytree import Node
 from jinja2 import Environment, FileSystemLoader
 from distutils.file_util import copy_file
+from multiprocessing import cpu_count, Pool
 from .DecisionTree import *
 
 
@@ -46,51 +46,56 @@ class Classifier:
     # constraints
     __constraint_file = "constraints.xdc"
 
-    def __init__(self, als_conf):
-        self.__trees_list_obj = []
-        self.__model_features_list_dict = []
-        self.__model_classes_list_str = []
-        self.__als_conf = als_conf
+    def __init__(self, als_conf, ncpus = None):
+        self.trees = []
+        self.model_features = []
+        self.model_classes = []
+        self.als_conf = als_conf
         dir_path = os.path.dirname(os.path.abspath(__file__))
         self.source_dir =  f"{dir_path}/{self.__source_dir}"
 
+        self.ncpus = ncpus if ncpus is not None else cpu_count()
+
     def __deepcopy__(self, memo=None):
-        classifier = Classifier(self.__als_conf)
-        classifier.__trees_list_obj = copy.deepcopy(self.__trees_list_obj)
-        classifier.__model_features_list_dict = copy.deepcopy(self.__model_features_list_dict)
-        classifier.__model_classes_list_str = copy.deepcopy(self.__model_classes_list_str)
+        classifier = Classifier(self.als_conf)
+        classifier.trees = copy.deepcopy(self.trees)
+        classifier.model_features = copy.deepcopy(self.model_features)
+        classifier.model_classes = copy.deepcopy(self.model_classes)
         return classifier
 
     def parse(self, pmml_file_name, ncpus):
-        self.__trees_list_obj = []
-        self.__model_features_list_dict = []
-        self.__model_classes_list_str = []
+        self.trees = []
+        self.model_features = []
+        self.model_classes = []
         tree = ElementTree.parse(pmml_file_name)
         root = tree.getroot()
         self.__namespaces["pmml"] = get_xmlns_uri(root)
-        self.__get_features_and_classes(root)
+        self.get_features_and_classes(root)
+        self.args = []
         segmentation = root.find("pmml:MiningModel/pmml:Segmentation", self.__namespaces)
         if segmentation is not None:
             for tree_id, segment in enumerate(segmentation.findall("pmml:Segment", self.__namespaces)):
                 print(f"Parsing tree {tree_id}... ")
                 tree_model_root = segment.find("pmml:TreeModel", self.__namespaces).find("pmml:Node", self.__namespaces)
-                tree = self.__get_tree_model(str(tree_id), tree_model_root, ncpus)
-                self.__trees_list_obj.append(tree)
-                print("\rDone")
+                tree = self.get_tree_model(str(tree_id), tree_model_root, ncpus)
+                self.trees.append(tree)
+            self.args = [ [ item, {c: 0 for c in self.model_classes} ] for item in np.array_split(self.trees, np.min(ncpus, len(self.trees))).tolist() ]
+            print("\rDone")
         else:
             tree_model_root = root.find("pmml:TreeModel", self.__namespaces).find(
                 "pmml:Node", self.__namespaces)
-            tree = self.__get_tree_model("0", tree_model_root, ncpus)
-            self.__trees_list_obj.append(tree)
+            tree = self.get_tree_model("0", tree_model_root, ncpus)
+            self.trees.append(tree)
+        
 
     def wc_parse(self, pmml_file_name, ncpus):
-        self.__trees_list_obj = []
-        self.__model_features_list_dict = []
-        self.__model_classes_list_str = []
+        self.trees = []
+        self.model_features = []
+        self.model_classes = []
         tree = ElementTree.parse(pmml_file_name)
         root = tree.getroot()
         self.__namespaces["pmml"] = get_xmlns_uri(root)
-        self.__get_features_and_classes(root)
+        self.get_features_and_classes(root)
         segmentation = root.find("pmml:MiningModel/pmml:Segmentation", self.__namespaces)
         assert segmentation is not None, "This mode is suitable only for WC DT-based MCSs"
         
@@ -100,87 +105,78 @@ class Classifier:
             print(f"Parsing tree {tree_id}... ")
             if tree is None:
                 tree_model_root = segment.find("pmml:TreeModel", self.__namespaces).find("pmml:Node", self.__namespaces)
-                tree = self.__get_tree_model("tree_0", tree_model_root, ncpus)
+                tree = self.get_tree_model("tree_0", tree_model_root, ncpus)
             print("\rDone")
-        self.__trees_list_obj = [tree] + [ copy.deepcopy(tree) for _ in range(len(segments) - 1) ]
-        for i, t in enumerate(self.__trees_list_obj[1:]):
+        self.trees = [tree] + [ copy.deepcopy(tree) for _ in range(len(segments) - 1) ]
+        for i, t in enumerate(self.trees[1:]):
             t.set_name(f"tree_{i+1}")
 
     def wc_fix_ys_helper(self):
-        for t in self.__trees_list_obj[1:]:
-            t.yosys_helper = copy.deepcopy(self.__trees_list_obj[0].yosys_helper)
+        for t in self.trees[1:]:
+            t.yosys_helper = copy.deepcopy(self.trees[0].yosys_helper)
 
     def dump(self):
         print("Features:")
-        for f in self.__model_features_list_dict:
+        for f in self.model_features:
             print("\tName: ", f["name"], ", Type: ", f["type"])
         print("\n\nClasses:")
-        for c in self.__model_classes_list_str:
+        for c in self.model_classes:
             print("\tName: ", c)
         print("\n\nTrees:")
-        for t in self.__trees_list_obj:
+        for t in self.trees:
             t.dump()
 
     def reset_nabs_configuration(self):
-        self.set_nabs({f["name"]: 0 for f in self.__model_features_list_dict})
+        self.set_nabs({f["name"]: 0 for f in self.model_features})
 
     def reset_assertion_configuration(self):
-        for t in self.__trees_list_obj:
+        for t in self.trees:
             t.reset_assertion_configuration()
 
     def set_nabs(self, nabs):
-        for tree in self.__trees_list_obj:
+        for tree in self.trees:
             tree.set_nabs(nabs)
 
     def set_assertions_configuration(self, configurations):
-        for t, c in zip(self.__trees_list_obj, configurations):
+        for t, c in zip(self.trees, configurations):
             t.set_assertions_configuration(c)
 
     def set_first_stage_approximate_implementations(self, configuration):
-        for t, c in zip(self.__trees_list_obj, configuration):
+        for t, c in zip(self.trees, configuration):
             t.set_first_stage_approximate_implementations(c)
 
-    def get_classes(self):
-        return self.__model_classes_list_str
-
-    def get_features(self):
-        return self.__model_features_list_dict
-
-    def get_trees(self):
-        return self.__trees_list_obj
-
     def get_num_of_trees(self):
-        return len(self.__trees_list_obj)
+        return len(self.trees)
 
     def get_total_bits(self):
-        return sum(t.get_total_bits() for t in self.__trees_list_obj)
+        return sum(t.get_total_bits() for t in self.trees)
 
     def get_total_retained(self):
-        return sum(t.get_total_retained() for t in self.__trees_list_obj)
+        return sum(t.get_total_retained() for t in self.trees)
 
     def get_als_cells_per_tree(self):
-        return [len(t.get_graph().get_cells()) for t in self.__trees_list_obj]
+        return [len(t.get_graph().get_cells()) for t in self.trees]
 
     def get_als_dv_upper_bound(self):
         ub = []
-        for t in self.__trees_list_obj:
+        for t in self.trees:
             ub.extend(iter(t.get_als_dv_upper_bound()))
         return ub
 
     def get_assertions_configuration(self):
-        return [t.get_assertions_configuration() for t in self.__trees_list_obj]
+        return [t.get_assertions_configuration() for t in self.trees]
 
     def get_assertions_distance(self):
-        return [t.get_assertions_distance() for t in self.__trees_list_obj]
+        return [t.get_assertions_distance() for t in self.trees]
 
     def get_current_required_aig_nodes(self):
-        return [t.get_current_required_aig_nodes() for t in self.__trees_list_obj]
+        return [t.get_current_required_aig_nodes() for t in self.trees]
 
     def get_num_of_first_stage_approximate_implementations(self):
-        return [len(t.get_first_stage_approximate_implementations()) - 1 for t in self.__trees_list_obj]
+        return [len(t.get_first_stage_approximate_implementations()) - 1 for t in self.trees]
 
     def get_struct(self):
-        return [tree.get_struct() for tree in self.__trees_list_obj]
+        return [tree.get_struct() for tree in self.trees]
 
     def preload_dataset(self, csv_file):
         samples = []
@@ -188,19 +184,19 @@ class Classifier:
             for line in csv.DictReader(data, delimiter=';'):
                 input_features = {}
                 expected_result = {}
-                for f in self.__model_features_list_dict:
+                for f in self.model_features:
                     try:
                         input_features[f["name"]] = float(line[f["name"]])
                     except:
-                        print(self.__model_features_list_dict)
+                        print(self.model_features)
                         print(line)
                         print(f["name"], "feature not found in line")
                         exit()
-                for c in self.__model_classes_list_str:
+                for c in self.model_classes:
                     try:
                         expected_result[c] = int(line[c])
                     except:
-                        print(self.__model_classes_list_str)
+                        print(self.model_classes)
                         print(line)
                         print(c, "class not found in line")
                         exit()
@@ -209,20 +205,19 @@ class Classifier:
         return samples
 
     def evaluate_preloaded_dataset(self, samples):
-        return sum(1 if sample["outcome"] == self.__evaluate(sample["input"]) else 0 for sample in samples)
+        return sum(1 if sample["outcome"] == self.evaluate(sample["input"]) else 0 for sample in samples)
     
     def evaluate_preloaded_dataset_noals(self, samples):
-        return sum(1 if sample["outcome"] == self.__evaluate_noals(sample["input"]) else 0 for sample in samples)
+        return sum(1 if sample["outcome"] == self.evaluate_noals(sample["input"]) else 0 for sample in samples)
 
     def generate_hdl_exact_implementations(self, destination):
-        features = [{"name": f["name"], "nab": 0}
-                    for f in self.__model_features_list_dict]
+        features = [{"name": f["name"], "nab": 0} for f in self.model_features]
         mkpath(destination)
         ax_dest = f"{destination}/exact/"
         mkpath(ax_dest)
         copy_file(self.source_dir + self.__extract_luts_file, ax_dest)
         copy_file(self.source_dir + self.__extract_pwr_file, ax_dest)
-        trees_name = [t.get_name() for t in self.__trees_list_obj]
+        trees_name = [t.get_name() for t in self.trees]
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         template = env.get_template(self.__vhdl_classifier_template_file)
@@ -243,12 +238,12 @@ class Classifier:
         classifier = template.render(
             trees=trees_name,
             features=features,
-            classes=self.__model_classes_list_str)
+            classes=self.model_classes)
         with open(f"{ax_dest}/classifier.vhd", "w") as out_file:
             out_file.write(classifier)
         tb_classifier = tb_classifier_template.render(
             features=features,
-            classes=self.__model_classes_list_str)
+            classes=self.model_classes)
         with open(f"{ax_dest}/tb_classifier.vhd", "w") as out_file:
             out_file.write(tb_classifier)
         copy_file(self.source_dir + self.__vhdl_bnf_source, ax_dest)
@@ -260,7 +255,7 @@ class Classifier:
         copy_file(self.source_dir + self.__constraint_file, ax_dest)
         copy_file(self.source_dir + self.__run_synth_file, ax_dest)
         copy_file(self.source_dir + self.__run_sim_file, ax_dest)
-        for tree in self.__trees_list_obj:
+        for tree in self.trees:
             tree.generate_hdl_tree(ax_dest)
             tree.generate_hdl_exact_assertions(ax_dest)
 
@@ -270,7 +265,7 @@ class Classifier:
         copy_file(self.source_dir + self.__run_all_file, destination)
         copy_file(self.source_dir + self.__extract_luts_file, destination)
         copy_file(self.source_dir + self.__extract_pwr_file, destination)
-        trees_name = [t.get_name() for t in self.__trees_list_obj]
+        trees_name = [t.get_name() for t in self.trees]
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         tcl_template = env.get_template(self.__tcl_project_file)
@@ -289,7 +284,7 @@ class Classifier:
             } for n in trees_name])
         for conf, i in zip(configurations, range(len(configurations))):
             features = [{"name": f["name"], "nab": n}
-                        for f, n in zip(self.__model_features_list_dict, conf)]
+                        for f, n in zip(self.model_features, conf)]
             ax_dest = f"{destination}/ax/configuration_{str(i)}"
             mkpath(ax_dest)
             with open(f"{ax_dest}/create_project.tcl", "w") as out_file:
@@ -297,12 +292,12 @@ class Classifier:
             classifier = classifier_template.render(
                 trees=trees_name,
                 features=features,
-                classes=self.__model_classes_list_str)
+                classes=self.model_classes)
             with open(f"{ax_dest}/classifier.vhd", "w") as out_file:
                 out_file.write(classifier)
             tb_classifier = tb_classifier_template.render(
                 features=features,
-                classes=self.__model_classes_list_str)
+                classes=self.model_classes)
             with open(f"{ax_dest}/tb_classifier.vhd", "w") as out_file:
                 out_file.write(tb_classifier)
             copy_file(self.source_dir + self.__vhdl_bnf_source, ax_dest)
@@ -314,19 +309,19 @@ class Classifier:
             copy_file(self.source_dir + self.__constraint_file, ax_dest)
             copy_file(self.source_dir + self.__run_synth_file, ax_dest)
             copy_file(self.source_dir + self.__run_sim_file, ax_dest)
-            for tree in self.__trees_list_obj:
+            for tree in self.trees:
                 tree.generate_hdl_tree(ax_dest)
                 tree.generate_hdl_exact_assertions(ax_dest)
 
     def generate_hdl_onestep_asl_ax_implementations(self, destination, configurations):
         features = [{"name": f["name"], "nab": 0}
-                    for f in self.__model_features_list_dict]
+                    for f in self.model_features]
         mkpath(destination)
         mkpath(f"{destination}/ax")
         copy_file(self.source_dir + self.__run_all_file, destination)
         copy_file(self.source_dir + self.__extract_luts_file, destination)
         copy_file(self.source_dir + self.__extract_pwr_file, destination)
-        trees_name = [t.get_name() for t in self.__trees_list_obj]
+        trees_name = [t.get_name() for t in self.trees]
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         tcl_template = env.get_template(self.__tcl_project_file)
@@ -337,10 +332,10 @@ class Classifier:
         classifier = classifier_template.render(
             trees=trees_name,
             features=features,
-            classes=self.__model_classes_list_str)
+            classes=self.model_classes)
         tb_classifier = tb_classifier_template.render(
             features=features,
-            classes=self.__model_classes_list_str)
+            classes=self.model_classes)
         tcl_file = tcl_template.render(
             assertions_blocks=[{
                 "file_name": f"assertions_block_{n}.v",
@@ -370,23 +365,23 @@ class Classifier:
             copy_file(self.source_dir + self.__run_sim_file, ax_dest)
             chunks = []
             count = 0
-            for size in [len(t.get_graph().get_cells()) for t in self.__trees_list_obj]:
+            for size in [len(t.get_graph().get_cells()) for t in self.trees]:
                 chunks.append([conf[i+count] for i in range(size)])
                 count += size
-            for t, c in zip(self.__trees_list_obj, chunks):
+            for t, c in zip(self.trees, chunks):
                 t.generate_hdl_tree(ax_dest)
                 t.set_assertions_configuration(c)
                 t.generate_hdl_als_ax_assertions(ax_dest)
 
     def generate_hdl_twostep_asl_ax_implementations(self, destination, outer_configurations, inner_configuration):
         features = [{"name": f["name"], "nab": 0}
-                    for f in self.__model_features_list_dict]
+                    for f in self.model_features]
         mkpath(destination)
         mkpath(f"{destination}/ax")
         copy_file(self.source_dir + self.__run_all_file, destination)
         copy_file(self.source_dir + self.__extract_luts_file, destination)
         copy_file(self.source_dir + self.__extract_pwr_file, destination)
-        trees_name = [t.get_name() for t in self.__trees_list_obj]
+        trees_name = [t.get_name() for t in self.trees]
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         tcl_template = env.get_template(self.__tcl_project_file)
@@ -397,10 +392,10 @@ class Classifier:
         classifier = classifier_template.render(
             trees=trees_name,
             features=features,
-            classes=self.__model_classes_list_str)
+            classes=self.model_classes)
         tb_classifier = tb_classifier_template.render(
             features=features,
-            classes=self.__model_classes_list_str)
+            classes=self.model_classes)
         tcl_file = tcl_template.render(
             assertions_blocks=[{
                 "file_name": f"assertions_block_{n}.v",
@@ -428,19 +423,18 @@ class Classifier:
             copy_file(self.source_dir + self.__constraint_file, ax_dest)
             copy_file(self.source_dir + self.__run_synth_file, ax_dest)
             copy_file(self.source_dir + self.__run_sim_file, ax_dest)
-            for t, i, c in zip(self.__trees_list_obj, range(len(self.__trees_list_obj)), conf):
+            for t, i, c in zip(self.trees, range(len(self.trees)), conf):
                 t.generate_hdl_tree(ax_dest)
                 t.set_assertions_configuration(inner_configuration[i][c])
                 t.generate_hdl_als_ax_assertions(ax_dest)
 
-    
     def generate_hdl_onestep_full_ax_implementations(self, destination, outer_configurations):
         mkpath(destination)
         mkpath(f"{destination}/ax")
         copy_file(self.source_dir + self.__run_all_file, destination)
         copy_file(self.source_dir + self.__extract_luts_file, destination)
         copy_file(self.source_dir + self.__extract_pwr_file, destination)
-        trees_name = [t.get_name() for t in self.__trees_list_obj]
+        trees_name = [t.get_name() for t in self.trees]
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         classifier_template = env.get_template(
@@ -459,19 +453,19 @@ class Classifier:
             } for n in trees_name])
         for conf, i in zip(outer_configurations, range(len(outer_configurations))):
             features = [{"name": f["name"], "nab": n} for f, n in zip(
-                self.__model_features_list_dict, conf[:len(self.__model_features_list_dict)])]
+                self.model_features, conf[:len(self.model_features)])]
             ax_dest = f"{destination}/ax/configuration_{str(i)}"
             mkpath(ax_dest)
             classifier = classifier_template.render(
                 trees=trees_name,
                 features=features,
-                classes=self.__model_classes_list_str)
+                classes=self.model_classes)
             with open(f"{ax_dest}/classifier.vhd", "w") as out_file:
                 out_file.write(classifier)
             tb_classifier = tb_classifier_template.render(
                 trees=trees_name,
                 features=features,
-                classes=self.__model_classes_list_str)
+                classes=self.model_classes)
             with open(f"{ax_dest}/tb_classifier.vhd", "w") as out_file:
                 out_file.write(tb_classifier)
             with open(f"{ax_dest}/create_project.tcl", "w") as out_file:
@@ -487,11 +481,11 @@ class Classifier:
             copy_file(self.source_dir + self.__run_sim_file, ax_dest)
             chunks = []
             count = 0
-            for size in [len(t.get_graph().get_cells()) for t in self.__trees_list_obj]:
+            for size in [len(t.get_graph().get_cells()) for t in self.trees]:
                 chunks.append(
-                    [conf[i+count+len(self.__model_features_list_dict)] for i in range(size)])
+                    [conf[i+count+len(self.model_features)] for i in range(size)])
                 count += size
-            for t, c in zip(self.__trees_list_obj, chunks):
+            for t, c in zip(self.trees, chunks):
                 t.generate_hdl_tree(ax_dest)
                 t.set_assertions_configuration(c)
                 t.generate_hdl_als_ax_assertions(ax_dest)
@@ -502,7 +496,7 @@ class Classifier:
         copy_file(self.source_dir + self.__run_all_file, destination)
         copy_file(self.source_dir + self.__extract_luts_file, destination)
         copy_file(self.source_dir + self.__extract_pwr_file, destination)
-        trees_name = [t.get_name() for t in self.__trees_list_obj]
+        trees_name = [t.get_name() for t in self.trees]
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         classifier_template = env.get_template(
@@ -521,19 +515,19 @@ class Classifier:
             } for n in trees_name])
         for conf, i in zip(outer_configurations, range(len(outer_configurations))):
             features = [{"name": f["name"], "nab": n} for f, n in zip(
-                self.__model_features_list_dict, conf[:len(self.__model_features_list_dict)])]
+                self.model_features, conf[:len(self.model_features)])]
             ax_dest = f"{destination}/ax/configuration_{str(i)}"
             mkpath(ax_dest)
             classifier = classifier_template.render(
                 trees=trees_name,
                 features=features,
-                classes=self.__model_classes_list_str)
+                classes=self.model_classes)
             with open(f"{ax_dest}/classifier.vhd", "w") as out_file:
                 out_file.write(classifier)
             tb_classifier = tb_classifier_template.render(
                 trees=trees_name,
                 features=features,
-                classes=self.__model_classes_list_str)
+                classes=self.model_classes)
             with open(f"{ax_dest}/tb_classifier.vhd", "w") as out_file:
                 out_file.write(tb_classifier)
             with open(f"{ax_dest}/create_project.tcl", "w") as out_file:
@@ -547,20 +541,20 @@ class Classifier:
             copy_file(self.source_dir + self.__constraint_file, ax_dest)
             copy_file(self.source_dir + self.__run_synth_file, ax_dest)
             copy_file(self.source_dir + self.__run_sim_file, ax_dest)
-            for t, n, c in zip(self.__trees_list_obj, range(len(self.__trees_list_obj)), conf[len(self.__model_features_list_dict):]):
+            for t, n, c in zip(self.trees, range(len(self.trees)), conf[len(self.model_features):]):
                 t.generate_hdl_tree(ax_dest)
                 t.set_assertions_configuration(inner_configuration[n][c])
                 t.generate_hdl_als_ax_assertions(ax_dest)
 
     def generate_hdl_onestep_asl_wc_ax_implementations(self, destination, configurations):
         features = [{"name": f["name"], "nab": 0}
-                    for f in self.__model_features_list_dict]
+                    for f in self.model_features]
         mkpath(destination)
         mkpath(f"{destination}/ax")
         copy_file(self.source_dir + self.__run_all_file, destination)
         copy_file(self.source_dir + self.__extract_luts_file, destination)
         copy_file(self.source_dir + self.__extract_pwr_file, destination)
-        trees_name = [t.get_name() for t in self.__trees_list_obj]
+        trees_name = [t.get_name() for t in self.trees]
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         tcl_template = env.get_template(self.__tcl_project_file)
@@ -571,10 +565,10 @@ class Classifier:
         classifier = classifier_template.render(
             trees=trees_name,
             features=features,
-            classes=self.__model_classes_list_str)
+            classes=self.model_classes)
         tb_classifier = tb_classifier_template.render(
             features=features,
-            classes=self.__model_classes_list_str)
+            classes=self.model_classes)
         tcl_file = tcl_template.render(
             assertions_blocks=[{
                 "file_name": f"assertions_block_{n}.v",
@@ -603,21 +597,21 @@ class Classifier:
             copy_file(self.source_dir + self.__run_synth_file, ax_dest)
             copy_file(self.source_dir + self.__run_sim_file, ax_dest)
             
-            assertions_conf = [conf for _ in range(len(self.__trees_list_obj))]
+            assertions_conf = [conf for _ in range(len(self.trees))]
             self.set_assertions_configuration(assertions_conf)
-            for t in self.__trees_list_obj:
+            for t in self.trees:
                 t.generate_hdl_tree(ax_dest)
                 t.generate_hdl_als_ax_assertions(ax_dest, "tree_0")
 
     def generate_hdl_twostep_asl_wc_ax_implementations(self, destination, outer_configurations, inner_configuration):
         features = [{"name": f["name"], "nab": 0}
-                    for f in self.__model_features_list_dict]
+                    for f in self.model_features]
         mkpath(destination)
         mkpath(f"{destination}/ax")
         copy_file(self.source_dir + self.__run_all_file, destination)
         copy_file(self.source_dir + self.__extract_luts_file, destination)
         copy_file(self.source_dir + self.__extract_pwr_file, destination)
-        trees_name = [t.get_name() for t in self.__trees_list_obj]
+        trees_name = [t.get_name() for t in self.trees]
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         tcl_template = env.get_template(self.__tcl_project_file)
@@ -628,10 +622,10 @@ class Classifier:
         classifier = classifier_template.render(
             trees=trees_name,
             features=features,
-            classes=self.__model_classes_list_str)
+            classes=self.model_classes)
         tb_classifier = tb_classifier_template.render(
             features=features,
-            classes=self.__model_classes_list_str)
+            classes=self.model_classes)
         tcl_file = tcl_template.render(
             assertions_blocks=[{
                 "file_name": f"assertions_block_{n}.v",
@@ -662,44 +656,59 @@ class Classifier:
 
             assertions_conf = [ inner_configuration[c] for c in outer_conf ]
             self.set_assertions_configuration(assertions_conf)
-            for t in self.__trees_list_obj:
+            for t in self.trees:
                 t.generate_hdl_tree(ax_dest)
                 t.generate_hdl_als_ax_assertions(ax_dest, "tree_0")
 
-    def __evaluate(self, features_value):
-        classes_score = {c: 0 for c in self.__model_classes_list_str}
-        for tree in self.__trees_list_obj:
+    def evaluate(self, features_value):
+        classes_score = {c: 0 for c in self.model_classes}
+        for tree in self.trees:
             tree.evaluate(features_value, classes_score)
         for c in classes_score:
             classes_score[c] = 0 if classes_score[c] < (
-                len(self.__trees_list_obj) / 2) else 1
+                len(self.trees) / 2) else 1
         return classes_score
     
-    def __evaluate_noals(self, features_value):
-        classes_score = {c: 0 for c in self.__model_classes_list_str}
-        for tree in self.__trees_list_obj:
+    def evaluate_noals(self, features_value):
+        classes_score = {c: 0 for c in self.model_classes}
+        for tree in self.trees:
             tree.evaluate_noals(features_value, classes_score)
         for c in classes_score:
-            classes_score[c] = 0 if classes_score[c] < (
-                len(self.__trees_list_obj) / 2) else 1
+            classes_score[c] = 0 if classes_score[c] < (len(self.trees) / 2) else 1
         return classes_score
+    
+    def evaluate_noals_mt(self, feature_values):
+        if len(self.args) == 0:
+            return self.evaluate_noals(feature_values)
+        for arg in self.args:
+            arg[1] = feature_values
+            arg[2] = {c: 0 for c in self.model_classes}
+        with Pool(self.ncpus) as pool:
+            res = pool.starmap(Classifier.tree_eval, self.args)
+        print(res)
+        return classes_score
+        
+    @staticmethod
+    def tree_eval(trees, scores, feature_values):
+        for tree in trees:
+            tree.evaluate_noals(feature_values, scores)
 
-    def __get_features_and_classes(self, root):
+    def get_features_and_classes(self, root):
         for child in root.find("pmml:DataDictionary", self.__namespaces).findall('pmml:DataField', self.__namespaces):
             if child.attrib["optype"] == "continuous":
                 # the child is PROBABLY a feature
-                self.__model_features_list_dict.append({
+                self.model_features.append({
                     "name": child.attrib['name'].replace('-', '_'),
                     "type": "double" if child.attrib['dataType'] == "double" else "int"})
             elif child.attrib["optype"] == "categorical":
                 # the child PROBABLY specifies model-classes
                 for element in child.findall("pmml:Value", self.__namespaces):
-                    self.__model_classes_list_str.append(element.attrib['value'].replace('-', '_'))
+                    self.model_classes.append(element.attrib['value'].replace('-', '_'))
 
-    def __get_tree_model(self, tree_name, tree_model_root, ncpus, id=0):
+    def get_tree_model(self, tree_name, tree_model_root, ncpus, id=0):
         tree = Node(f"Node_{tree_model_root.attrib['id']}" if "id" in tree_model_root.attrib else f"Node_{id}", feature="", operator="", threshold_value="", boolean_expression="")
         self.__get_tree_nodes_recursively(tree_model_root, tree, id)
-        return DecisionTree(tree_name, tree, self.__model_features_list_dict, self.__model_classes_list_str, self.__als_conf, ncpus)
+        return DecisionTree(tree_name, tree, self.model_features, self.model_classes, self.als_conf, ncpus)
 
     def __get_tree_nodes_recursively(self, element_tree_node, parent_tree_node, id=0):
         children = element_tree_node.findall("pmml:Node", self.__namespaces)
