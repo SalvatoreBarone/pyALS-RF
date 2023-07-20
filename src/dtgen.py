@@ -48,42 +48,44 @@ def to_one_hot(outcomes, classes_name):
         print(classes_name)
         exit()
 
+def get_labels(outcomes, config):
+    class_names = config.classes_name if isinstance(config.classes_name, list) else list(config.classes_name.keys())
+    return [ class_names.index(o) for o in outcomes ]
+    
 def get_sets(dataset_file, config, fraction):
     if config.outcome_col is None:
         config.outcome_col = -1
     n_classes = len(config.classes_name)
     attributes, outcomes = read_dataset_from_csv(dataset_file, config.separator, config.skip_header, config.outcome_col)
-    outcomes_one_hot = np.array(to_one_hot(outcomes, config.classes_name))
-    outcomes_one_hot.reshape((attributes.shape[0], n_classes))
-    outcomes = np.array(outcomes)
-    outcomes.reshape((attributes.shape[0],))
-    
+    labels = np.array(get_labels(outcomes, config))
+    labels.reshape((attributes.shape[0],)) 
+    # outcomes_one_hot = np.array(to_one_hot(outcomes, config.classes_name))
+    # outcomes_one_hot.reshape((attributes.shape[0], n_classes))
+    # outcomes = np.array(outcomes)
+    # outcomes.reshape((attributes.shape[0],))
     learning_set_size = int(np.ceil(attributes.shape[0] * fraction))
     learning_vectors_indexes = random.sample(range(int(attributes.shape[0])), learning_set_size)
     test_vectors_indexes = [x for x in range(attributes.shape[0]) if x not in learning_vectors_indexes]
-    
     learning_attributes = attributes[learning_vectors_indexes, :]
     test_attributes = attributes[test_vectors_indexes, :]
     if isinstance(config.classes_name, dict):
-        learning_labels = [ config.classes_name[o] for o in outcomes[learning_vectors_indexes] ]
-        test_labels = [ config.classes_name[o] for o in outcomes[test_vectors_indexes] ]
+        learning_labels = [ config.classes_name[o] for o in labels[learning_vectors_indexes] ]
+        test_labels = [ config.classes_name[o] for o in labels[test_vectors_indexes] ]
     elif isinstance(config.classes_name, (list, tuple)):
         # learning_labels = [ config.classes_name[int(o)] for o in outcomes[learning_vectors_indexes] ]
         # test_labels = [ config.classes_name[int(o)] for o in outcomes[test_vectors_indexes] ]
-        learning_labels = outcomes[learning_vectors_indexes]
-        test_labels = outcomes[test_vectors_indexes]
+        learning_labels = labels[learning_vectors_indexes]
+        test_labels = labels[test_vectors_indexes]
+    #test_labels_one_hot = outcomes_one_hot[test_vectors_indexes, :]
+    return learning_attributes, learning_labels, test_attributes, test_labels
 
-    test_labels_one_hot = outcomes_one_hot[test_vectors_indexes, :]
-    
-    return learning_attributes, learning_labels, test_attributes, test_labels, test_labels_one_hot
-
-def save_test_dataset_to_csv(filename, attributes_name, test_attributes, classes_name, test_labels_one_hot):
+def save_test_dataset_to_csv(filename, attributes_name, test_attributes, test_labels):
     original_stdout = sys.stdout
     with open(filename, "w") as file:
         sys.stdout = file
-        print(*attributes_name, *classes_name, sep=";")
-        for a, c  in zip(test_attributes, test_labels_one_hot):
-            print(*a, *c, sep=";")
+        print(*attributes_name, "Outcome", sep=";")
+        for a, c  in zip(test_attributes, test_labels):
+            print(*a, c, sep=";")
     sys.stdout = original_stdout  
     
 def graphviz_export(model, attributes_name, classes_name, outputdir):
@@ -97,12 +99,11 @@ def graphviz_export(model, attributes_name, classes_name, outputdir):
         graph = graphviz.Source(dot_data)
         graph.render(directory = f"{outputdir}/export", filename = 'tree.gv')
     
-
 def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap):
 
     config = DtGenConfigParser(configfile)
 
-    learning_attributes, learning_labels, test_attributes, test_labels, test_labels_one_hot = get_sets(dataset, config, fraction)
+    learning_attributes, learning_labels, test_attributes, test_labels = get_sets(dataset, config, fraction)
 
     if clf == "dt":
         model = tree.DecisionTreeClassifier(
@@ -155,7 +156,6 @@ def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, crit
             model.estimators_[i] = st
         
     print(f"Classification accuracy: {sum(pred == ans for pred, ans in zip(model.predict(test_attributes), test_labels)) / len(test_labels)}")
-    
     mkpath(outputdir)
     
     pmml_file = f"{outputdir}/{clf}_{predictors}.pmml" if predictors > 1 else f"{outputdir}/{clf}.pmml"
@@ -167,7 +167,7 @@ def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, crit
     
     test_dataset_csv = f"{outputdir}/test_dataset_4_pyALS-rf.csv"
     print(f"Exporting the test dataset to {test_dataset_csv} ...")
-    save_test_dataset_to_csv(test_dataset_csv, config.attributes_name, test_attributes, config.classes_name.values() if isinstance(config.classes_name, dict) else config.classes_name, test_labels_one_hot)
+    save_test_dataset_to_csv(test_dataset_csv, config.attributes_name, test_attributes, test_labels)
     print(f"Exporting graphviz draws of leaned trees to {outputdir}/export ...")
     graphviz_export(model, config.attributes_name, list(config.classes_name.values()) if isinstance(config.classes_name, dict) else config.classes_name, outputdir)
     print("Done!")

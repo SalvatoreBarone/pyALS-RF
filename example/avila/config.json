@@ -1,0 +1,18 @@
+{
+    "separator": ",",
+    "outcome_col": -1,
+    "skip_header": false,
+    "attributes_name" : [
+        "intercolumnar_distance",
+        "upper_margin",
+        "lower_margin",
+        "exploitation",
+        "row_number",
+        "modular_ratio",
+        "interlinear_spacing ",
+        "weight",
+        "peak_number",
+        "modular_ratio_over_interlinear_spacing"
+    ],
+    "classes_name" : ["A", "B", "C", "D", "E", "F", "G", "H", "I", "W", "X", "Y"]
+}
