@@ -1,0 +1,35 @@
+{
+    "separator": " ",
+    "outcome_col": -1,
+    "skip_header": false,
+    "attributes_name" : [
+        "region_centroid_col",
+        "region_centroid_row",
+        "region_pixel_count",
+        "short_line_density_5",
+        "short_line_density_2",
+        "vedge_mean",
+        "vegde_sd",
+        "hedge_mean",
+        "hedge_sd",
+        "intensity_mean",
+        "rawred_mean",
+        "rawblue_mean",
+        "rawgreen_mean",
+        "exred_mean",
+        "exblue_mean",
+        "exgreen_mean",
+        "value_mean",
+        "saturatoin_mean",
+        "hue_mean"
+    ],
+    "classes_name" : {
+        "1" : "brickface", 
+        "2" : "sky", 
+        "3" : "foliage", 
+        "4" : "cement", 
+        "5" : "window", 
+        "6" : "path", 
+        "7" : "grass"
+    }
+}
