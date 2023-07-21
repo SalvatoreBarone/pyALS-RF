@@ -33,6 +33,7 @@ class Classifier:
         self.model_classes = []
         self.ncpus = min(ncpus, cpu_count()) if ncpus is not None else cpu_count()
         self.args = None
+        self.p_tree = None
         self.pool = None
         self.als_conf = None
 
@@ -42,6 +43,7 @@ class Classifier:
         classifier.model_features = copy.deepcopy(self.model_features)
         classifier.model_classes = copy.deepcopy(self.model_classes)
         classifier.ncpus = self.ncpus
+        classifier.p_tree = None
         classifier.args = None
         classifier.pool = None
         classifier.als_conf = None
@@ -176,7 +178,8 @@ class Classifier:
         return [tree.get_struct() for tree in self.trees]
 
     def enable_mt(self):
-        self.args = [[t, self.x_test] for t in list_partitioning(self.trees, self.ncpus)]
+        self.p_tree = list_partitioning(self.trees, self.ncpus)
+        self.args = [[t, self.x_test] for t in self.p_tree]
         self.pool = Pool(self.ncpus)
 
     def evaluate_test_dataset(self):
@@ -195,7 +198,16 @@ class Classifier:
         return scores
          
     def predict(self, attributes):
-        outcomes = [ t.predict(attributes) for t in self.trees ]
+        return tree_predict_x(self.trees, attributes)
+    
+    def predict_mt(self, attributes):
+        assert self.p_tree is not None, "Multi-threading is disabled. To enable it, call the enable_mt() member of the Classifier class"
+        return [sum(s) for s in zip(*self.pool.starmap(Classifier.tree_predict_x, [[t, attributes] for t in self.p_tree]))]
+        
+        
+    @staticmethod
+    def tree_predict_x(trees, x):
+        outcomes = [ t.predict(x) for t in trees ]
         return [sum(s) for s in zip(*outcomes)]
     
     def get_features_and_classes(self, root):
