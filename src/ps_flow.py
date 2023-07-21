@@ -49,7 +49,10 @@ def ps_flow(configfile, mode, alpha, beta, gamma, ncpus):
     print(f"{len(problem.cache)} cache entries collected")
     if mode == "rank":
         print(f"Average samples: {np.mean(problem.sample_count)} (Total #of samples: {len(classifier.y_test)})")
+        optimizer.archive = problem.archived_actual_accuracy(optimizer.archive)
+        optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
     
     optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
     optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
+    classifier.pool.close()
     print(f"All done! Take a look at the {configuration.outdir} directory.")

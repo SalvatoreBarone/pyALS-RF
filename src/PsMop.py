@@ -78,4 +78,12 @@ class RankBasedPsMop(pyamosa.Problem):
         out["f"] = [acc_loss, retained_bits]
         out["g"] = [acc_loss - self.max_loss]
         
+    def archived_actual_accuracy(self, archive):
+        for solution in tqdm(archive, total=len(archive), desc="Evaluating actual accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave = False):
+            self.set_matter_configuration(solution["x"])
+            loss = self.baseline_accuracy - self.classifier.evaluate_test_dataset()
+            solution["f"][0] = loss
+            solution["g"][0] = loss - self.max_loss
+        return pyamosa.Optimizer.remove_dominated(archive)
+        
     
