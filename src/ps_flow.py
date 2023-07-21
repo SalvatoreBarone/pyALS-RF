@@ -25,10 +25,11 @@ def ps_flow(configfile, ncpus):
     check_for_file(configuration.error_conf.test_dataset)
     if configuration.outdir != ".":
         mkpath(configuration.outdir)
-    
-    classifier = Classifier(configuration.als_conf)
+    classifier = Classifier(ncpus)
     classifier.parse(configuration.pmml)
-    problem = PsMop(classifier, configuration.error_conf, ncpus)
+    classifier.read_dataset(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
+    classifier.enable_mt()
+    problem = PsMop(classifier, configuration.error_conf.max_loss_perc, ncpus)
     optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
     improve = None
     if os.path.exists(f"{configuration.outdir}/final_archive.json"):

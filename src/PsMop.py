@@ -18,13 +18,13 @@ from .BaseMop import *
 import numpy as np, pyamosa
 
 class PsMop(pyamosa.Problem):
-    def __init__(self, classifier, error_conf, ncpus):
+    def __init__(self, classifier, max_loss, ncpus):
         self.classifier = classifier
-        self.error_conf = error_conf
+        self.max_loss = max_loss
         self.ncpus = ncpus
         self.classifier.reset_nabs_configuration()
         self.classifier.reset_assertion_configuration()
-        self.classifier.read_dataset(self.error_conf.test_dataset, self.error_conf.dataset_description)
+        
         self.baseline_accuracy = self.classifier.evaluate_test_dataset()
         print(f"Baseline accuracy: {self.baseline_accuracy} %")
         
@@ -42,4 +42,4 @@ class PsMop(pyamosa.Problem):
         acc_loss = self.baseline_accuracy - self.classifier.evaluate_test_dataset()
         retained_bits = self.classifier.get_total_retained()
         out["f"] = [acc_loss, retained_bits]
-        out["g"] = [acc_loss - self.error_conf.max_loss_perc]
+        out["g"] = [acc_loss - self.max_loss]

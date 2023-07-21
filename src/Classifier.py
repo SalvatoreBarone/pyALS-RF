@@ -21,6 +21,7 @@ from jinja2 import Environment, FileSystemLoader
 from distutils.file_util import copy_file
 from multiprocessing import cpu_count, Pool
 from tqdm import tqdm
+from pyalslib import list_partitioning
 from .DecisionTree import *
 
 class Classifier:
@@ -30,7 +31,9 @@ class Classifier:
         self.trees = []
         self.model_features = []
         self.model_classes = []
-        self.ncpus = ncpus if ncpus is not None else cpu_count()
+        self.ncpus = min(ncpus, cpu_count()) if ncpus is not None else cpu_count()
+        self.args = None
+        self.pool = None
         self.als_conf = None
 
     def __deepcopy__(self, memo=None):
@@ -38,6 +41,10 @@ class Classifier:
         classifier.trees = copy.deepcopy(self.trees)
         classifier.model_features = copy.deepcopy(self.model_features)
         classifier.model_classes = copy.deepcopy(self.model_classes)
+        classifier.ncpus = self.ncpus
+        classifier.args = None
+        classifier.pool = None
+        classifier.als_conf = None
         return classifier
 
     def parse(self, pmml_file_name):
@@ -48,7 +55,6 @@ class Classifier:
         root = tree.getroot()
         self.__namespaces["pmml"] = get_xmlns_uri(root)
         self.get_features_and_classes(root)
-        self.args = []
         segmentation = root.find("pmml:MiningModel/pmml:Segmentation", self.__namespaces)
         if segmentation is not None:
             for tree_id, segment in enumerate(segmentation.findall("pmml:Segment", self.__namespaces)):
@@ -62,8 +68,8 @@ class Classifier:
                 "pmml:Node", self.__namespaces)
             tree = self.get_tree_model("0", tree_model_root)
             self.trees.append(tree)
-
-            
+        self.ncpus = min(self.ncpus, len(self.trees))
+        
     def wc_parse(self, pmml_file_name, ncpus):
         self.trees = []
         self.model_features = []
@@ -86,7 +92,8 @@ class Classifier:
         self.trees = [tree] + [ copy.deepcopy(tree) for _ in range(len(segments) - 1) ]
         for i, t in enumerate(self.trees[1:]):
             t.set_name(f"tree_{i+1}")
-
+        self.ncpus = min(self.ncpus, len(self.trees))
+        
     def wc_fix_ys_helper(self):
         for t in self.trees[1:]:
             t.yosys_helper = copy.deepcopy(self.trees[0].yosys_helper)
@@ -168,8 +175,24 @@ class Classifier:
     def get_struct(self):
         return [tree.get_struct() for tree in self.trees]
 
+    def enable_mt(self):
+        self.args = [[t, self.x_test] for t in list_partitioning(self.trees, self.ncpus)]
+        self.pool = Pool(self.ncpus)
+
     def evaluate_test_dataset(self):
-        return sum( np.argmax(self.predict(x)) == y for x, y in tqdm( zip(self.x_test, self.y_test), total=len(self.y_test), desc="Computing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False, ) ) / len(self.y_test) * 100
+        if self.args is None:
+            print("Warning!\nMulti-threading is disabled. To enable it, call the enable_mt() member of the Classifier class")
+            return sum(np.argmax(self.predict(x)) == y for x, y in tqdm( zip(self.x_test, self.y_test), total=len(self.y_test), desc="Computing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False) ) / len(self.y_test) * 100
+        outcomes = self.pool.starmap(Classifier.tree_predict, self.args)
+        return sum( np.argmax([sum(s) for s in zip(*scores)]) == y for scores, y in zip(zip(*outcomes), self.y_test) ) / len(self.y_test) * 100
+            
+    @staticmethod
+    def tree_predict(trees, x_test):
+        scores = []
+        for x in x_test:
+            outcomes = [ t.predict(x) for t in trees ]
+            scores.append([sum(s) for s in zip(*outcomes)])
+        return scores
          
     def predict(self, attributes):
         outcomes = [ t.predict(attributes) for t in self.trees ]
