@@ -18,6 +18,7 @@ import json, pyamosa
 from pyalslib import ALSConfig
 from .ErrorConfig import ErrorConfig
 from .ConfigParser import *
+from .DtGenConfigParser import *
 
 class PSConfigParser:
     def __init__(self, configfile):
@@ -35,9 +36,7 @@ class PSConfigParser:
         self.error_conf = ErrorConfig(
             max_loss_perc = search_subfield_in_config(configuration, "error", "max_loss_perc", True),
             test_dataset = search_subfield_in_config(configuration, "error", "test_dataset", True),
-            max_eprob = search_subfield_in_config(configuration, "error", "max_eprob", False),
-            nvectors = search_subfield_in_config(configuration, "error", "nvectors", False),
-            dataset = search_subfield_in_config(configuration, "error", "dataset", False))
+            dataset_description = DtGenConfigParser(search_subfield_in_config(configuration, "error", "dataset_description", True)))
 
         optimizer_conf = search_field_in_config(configuration, "optimizer", True)
         assert isinstance(optimizer_conf, dict), "the 'optimizer' field of the config file is not valid"
@@ -52,10 +51,13 @@ class PSConfigParser:
                 cooling_factor = float(search_field_in_config(optimizer_conf, "cooling_factor", True)),
                 annealing_iterations = int(search_field_in_config(optimizer_conf, "annealing_iterations", True)),
                 annealing_strength = int(search_field_in_config(optimizer_conf, "annealing_strength", True)),
-                multiprocessing_enabled = bool(search_field_in_config(optimizer_conf, "multiprocess_enabled", False, False)))
+                multiprocessing_enabled = bool(search_field_in_config(optimizer_conf, "multiprocess_enabled", False, False)),
+                hill_climb_checkpoint_file = f"{self.outdir}/.hill_climb_checkpoint.json",
+                minimize_checkpoint_file = f"{self.outdir}/.annealing_checkpoint.json",
+                cache_dir = f"{self.outdir}/.cache")
 
         optimizer_min_temperature = search_field_in_config(optimizer_conf, "final_temperature", True, 1e-7)
-        optimizer_stop_phy_window = search_field_in_config(optimizer_conf, "early_termination", False, 10)
+        optimizer_stop_phy_window = search_field_in_config(optimizer_conf, "early_termination", False, 20)
         optimizer_max_duration = search_field_in_config(optimizer_conf, "max_duration", False, None)
         self.termination_criterion = pyamosa.CombinedStopCriterion(optimizer_max_duration, optimizer_min_temperature, optimizer_stop_phy_window)
         

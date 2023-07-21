@@ -1,6 +1,6 @@
 {
-    "model" : "example/avila/rf10/rf_10.pmml",
-    "outdir" : "example/avila/rf10/ps_result",
+    "model" : "example/statlog_segment/rf5/rf_5.pmml",
+    "outdir" : "example/statlog_segment/rf5/ps_result",
     "als" : {
         "cache"    : "/home/user/lut_catalog.db",
         "cut_size" : 4,
@@ -8,20 +8,20 @@
     },
     "error": {
         "max_loss_perc" : 10,
-        "test_dataset": "example/avila/rf10/test_dataset_4_pyALS-rf.csv",
-        "dataset_description" : "example/avila/dataset_description.json"
+        "test_dataset": "example/statlog_segment/rf5/test_dataset_4_pyALS-rf.csv",
+        "dataset_description" : "example/statlog_segment/dataset_description.json"
     },
     "optimizer" : {
-        "archive_hard_limit"       : 20,
+        "archive_hard_limit"       : 2,
         "archive_soft_limit"       : 50,
         "archive_gamma"            : 1,
         "clustering_iterations"    : 300,
-        "hill_climbing_iterations" : 30,
+        "hill_climbing_iterations" : 33,
         "initial_temperature"      : 500,
-        "final_temperature"        : 1e-4,
-        "cooling_factor"           : 0.9,
+        "cooling_factor"           : 0.95,
         "annealing_iterations"     : 500,
         "annealing_strength"       : 1,
+        "final_temperature"        : 1e-7,
         "early_termination"        : 20,
         "multiprocess_enabled"     : false
     }

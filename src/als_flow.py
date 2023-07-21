@@ -31,7 +31,7 @@ def als_one_step(configfile, ncpus):
     if configuration.outdir != ".":
         mkpath(configuration.outdir)
     classifier = Classifier(configuration.als_conf)
-    classifier.parse(configuration.pmml, ncpus)
+    classifier.parse(configuration.pmml)
     classifier.generate_hdl_exact_implementations(configuration.outdir)
     problem = SingleStepAlsMop(classifier, configuration.error_conf, ncpus)
     optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
@@ -59,7 +59,7 @@ def als_two_steps(configfile, ncpus):
         mkpath(configuration.outdir)
     classifier = Classifier(configuration.als_conf)
     print("Creating classifier object...")
-    classifier.parse(configuration.pmml, ncpus)
+    classifier.parse(configuration.pmml)
     print("PMML parsing completed")
     classifier.generate_hdl_exact_implementations(configuration.outdir)
     print("HDL generation (accurate) completed")

@@ -16,6 +16,7 @@ lxml
 matplotlib
 numpy
 nyoka
+pandas
 packaging
 Pillow
 pyalslib

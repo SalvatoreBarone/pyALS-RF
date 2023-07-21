@@ -17,23 +17,29 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 from .BaseMop import *
 import numpy as np, pyamosa
 
-class PsMop(BaseMop, pyamosa.Problem):
+class PsMop(pyamosa.Problem):
     def __init__(self, classifier, error_conf, ncpus):
+        self.classifier = classifier
         self.error_conf = error_conf
-        BaseMop.__init__(self, classifier, self.error_conf.test_dataset, ncpus)
-        n_vars = len(classifier.get_features())
+        self.ncpus = ncpus
+        self.classifier.reset_nabs_configuration()
+        self.classifier.reset_assertion_configuration()
+        self.classifier.read_dataset(self.error_conf.test_dataset, self.error_conf.dataset_description)
+        self.baseline_accuracy = self.classifier.evaluate_test_dataset()
+        print(f"Baseline accuracy: {self.baseline_accuracy} %")
+        
+        n_vars = len(self.classifier.model_features)
         ub = [53] * n_vars
         print(f"#vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
         pyamosa.Problem.__init__(self, n_vars, [pyamosa.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 
     def __set_matter_configuration(self, x):
-        nabs = {f["name"]: n for f, n in zip(self.features, x[:len(self.features)])}
-        for item in self.args:
-            item[0].set_nabs(nabs)
+        nabs = {f["name"]: n for f, n in zip(self.classifier.model_features, x[:len(self.classifier.model_features)])}
+        self.classifier.set_nabs(nabs)
 
     def evaluate(self, x, out):
         self.__set_matter_configuration(x)
-        f1 = self.get_accuracy_loss_noals()
-        f2 = self.args[0][0].get_total_retained()
-        out["f"] = [f1, f2]
-        out["g"] = [f1 - self.error_conf.max_loss_perc]
+        acc_loss = self.baseline_accuracy - self.classifier.evaluate_test_dataset()
+        retained_bits = self.classifier.get_total_retained()
+        out["f"] = [acc_loss, retained_bits]
+        out["g"] = [acc_loss - self.error_conf.max_loss_perc]
