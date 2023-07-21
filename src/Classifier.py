@@ -24,6 +24,7 @@ from tqdm import tqdm
 from pyalslib import list_partitioning
 from .DecisionTree import *
 
+
 class Classifier:
     __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_4'}
 
@@ -48,6 +49,14 @@ class Classifier:
         classifier.pool = None
         classifier.als_conf = None
         return classifier
+    
+    @staticmethod
+    def get_xmlns_uri(elem):
+        if elem.tag[0] == "{":
+            uri, ignore, tag = elem.tag[1:].partition("}")
+        else:
+            uri = None
+        return uri
 
     def parse(self, pmml_file_name):
         self.trees = []
@@ -55,7 +64,7 @@ class Classifier:
         self.model_classes = []
         tree = ElementTree.parse(pmml_file_name)
         root = tree.getroot()
-        self.__namespaces["pmml"] = get_xmlns_uri(root)
+        self.__namespaces["pmml"] = Classifier.get_xmlns_uri(root)
         self.get_features_and_classes(root)
         segmentation = root.find("pmml:MiningModel/pmml:Segmentation", self.__namespaces)
         if segmentation is not None:
@@ -78,11 +87,10 @@ class Classifier:
         self.model_classes = []
         tree = ElementTree.parse(pmml_file_name)
         root = tree.getroot()
-        self.__namespaces["pmml"] = get_xmlns_uri(root)
+        self.__namespaces["pmml"] = Classifier.get_xmlns_uri(root)
         self.get_features_and_classes(root)
         segmentation = root.find("pmml:MiningModel/pmml:Segmentation", self.__namespaces)
         assert segmentation is not None, "This mode is suitable only for WC DT-based MCSs"
-        
         segments = segmentation.findall("pmml:Segment", self.__namespaces)
         tree = None
         for tree_id, segment in enumerate(segments):
@@ -121,28 +129,32 @@ class Classifier:
         self.y_test = sum(self.dataframe.loc[:, self.dataframe.columns == "Outcome"].values.tolist(), [])
 
     def brace4ALS(self, als_conf):
-        self.als_conf = als_conf
-        for t in self.trees:
-            t.brace4ALS(als_conf)
+        if self.als_conf is None:
+            self.als_conf = als_conf
+            for t in self.trees:
+                t.brace4ALS(als_conf)
 
     def reset_nabs_configuration(self):
         self.set_nabs({f["name"]: 0 for f in self.model_features})
 
     def reset_assertion_configuration(self):
-        for t in self.trees:
-            t.reset_assertion_configuration()
+        if self.als_conf is None:
+            for t in self.trees:
+                t.reset_assertion_configuration()
 
     def set_nabs(self, nabs):
         for tree in self.trees:
             tree.set_nabs(nabs)
 
     def set_assertions_configuration(self, configurations):
-        for t, c in zip(self.trees, configurations):
-            t.set_assertions_configuration(c)
+        if self.als_conf is None:
+            for t, c in zip(self.trees, configurations):
+                t.set_assertions_configuration(c)
 
     def set_first_stage_approximate_implementations(self, configuration):
-        for t, c in zip(self.trees, configuration):
-            t.set_first_stage_approximate_implementations(c)
+        if self.als_conf is None:
+            for t, c in zip(self.trees, configuration):
+                t.set_first_stage_approximate_implementations(c)
 
     def get_num_of_trees(self):
         return len(self.trees)
@@ -163,16 +175,16 @@ class Classifier:
         return ub
 
     def get_assertions_configuration(self):
-        return [t.get_assertions_configuration() for t in self.trees]
+        return [t.get_assertions_configuration() for t in self.trees] if self.als_conf is not None else []
 
     def get_assertions_distance(self):
-        return [t.get_assertions_distance() for t in self.trees]
+        return [t.get_assertions_distance() for t in self.trees] if self.als_conf is not None else []
 
     def get_current_required_aig_nodes(self):
-        return [t.get_current_required_aig_nodes() for t in self.trees]
+        return [t.get_current_required_aig_nodes() for t in self.trees] if self.als_conf is not None else []
 
     def get_num_of_first_stage_approximate_implementations(self):
-        return [len(t.get_first_stage_approximate_implementations()) - 1 for t in self.trees]
+        return [len(t.get_first_stage_approximate_implementations()) - 1 for t in self.trees] if self.als_conf is not None else []
 
     def get_struct(self):
         return [tree.get_struct() for tree in self.trees]
@@ -203,7 +215,6 @@ class Classifier:
     def predict_mt(self, attributes):
         assert self.p_tree is not None, "Multi-threading is disabled. To enable it, call the enable_mt() member of the Classifier class"
         return [sum(s) for s in zip(*self.pool.starmap(Classifier.tree_predict_x, [[t, attributes] for t in self.p_tree]))]
-        
         
     @staticmethod
     def tree_predict_x(trees, x):
@@ -260,10 +271,3 @@ class Classifier:
                                     parent=parent_tree_node, feature="", operator="", threshold_value="", boolean_expression=boolean_expression)
                 self.get_tree_nodes_recursively(child, new_tree_node, id + 1)
 
-
-def get_xmlns_uri(elem):
-  if elem.tag[0] == "{":
-    uri, ignore, tag = elem.tag[1:].partition("}")
-  else:
-    uri = None
-  return uri

@@ -16,7 +16,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import numpy as np
 from tqdm import tqdm
-
+from .Classifier import *
 
 def softmax(x):
     e_x = np.exp(np.array(x, dtype = np.float64))
@@ -28,11 +28,11 @@ def dispersion(x, theta):
 def giniImpurity(x):
     return len(x) / (len(x) - 1) * (1 - np.sum(np.square(x)))
 
-def datasetRanking(classifier, x_test, y_test):
+def datasetRanking(classifier):
     C = []
     M = []
-    for index, (tau, theta_star) in tqdm(enumerate(zip(x_test, y_test)), total=len(y_test), desc="Dataset ranking...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}"):
-        rho = softmax(predictQ(classifier, tau)
+    for index, (tau, theta_star) in tqdm(enumerate(zip(classifier.x_test, classifier.y_test)), total=len(classifier.y_test), desc="Dataset ranking...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}"):
+        rho = softmax(classifier.predict_mt(tau))
         Ig = giniImpurity(rho)
         if  np.argmax(rho) == theta_star:
             C.append((index, Ig))
@@ -42,7 +42,7 @@ def datasetRanking(classifier, x_test, y_test):
     M.sort(key = lambda a: a[-1])                 # misclassified samples have to be sorted in ascending order
     return C, M
 
-def estimateLoss(eta, nu, alpha, beta, gamma, classifier, C, M, n_classes = 10):
+def estimateLoss(eta, nu, alpha, beta, gamma, classifier, C, M):
     maxMiss = int((len(C) + len(M)) * (100 - eta + nu) / 100)
     tested_samples = 0
     miss = 0
@@ -52,7 +52,7 @@ def estimateLoss(eta, nu, alpha, beta, gamma, classifier, C, M, n_classes = 10):
     beta_max = int(beta * len(M))
     for index, _ in M: 
         tested_samples += 1
-        if np.argmax(classifier.net.predict(classifier.images[index]).reshape((n_classes,))) == classifier.labels[index]:
+        if np.argmax(classifier.predict_mt(classifier.x_test[index])) == classifier.y_test[index]:
             miss -= 1
             b = 0
         else:
@@ -61,7 +61,7 @@ def estimateLoss(eta, nu, alpha, beta, gamma, classifier, C, M, n_classes = 10):
             break
     for index, _ in C:
         tested_samples += 1
-        if np.argmax(classifier.net.predict(classifier.images[index]).reshape((n_classes,))) == classifier.labels[index]:
+        if np.argmax(classifier.predict_mt(classifier.x_test[index])) == classifier.y_test[index]:
             a += 1
         else:
             miss += 1
@@ -70,11 +70,3 @@ def estimateLoss(eta, nu, alpha, beta, gamma, classifier, C, M, n_classes = 10):
             break
     return miss / (len(C) + len(M)) * 100, tested_samples
 
-def computeAccuracy(classifier, n_classes = 10):
-    accuracy = 0
-    for image, actual_lbl in tqdm(zip(classifier.images, classifier.labels), total=len(classifier.labels), desc="Computing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave = False):
-        if isinstance(actual_lbl, (list, tuple, np.ndarray)):
-            actual_lbl == actual_lbl[0]  
-        if np.argmax(classifier.net.predict(image).reshape((n_classes,))) == actual_lbl:
-            accuracy += 1
-    return accuracy / len(classifier.labels) * 100

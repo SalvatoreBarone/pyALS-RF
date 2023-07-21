@@ -14,12 +14,12 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import os, pyamosa, time
+import os, pyamosa, time, numpy as np
 from pyalslib import check_for_file
 from src.PsConfigParser import *
 from src.PsMop import *
 
-def ps_flow(configfile, ncpus):
+def ps_flow(configfile, mode, alpha, beta, gamma, ncpus):
     configuration = PSConfigParser(configfile)
     check_for_file(configuration.pmml)
     check_for_file(configuration.error_conf.test_dataset)
@@ -29,7 +29,7 @@ def ps_flow(configfile, ncpus):
     classifier.parse(configuration.pmml)
     classifier.read_dataset(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
     classifier.enable_mt()
-    problem = PsMop(classifier, configuration.error_conf.max_loss_perc, ncpus)
+    problem = PsMop(classifier, configuration.error_conf.max_loss_perc, ncpus) if mode == "full" else RankBasedPsMop(classifier, configuration.error_conf.max_loss_perc, alpha, beta, gamma, ncpus)
     optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
     improve = None
     if os.path.exists(f"{configuration.outdir}/final_archive.json"):
@@ -47,6 +47,8 @@ def ps_flow(configfile, ncpus):
     print(f"Took {hours} hours, {minutes} minutes")
     print(f"Cache hits: {problem.cache_hits} over {problem.total_calls} evaluations.")
     print(f"{len(problem.cache)} cache entries collected")
+    if mode == "rank":
+        print(f"Average samples: {np.mean(problem.sample_count)} (Total #of samples: {len(classifier.y_test)})")
     
     optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
     optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")

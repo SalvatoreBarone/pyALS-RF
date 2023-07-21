@@ -26,9 +26,6 @@ from multiprocessing import cpu_count
 class DecisionTree:
 
     def __init__(self, name = None, root_node = None, features = None, classes = None):
-        # dir_path = os.path.dirname(os.path.abspath(__file__))
-        # self.source_dir =  f"{dir_path}/{self.__source_dir}"
-        # self.bnf_vhd = f"{self.source_dir}{self.__bnf_vhd}"
         self.name = name
         self.model_features = features
         self.attrbutes_name = [f["name"] for f in self.model_features]
@@ -38,19 +35,14 @@ class DecisionTree:
         if root_node:
             self.get_decision_boxes(root_node)
             self.get_assertions(root_node)
-        # self.als_conf = als_conf
-        # self.yosys_helper = None
-        # self.assertions_graph = None
-        # self.catalog = None
-        # self.assertions_catalog_entries = None
-        # self.current_als_configuration = []
-        # if als_conf is not None:
-        #     self.yosys_helper = YosysHelper()
-        #     self.generate_design_for_als(self.als_conf.cut_size)
-        #     self.assertions_graph = ALSGraph(self.yosys_helper.design)
-        #     self.assertions_catalog_entries = ALSCatalog(self.als_conf.lut_cache, self.als_conf.solver).generate_catalog(self.yosys_helper.get_luts_set(), self.als_conf.timeout, ncpus)
-        #     self.set_assertions_configuration([0] * self.assertions_graph.get_num_cells())
-        #     self.yosys_helper.save_design(self.name)
+        self.als_conf = None
+        self.yosys_helper = None
+        self.assertions_graph = None
+        self.catalog = None
+        self.assertions_catalog_entries = None
+        self.current_als_configuration = []
+        self.exact_box_output = None
+        
             
 
     def __deepcopy__(self, memo = None):
@@ -60,12 +52,24 @@ class DecisionTree:
         tree.model_classes = copy.deepcopy(self.model_classes)
         tree.decision_boxes = copy.deepcopy(self.decision_boxes)
         tree.assertions = copy.deepcopy(self.assertions)
-        #tree.als_conf = copy.deepcopy(self.als_conf)
-        #tree.assertions_graph = copy.deepcopy(self.assertions_graph)
-        #tree.catalog = copy.deepcopy(self.catalog)
-        #tree.assertions_catalog_entries = copy.deepcopy(self.assertions_catalog_entries)
-        #tree.current_als_configuration = copy.deepcopy(self.current_als_configuration)
+        tree.als_conf = copy.deepcopy(self.als_conf)
+        tree.assertions_graph = copy.deepcopy(self.assertions_graph)
+        tree.catalog = copy.deepcopy(self.catalog)
+        tree.assertions_catalog_entries = copy.deepcopy(self.assertions_catalog_entries)
+        tree.current_als_configuration = copy.deepcopy(self.current_als_configuration)
+        tree.self.exact_box_output = copy.deepcopy(self.exact_box_output)
         return tree
+    
+    def brace4ALS(self, als_conf):
+        if als_conf is None:
+            self.als_conf = als_conf
+            self.yosys_helper = YosysHelper()
+            HDLGenerator.generate_design_for_als(self, self.als_conf.cut_size)
+            self.assertions_graph = ALSGraph(self.yosys_helper.design)
+            self.assertions_catalog_entries = ALSCatalog(self.als_conf.lut_cache, self.als_conf.solver).generate_catalog(self.yosys_helper.get_luts_set(), self.als_conf.timeout, ncpus)
+            self.set_assertions_configuration([0] * self.assertions_graph.get_num_cells())
+            self.yosys_helper.save_design(self.name)
+         
 
     def get_total_bits(self):
         return 64 * len(self.decision_boxes)
@@ -83,10 +87,8 @@ class DecisionTree:
         return sum(self.current_als_configuration[c]["gates"] for c in self.current_als_configuration.keys())
 
     def reset_assertion_configuration(self):
-        return
-        # TODO: remove the return after the implementation of the brace4ALS function has been implemented
-        # if self.assertions_graph is not None:
-        #     self.set_assertions_configuration([0] * self.assertions_graph.get_num_cells())
+        if self.assertions_graph is not None:
+            self.set_assertions_configuration([0] * self.assertions_graph.get_num_cells())
 
     def get_als_dv_upper_bound(self):
         return [len(e) - 1 for c in [{"name": c["name"], "spec": c["spec"]} for c in self.assertions_graph.get_cells()] for e in self.assertions_catalog_entries if e[0]["spec"] == c["spec"] or negate(e[0]["spec"]) == c["spec"]]
@@ -96,51 +98,31 @@ class DecisionTree:
             box["box"].set_nab(nabs[box["box"].get_feature()])
 
     def set_assertions_configuration(self, configuration):
-        return
-        # TODO: remove the return after the implementation of the brace4ALS function has been implemented 
-        # assert len(configuration) == self.assertions_graph.get_num_cells(), f"wrong amount of variables. Needed {self.assertions_graph.get_num_cells()}, get {len(configuration)}"
-        # assert len(self.assertions_catalog_entries) > 0, "Catalog cannot be empty"
-        # matter = {}
-        # for i, (c, l) in enumerate(zip(configuration, self.assertions_graph.get_cells())):
-        #     for e in self.assertions_catalog_entries:
-        #         try:    
-        #             if e[0]["spec"] == l["spec"]:
-        #                 matter[l["name"]] = {
-        #                     "dist": c,
-        #                     "spec": e[0]["spec"],
-        #                     "axspec": e[c]["spec"],
-        #                     "gates": e[c]["gates"],
-        #                     "S": e[c]["S"],
-        #                     "P": e[c]["P"],
-        #                     "out_p": e[c]["out_p"],
-        #                     "out": e[c]["out"],
-        #                     "depth": e[c]["depth"]}
-        #             elif negate(e[0]["spec"]) == l["spec"]:
-        #                 matter[l["name"]] = {
-        #                     "dist": c,
-        #                     "spec": negate(e[0]["spec"]),
-        #                     "axspec": negate(e[c]["spec"]),
-        #                     "gates": e[c]["gates"],
-        #                     "S": e[c]["S"],
-        #                     "P": e[c]["P"],
-        #                     "out_p": 1 - e[c]["out_p"],
-        #                     "out": e[c]["out"],
-        #                     "depth": e[c]["depth"]}
-        #         except IndexError as err:
-        #             ub = self.get_als_dv_upper_bound()
-        #             print(err)
-        #             print(f"Tree: {self.name}")
-        #             print(f"Configuration: {configuration}")
-        #             print(f"Configuration length: {len(configuration)}")
-        #             print(f"Upper bound: {ub}")
-        #             print(f"Upper bound length: {len(ub)}")
-        #             print(f"Configuration[{i}]: {c}")
-        #             print(f"Upper bound[{i}]: {ub[i]}")
-        #             print(f"Cell: {l}")
-        #             print(f"Catalog Entries #: {len(e)}")
-        #             print(f"Catalog Entries: {e}")
-        #             exit()
-        # self.current_als_configuration = matter
+        assert len(configuration) == self.assertions_graph.get_num_cells(), f"wrong amount of variables. Needed {self.assertions_graph.get_num_cells()}, get {len(configuration)}"
+        assert len(self.assertions_catalog_entries) > 0, "Catalog cannot be empty"
+        matter = {}
+        for i, (c, l) in enumerate(zip(configuration, self.assertions_graph.get_cells())):
+            for e in self.assertions_catalog_entries:
+                try:    
+                    if e[0]["spec"] == l["spec"]:
+                        matter[l["name"]] = { "dist": c, "spec": e[0]["spec"], "axspec": e[c]["spec"], "gates": e[c]["gates"], "S": e[c]["S"], "P": e[c]["P"], "out_p": e[c]["out_p"], "out": e[c]["out"], "depth": e[c]["depth"]}
+                    elif negate(e[0]["spec"]) == l["spec"]:
+                        matter[l["name"]] = { "dist": c, "spec": negate(e[0]["spec"]), "axspec": negate(e[c]["spec"]), "gates": e[c]["gates"], "S": e[c]["S"], "P": e[c]["P"], "out_p": 1 - e[c]["out_p"], "out": e[c]["out"], "depth": e[c]["depth"]}
+                except IndexError as err:
+                    ub = self.get_als_dv_upper_bound()
+                    print(err)
+                    print(f"Tree: {self.name}")
+                    print(f"Configuration: {configuration}")
+                    print(f"Configuration length: {len(configuration)}")
+                    print(f"Upper bound: {ub}")
+                    print(f"Upper bound length: {len(ub)}")
+                    print(f"Configuration[{i}]: {c}")
+                    print(f"Upper bound[{i}]: {ub[i]}")
+                    print(f"Cell: {l}")
+                    print(f"Catalog Entries #: {len(e)}")
+                    print(f"Catalog Entries: {e}")
+                    exit()
+        self.current_als_configuration = matter
         
     def dump(self):
         print("\tName: ", self.name)
@@ -151,32 +133,17 @@ class DecisionTree:
         for a in self.assertions:
             print("\t\t", a["class"], " = ", a["expression"])
 
-    def get_boxes_output(self, features_value):
-        return {"\\" + box["box"].get_name(): box["box"].compare(features_value[box["box"].get_feature()]) for box in self.decision_boxes}
-    
-    def get_boxes_output_noals(self, features_value):
-        return {box["box"].get_name(): box["box"].compare(features_value[box["box"].get_feature()]) for box in self.decision_boxes}
-
-    def evaluate(self, features_value, classes_score):
-        boxes_output = self.get_boxes_output(features_value)
-        lut_io_info = {}
-        output, _ = self.assertions_graph.evaluate(boxes_output, lut_io_info, self.current_als_configuration)
-        for c in classes_score.keys():
-            classes_score[c] += int(output["\\" + c])
-            
-    def evaluate_noals(self, features_value, classes_score):
-        boxes_output = self.get_boxes_output_noals(features_value)
-        for a in self.assertions:
-            classes_score[a["class" ]] += 1 if eval(a["expression"], boxes_output) else 0
-
     def predict(self, attributes):
         boxes_output = {
-            box["box"].get_name() : #if self.als is None else "\\" + box["box"].get_name() : 
+            box["box"].get_name() if self.als_conf is None else "\\" + box["box"].get_name() : 
                 box["box"].compare(attributes[self.attrbutes_name.index(box["box"].get_feature())])
             for box in self.decision_boxes
         }
-        return [eval(a["expression"], boxes_output) for a in self.assertions ]
-        
+        if self.als_conf is None:
+            return [eval(a["expression"], boxes_output) for a in self.assertions ]
+        lut_io_info = {}
+        output = self.assertions_graph.evaluate(boxes_output, lut_io_info, self.current_als_configuration)[0]
+        return [ o[f"\\{c}"] for c in self.model_classes ]
 
     def get_decision_boxes(self, root_node):
         self.decision_boxes = []

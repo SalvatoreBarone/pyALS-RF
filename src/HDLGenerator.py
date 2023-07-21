@@ -538,7 +538,7 @@ class HDLGenerator:
         destination = "/tmp/pyals-rf/"
         mkpath(destination)
         mkpath(f"{destination}/vhd")
-        file_name, module_name = tree.generate_tree_hdl_exact_assertions(destination)
+        file_name, module_name = self.generate_tree_hdl_exact_assertions(tree, destination)
         tree.yosys_helper.load_ghdl()
         tree.yosys_helper.reset()
         tree.yosys_helper.ghdl_read_and_elaborate([tree.bnf_vhd, file_name], module_name)
