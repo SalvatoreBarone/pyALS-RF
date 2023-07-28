@@ -16,7 +16,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import numpy as np, pyamosa
 from .Classifier import *
-from .rank_based import datasetRanking, estimateLoss
+from .rank_based import datasetRanking, estimateLoss, softmax, giniImpurity
 
 class PsMop(pyamosa.Problem):
     def __init__(self, classifier, max_loss, ncpus):
@@ -26,10 +26,11 @@ class PsMop(pyamosa.Problem):
         self.classifier.reset_nabs_configuration()
         self.classifier.reset_assertion_configuration()
         
-        
+        print("Computing the baseline accuracy...")
         self.baseline_accuracy = self.classifier.evaluate_test_dataset()
         print(f"Baseline accuracy: {self.baseline_accuracy} %")
-        print(f"Baseline retained bits: {self.classifier.get_total_retained()}")
+        self.baseline_bits = self.classifier.get_total_retained()
+        print(f"Baseline retained bits: {self.baseline_bits}")
         n_vars = len(self.classifier.model_features)
         ub = [53] * n_vars
         print(f"#vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")

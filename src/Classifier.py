@@ -209,12 +209,12 @@ class Classifier:
             scores.append([sum(s) for s in zip(*outcomes)])
         return scores
          
-    def predict(self, attributes):
-        return tree_predict_x(self.trees, attributes)
+    def predict(self, x):
+        return Classifier.tree_predict_x(self.trees, x)
     
-    def predict_mt(self, attributes):
+    def predict_mt(self, x):
         assert self.p_tree is not None, "Multi-threading is disabled. To enable it, call the enable_mt() member of the Classifier class"
-        return [sum(s) for s in zip(*self.pool.starmap(Classifier.tree_predict_x, [[t, attributes] for t in self.p_tree]))]
+        return [sum(s) for s in zip(*self.pool.starmap(Classifier.tree_predict_x, [[t, x] for t in self.p_tree]))]
         
     @staticmethod
     def tree_predict_x(trees, x):

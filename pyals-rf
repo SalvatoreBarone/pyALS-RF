@@ -19,7 +19,7 @@ import click, git, os, sys
 from git import RemoteProgress
 from multiprocessing import cpu_count
 from src.Classifier import Classifier
-from src.ps_flow import ps_flow
+from src.ps_flow import ps_flow, ps_eval, ps_distance
 from src.als_flow import als_one_step, als_two_steps
 from src.als_wc_flow import als_wc_one_step, als_wc_two_steps
 from src.combined_flow import full_one_step, full_two_steps
@@ -178,6 +178,30 @@ def learning(clf, dataset, configfile, outputdir, fraction, depth, predictors, c
     """
     dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap)
 
+@click.command("eval")
+@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
+@click.argument('axapproach', type=click.Choice(["ps", "als", "full"]))
+@click.option('--axmode', type = click.Choice(["whole", "split"]))
+@click.option('--nabs', type = str, required = True)
+def eval(configfile, axapproach, axmode, nabs):
+    if axapproach == "ps":
+        ps_eval(configfile, nabs)
+    else:
+        print("Not supported yet")
+        exit()
+
+
+@click.command("distance")
+@click.argument('axapproach', type=click.Choice(["ps", "als", "full"]))
+@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
+@click.option('--pareto', type = click.Path(exists=True, dir_okay=False), default = None)
+@click.option('--axmode', type = click.Choice(["whole", "split"]))
+def distance(axapproach, configfile, pareto, axmode):
+    if axapproach == "ps":
+        ps_distance(configfile, pareto)
+    else:
+        print("Not supported yet")
+        exit()
 
 cli.add_command(dump)
 cli.add_command(bitwidth)
@@ -185,6 +209,8 @@ cli.add_command(als)
 cli.add_command(als_wc)
 cli.add_command(full)
 cli.add_command(learning)
+cli.add_command(eval)
+cli.add_command(distance)
 
 if __name__ == '__main__':
 	if git_updater():
