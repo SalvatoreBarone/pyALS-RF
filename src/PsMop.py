@@ -73,7 +73,7 @@ class RankBasedPsMop(pyamosa.Problem):
 
     def evaluate(self, x, out):
         self.set_matter_configuration(x)
-        acc_loss, samples = estimateLoss(self.baseline_accuracy, self.max_loss, self.alpha, self.beta, self.gamma, self.classifier, self.C, self.M)
+        acc_loss, samples = estimateLoss(self.baseline_accuracy, 2 * self.max_loss, self.alpha, self.beta, self.gamma, self.classifier, self.C, self.M)
         self.sample_count.append(samples)
         retained_bits = self.classifier.get_total_retained()
         out["f"] = [acc_loss, retained_bits]
