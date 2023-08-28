@@ -138,17 +138,25 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
         plt.tight_layout()
         plt.savefig(outfile, bbox_inches="tight", pad_inches=0)
         
-    def boxplot(data, xlabel, ylabel, outfile, figsize = (4,4)):
+    def boxplot(data, xlabel, ylabel, outfile, figsize = (4,4), float_format = "%.2f"):
         plt.figure(figsize=figsize)
-        d = plt.boxplot(data)
+        bp_dict = plt.boxplot(data, showmeans=True)
+        for median, box, mean in zip(bp_dict['medians'], bp_dict['boxes'], bp_dict['means']):
+            x, y = median.get_xydata()[1] # top of median line
+            plt.text(1.03 * x, y, float_format % y, horizontalalignment='left', verticalalignment='center')
+            box_left, y = box.get_xydata()[0]
+            plt.text(0.97 * box_left,y, float_format % y, horizontalalignment='right', verticalalignment='center')
+            _, y = box.get_xydata()[3]
+            plt.text(0.97 * box_left,y, float_format % y, horizontalalignment='right', verticalalignment='center')
+            _, y = mean.get_xydata()[0]
+            plt.text(0.97 * box_left, y, float_format % y, horizontalalignment='right', verticalalignment='center')
         plt.ylabel(ylabel)
         #plt.xlabel(xlabel)
-        #plt.xticks([1], [xlabel])
+        plt.xticks([1], [""])
         #plt.xticks(rotation = 45)
         plt.tick_params(bottom = False)
         plt.tight_layout()
         plt.savefig(outfile, bbox_inches='tight', pad_inches=0)
-        print (xlabel, d)
         
     configuration = PSConfigParser(configfile)
     check_for_file(configuration.pmml)
@@ -210,6 +218,6 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
             evaluated_samples.append(nsamples)
         
     boxplot(estimation_error, "", "Estimation error", f"{outdir}/estimation_error.pdf")
-    boxplot(evaluated_samples, "", "# samples", f"{outdir}/evaluated_samples.pdf")
+    boxplot(evaluated_samples, "", "# samples", f"{outdir}/evaluated_samples.pdf", float_format = "%.0f")
     classifier.pool.close()
     print(f"All done! Take a look at the {outdir} directory.")
