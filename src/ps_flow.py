@@ -140,13 +140,15 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
         
     def boxplot(data, xlabel, ylabel, outfile, figsize = (4,4)):
         plt.figure(figsize=figsize)
-        plt.boxplot(data)
+        d = plt.boxplot(data)
         plt.ylabel(ylabel)
         #plt.xlabel(xlabel)
-        plt.xticks([1], [xlabel])
+        #plt.xticks([1], [xlabel])
         #plt.xticks(rotation = 45)
+        plt.tick_params(bottom = False)
         plt.tight_layout()
         plt.savefig(outfile, bbox_inches='tight', pad_inches=0)
+        print (xlabel, d)
         
     configuration = PSConfigParser(configfile)
     check_for_file(configuration.pmml)
