@@ -19,7 +19,7 @@ import click, git, os, sys
 from git import RemoteProgress
 from multiprocessing import cpu_count
 from src.Classifier import Classifier
-from src.ps_flow import ps_flow, ps_eval, ps_distance
+from src.ps_flow import ps_flow, ps_eval, ps_distance, ps_compare
 from src.als_flow import als_one_step, als_two_steps
 from src.als_wc_flow import als_wc_one_step, als_wc_two_steps
 from src.combined_flow import full_one_step, full_two_steps
@@ -189,16 +189,33 @@ def eval(configfile, axapproach, axmode, nabs):
     else:
         print("Not supported yet")
         exit()
-
-
+        
 @click.command("distance")
-@click.argument('axapproach', type=click.Choice(["ps", "als", "full"]))
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
+@click.argument('axapproach', type=click.Choice(["ps", "als", "full"]))
 @click.option('--pareto', type = click.Path(exists=True, dir_okay=False), default = None)
 @click.option('--axmode', type = click.Choice(["whole", "split"]))
-def distance(axapproach, configfile, pareto, axmode):
+def distance(configfile, axapproach, pareto, axmode):
     if axapproach == "ps":
         ps_distance(configfile, pareto)
+    else:
+        print("Not supported yet")
+        exit()
+
+@click.command("compare")
+@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
+@click.argument('axapproach', type=click.Choice(["ps", "als", "full"]))
+@click.argument('outdir', type=click.Path(exists=True, dir_okay=True))
+@click.option('--pareto', type = click.Path(exists=True, dir_okay=False), default = None)
+@click.option('--axmode', type = click.Choice(["whole", "split"]))
+@click.option('--alpha', type=float, default = 0.07)
+@click.option('--beta', type=float, default = 0.5)
+@click.option('--gamma', type=float, default = 2)
+@click.option('--maxloss', type=float, default = 5)
+@click.option('--neval', type = int, default = None)
+def compare(configfile, axapproach, outdir, pareto, axmode, alpha, beta, gamma, maxloss, neval):
+    if axapproach == "ps":
+        ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval)
     else:
         print("Not supported yet")
         exit()
@@ -211,6 +228,7 @@ cli.add_command(full)
 cli.add_command(learning)
 cli.add_command(eval)
 cli.add_command(distance)
+cli.add_command(compare)
 
 if __name__ == '__main__':
 	if git_updater():

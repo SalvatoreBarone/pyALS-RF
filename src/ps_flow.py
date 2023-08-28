@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import os, pyamosa, time, numpy as np, matplotlib.pyplot as plt
+import os, pyamosa, time, numpy as np, matplotlib.pyplot as plt, matplotlib.lines as mlines
 from pyalslib import check_for_file
 from src.PsConfigParser import *
 from src.PsMop import *
@@ -126,3 +126,88 @@ def ps_distance(configfile, pareto = None):
     plot(configuration.outdir, data_to_plot, "rhotheta_rhoptheta", r"$ \rho_{\theta^*} - \rho'_{\theta^*},\; \tau \in T$")
     classifier.pool.close()
     print(f"All done! Take a look at the {configuration.outdir} directory.")
+    
+def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
+    def scatterplot(paretos, legend_markers, xlabel, ylabel, outfile, figsize = (4,4)):
+        plt.figure(figsize = figsize)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        for pareto, l in zip(paretos, legend_markers):
+            plt.scatter(pareto[:,0], pareto[:,1], c = l.get_color(), marker = l.get_marker())
+        plt.legend(handles=legend_markers, frameon=False, loc='upper right', ncol=1)
+        plt.tight_layout()
+        plt.savefig(outfile, bbox_inches="tight", pad_inches=0)
+        
+    def boxplot(data, xlabel, ylabel, outfile, figsize = (4,4)):
+        plt.figure(figsize=figsize)
+        plt.boxplot(data)
+        plt.ylabel(ylabel)
+        #plt.xlabel(xlabel)
+        plt.xticks([1], [xlabel])
+        #plt.xticks(rotation = 45)
+        plt.tight_layout()
+        plt.savefig(outfile, bbox_inches='tight', pad_inches=0)
+        
+    configuration = PSConfigParser(configfile)
+    check_for_file(configuration.pmml)
+    check_for_file(configuration.error_conf.test_dataset)
+    if configuration.outdir != ".":
+        mkpath(configuration.outdir)
+    classifier = Classifier(cpu_count())
+    classifier.parse(configuration.pmml)
+    classifier.read_dataset(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
+    classifier.enable_mt()
+    archive_json = f"{configuration.outdir}/final_archive.json" if pareto is None else pareto
+    
+    n_vars = len(classifier.model_features)
+    classifier.reset_nabs_configuration()
+    classifier.reset_assertion_configuration()
+    C, M = datasetRanking(classifier)
+    baseline_accuracy = len(C) / (len(C) + len(M)) * 100
+    print(f"Baseline accuracy: {baseline_accuracy} %")
+    
+    
+    legend_markers = [
+         mlines.Line2D([],[], color='crimson', marker='d', linestyle='None', label='Reference'),
+         mlines.Line2D([],[], color='mediumblue', marker='o', linestyle='None', label='Rank-based')]
+    
+    estimation_error = []
+    evaluated_samples = []
+    if os.path.exists(archive_json):
+        actual_pareto = []
+        estimated_pareto = []
+    
+        problem = PsMop(classifier, configuration.error_conf.max_loss_perc, cpu_count())
+        optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
+        print("Reading the Pareto front.")
+        optimizer.read_final_archive_from_json(problem, archive_json)
+        print(f"{len(optimizer.archive)} solutions read from {archive_json}")
+        classifier.reset_nabs_configuration()
+        
+        for ax in  tqdm(optimizer.archive, desc="Analysing ACSs...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave = False):
+            nabs = {f["name"]: n for f, n in zip(classifier.model_features, ax["x"][:len(classifier.model_features)])}
+            classifier.set_nabs(nabs)
+            
+            estloss, nsamples = estimateLoss(baseline_accuracy, 2 * maxloss, alpha, beta, gamma, classifier, C, M)
+            actual_pareto.append(ax["f"])
+            estimated_pareto.append(np.array([estloss, ax["f"][1]]))
+            estimation_error.append(ax["f"][0] - estloss)
+            evaluated_samples.append(nsamples)
+            
+        scatterplot([np.array(actual_pareto), np.array(estimated_pareto)], legend_markers, "Accuracy loss (%)", "Power consumption (mW)", f"{outdir}/actual_vs_est_pareto_comparison.pdf")
+        
+    if neval is not None and len(estimation_error) < neval:
+        to_estimate = neval - len(estimation_error)
+        for _ in tqdm(range(to_estimate), desc="Colleting other random DTMCSs...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}"):
+            x = np.random.randint(0, 53, size=n_vars, dtype=int)
+            nabs = {f["name"]: n for f, n in zip(classifier.model_features, x[:len(classifier.model_features)])}
+            classifier.set_nabs(nabs)
+            loss = baseline_accuracy - classifier.evaluate_test_dataset()
+            estloss, nsamples = estimateLoss(baseline_accuracy, 2 * maxloss, alpha, beta, gamma, classifier, C, M)
+            estimation_error.append(loss - estloss)
+            evaluated_samples.append(nsamples)
+        
+    boxplot(estimation_error, "", "Estimation error", f"{outdir}/estimation_error.pdf")
+    boxplot(evaluated_samples, "", "# samples", f"{outdir}/evaluated_samples.pdf")
+    classifier.pool.close()
+    print(f"All done! Take a look at the {outdir} directory.")
