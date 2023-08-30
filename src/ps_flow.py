@@ -138,23 +138,29 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
         plt.tight_layout()
         plt.savefig(outfile, bbox_inches="tight", pad_inches=0)
         
-    def boxplot(data, xlabel, ylabel, outfile, figsize = (4,4), float_format = "%.2f"):
+    def boxplot(data, xlabel, ylabel, outfile, figsize = (4,4), float_format = "%.2f", fontsize = 14):
         plt.figure(figsize=figsize)
         bp_dict = plt.boxplot(data, showmeans=True)
         for median, box, mean in zip(bp_dict['medians'], bp_dict['boxes'], bp_dict['means']):
-            x, y = median.get_xydata()[1] # top of median line
-            plt.text(1.03 * x, y, float_format % y, horizontalalignment='left', verticalalignment='center')
-            box_left, y = box.get_xydata()[0]
-            plt.text(0.97 * box_left,y, float_format % y, horizontalalignment='right', verticalalignment='center')
-            _, y = box.get_xydata()[3]
-            plt.text(0.97 * box_left,y, float_format % y, horizontalalignment='right', verticalalignment='center')
-            _, y = mean.get_xydata()[0]
-            plt.text(0.97 * box_left, y, float_format % y, horizontalalignment='right', verticalalignment='center')
-        plt.ylabel(ylabel)
-        #plt.xlabel(xlabel)
+            median_x, median_y = median.get_xydata()[1] # top of median line
+            plt.text(1.03 * median_x, median_y, float_format % median_y, horizontalalignment='left', verticalalignment='center', fontsize = fontsize)
+            
+            box_left, q1_y = box.get_xydata()[0]
+            plt.text(0.97 * box_left, q1_y, float_format % q1_y, horizontalalignment='right', verticalalignment='center', fontsize = fontsize)
+            _, q3_y = box.get_xydata()[3]
+            plt.text(0.97 * box_left, q3_y, float_format % q3_y, horizontalalignment='right', verticalalignment='center', fontsize = fontsize)
+            
+            _, mean_y = mean.get_xydata()[0]
+            plt.text(0.97 * box_left, mean_y, float_format % mean_y, horizontalalignment='right', verticalalignment='center', fontsize = fontsize)
+
+        #plt.box(False)
+        plt.tick_params(bottom = False)
         plt.xticks([1], [""])
         #plt.xticks(rotation = 45)
-        plt.tick_params(bottom = False)
+        #plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        ax = plt.gca()
+        ax.spines[['right', 'top', 'bottom']].set_visible(False)
         plt.tight_layout()
         plt.savefig(outfile, bbox_inches='tight', pad_inches=0)
         
@@ -217,7 +223,7 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
             estimation_error.append(loss - estloss)
             evaluated_samples.append(nsamples)
         
-    boxplot(estimation_error, "", "Estimation error", f"{outdir}/estimation_error.pdf")
-    boxplot(evaluated_samples, "", "# samples", f"{outdir}/evaluated_samples.pdf", float_format = "%.0f")
+    boxplot(estimation_error, "", "", f"{outdir}/estimation_error.pdf", figsize = (3, 4))
+    boxplot(evaluated_samples, "", "", f"{outdir}/evaluated_samples.pdf", figsize = (3, 4), float_format = "%.0f")
     classifier.pool.close()
     print(f"All done! Take a look at the {outdir} directory.")
