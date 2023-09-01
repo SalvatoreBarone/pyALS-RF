@@ -19,7 +19,7 @@ import click, git, os, sys
 from git import RemoteProgress
 from multiprocessing import cpu_count
 from src.Classifier import Classifier
-from src.ps_flow import ps_flow, ps_eval, ps_distance, ps_compare
+from src.ps_flow import ps_flow, ps_eval, ps_distance, ps_compare, compute_gini_dist
 from src.als_flow import als_one_step, als_two_steps
 from src.als_wc_flow import als_wc_one_step, als_wc_two_steps
 from src.combined_flow import full_one_step, full_two_steps
@@ -220,6 +220,12 @@ def compare(configfile, axapproach, outdir, pareto, axmode, alpha, beta, gamma, 
         print("Not supported yet")
         exit()
 
+@click.command("distgini")
+@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
+@click.argument('outfile', type=click.Path(exists=False, dir_okay=False))
+def compgini(configfile, outfile):
+    compute_gini_dist(configfile, outfile)
+
 cli.add_command(dump)
 cli.add_command(bitwidth)
 cli.add_command(als)
@@ -229,6 +235,7 @@ cli.add_command(learning)
 cli.add_command(eval)
 cli.add_command(distance)
 cli.add_command(compare)
+cli.add_command(compgini)
 
 if __name__ == '__main__':
 	if git_updater():

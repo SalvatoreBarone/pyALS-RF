@@ -17,6 +17,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import numpy as np
 from tqdm import tqdm
 from .Classifier import *
+from .plot import boxplot
 
 def softmax(x):
     e_x = np.exp(np.array(x, dtype = np.float64))
@@ -27,6 +28,10 @@ def dispersion(x, theta):
 
 def giniImpurity(x):
     return len(x) / (len(x) - 1) * (1 - np.sum(np.square(x)))
+
+def dist_gini(classifier, outfile):
+    index = [ giniImpurity(softmax(classifier.predict_mt(tau))) for tau, _ in tqdm(zip(classifier.x_test, classifier.y_test), total=len(classifier.y_test), desc="Computing the Gini index...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}") ]
+    boxplot(index, "", "", outfile, figsize= (2, 4), annotate=True,float_format="%.2f", fontsize= 13)
 
 def datasetRanking(classifier):
     C = []

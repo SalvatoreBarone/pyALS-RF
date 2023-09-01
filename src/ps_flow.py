@@ -18,7 +18,8 @@ import os, pyamosa, time, numpy as np, matplotlib.pyplot as plt, matplotlib.line
 from pyalslib import check_for_file
 from src.PsConfigParser import *
 from src.PsMop import *
-from .rank_based import softmax
+from .rank_based import softmax, dist_gini
+from .plot import scatterplot, boxplot
 
 def ps_flow(configfile, mode, alpha, beta, gamma, ncpus):
     configuration = PSConfigParser(configfile)
@@ -128,42 +129,7 @@ def ps_distance(configfile, pareto = None):
     print(f"All done! Take a look at the {configuration.outdir} directory.")
     
 def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
-    def scatterplot(paretos, legend_markers, xlabel, ylabel, outfile, figsize = (4,4)):
-        plt.figure(figsize = figsize)
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        for pareto, l in zip(paretos, legend_markers):
-            plt.scatter(pareto[:,0], pareto[:,1], c = l.get_color(), marker = l.get_marker())
-        plt.legend(handles=legend_markers, frameon=False, loc='upper right', ncol=1)
-        plt.tight_layout()
-        plt.savefig(outfile, bbox_inches="tight", pad_inches=0)
-        
-    def boxplot(data, xlabel, ylabel, outfile, figsize = (4,4), float_format = "%.2f", fontsize = 14):
-        plt.figure(figsize=figsize)
-        bp_dict = plt.boxplot(data, showmeans=True)
-        for median, box, mean in zip(bp_dict['medians'], bp_dict['boxes'], bp_dict['means']):
-            median_x, median_y = median.get_xydata()[1] # top of median line
-            plt.text(1.03 * median_x, median_y, float_format % median_y, horizontalalignment='left', verticalalignment='center', fontsize = fontsize)
             
-            box_left, q1_y = box.get_xydata()[0]
-            plt.text(0.97 * box_left, q1_y, float_format % q1_y, horizontalalignment='right', verticalalignment='center', fontsize = fontsize)
-            _, q3_y = box.get_xydata()[3]
-            plt.text(0.97 * box_left, q3_y, float_format % q3_y, horizontalalignment='right', verticalalignment='center', fontsize = fontsize)
-            
-            _, mean_y = mean.get_xydata()[0]
-            plt.text(0.97 * box_left, mean_y, float_format % mean_y, horizontalalignment='right', verticalalignment='center', fontsize = fontsize)
-
-        #plt.box(False)
-        plt.tick_params(bottom = False)
-        plt.xticks([1], [""])
-        #plt.xticks(rotation = 45)
-        #plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        ax = plt.gca()
-        ax.spines[['right', 'top', 'bottom']].set_visible(False)
-        plt.tight_layout()
-        plt.savefig(outfile, bbox_inches='tight', pad_inches=0)
-        
     configuration = PSConfigParser(configfile)
     check_for_file(configuration.pmml)
     check_for_file(configuration.error_conf.test_dataset)
@@ -181,7 +147,6 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
     C, M = datasetRanking(classifier)
     baseline_accuracy = len(C) / (len(C) + len(M)) * 100
     print(f"Baseline accuracy: {baseline_accuracy} %")
-    
     
     legend_markers = [
          mlines.Line2D([],[], color='crimson', marker='d', linestyle='None', label='Reference'),
@@ -223,7 +188,19 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
             estimation_error.append(loss - estloss)
             evaluated_samples.append(nsamples)
         
-    boxplot(estimation_error, "", "", f"{outdir}/estimation_error.pdf", figsize = (3, 4))
-    boxplot(evaluated_samples, "", "", f"{outdir}/evaluated_samples.pdf", figsize = (3, 4), float_format = "%.0f")
+    boxplot(estimation_error, "", "", f"{outdir}/estimation_error.pdf", annotate = True, figsize = (3, 4))
+    boxplot(evaluated_samples, "", "", f"{outdir}/evaluated_samples.pdf", annotate = True, figsize = (3, 4), float_format = "%.0f")
     classifier.pool.close()
     print(f"All done! Take a look at the {outdir} directory.")
+
+def compute_gini_dist(configfile, outfile):
+    configuration = PSConfigParser(configfile)
+    check_for_file(configuration.pmml)
+    check_for_file(configuration.error_conf.test_dataset)
+    classifier = Classifier(cpu_count())
+    classifier.parse(configuration.pmml)
+    classifier.read_dataset(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
+    classifier.enable_mt()
+    classifier.reset_nabs_configuration()
+    classifier.reset_assertion_configuration()
+    dist_gini(classifier, outfile)
