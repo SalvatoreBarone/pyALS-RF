@@ -222,9 +222,9 @@ def compare(configfile, axapproach, outdir, pareto, axmode, alpha, beta, gamma, 
 
 @click.command("distgini")
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-@click.argument('outfile', type=click.Path(exists=False, dir_okay=False))
-def compgini(configfile, outfile):
-    compute_gini_dist(configfile, outfile)
+@click.argument('outdir', type=click.Path(exists=True, dir_okay=True))
+def compgini(configfile, outdir):
+    compute_gini_dist(configfile, outdir)
 
 cli.add_command(dump)
 cli.add_command(bitwidth)

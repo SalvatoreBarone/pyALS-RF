@@ -29,9 +29,19 @@ def dispersion(x, theta):
 def giniImpurity(x):
     return len(x) / (len(x) - 1) * (1 - np.sum(np.square(x)))
 
-def dist_gini(classifier, outfile):
-    index = [ giniImpurity(softmax(classifier.predict_mt(tau))) for tau, _ in tqdm(zip(classifier.x_test, classifier.y_test), total=len(classifier.y_test), desc="Computing the Gini index...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}") ]
-    boxplot(index, "", "", outfile, figsize= (2, 4), annotate=True,float_format="%.2f", fontsize= 13)
+def dist_gini(classifier, outdir):
+    C = []
+    M = []
+    for tau, theta_star in tqdm(zip(classifier.x_test, classifier.y_test), total=len(classifier.y_test), desc="Computing the Gini index...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}"):
+        rho = softmax(classifier.predict_mt(tau))
+        Ig = giniImpurity(rho)
+        if  np.argmax(rho) == theta_star:
+            C.append(Ig)
+        else:
+            M.append(Ig)
+    mkpath(outdir)
+    boxplot(C, "", "", f"{outdir}/C_ginidist.pdf", figsize= (2, 4), annotate = True, float_format = "%.2f", fontsize = 13)
+    boxplot(M, "", "", f"{outdir}/M_ginidist.pdf", figsize= (2, 4), annotate = True, float_format = "%.2f", fontsize = 13)    
 
 def datasetRanking(classifier):
     C = []

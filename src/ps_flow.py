@@ -20,6 +20,7 @@ from src.PsConfigParser import *
 from src.PsMop import *
 from .rank_based import softmax, dist_gini
 from .plot import scatterplot, boxplot
+from multiprocessing import cpu_count
 
 def ps_flow(configfile, mode, alpha, beta, gamma, ncpus):
     configuration = PSConfigParser(configfile)
@@ -139,6 +140,8 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
     classifier.parse(configuration.pmml)
     classifier.read_dataset(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
     classifier.enable_mt()
+    problem = PsMop(classifier, configuration.error_conf.max_loss_perc, cpu_count())
+    problem.load_cache(f"{configuration.outdir}/.cache")
     archive_json = f"{configuration.outdir}/final_archive.json" if pareto is None else pareto
     
     n_vars = len(classifier.model_features)
@@ -152,8 +155,10 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
          mlines.Line2D([],[], color='crimson', marker='d', linestyle='None', label='Reference'),
          mlines.Line2D([],[], color='mediumblue', marker='o', linestyle='None', label='Rank-based')]
     
+    maxMiss = int((len(C) + len(M)) * (100 - baseline_accuracy + maxloss) / 100)
+    
     estimation_error = []
-    evaluated_samples = []
+    evaluated_samples = [maxMiss] * len(problem.cache)
     if os.path.exists(archive_json):
         actual_pareto = []
         estimated_pareto = []
@@ -177,23 +182,12 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
             
         scatterplot([np.array(actual_pareto), np.array(estimated_pareto)], legend_markers, "Accuracy loss (%)", "Power consumption (mW)", f"{outdir}/actual_vs_est_pareto_comparison.pdf")
         
-    if neval is not None and len(estimation_error) < neval:
-        to_estimate = neval - len(estimation_error)
-        for _ in tqdm(range(to_estimate), desc="Colleting other random DTMCSs...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}"):
-            x = np.random.randint(0, 53, size=n_vars, dtype=int)
-            nabs = {f["name"]: n for f, n in zip(classifier.model_features, x[:len(classifier.model_features)])}
-            classifier.set_nabs(nabs)
-            loss = baseline_accuracy - classifier.evaluate_test_dataset()
-            estloss, nsamples = estimateLoss(baseline_accuracy, 2 * maxloss, alpha, beta, gamma, classifier, C, M)
-            estimation_error.append(loss - estloss)
-            evaluated_samples.append(nsamples)
-        
     boxplot(estimation_error, "", "", f"{outdir}/estimation_error.pdf", annotate = True, figsize = (3, 4))
     boxplot(evaluated_samples, "", "", f"{outdir}/evaluated_samples.pdf", annotate = True, figsize = (3, 4), float_format = "%.0f")
     classifier.pool.close()
     print(f"All done! Take a look at the {outdir} directory.")
 
-def compute_gini_dist(configfile, outfile):
+def compute_gini_dist(configfile, outdir):
     configuration = PSConfigParser(configfile)
     check_for_file(configuration.pmml)
     check_for_file(configuration.error_conf.test_dataset)
@@ -203,4 +197,4 @@ def compute_gini_dist(configfile, outfile):
     classifier.enable_mt()
     classifier.reset_nabs_configuration()
     classifier.reset_assertion_configuration()
-    dist_gini(classifier, outfile)
+    dist_gini(classifier, outdir)
