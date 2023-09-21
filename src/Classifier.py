@@ -200,6 +200,17 @@ class Classifier:
             return sum(np.argmax(self.predict(x)) == y for x, y in tqdm( zip(self.x_test, self.y_test), total=len(self.y_test), desc="Computing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False) ) / len(self.y_test) * 100
         outcomes = self.pool.starmap(Classifier.tree_predict, self.args)
         return sum( np.argmax([sum(s) for s in zip(*scores)]) == y for scores, y in zip(zip(*outcomes), self.y_test) ) / len(self.y_test) * 100
+    
+    def get_mintems(self):
+        active_minterm_table = []
+        for x, y in tqdm( zip(self.x_test, self.y_test), total=len(self.y_test), desc="Computing minterms...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+            outcome = {"x" : x, "y": str(y), "outcomes" : []}
+            for t in self.trees:
+                predicted_class, active_minterm = t.get_active_minterm(x)
+                outcome["outcomes"].append((predicted_class, active_minterm, predicted_class == str(y)))
+            active_minterm_table.append(outcome)
+        return active_minterm_table    
+         
             
     @staticmethod
     def tree_predict(trees, x_test):

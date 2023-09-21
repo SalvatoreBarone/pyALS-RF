@@ -25,6 +25,7 @@ from src.als_wc_flow import als_wc_one_step, als_wc_two_steps
 from src.combined_flow import full_one_step, full_two_steps
 from src.DtGenConfigParser import *
 from src.dtgen import dtgen
+from src.minterms_table import get_minterms_table
 
 def git_updater():
     try:
@@ -225,6 +226,14 @@ def compare(configfile, axapproach, outdir, pareto, axmode, alpha, beta, gamma, 
 @click.argument('outdir', type=click.Path(exists=True, dir_okay=True))
 def compgini(configfile, outdir):
     compute_gini_dist(configfile, outdir)
+    
+@click.command("minterms")
+@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
+@click.argument('outfile', type=click.Path(dir_okay=False))
+@click.option("--ncpus", type = int, help = "Set the number of parallel jobs to be used turing DSE. By default, pyALS uses every CPU core.", default = cpu_count())
+def minterms_table(configfile, outfile, ncpus):
+    get_minterms_table(configfile, outfile, ncpus)
+    
 
 cli.add_command(dump)
 cli.add_command(bitwidth)
@@ -236,6 +245,7 @@ cli.add_command(eval)
 cli.add_command(distance)
 cli.add_command(compare)
 cli.add_command(compgini)
+cli.add_command(minterms_table)
 
 if __name__ == '__main__':
 	if git_updater():

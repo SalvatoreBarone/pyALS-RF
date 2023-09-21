@@ -31,10 +31,14 @@ class DecisionTree:
         self.attrbutes_name = [f["name"] for f in self.model_features]
         self.model_classes = classes
         self.decision_boxes = []
+        self.leaves = []
         self.assertions = []
+        self.class_minterms = {}
         if root_node:
             self.get_decision_boxes(root_node)
-            self.get_assertions(root_node)
+            self.get_leaves(root_node)
+            self.get_assertions()
+            self.get_minterms_for_classes()
         self.als_conf = None
         self.yosys_helper = None
         self.assertions_graph = None
@@ -42,6 +46,7 @@ class DecisionTree:
         self.assertions_catalog_entries = None
         self.current_als_configuration = []
         self.exact_box_output = None
+        
         
             
 
@@ -141,9 +146,21 @@ class DecisionTree:
         }
         if self.als_conf is None:
             return [eval(a["expression"], boxes_output) for a in self.assertions ]
+        exit()
         lut_io_info = {}
         output = self.assertions_graph.evaluate(boxes_output, lut_io_info, self.current_als_configuration)[0]
         return [ o[f"\\{c}"] for c in self.model_classes ]
+
+    def get_active_minterm(self, attributes):
+        boxes_output = {
+            box["box"].get_name() if self.als_conf is None else "\\" + box["box"].get_name() : 
+                box["box"].compare(attributes[self.attrbutes_name.index(box["box"].get_feature())])
+            for box in self.decision_boxes
+        }
+        for k, v in self.class_minterms.items():
+            for m in v:
+                if eval(m, boxes_output):
+                    return k, m
 
     def get_decision_boxes(self, root_node):
         self.decision_boxes = []
@@ -160,10 +177,10 @@ class DecisionTree:
                     exit()
 
     def get_leaves(self, root_node):
-        return [{"name": node.name, "class": node.score, "expression": f"({str(node.boolean_expression)})"} for node in PreOrderIter(root_node) if not any(node.children)]
+        self.leaves = [{"name": node.name, "class": node.score, "expression": f"({str(node.boolean_expression)})"} for node in PreOrderIter(root_node) if not any(node.children)]
 
-    def get_assertion(self, leaf_set, class_name):
-        conditions = [item["expression"] for item in leaf_set if item["class"] == class_name]
+    def get_assertion(self, class_name):
+        conditions = [item["expression"] for item in self.leaves if item["class"] == class_name]
         if not conditions:
             return "False"
         elif len(conditions) == 1:
@@ -171,14 +188,16 @@ class DecisionTree:
         else:
             return " | ".join(conditions)
 
-    def get_assertions(self, root_node):
+    def get_assertions(self):
         self.assertions = []
-        leaves = self.get_leaves(root_node)
         for class_name in self.model_classes:
-            assertion_function = self.get_assertion(leaves, class_name)
+            assertion_function = self.get_assertion(class_name)
             hdl_expression = str(espresso_exprs(expr(assertion_function))[0]).replace("~", "not ").replace("Or","func_or").replace("And","func_and")
             self.assertions.append({
                 "class"      : class_name,
                 "expression" : assertion_function.replace("~", "not ").replace("|", "or").replace("&", "and"),
                 "minimized"  : "'0'" if assertion_function == "False" else hdl_expression})
 
+
+    def get_minterms_for_classes(self):
+        self.class_minterms = { c : [item["expression"].replace("~", "not ").replace("|", "or").replace("&", "and") for item in self.leaves if item["class"] == c] for c in self.model_classes}  
