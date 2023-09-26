@@ -23,6 +23,7 @@ from multiprocessing import cpu_count, Pool
 from tqdm import tqdm
 from pyalslib import list_partitioning
 from .DecisionTree import *
+from .rank_based import softmax, giniImpurity
 
 
 class Classifier:
@@ -202,14 +203,19 @@ class Classifier:
         return sum( np.argmax([sum(s) for s in zip(*scores)]) == y for scores, y in zip(zip(*outcomes), self.y_test) ) / len(self.y_test) * 100
     
     def get_mintems(self):
-        active_minterm_table = []
+        minterms_by_sample = []
         for x, y in tqdm( zip(self.x_test, self.y_test), total=len(self.y_test), desc="Computing minterms...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
-            outcome = {"x" : x, "y": str(y), "outcomes" : []}
+            outcome = {"x" : x, "y": str(y), "redundancy" : 0, "rho": np.zeros((len(self.model_classes),), dtype=int), "Ig" : 0, "outcomes" : {}}
             for t in self.trees:
-                predicted_class, active_minterm = t.get_active_minterm(x)
-                outcome["outcomes"].append((predicted_class, active_minterm, predicted_class == str(y)))
-            active_minterm_table.append(outcome)
-        return active_minterm_table    
+                predicted_class, active_minterm, mask = t.get_active_minterm(x)
+                cost = len(active_minterm.split("and"))
+                outcome["rho"] += mask
+                outcome["outcomes"][t.name] = {"minterm" : active_minterm, "cost": cost, "correct" : predicted_class == str(y)}
+            outcome["Ig"] = giniImpurity(softmax(outcome["rho"]))
+            outcome["redundancy"] = int(sum(i["correct"] for i in outcome["outcomes"].values()) - np.ceil(len(self.trees)/2))
+            outcome["rho"] = outcome["rho"].tolist()
+            minterms_by_sample.append(outcome) 
+        return minterms_by_sample    
          
             
     @staticmethod

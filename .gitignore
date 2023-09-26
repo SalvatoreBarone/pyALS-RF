@@ -18,3 +18,5 @@ results_rf10_2s/
 results_rf10_1s/
 export/
 ps_result
+*.json
+*.json5

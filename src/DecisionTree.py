@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import os
+import os, numpy as np
 from pyosys import libyosys as ys
 from jinja2 import Environment, FileSystemLoader
 from distutils.dir_util import mkpath
@@ -157,10 +157,11 @@ class DecisionTree:
                 box["box"].compare(attributes[self.attrbutes_name.index(box["box"].get_feature())])
             for box in self.decision_boxes
         }
+        mask = np.array([eval(a["expression"], boxes_output) for a in self.assertions ], dtype=int)
         for k, v in self.class_minterms.items():
             for m in v:
                 if eval(m, boxes_output):
-                    return k, m
+                    return k, m, mask
 
     def get_decision_boxes(self, root_node):
         self.decision_boxes = []
