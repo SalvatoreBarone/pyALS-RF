@@ -229,11 +229,13 @@ def compgini(configfile, outdir):
     
 @click.command("pruning")
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-@click.argument('minterms', type=click.Path(dir_okay=False))
+@click.argument('assertions', type=click.Path(dir_okay=False))
+@click.argument('redundancy', type=click.Path(dir_okay=False))
 @click.argument('pruning', type=click.Path(dir_okay=False))
+@click.option('--relative', is_flag = True)
 @click.option("--ncpus", type = int, help = "Set the number of parallel jobs to be used turing DSE. By default, pyALS uses every CPU core.", default = cpu_count())
-def minterms_pruning(configfile, minterms, pruning, ncpus):
-    pruning_flow(configfile, minterms, pruning, ncpus)
+def assertions_pruning(configfile, assertions, redundancy, pruning, relative, ncpus):
+    pruning_flow(configfile, assertions, redundancy, pruning, relative, ncpus)
     
 
 cli.add_command(dump)
@@ -246,7 +248,7 @@ cli.add_command(eval)
 cli.add_command(distance)
 cli.add_command(compare)
 cli.add_command(compgini)
-cli.add_command(minterms_pruning)
+cli.add_command(assertions_pruning)
 
 if __name__ == '__main__':
 	if git_updater():

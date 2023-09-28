@@ -33,12 +33,13 @@ class DecisionTree:
         self.decision_boxes = []
         self.leaves = []
         self.assertions = []
-        self.class_minterms = {}
+        self.class_assertions = {}
         if root_node:
             self.get_decision_boxes(root_node)
             self.get_leaves(root_node)
             self.get_assertions()
-            self.get_minterms_for_classes()
+            self.get_assertions_for_classes()
+            self.pruned_assertions = {}
         self.als_conf = None
         self.yosys_helper = None
         self.assertions_graph = None
@@ -138,12 +139,15 @@ class DecisionTree:
         for a in self.assertions:
             print("\t\t", a["class"], " = ", a["expression"])
 
-    def predict(self, attributes):
-        boxes_output = {
+    def get_boxes_output(self, attributes):
+        return {
             box["box"].get_name() if self.als_conf is None else "\\" + box["box"].get_name() : 
                 box["box"].compare(attributes[self.attrbutes_name.index(box["box"].get_feature())])
             for box in self.decision_boxes
         }
+    
+    def predict(self, attributes):
+        boxes_output = self.get_boxes_output(attributes)
         if self.als_conf is None:
             return [eval(a["expression"], boxes_output) for a in self.assertions ]
         exit()
@@ -151,17 +155,25 @@ class DecisionTree:
         output = self.assertions_graph.evaluate(boxes_output, lut_io_info, self.current_als_configuration)[0]
         return [ o[f"\\{c}"] for c in self.model_classes ]
 
-    def get_active_minterm(self, attributes):
-        boxes_output = {
-            box["box"].get_name() if self.als_conf is None else "\\" + box["box"].get_name() : 
-                box["box"].compare(attributes[self.attrbutes_name.index(box["box"].get_feature())])
-            for box in self.decision_boxes
-        }
+    def get_assertion_activation(self, attributes):
+        boxes_output = self.get_boxes_output(attributes)
         mask = np.array([eval(a["expression"], boxes_output) for a in self.assertions ], dtype=int)
-        for k, v in self.class_minterms.items():
+        for k, v in self.class_assertions.items():
             for m in v:
                 if eval(m, boxes_output):
                     return k, m, mask
+                
+    def set_pruning(self, pruning):
+        self.pruned_assertions = {}
+        for class_name, assertions in self.class_assertions.items():
+            pruned = [assertion for class_label, tree_name, assertion, _ in pruning if tree_name == self.name and class_label == class_name ]            
+            kept_assertions = [ assertion for assertion in assertions if assertion not in pruned ]
+            self.pruned_assertions[class_name] = " or ".join(kept_assertions)
+    
+    def predict_pruning(self, attributes):
+        boxes_output = self.get_boxes_output(attributes)
+        if self.als_conf is None:
+            return [eval(a, boxes_output) for a in self.pruned_assertions ]
 
     def get_decision_boxes(self, root_node):
         self.decision_boxes = []
@@ -200,5 +212,5 @@ class DecisionTree:
                 "minimized"  : "'0'" if assertion_function == "False" else hdl_expression})
 
 
-    def get_minterms_for_classes(self):
-        self.class_minterms = { c : [item["expression"].replace("~", "not ").replace("|", "or").replace("&", "and") for item in self.leaves if item["class"] == c] for c in self.model_classes}  
+    def get_assertions_for_classes(self):
+        self.class_assertions = { c : [item["expression"].replace("~", "not ").replace("|", "or").replace("&", "and") for item in self.leaves if item["class"] == c] for c in self.model_classes}  

@@ -20,7 +20,7 @@ from .PsConfigParser import *
 from .Classifier import *
 import json5
 
-def pruning_flow(configfile, active_minterms_json, pruning_table_json, ncpus):
+def pruning_flow(configfile, active_assertions_json, redundancy_json, pruning_json, relative_cost, ncpus):
     configuration = PSConfigParser(configfile)
     check_for_file(configuration.pmml)
     check_for_file(configuration.error_conf.test_dataset)
@@ -30,38 +30,87 @@ def pruning_flow(configfile, active_minterms_json, pruning_table_json, ncpus):
     classifier.parse(configuration.pmml)
     classifier.read_dataset(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
     classifier.enable_mt()
-    active_minterms, pruning_table = get_pruning_table(classifier)
-    hist = redundancy_histogram(active_minterms)
+    classifier.reset_nabs_configuration()
+    classifier.reset_assertion_configuration()
+    print("Computing the baseline accuracy...")
+    baseline_accuracy = classifier.evaluate_test_dataset()
+    print(f"Baseline accuracy: {baseline_accuracy} %")
+    
+    if os.path.exists(active_assertions_json) and os.path.exists(redundancy_json) and os.path.exists(pruning_json):
+        print("Reading pruning from JSON files...")
+        active_assertions = json5.load(open(active_assertions_json))
+        redundancy_table = json5.load(open(redundancy_json))
+        pruning_table = json5.load(open(pruning_json))
+    else:
+        active_assertions, redundancy_table, pruning_table = get_pruning_table(classifier)
+        with open(active_assertions_json, "w") as f:
+            json5.dump(active_assertions, f, indent=2)
+        with open(redundancy_json, "w") as f:
+            json5.dump(redundancy_table, f, indent=2)
+        with open(pruning_json, "w") as f:
+            json5.dump(pruning_table, f, indent=2)
+        
+    hist = redundancy_histogram(redundancy_table)
     threshold = int(np.ceil( len(classifier.trees) / 2 ))
     print(f"Trees: {len(classifier.trees)}, threshold: {threshold}")
     print("Redundancy:")
     for k, v in hist.items():
         print(f"{k}: {v}%")
-    with open(active_minterms_json, "w") as f:
-        json5.dump(active_minterms, f, indent=2)
-    with open(pruning_table_json, "w") as f:
-        json5.dump(pruning_table, f, indent=2)
+   
+    total_cost, candidate_assertions, pruned_assertions = lossless_hedge_trimming(redundancy_table, pruning_table, relative_cost)
+    savings = sum( i[3] for i in pruned_assertions ) / total_cost
+    print(len(candidate_assertions), len(pruned_assertions), savings)
+    
+    acc = classifier.test_pruning(pruned_assertions)
+    print(f"Loss: {baseline_accuracy - acc}")
+    
 
 def get_pruning_table(classifier):
-    active_minterms = classifier.get_mintems()
-    print(active_minterms)
+    active_assertions = classifier.get_mintems()
+    redundancy_table = {}
     pruning_table = { c : {t.name : {} for t in classifier.trees } for c in classifier.model_classes }
-    for m in active_minterms:
+    for m in active_assertions:
         for tree, path in m["outcomes"].items():
             if path["correct"]:
-                if path["minterm"] not in pruning_table[m["y"]][tree]:
-                    pruning_table[m["y"]][tree][path["minterm"]] = {}
+                if path["assertion"] not in pruning_table[m["y"]][tree]:
+                    pruning_table[m["y"]][tree][path["assertion"]] = []
                 sample_id = ';'.join([str(x) for x in m["x"]])
-                pruning_table[m["y"]][tree][path["minterm"]][sample_id] = m["redundancy"]
-    print(pruning_table)
-    return active_minterms, pruning_table
+                pruning_table[m["y"]][tree][path["assertion"]].append(sample_id)
+                redundancy_table[sample_id] = m["redundancy"]
+    return active_assertions, redundancy_table, pruning_table
 
-def redundancy_histogram(active_minterms):
+def redundancy_histogram(redundancy_table):
     hist = {}
-    for m in active_minterms:
-        if m["redundancy"] not in hist:
-            hist[m["redundancy"]] = 0
-        hist[m["redundancy"]] += 1
+    for r in redundancy_table.values():
+        if r not in hist:
+            hist[r] = 0
+        hist[r] += 1
     for k in hist:
-        hist[k] = hist[k] * 100 / len(active_minterms)
+        hist[k] = hist[k] * 100 / len(redundancy_table)
     return hist
+
+def lossless_approximable_assertions(redundancy_table, pruning_table, relative_cost):
+    assertion_cost = []
+    total_cost = 0
+    for class_label, trees in pruning_table.items():
+        for tree_name, assertions in trees.items():
+            for assertion, samples in assertions.items():
+                approximable = all([ redundancy_table[sample] > 0 for sample in samples ])
+                literals = len(assertion.split("and"))
+                total_cost += literals
+                if approximable:
+                    assertion_cost.append((class_label, tree_name, assertion, literals / len(samples) if relative_cost else literals ) )
+    assertion_cost.sort(key=lambda x: x[3], reverse = True)
+    return total_cost, assertion_cost
+
+def lossless_hedge_trimming(redundancy_table, pruning_table, relative_cost):
+    total_cost, candidate_assertions = lossless_approximable_assertions(redundancy_table, pruning_table, relative_cost)
+    pruned_assertions = []
+    for class_label, tree_name, assertion, cost in candidate_assertions:
+        samples = pruning_table[class_label][tree_name][assertion]
+        approximable = all([ redundancy_table[sample] > 0 for sample in samples ])
+        if approximable:
+            for sample in samples:
+                redundancy_table[sample] -= 1
+            pruned_assertions.append((class_label, tree_name, assertion, cost))
+    return total_cost, candidate_assertions, pruned_assertions

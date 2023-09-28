@@ -202,21 +202,25 @@ class Classifier:
         outcomes = self.pool.starmap(Classifier.tree_predict, self.args)
         return sum( np.argmax([sum(s) for s in zip(*scores)]) == y for scores, y in zip(zip(*outcomes), self.y_test) ) / len(self.y_test) * 100
     
-    def get_mintems(self):
-        minterms_by_sample = []
-        for x, y in tqdm( zip(self.x_test, self.y_test), total=len(self.y_test), desc="Computing minterms...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+    def get_assertion_activation(self):
+        activity_by_sample = []
+        for x, y in tqdm( zip(self.x_test, self.y_test), total=len(self.y_test), desc="Computing assertions' activation...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
             outcome = {"x" : x, "y": str(y), "redundancy" : 0, "rho": np.zeros((len(self.model_classes),), dtype=int), "Ig" : 0, "outcomes" : {}}
             for t in self.trees:
-                predicted_class, active_minterm, mask = t.get_active_minterm(x)
-                cost = len(active_minterm.split("and"))
+                predicted_class, active_assertion, mask = t.get_assertion_activation(x)
+                cost = len(active_assertion.split("and"))
                 outcome["rho"] += mask
-                outcome["outcomes"][t.name] = {"minterm" : active_minterm, "cost": cost, "correct" : predicted_class == str(y)}
+                outcome["outcomes"][t.name] = {"assertion" : active_assertion, "cost": cost, "correct" : predicted_class == str(y)}
             outcome["Ig"] = giniImpurity(softmax(outcome["rho"]))
             outcome["redundancy"] = int(sum(i["correct"] for i in outcome["outcomes"].values()) - np.ceil(len(self.trees)/2))
             outcome["rho"] = outcome["rho"].tolist()
-            minterms_by_sample.append(outcome) 
-        return minterms_by_sample    
-         
+            activity_by_sample.append(outcome) 
+        return activity_by_sample    
+    
+    def test_pruning(self, pruning):
+        for t in self.trees:
+            t.set_pruning(pruning)
+        return sum(np.argmax(self.predict_pruning(x)) == y for x, y in tqdm( zip(self.x_test, self.y_test), total=len(self.y_test), desc="Testing pruning...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False) ) / len(self.y_test) * 100
             
     @staticmethod
     def tree_predict(trees, x_test):
@@ -229,13 +233,21 @@ class Classifier:
     def predict(self, x):
         return Classifier.tree_predict_x(self.trees, x)
     
+    def predict_pruning(self, x):
+        return Classifier.tree_predict_pruning_x(self.trees, x)
+    
     def predict_mt(self, x):
         assert self.p_tree is not None, "Multi-threading is disabled. To enable it, call the enable_mt() member of the Classifier class"
         return [sum(s) for s in zip(*self.pool.starmap(Classifier.tree_predict_x, [[t, x] for t in self.p_tree]))]
         
     @staticmethod
-    def tree_predict_x(trees, x):
+    def tree_predict_pruning_x(trees, x):
         outcomes = [ t.predict(x) for t in trees ]
+        return [sum(s) for s in zip(*outcomes)]
+    
+    @staticmethod
+    def tree_predict_x(trees, x):
+        outcomes = [ t.predict_pruning(x) for t in trees ]
         return [sum(s) for s in zip(*outcomes)]
     
     def get_features_and_classes(self, root):
