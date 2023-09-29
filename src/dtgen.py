@@ -63,12 +63,12 @@ def get_sets(dataset_file, config, fraction):
     test_vectors_indexes = [x for x in range(attributes.shape[0]) if x not in learning_vectors_indexes]
     return attributes[learning_vectors_indexes, :], labels[learning_vectors_indexes], attributes[test_vectors_indexes, :], labels[test_vectors_indexes]
 
-def save_test_dataset_to_csv(filename, attributes_name, test_attributes, test_labels):
+def save_dataset_to_csv(filename, attributes_name, attributes, labels):
     original_stdout = sys.stdout
     with open(filename, "w") as file:
         sys.stdout = file
         print(*attributes_name, "Outcome", sep=";")
-        for a, c  in zip(test_attributes, test_labels):
+        for a, c  in zip(attributes, labels):
             print(*a, c, sep=";")
     sys.stdout = original_stdout  
     
@@ -101,12 +101,11 @@ def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, crit
     print(f"Exporting PMML model to {pmml_file} ...")
     pipe = pipeline.Pipeline([('clf', model)])
     skl_to_pmml(pipeline = pipe, col_names = config.attributes_name, pmml_f_name = pmml_file )
-    # pipe = sklearn2pmml.PMMLPipeline([("classifier", model)])
-    # sklearn2pmml.sklearn2pmml(pipe, pmml_file, with_repr = True)
-    test_dataset_csv = f"{outputdir}/test_dataset_4_pyALS-rf.csv"
-    print(f"Exporting the test dataset to {test_dataset_csv} ...")
-    save_test_dataset_to_csv(test_dataset_csv, config.attributes_name, test_attributes, test_labels)
-    # print(f"Exporting graphviz draws of leaned trees to {outputdir}/export ...")
-    # graphviz_export(model, config.attributes_name, list(config.classes_name.values()) if isinstance(config.classes_name, dict) else config.classes_name, outputdir)
+    training_set_csv = f"{outputdir}/training_set.csv"
+    print(f"Exporting the training set to {training_set_csv} ...")
+    save_dataset_to_csv(training_set_csv, config.attributes_name, learning_attributes, learning_labels)
+    test_dataset_csv = f"{outputdir}/test_set.csv"
+    print(f"Exporting the test set to {test_dataset_csv} ...")
+    save_dataset_to_csv(test_dataset_csv, config.attributes_name, test_attributes, test_labels)
     print("Done!")
     
