@@ -227,9 +227,12 @@ class Classifier:
         return activity_by_sample    
     
     def test_pruning(self, pruning):
+        self.set_pruning(pruning)
+        return sum(np.argmax(self.predict_pruning(x)) == y for x, y in tqdm( zip(self.x_test, self.y_test), total=len(self.y_test), desc="Testing pruning...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False) ) / len(self.y_test) * 100
+
+    def set_pruning(self, pruning):
         for t in self.trees:
             t.set_pruning(pruning)
-        return sum(np.argmax(self.predict_pruning(x)) == y for x, y in tqdm( zip(self.x_test, self.y_test), total=len(self.y_test), desc="Testing pruning...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False) ) / len(self.y_test) * 100
             
     @staticmethod
     def tree_predict(trees, x_test):

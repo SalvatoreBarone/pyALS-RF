@@ -77,7 +77,7 @@ def bitwidth(ctx, conf, ncpus, mode, alpha, beta, gamma):
     """
     Performs precision-scaling approximation
     """
-    set_global_options(ctx, conf, ncpus)
+    set_global_options(ctx, conf, ncpus, "ps")
     ps_flow(ctx, mode, alpha, beta, gamma)
     
 @approx_flow.command("als")
@@ -89,7 +89,8 @@ def als(ctx, conf, ncpus, onestep):
     """
     Performs the standard ALS approximation flow
     """
-    set_global_options(ctx, conf, ncpus)
+    flow = "als-onestep" if onestep else "als-twosteps"
+    set_global_options(ctx, conf, ncpus, flow)
     if onestep:
         als_one_step(ctx)
     else:
@@ -102,7 +103,8 @@ def als_wc(ctx, conf, ncpus, onestep):
     """
     Performs ALS-WC approximation
     """
-    set_global_options(ctx, conf, ncpus)
+    flow = "wcals-onestep" if onestep else "wcals-twosteps"
+    set_global_options(ctx, conf, ncpus, flow)
     if onestep:
         als_wc_one_step(ctx)
     else:
@@ -117,7 +119,8 @@ def full(ctx, conf, ncpus, onestep):
     """
     Performs full approximation, i.e, both precision scaling on features and approximate logic synthesis on boolean functions
     """
-    set_global_options(ctx, conf, ncpus)
+    flow = "full-onestep" if onestep else "full-twosteps"
+    set_global_options(ctx, conf, ncpus, flow)
     if onestep:
         full_one_step(ctx)
     else:
@@ -128,14 +131,24 @@ def full(ctx, conf, ncpus, onestep):
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.pass_context
 def assertions_pruning(ctx, conf, ncpus):
-    set_global_options(ctx, conf, ncpus)
+    set_global_options(ctx, conf, ncpus, "pruning")
     pruning_flow(ctx)
+    
+@approx_flow.command("hdl")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
+@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.pass_context
+def generate_hdl(ctx, conf, ncpus):
+    set_global_options(ctx, conf, ncpus)
+    
+
      
 approx_flow.add_command(bitwidth)
 approx_flow.add_command(als)
 approx_flow.add_command(als_wc)
 approx_flow.add_command(full)
 approx_flow.add_command(assertions_pruning)
+approx_flow.add_command(generate_hdl)
     
     
     

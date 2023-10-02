@@ -16,7 +16,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 from .PsConfigParser import *
 from .Classifier import *
-from .ax_flows import load_configuration_ps, create_classifier
+from .ax_flows import load_configuration_ps, create_classifier, store_flow
 import json5
 
 def pruning_flow(ctx):
@@ -30,6 +30,7 @@ def pruning_flow(ctx):
     active_assertions_json = f"{ctx.obj['configuration'].outdir}/active_assertion.json5"
     redundancy_json = f"{ctx.obj['configuration'].outdir}/redundancy.json5"
     pruning_json = f"{ctx.obj['configuration'].outdir}/pruning.json5"
+    pruned_assertions_json = f"{ctx.obj['configuration'].outdir}/pruned_assertions.json5"
     if os.path.exists(active_assertions_json) and os.path.exists(redundancy_json) and os.path.exists(pruning_json):
         print("Reading pruning from JSON files...")
         active_assertions = json5.load(open(active_assertions_json))
@@ -57,6 +58,10 @@ def pruning_flow(ctx):
     
     acc = ctx.obj["classifier"].test_pruning(pruned_assertions)
     print(f"Loss: {baseline_accuracy - acc}")
+    ctx.obj['pruned_assertions'] = pruned_assertions
+    with open(pruned_assertions_json, "w") as f:
+        json5.dump(pruning_table, f, indent=2)
+    store_flow(ctx)
     
 
 def get_pruning_table(classifier):

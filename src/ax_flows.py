@@ -14,13 +14,15 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import os, pyamosa
+import os, pyamosa, json5
 from pyalslib import YosysHelper, ALSCatalog, ALSGraph, check_for_file
 from distutils.dir_util import mkpath
 from .PsConfigParser import *
 from .Classifier import *
 
-def set_global_options(ctx, confifile, ncpus):
+def set_global_options(ctx, confifile, ncpus, flow = None):
+    if "flow" not in ctx.obj:
+        ctx.obj["flow"] = flow
     if "configfile" not in ctx.obj:
         ctx.obj["configfile"] = confifile
     if "ncpus" not in ctx.obj:
@@ -43,8 +45,19 @@ def load_configuration_ps(ctx):
     else:
         assert isinstance(ctx.obj["configuration"], PSConfigParser), "Unsuitable configuration file"
         
+def load_flow(ctx):
+    assert "configuration" in ctx.obj, "No configuration. Bailing out."
+    ctx.obj["flow"] = json5.load(open(f"{ctx.obj['configuration'].outdir}/flow.json5"))
+    
+def store_flow(ctx):
+    assert "configuration" in ctx.obj, "No configuration. Bailing out."
+    with open(f"{ctx.obj['configuration'].outdir}/flow.json5", "w") as f:
+        json5.dump(ctx.obj["flow"], f, indent=2)
+        
 def create_classifier(ctx):
     if "classifier" not in ctx.obj:
+        assert "ncpus" in ctx.obj, "No setting available for 'ncpus'. Bailing out!"
+        assert "configuration" in ctx.obj, "No configuration loaded. Bailing out!"
         ctx.obj["classifier"] = Classifier(ctx.obj["ncpus"])
         ctx.obj["classifier"].parse(ctx.obj["configuration"].pmml)
         ctx.obj["classifier"].read_test_set(ctx.obj["configuration"].error_conf.test_dataset)
