@@ -19,6 +19,7 @@ import click, git, os, sys
 from git import RemoteProgress
 from multiprocessing import cpu_count
 from src.Classifier import Classifier
+from src.ax_flows import set_global_options
 from src.ps_flow import ps_flow, ps_eval, ps_distance, ps_compare, compute_gini_dist
 from src.als_flow import als_one_step, als_two_steps
 from src.als_wc_flow import als_wc_one_step, als_wc_two_steps
@@ -59,12 +60,91 @@ def git_updater():
         print(e)
         return False
 
+@click.group(chain=True)
+@click.pass_context
+def approx_flow(ctx):
+    ctx.ensure_object(dict)
+    
+@approx_flow.command("ps")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
+@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('--mode', type=click.Choice(["rank", "full"]), default = "full")
+@click.option('--alpha', type=float, default = 0.07)
+@click.option('--beta', type=float, default = 0.5)
+@click.option('--gamma', type=float, default = 2)
+@click.pass_context
+def bitwidth(ctx, conf, ncpus, mode, alpha, beta, gamma):
+    """
+    Performs precision-scaling approximation
+    """
+    set_global_options(ctx, conf, ncpus)
+    ps_flow(ctx, mode, alpha, beta, gamma)
+    
+@approx_flow.command("als")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
+@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('--onestep', is_flag = True, default = False, help = "Enable one-step approximation flow")
+@click.pass_context
+def als(ctx, conf, ncpus, onestep):
+    """
+    Performs the standard ALS approximation flow
+    """
+    set_global_options(ctx, conf, ncpus)
+    if onestep:
+        als_one_step(ctx)
+    else:
+        als_two_steps(ctx)
+        
+@approx_flow.command("als-wc")
+@click.option('--onestep', is_flag = True, default = False, help = "Enable one-step approximation flow")
+@click.pass_context
+def als_wc(ctx, conf, ncpus, onestep):
+    """
+    Performs ALS-WC approximation
+    """
+    set_global_options(ctx, conf, ncpus)
+    if onestep:
+        als_wc_one_step(ctx)
+    else:
+        als_wc_two_steps(ctx)
+        
+@approx_flow.command("full")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
+@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('--onestep', is_flag = True, default = False, help = "Enable one-step approximation flow")
+@click.pass_context
+def full(ctx, conf, ncpus, onestep):
+    """
+    Performs full approximation, i.e, both precision scaling on features and approximate logic synthesis on boolean functions
+    """
+    set_global_options(ctx, conf, ncpus)
+    if onestep:
+        full_one_step(ctx)
+    else:
+        full_two_steps(ctx)
+        
+@approx_flow.command("pruning")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
+@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.pass_context
+def assertions_pruning(ctx, conf, ncpus):
+    set_global_options(ctx, conf, ncpus)
+    pruning_flow(ctx)
+     
+approx_flow.add_command(bitwidth)
+approx_flow.add_command(als)
+approx_flow.add_command(als_wc)
+approx_flow.add_command(full)
+approx_flow.add_command(assertions_pruning)
+    
+    
+    
 @click.group()
-def cli():
+def other_commands():
     pass
 
 
-@click.command("dump")
+@other_commands.command("dump")
 @click.argument('pmmlfile', type=click.Path(exists=True, dir_okay=False))
 def dump(pmmlfile):
     """
@@ -75,84 +155,10 @@ def dump(pmmlfile):
     classifier = Classifier(None)
     classifier.parse(pmmlfile)
     classifier.dump()
-
-
-@click.command("ps")
-@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-@click.option('--mode', type=click.Choice(["rank", "full"]), default = "full")
-@click.option('--alpha', type=float, default = 0.07)
-@click.option('--beta', type=float, default = 0.5)
-@click.option('--gamma', type=float, default = 2)
-@click.option("--ncpus", type = int, help = "Set the number of parallel jobs to be used turing DSE. By default, pyALS uses every CPU core.", default = cpu_count())
-def bitwidth(configfile, mode, alpha, beta, gamma, ncpus):
-    """
-    Performs precision-scaling approximation
-    
-    CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
-    """
-    ps_flow(configfile, mode, alpha, beta, gamma, ncpus)
-    
-
-
-@click.command("als")
-@click.argument('approach', type = click.Choice(["whole", "split"]))
-@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-@click.option("--ncpus", type = int, help = "Set the number of parallel jobs to be used turing DSE. By default, pyALS uses every CPU core.", default = cpu_count())
-def als(approach, configfile, ncpus):
-    """
-    Performs ALS approximation
-    
-    APPROACH can be either "whole" or "split"
-    
-    CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
-    """
-    if approach == "whole":
-        als_one_step(configfile, ncpus)
-    elif approach == "split":
-        als_two_steps(configfile, ncpus)
-        
-
-@click.command("als-wc")
-@click.argument('approach', type = click.Choice(["whole", "split"]))
-@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-@click.option("--ncpus", type = int, help = "Set the number of parallel jobs to be used turing DSE. By default, pyALS uses every CPU core.", default = cpu_count())
-def als_wc(approach, configfile, ncpus):
-    """
-    Performs ALS-WC approximation
-    
-    APPROACH can be either "whole" or "split"
-    
-    CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
-    """
-    if approach == "whole":
-        als_wc_one_step(configfile, ncpus)
-    elif approach == "split":
-        als_wc_two_steps(configfile, ncpus)
-        
-
-
-@click.command("full")
-@click.argument('approach', type = click.Choice(["whole", "split"]))
-@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-@click.option("--ncpus", type = int, help = "Set the number of parallel jobs to be used turing DSE. By default, pyALS uses every CPU core.", default = cpu_count())
-def full(approach, configfile, ncpus):
-    """
-    Performs full approximation (both ps and als)
-    
-    APPROACH can be either "whole" or "split"
-    
-    CONFIGFILE is the path of the JSON configuration file containing all parameters which are needed to the tool.
-    """
-    if approach == "whole":
-        full_one_step(configfile, ncpus)
-    elif approach == "split":
-        full_two_steps(configfile, ncpus)
-
-
+           
 @click.command("learn")
 @click.argument('clf', type = click.Choice(["dt", "rf", "wc"]), default = "rf")
 @click.argument('dataset', type=click.Path(exists=True, dir_okay=False))
-@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
 @click.argument('outputdir', type=click.Path(dir_okay=True), default = "output")
 @click.option("-f", "--fraction", type = float, default = 0.9, help = "Fraction of data to be used as learning set. The remaining will be used as test data.")
 @click.option("-d", "--depth", type = int, default = None, help = "Maximum depth of the tree(s)")
@@ -179,6 +185,18 @@ def learning(clf, dataset, configfile, outputdir, fraction, depth, predictors, c
     """
     dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap)
 
+@click.command("dump")
+@click.argument('pmmlfile', type=click.Path(exists=True, dir_okay=False))
+def dump(pmmlfile):
+    """
+    Dump the classifier and exit
+    
+    PMMLFILE is the PMML file describing the model
+    """
+    classifier = Classifier(None)
+    classifier.parse(pmmlfile)
+    classifier.dump()
+
 @click.command("eval")
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
 @click.argument('axapproach', type=click.Choice(["ps", "als", "full"]))
@@ -191,7 +209,7 @@ def eval(configfile, axapproach, axmode, nabs):
         print("Not supported yet")
         exit()
         
-@click.command("distance")
+@other_commands.command("distance")
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
 @click.argument('axapproach', type=click.Choice(["ps", "als", "full"]))
 @click.option('--pareto', type = click.Path(exists=True, dir_okay=False), default = None)
@@ -203,7 +221,7 @@ def distance(configfile, axapproach, pareto, axmode):
         print("Not supported yet")
         exit()
 
-@click.command("compare")
+@other_commands.command("compare")
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
 @click.argument('axapproach', type=click.Choice(["ps", "als", "full"]))
 @click.argument('outdir', type=click.Path(exists=True, dir_okay=True))
@@ -221,38 +239,24 @@ def compare(configfile, axapproach, outdir, pareto, axmode, alpha, beta, gamma, 
         print("Not supported yet")
         exit()
 
-@click.command("distgini")
+@other_commands.command("distgini")
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
 @click.argument('outdir', type=click.Path(exists=True, dir_okay=True))
 def compgini(configfile, outdir):
     compute_gini_dist(configfile, outdir)
     
-@click.command("pruning")
-@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-@click.argument('assertions', type=click.Path(dir_okay=False))
-@click.argument('redundancy', type=click.Path(dir_okay=False))
-@click.argument('pruning', type=click.Path(dir_okay=False))
-@click.option('--relative', is_flag = True)
-@click.option("--ncpus", type = int, help = "Set the number of parallel jobs to be used turing DSE. By default, pyALS uses every CPU core.", default = cpu_count())
-def assertions_pruning(configfile, assertions, redundancy, pruning, relative, ncpus):
-    pruning_flow(configfile, assertions, redundancy, pruning, relative, ncpus)
-    
+other_commands.add_command(learning)
+other_commands.add_command(dump)
+other_commands.add_command(eval)
+other_commands.add_command(distance)
+other_commands.add_command(compare)
+other_commands.add_command(compgini)
 
-cli.add_command(dump)
-cli.add_command(bitwidth)
-cli.add_command(als)
-cli.add_command(als_wc)
-cli.add_command(full)
-cli.add_command(learning)
-cli.add_command(eval)
-cli.add_command(distance)
-cli.add_command(compare)
-cli.add_command(compgini)
-cli.add_command(assertions_pruning)
+cli = click.CommandCollection(sources=[approx_flow, other_commands])
 
 if __name__ == '__main__':
 	if git_updater():
 		os.execv(sys.argv[0], sys.argv)
 	else:
-		cli()
+		cli(obj={})
 

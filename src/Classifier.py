@@ -120,7 +120,7 @@ class Classifier:
         for t in self.trees:
             t.dump()
             
-    def read_dataset(self, dataset_csv, dataset_description):
+    def read_test_set(self, dataset_csv):
         self.dataframe = pd.read_csv(dataset_csv, sep = ";")
         attribute_name = list(self.dataframe.keys())[:-1]
         assert len(attribute_name) == len(self.model_features), f"Mismatch in features vectors. Read {len(attribute_name)} features, buth PMML says it must be {len(self.model_features)}!"
@@ -128,6 +128,15 @@ class Classifier:
         assert attribute_name == f_names, f"{attribute_name} != {f_names}"
         self.x_test = self.dataframe.loc[:, self.dataframe.columns != "Outcome"].values.tolist()
         self.y_test = sum(self.dataframe.loc[:, self.dataframe.columns == "Outcome"].values.tolist(), [])
+        
+    def read_training_set(self, dataset_csv):
+        self.dataframe = pd.read_csv(dataset_csv, sep = ";")
+        attribute_name = list(self.dataframe.keys())[:-1]
+        assert len(attribute_name) == len(self.model_features), f"Mismatch in features vectors. Read {len(attribute_name)} features, buth PMML says it must be {len(self.model_features)}!"
+        f_names = [ f["name"] for f in self.model_features]
+        assert attribute_name == f_names, f"{attribute_name} != {f_names}"
+        self.x_train = self.dataframe.loc[:, self.dataframe.columns != "Outcome"].values.tolist()
+        self.y_train = sum(self.dataframe.loc[:, self.dataframe.columns == "Outcome"].values.tolist(), [])
 
     def brace4ALS(self, als_conf):
         if self.als_conf is None:
