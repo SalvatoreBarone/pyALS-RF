@@ -36,7 +36,7 @@ entity decision_tree_{{tree_name}} is
     {{feature['name']}} : in std_logic_vector(data_width-1 downto nab_{{feature['name']}});
     {% endfor %}
     {% for c in classes -%}
-    {{c}} : out std_logic{{";" if not loop.last else ");"}}
+    class_{{c}} : out std_logic{{";" if not loop.last else ");"}}
     {% endfor %}
 end decision_tree_{{tree_name}};
 
@@ -60,7 +60,7 @@ architecture structural of decision_tree_{{tree_name}} is
     port (
       {% for b in boxes -%}{{b['name']}} : in std_logic;
       {% endfor %}
-      {% for c in classes -%}{{c}} : out std_logic{{";" if not loop.last else ");"}}
+      {% for c in classes -%}class_{{c}} : out std_logic{{";" if not loop.last else ");"}}
       {% endfor %}
   end component;
 
@@ -75,5 +75,5 @@ begin
     port map(clock, reset_n, enable, {{b['feature']}}, {{b['name']}}_thr(data_width-1 downto nab_{{b['feature']}}), {{b['name']}});
   {% endfor %}
   assertions : assertions_block_{{tree_name}}
-    port map ({% for b in boxes -%}{{b['name']}}, {% endfor %}{% for c in classes -%}{{c}}{{", " if not loop.last}}{% endfor %});
+    port map ({% for b in boxes -%}{{b['name']}}, {% endfor %}{% for c in classes -%}class_{{c}}{{", " if not loop.last}}{% endfor %});
 end structural;

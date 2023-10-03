@@ -36,7 +36,7 @@ architecture testbench of tb_classifier is
       enable  : in std_logic;
       {% for feature in features -%}{{feature['name']}} : in std_logic_vector(data_width-1 downto nab_{{feature['name']}});
       {% endfor %}
-      {% for c in classes -%}{{c}} : out std_logic{{";" if not loop.last else ");"}}
+      {% for c in classes -%}class_{{c}} : out std_logic{{";" if not loop.last else ");"}}
       {% endfor %}
   end component;
   constant test_vectors    : natural    := 10000;
@@ -51,12 +51,12 @@ architecture testbench of tb_classifier is
   signal reset_n         : std_logic   := '0';
   signal enable          : std_logic   := '0';
   {% for f in features -%}signal {{f['name']}} : std_logic_vector(data_width-1 downto nab_{{f['name']}});
-  {% endfor %}{% for c in classes -%}signal {{c}} : std_logic;
+  {% endfor %}{% for c in classes -%}signal class_{{c}} : std_logic;
   {% endfor %}
 begin
   uut : classifier
     generic map(data_width, parallel_blocks, pipe_stages, {% for feature in features -%}nab_{{feature['name']}}{{", " if not loop.last else ")"}}{% endfor %}
-    port map(clock, reset_n, enable, {% for f in features -%}{{f['name']}}, {% endfor %}{% for c in classes -%}{{c}}{{", " if not loop.last else ");"}}{% endfor %}
+    port map(clock, reset_n, enable, {% for f in features -%}{{f['name']}}, {% endfor %}{% for c in classes -%}class_{{c}}{{", " if not loop.last else ");"}}{% endfor %}
   clock_process : process
   begin
     while simulate = '1' loop

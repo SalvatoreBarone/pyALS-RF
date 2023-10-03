@@ -15,10 +15,10 @@ RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import os, pyamosa, json5
-from pyalslib import YosysHelper, ALSCatalog, ALSGraph, check_for_file
+from pyalslib import YosysHelper, check_for_file
 from distutils.dir_util import mkpath
-from .PsConfigParser import *
-from .Classifier import *
+from .ConfigParsers.PsConfigParser import *
+from .Model.Classifier import *
 
 def set_global_options(ctx, confifile, ncpus, flow = None):
     if "flow" not in ctx.obj:

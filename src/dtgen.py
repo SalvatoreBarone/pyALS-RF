@@ -18,7 +18,7 @@ import sys, csv, random, numpy as np, graphviz, sklearn2pmml
 from distutils.dir_util import mkpath
 from nyoka import skl_to_pmml
 from sklearn import tree, pipeline, ensemble
-from .DtGenConfigParser import DtGenConfigParser
+from .ConfigParsers.DtGenConfigParser import DtGenConfigParser
 
 
 def read_dataset_from_csv(csv_file, delimiter, skip_header, outcome_col):

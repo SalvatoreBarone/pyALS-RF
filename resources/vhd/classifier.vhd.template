@@ -35,7 +35,7 @@ entity classifier is
     enable  : in std_logic;
     {% for feature in features -%}{{feature['name']}} : in std_logic_vector(data_width-1 downto nab_{{feature['name']}});
     {% endfor %}
-    {% for c in classes -%}{{c}} : out std_logic{{";" if not loop.last else ");"}}
+    {% for c in classes -%}class_{{c}} : out std_logic{{";" if not loop.last else ");"}}
     {% endfor %}
 end classifier;
 
@@ -64,24 +64,25 @@ architecture structural of classifier is
       {% for feature in features -%}
       {{feature['name']}}: in std_logic_vector(data_width-1 downto nab_{{feature['name']}});{% endfor %}
       {% for c in classes -%}
-      {{c}} : out std_logic{{";" if not loop.last else ");"}}{% endfor %}
+      class_{{c}} : out std_logic{{";" if not loop.last else ");"}}{% endfor %}
   end component;{{"\n  " if not loop.last}}{% endfor %}
   {% for c in classes -%}
-  signal {{c}}_results : std_logic_vector({{trees|length-1}} downto 0) := (others => '0');{% endfor %}
+  signal class_{{c}}_results : std_logic_vector({{trees|length-1}} downto 0) := (others => '0');
+  {% endfor %}
 begin
   {% for tree in trees -%}{% set outer_loop = loop %}
   tree_{{tree}} : decision_tree_{{tree}} 
     generic map (data_width, parallel_blocks, {% for feature in features -%}nab_{{feature['name']}}{{", " if not loop.last else ")"}}{% endfor %}
-    port map (clock, reset_n, enable, {% for feature in features -%}{{feature['name']}}, {% endfor %}{% for c in classes -%}{{c}}_results({{outer_loop.index-1}}){{", " if not loop.last else ");"}}{% endfor %}
+    port map (clock, reset_n, enable, {% for feature in features -%}{{feature['name']}}, {% endfor %}{% for c in classes -%}class_{{c}}_results({{outer_loop.index-1}}){{", " if not loop.last else ");"}}{% endfor %}
   {% endfor %}
   {% if trees|length > 1 %}
   {% for c in classes -%}
   comb_{{c}} : voter 
     generic map({{trees|length}}, pipe_stages) 
-    port map(clock, reset_n, {{c}}_results, {{c}});
+    port map(clock, reset_n, class_{{c}}_results, class_{{c}});
   {% endfor %}
   {% else %}
   {% for c in classes -%}
-  {{c}} <= {{c}}_results(0);
+  class_{{c}} <= class_{{c}}_results(0);
   {% endfor %}{% endif %}
 end structural;

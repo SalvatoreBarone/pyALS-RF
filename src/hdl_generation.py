@@ -15,14 +15,14 @@ RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import json5
-from .PruningHdlGenerator import PruningHdlGenerator
-from .PsHdlGenerator import PsHdlGenerator
-from .SingleStepAlsHdlGenerator import SingleStepAlsHdlGenerator
-from .SingleStepAlsWcHdlGenerator import SingleStepAlsWcHdlGenerator
-from .SingleStepFullHdlGenerator import SingleStepFullHdlGenerator
-from .TwoStepsAlsHdlGenerator import TwoStepsAlsHdlGenerator
-from .TwoStepsAlsWcHdlGenerator import TwoStepsAlsWcHdlGenerator
-from .TwoStepsFullHdlGenerator import TwoStepsFullHdlGenerator
+from .HDLGenerators.PruningHdlGenerator import PruningHdlGenerator
+from .HDLGenerators.PsHdlGenerator import PsHdlGenerator
+from .HDLGenerators.SingleStepAlsHdlGenerator import SingleStepAlsHdlGenerator
+from .HDLGenerators.SingleStepAlsWcHdlGenerator import SingleStepAlsWcHdlGenerator
+from .HDLGenerators.SingleStepFullHdlGenerator import SingleStepFullHdlGenerator
+from .HDLGenerators.TwoStepsAlsHdlGenerator import TwoStepsAlsHdlGenerator
+from .HDLGenerators.TwoStepsAlsWcHdlGenerator import TwoStepsAlsWcHdlGenerator
+from .HDLGenerators.TwoStepsFullHdlGenerator import TwoStepsFullHdlGenerator
 from .ax_flows import load_configuration_ps, create_classifier, create_yshelper, load_flow
 
 def hdl_generation(ctx):
@@ -33,9 +33,11 @@ def hdl_generation(ctx):
     if ctx.obj["flow"] is None:
         load_flow(ctx)
     
+    print("Generating the approximate implementation...")
     if ctx.obj["flow"] == "pruning":
         pruned_assertions_json = f"{ctx.obj['configuration'].outdir}/pruned_assertions.json5"
         if "pruned_assertions" not in ctx.obj:
+            print(f"Reading pruning configuration from {pruned_assertions_json}")
             ctx.obj['pruned_assertions'] = json5.load(open(pruned_assertions_json))
         hdl_generator = PruningHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
         hdl_generator.generate_axhdl(pruned_assertions = ctx.obj['pruned_assertions'])
@@ -57,4 +59,6 @@ def hdl_generation(ctx):
         print(f"{ctx.obj['flow']}: unrecognized approximation flow. Bailing out.")
         exit()
     
+    print("Generating reference (non-approximate) implementation...")
     hdl_generator.generate_exact_implementation()
+    print("All done!")

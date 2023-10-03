@@ -16,11 +16,12 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import os, pyamosa, time, numpy as np, matplotlib.pyplot as plt, matplotlib.lines as mlines
 from pyalslib import check_for_file
-from src.PsConfigParser import *
-from src.PsMop import *
-from .rank_based import softmax, dist_gini
-from .plot import scatterplot, boxplot
+from distutils.dir_util import mkpath
 from multiprocessing import cpu_count
+from .ConfigParsers.PsConfigParser import *
+from .Optimization.PsMop import *
+from .Model.rank_based import softmax, dist_gini
+from .Model.plot import scatterplot, boxplot
 
 def ps_flow(configfile, mode, alpha, beta, gamma, ncpus):
     configuration = PSConfigParser(configfile)

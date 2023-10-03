@@ -17,11 +17,11 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import os, pyamosa
 from distutils.dir_util import mkpath
 from pyalslib import check_for_file, check_for_optional_file
-from .Classifier import Classifier
-from .OneStepConfigParser import OneStepConfigParser
-from .TwoStepsConfigParser import TwoStepsConfigParser
-from .SingleStepAlsMop import SingleStepAlsMop
-from .SecondStepAlsMop import SecondStepAlsMop
+from .Model.Classifier import Classifier
+from .ConfigParsers.OneStepConfigParser import OneStepConfigParser
+from .ConfigParsers.TwoStepsConfigParser import TwoStepsConfigParser
+from .Optimization.SingleStepAlsMop import SingleStepAlsMop
+from .Optimization.SecondStepAlsMop import SecondStepAlsMop
 
 def als_one_step(configfile, ncpus):
     configuration = OneStepConfigParser(configfile)

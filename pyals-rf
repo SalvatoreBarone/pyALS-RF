@@ -18,15 +18,16 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import click, git, os, sys
 from git import RemoteProgress
 from multiprocessing import cpu_count
-from src.Classifier import Classifier
+from src.Model.Classifier import Classifier
 from src.ax_flows import set_global_options
 from src.ps_flow import ps_flow, ps_eval, ps_distance, ps_compare, compute_gini_dist
 from src.als_flow import als_one_step, als_two_steps
 from src.als_wc_flow import als_wc_one_step, als_wc_two_steps
 from src.combined_flow import full_one_step, full_two_steps
-from src.DtGenConfigParser import *
+from src.ConfigParsers.DtGenConfigParser import *
 from src.dtgen import dtgen
 from src.pruning_flow import pruning_flow
+from src.hdl_generation import hdl_generation
 
 def git_updater():
     try:
@@ -134,14 +135,13 @@ def assertions_pruning(ctx, conf, ncpus):
     set_global_options(ctx, conf, ncpus, "pruning")
     pruning_flow(ctx)
     
-@approx_flow.command("hdl")
+@approx_flow.command("genhdl")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.pass_context
 def generate_hdl(ctx, conf, ncpus):
     set_global_options(ctx, conf, ncpus)
-    
-
+    hdl_generation(ctx)
      
 approx_flow.add_command(bitwidth)
 approx_flow.add_command(als)
@@ -150,12 +150,9 @@ approx_flow.add_command(full)
 approx_flow.add_command(assertions_pruning)
 approx_flow.add_command(generate_hdl)
     
-    
-    
 @click.group()
 def other_commands():
     pass
-
 
 @other_commands.command("dump")
 @click.argument('pmmlfile', type=click.Path(exists=True, dir_okay=False))
@@ -265,11 +262,12 @@ other_commands.add_command(distance)
 other_commands.add_command(compare)
 other_commands.add_command(compgini)
 
-cli = click.CommandCollection(sources=[approx_flow, other_commands])
+cli = click.CommandCollection(sources=[approx_flow])
 
 if __name__ == '__main__':
-	if git_updater():
-		os.execv(sys.argv[0], sys.argv)
-	else:
-		cli(obj={})
+    if git_updater():
+        os.execv(sys.argv[0], sys.argv)
+    else:
+        #cli(obj={})
+        approx_flow()
 

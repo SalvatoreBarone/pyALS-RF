@@ -14,19 +14,17 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-from .PsConfigParser import *
-from .Classifier import *
+import json5, os
+from .ConfigParsers.PsConfigParser import *
+from .Model.Classifier import *
 from .ax_flows import load_configuration_ps, create_classifier, store_flow
-import json5
 
 def pruning_flow(ctx):
     load_configuration_ps(ctx)
     create_classifier(ctx)
-    
     print("Computing the baseline accuracy...")
     baseline_accuracy = ctx.obj["classifier"].evaluate_test_dataset()
     print(f"Baseline accuracy: {baseline_accuracy} %")
-    
     active_assertions_json = f"{ctx.obj['configuration'].outdir}/active_assertion.json5"
     redundancy_json = f"{ctx.obj['configuration'].outdir}/redundancy.json5"
     pruning_json = f"{ctx.obj['configuration'].outdir}/pruning.json5"
@@ -60,9 +58,8 @@ def pruning_flow(ctx):
     print(f"Loss: {baseline_accuracy - acc}")
     ctx.obj['pruned_assertions'] = pruned_assertions
     with open(pruned_assertions_json, "w") as f:
-        json5.dump(pruning_table, f, indent=2)
+        json5.dump(pruned_assertions, f, indent=2)
     store_flow(ctx)
-    
 
 def get_pruning_table(classifier):
     active_assertions = classifier.get_assertion_activation()
