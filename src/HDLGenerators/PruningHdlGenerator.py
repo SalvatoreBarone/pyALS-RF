@@ -45,8 +45,8 @@ class PruningHdlGenerator(HDLGenerator):
         
         self.classifier.set_pruning(kwargs['pruned_assertions'])
         for tree in self.classifier.trees:
-            self.implement_decision_boxes(tree, dest)
-            self.implement_pruned_assertions(tree, dest)
+            self.implement_decision_boxes(tree, f"{dest}/src")
+            self.implement_pruned_assertions(tree, f"{dest}/src")
             
     def implement_pruned_assertions(self, tree : DecisionTree, destination : str):
         module_name = f"assertions_block_{tree.name}"

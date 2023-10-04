@@ -69,6 +69,6 @@ class PsHdlGenerator(HDLGenerator):
             with open(f"{dest}/CMakeLists.txt", "w") as out_file:
                 out_file.write(cmakelists)
           
-            for tree in self.trees:
-                self.implement_decision_boxes(tree)
-                self.implement_assertions(tree)
+            for tree in self.classifier.trees:
+                self.implement_decision_boxes(tree, f"{dest}/src")
+                self.implement_assertions(tree, f"{dest}/src")
