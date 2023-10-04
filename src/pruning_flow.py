@@ -59,7 +59,6 @@ def pruning_flow(ctx):
     ctx.obj['pruned_assertions'] = pruned_assertions
     with open(pruned_assertions_json, "w") as f:
         json5.dump(pruned_assertions, f, indent=2)
-    store_flow(ctx)
 
 def get_pruning_table(classifier):
     active_assertions = classifier.get_assertion_activation()

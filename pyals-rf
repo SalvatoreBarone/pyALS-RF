@@ -19,7 +19,7 @@ import click, git, os, sys
 from git import RemoteProgress
 from multiprocessing import cpu_count
 from src.Model.Classifier import Classifier
-from src.ax_flows import set_global_options
+from src.ax_flows import set_global_options, store_flow
 from src.ps_flow import ps_flow, ps_eval, ps_distance, ps_compare, compute_gini_dist
 from src.als_flow import als_one_step, als_two_steps
 from src.als_wc_flow import als_wc_one_step, als_wc_two_steps
@@ -80,6 +80,7 @@ def bitwidth(ctx, conf, ncpus, mode, alpha, beta, gamma):
     """
     set_global_options(ctx, conf, ncpus, "ps")
     ps_flow(ctx, mode, alpha, beta, gamma)
+    store_flow(ctx)
     
 @approx_flow.command("als")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
@@ -96,6 +97,7 @@ def als(ctx, conf, ncpus, onestep):
         als_one_step(ctx)
     else:
         als_two_steps(ctx)
+    store_flow(ctx)
         
 @approx_flow.command("als-wc")
 @click.option('--onestep', is_flag = True, default = False, help = "Enable one-step approximation flow")
@@ -110,6 +112,7 @@ def als_wc(ctx, conf, ncpus, onestep):
         als_wc_one_step(ctx)
     else:
         als_wc_two_steps(ctx)
+    store_flow(ctx)
         
 @approx_flow.command("full")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
@@ -126,6 +129,7 @@ def full(ctx, conf, ncpus, onestep):
         full_one_step(ctx)
     else:
         full_two_steps(ctx)
+    store_flow(ctx)
         
 @approx_flow.command("pruning")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
@@ -134,6 +138,7 @@ def full(ctx, conf, ncpus, onestep):
 def assertions_pruning(ctx, conf, ncpus):
     set_global_options(ctx, conf, ncpus, "pruning")
     pruning_flow(ctx)
+    store_flow(ctx)
     
 @approx_flow.command("genhdl")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")

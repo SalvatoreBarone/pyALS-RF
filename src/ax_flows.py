@@ -21,8 +21,8 @@ from .ConfigParsers.PsConfigParser import *
 from .Model.Classifier import *
 
 def set_global_options(ctx, confifile, ncpus, flow = None):
-    if "flow" not in ctx.obj:
-        ctx.obj["flow"] = flow
+    assert "flow" not in ctx.obj, f"Approximation flow already set ({ctx.obj['flow']}). You issued more than one approximation command. Bailing out."
+    ctx.obj["flow"] = flow
     if "configfile" not in ctx.obj:
         ctx.obj["configfile"] = confifile
     if "ncpus" not in ctx.obj:
@@ -47,11 +47,11 @@ def load_configuration_ps(ctx):
         
 def load_flow(ctx):
     assert "configuration" in ctx.obj, "No configuration. Bailing out."
-    ctx.obj["flow"] = json5.load(open(f"{ctx.obj['configuration'].outdir}/flow.json5"))
+    ctx.obj["flow"] = json5.load(open(f"{ctx.obj['configuration'].outdir}/.flow.json5"))
     
 def store_flow(ctx):
     assert "configuration" in ctx.obj, "No configuration. Bailing out."
-    with open(f"{ctx.obj['configuration'].outdir}/flow.json5", "w") as f:
+    with open(f"{ctx.obj['configuration'].outdir}/.flow.json5", "w") as f:
         json5.dump(ctx.obj["flow"], f, indent=2)
         
 def create_classifier(ctx):
