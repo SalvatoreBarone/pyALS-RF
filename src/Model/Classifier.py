@@ -252,12 +252,12 @@ class Classifier:
         
     @staticmethod
     def tree_predict_pruning_x(trees, x):
-        outcomes = [ t.predict(x) for t in trees ]
+        outcomes = [ t.predict_pruning(x) for t in trees ]
         return [sum(s) for s in zip(*outcomes)]
     
     @staticmethod
     def tree_predict_x(trees, x):
-        outcomes = [ t.predict_pruning(x) for t in trees ]
+        outcomes = [ t.predict(x) for t in trees ]
         return [sum(s) for s in zip(*outcomes)]
     
     def get_features_and_classes(self, root):
