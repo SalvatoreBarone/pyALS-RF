@@ -18,7 +18,7 @@ import os
 from distutils.dir_util import mkpath, copy_tree
 from distutils.file_util import copy_file
 from jinja2 import Environment, FileSystemLoader
-from pyalslib import YosysHelper
+from pyalslib import YosysHelper, double_to_bin
 from pathlib import Path
 from ..Model.Classifier import Classifier
 from ..Model.DecisionTree import DecisionTree
@@ -94,6 +94,12 @@ class HDLGenerator:
             out_file.write(tcl_file)
 
     def generate_tb(self, dest, features, env):
+        for i, (x, y) in enumerate(zip(self.classifier.x_test, self.classifier.y_test)):
+            print(x, [double_to_bin(i) for i in x])
+            print(y, self.classifier.predict(x), "")
+            if i == 5:
+                exit()
+        
         tb_classifier_template = env.get_template(self.vhdl_tb_classifier_template_file)
         tb_classifier = tb_classifier_template.render(
             features=features,
