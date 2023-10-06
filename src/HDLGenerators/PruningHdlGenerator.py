@@ -43,7 +43,7 @@ class PruningHdlGenerator(HDLGenerator):
         self.generate_cmakelists(dest, trees_name, env)
         
         self.classifier.set_pruning(kwargs['pruned_assertions'])
-        self.generate_tb(f"{dest}/tb", features, env)
+        self.generate_ax_tb(f"{dest}/tb", features, env)
         for tree in self.classifier.trees:
             self.implement_decision_boxes(tree, f"{dest}/src")
             self.implement_pruned_assertions(tree, f"{dest}/src")
@@ -63,14 +63,27 @@ class PruningHdlGenerator(HDLGenerator):
             out_file.write(output)
         return file_name, module_name
     
-    def generate_test_vectors(self):
+    def generate_ax_test_vectors(self, **kwargs):    
         test_vectors = { f["name"] : [] for f in self.classifier.model_features }
         expected_outputs = { c : [] for c in self.classifier.model_classes}
-        for x, y in zip(self.classifier.x_test, self.classifier.y_test):
+        for x in self.classifier.x_test:
             for k, v in zip(self.classifier.model_features, x):
                 test_vectors[k["name"]].append(double_to_bin(v))
             o = np.argmax(self.classifier.predict_pruning(x))
             output = [ 1 if i == o else 0 for i in range(len(self.classifier.model_classes)) ]
             for c, v in zip(self.classifier.model_classes, output):
                 expected_outputs[c].append(v)
-        return len(y), test_vectors, expected_outputs
+        return len(self.classifier.y_test), test_vectors, expected_outputs
+    
+    def generate_ax_tb(self, dest, features, env, **kwargs):    
+        n_vectors, test_vectors, expected_outputs = self.generate_exact_test_vectors()
+       
+        tb_classifier_template = env.get_template(self.vhdl_tb_classifier_template_file)
+        tb_classifier = tb_classifier_template.render(
+            features=features,
+            classes=self.classifier.model_classes,
+            n_vectors = n_vectors,
+            test_vectors = test_vectors,
+            expected_outputs = expected_outputs)
+        with open(f"{dest}/tb_classifier.vhd", "w") as out_file:
+            out_file.write(tb_classifier)

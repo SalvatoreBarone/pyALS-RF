@@ -14,11 +14,11 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-
+import os, numpy as np
 from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
 from jinja2 import Environment, FileSystemLoader
-from pyalslib import YosysHelper
+from pyalslib import YosysHelper, double_to_bin
 from .HDLGenerator import HDLGenerator
 from ..Model.Classifier import Classifier
 
@@ -38,15 +38,6 @@ class PsHdlGenerator(HDLGenerator):
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         
-        tcl_template = env.get_template(f"{self.source_dir}{self.tcl_project_file}")
-        classifier_template = env.get_template(f"{self.source_dir}{self.vhdl_classifier_template_file}")
-        tb_classifier_template = env.get_template(f"{self.source_dir}{self.vhdl_tb_classifier_template_file}")
-        tcl_file = tcl_template.render(
-            assertions_blocks=[{ "file_name": f"assertions_block_{n}.vhd", "language": "VHDL" } for n in trees_name], 
-            decision_trees=[{ "file_name": f"decision_tree_{n}.vhd", "language": "VHDL" } for n in trees_name])
-        cmakelists_template = env.get_template(self.cmakelists_template_file)
-        cmakelists = cmakelists_template.render(tree_names = trees_name)
-        
         for i, conf in enumerate(kwargs['configurations']):
             features = [{"name": f["name"], "nab": n} for f, n in zip(self.classifier.model_features, conf)]
             
@@ -56,28 +47,38 @@ class PsHdlGenerator(HDLGenerator):
             mkpath(f"{dest}/tb")
             self.copyfiles(dest)
             
-            with open(f"{dest}/create_project.tcl", "w") as out_file:
-                out_file.write(tcl_file)
-                
             nabs = {f["name"]: n for f, n in zip(self.classifier.model_features, conf)}
             self.classifier.set_nabs(nabs)
-            classifier = classifier_template.render(trees = trees_name, features=features, classes=self.classifier.model_classes)
-            with open(f"{dest}/src/classifier.vhd", "w") as out_file:
-                out_file.write(classifier)
-                
-            n_vectors, test_vectors, expected_outputs = self.generate_test_vectors()    
-            tb_classifier = tb_classifier_template.render(
-                features=features,
-                classes=self.classifier.model_classes,
-                n_vectors = n_vectors,
-                test_vectors = test_vectors,
-                expected_outputs = expected_outputs)
-            with open(f"{dest}/tb/tb_classifier.vhd", "w") as out_file:
-                out_file.write(tb_classifier)
-                
-            with open(f"{dest}/CMakeLists.txt", "w") as out_file:
-                out_file.write(cmakelists)
-          
+            
+            self.generate_tcl(dest, trees_name, env)
+            self.generate_cmakelists(dest, trees_name, env)
+            self.generate_classifier(f"{dest}/src", features, trees_name, env)
+            self.generate_ax_tb(f"{dest}/tb/", features, env)
             for tree in self.classifier.trees:
                 self.implement_decision_boxes(tree, f"{dest}/src")
                 self.implement_assertions(tree, f"{dest}/src")
+                
+    def generate_ax_test_vectors(self, **kwargs):    
+        test_vectors = { f["name"] : [] for f in self.classifier.model_features }
+        expected_outputs = { c : [] for c in self.classifier.model_classes}
+        for x in self.classifier.x_test:
+            for k, v in zip(self.classifier.model_features, x):
+                test_vectors[k["name"]].append(double_to_bin(v))
+            o = np.argmax(self.classifier.predict(x))
+            output = [ 1 if i == o else 0 for i in range(len(self.classifier.model_classes)) ]
+            for c, v in zip(self.classifier.model_classes, output):
+                expected_outputs[c].append(v)
+        return len(self.classifier.y_test), test_vectors, expected_outputs
+    
+    def generate_ax_tb(self, dest, features, env, **kwargs):    
+        n_vectors, test_vectors, expected_outputs = self.generate_exact_test_vectors()
+       
+        tb_classifier_template = env.get_template(self.vhdl_tb_classifier_template_file)
+        tb_classifier = tb_classifier_template.render(
+            features=features,
+            classes=self.classifier.model_classes,
+            n_vectors = n_vectors,
+            test_vectors = test_vectors,
+            expected_outputs = expected_outputs)
+        with open(f"{dest}/tb_classifier.vhd", "w") as out_file:
+            out_file.write(tb_classifier)

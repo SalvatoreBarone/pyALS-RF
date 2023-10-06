@@ -50,7 +50,7 @@ architecture testbench of tb_classifier is
   signal clock           : std_logic   := '0';
   signal reset_n         : std_logic   := '0';
   signal enable          : std_logic   := '0';
-  {% for f in features -%}signal {{f['name']}} : std_logic_vector(data_width-1 downto nab_{{f['name']}});
+  {% for f in features -%}signal {{f['name']}} : std_logic_vector(data_width-1 downto nab_{{f['name']}}) := (others => '0');
   {% endfor %}{% for c in classes -%}signal class_{{c}} : std_logic;
   {% endfor %}
 

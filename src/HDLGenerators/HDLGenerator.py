@@ -71,7 +71,7 @@ class HDLGenerator:
         env = Environment(loader = FileSystemLoader(self.source_dir))
         
         self.generate_classifier(f"{dest}/src", features, trees_name, env)
-        self.generate_tb(f"{dest}/tb", features, env)
+        self.generate_exact_tb(f"{dest}/tb", features, env)
         self.generate_tcl(dest, trees_name, env)
         self.generate_cmakelists(dest, trees_name, env)
             
@@ -93,8 +93,8 @@ class HDLGenerator:
         with open(f"{dest}/create_project.tcl", "w") as out_file:
             out_file.write(tcl_file)
 
-    def generate_tb(self, dest, features, env):
-        n_vectors, test_vectors, expected_outputs = self.generate_test_vectors()
+    def generate_exact_tb(self, dest, features, env):
+        n_vectors, test_vectors, expected_outputs = self.generate_exact_test_vectors()
        
         tb_classifier_template = env.get_template(self.vhdl_tb_classifier_template_file)
         tb_classifier = tb_classifier_template.render(
@@ -106,7 +106,7 @@ class HDLGenerator:
         with open(f"{dest}/tb_classifier.vhd", "w") as out_file:
             out_file.write(tb_classifier)
 
-    def generate_test_vectors(self):
+    def generate_exact_test_vectors(self):
         test_vectors = { f["name"] : [] for f in self.classifier.model_features }
         expected_outputs = { c : [] for c in self.classifier.model_classes}
         n_vectors = 0
@@ -120,7 +120,7 @@ class HDLGenerator:
             n_vectors += 1
             if i == 10:
                 break
-        #return len(y), test_vectors, expected_outputs
+        #return len(self.classifier.y_test), test_vectors, expected_outputs
         return n_vectors, test_vectors, expected_outputs
 
     def generate_cmakelists(self, dest, trees_name, env):
@@ -145,6 +145,12 @@ class HDLGenerator:
         copy_tree(self.source_dir + self.cmake_files_dir, ax_dest)
   
     def generate_axhdl(self, **kwargs):    
+        pass
+    
+    def generate_ax_test_vectors(self, **kwargs):    
+        pass
+    
+    def generate_ax_tb(self, **kwargs):    
         pass
 
     def implement_decision_boxes(self, tree : DecisionTree, destination):

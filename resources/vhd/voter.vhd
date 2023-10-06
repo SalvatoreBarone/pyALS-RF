@@ -46,12 +46,12 @@ architecture dataflow of swapper_block is
   end component;
 	signal intermediate_data : std_logic_vector(data_width-1 downto 0) := (others => '0');
 begin
-	first_stage_swappers : for i in data_width/2-1 downto 0 generate
-		fst_stg_cell : swapper_cell port map (data_in(2*i+1 downto 2*i), intermediate_data(2*i+1 downto 2*i));
+	first_stage_swappers : for i in 0 to (data_width-1)/2-1 generate
+		fst_stg_cell : swapper_cell port map (data_in(2*i+2 downto 2*i+1), intermediate_data(2*i+2 downto 2*i+1));
 	end generate;
-	second_stage_swappers : for i in data_width/2-1 downto 1 generate
-    snd_stg_cell : swapper_cell	port map (intermediate_data(2*i downto 2*i-1), data_out(2*i downto 2*i-1));
-  end generate;
+	second_stage_swappers : for i in 0 to data_width/2-1 generate
+    	snd_stg_cell : swapper_cell	port map (intermediate_data(2*i+1 downto 2*i), data_out(2*i+1 downto 2*i));
+  	end generate;
 	data_out(0) <= intermediate_data(0);
 	data_out(data_width-1) <= intermediate_data(data_width-1);
 end dataflow;
