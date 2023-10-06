@@ -46,6 +46,7 @@ class PsHdlGenerator(HDLGenerator):
             decision_trees=[{ "file_name": f"decision_tree_{n}.vhd", "language": "VHDL" } for n in trees_name])
         cmakelists_template = env.get_template(self.cmakelists_template_file)
         cmakelists = cmakelists_template.render(tree_names = trees_name)
+        
         for i, conf in enumerate(kwargs['configurations']):
             features = [{"name": f["name"], "nab": n} for f, n in zip(self.classifier.model_features, conf)]
             
@@ -58,11 +59,19 @@ class PsHdlGenerator(HDLGenerator):
             with open(f"{dest}/create_project.tcl", "w") as out_file:
                 out_file.write(tcl_file)
                 
+            nabs = {f["name"]: n for f, n in zip(self.classifier.model_features, conf)}
+            self.classifier.set_nabs(nabs)
             classifier = classifier_template.render(trees = trees_name, features=features, classes=self.classifier.model_classes)
             with open(f"{dest}/src/classifier.vhd", "w") as out_file:
                 out_file.write(classifier)
                 
-            tb_classifier = tb_classifier_template.render(features=features, classes=self.classifier.model_classes)
+            n_vectors, test_vectors, expected_outputs = self.generate_test_vectors()    
+            tb_classifier = tb_classifier_template.render(
+                features=features,
+                classes=self.classifier.model_classes,
+                n_vectors = n_vectors,
+                test_vectors = test_vectors,
+                expected_outputs = expected_outputs)
             with open(f"{dest}/tb/tb_classifier.vhd", "w") as out_file:
                 out_file.write(tb_classifier)
                 
