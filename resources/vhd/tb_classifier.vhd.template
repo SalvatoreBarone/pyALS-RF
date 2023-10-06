@@ -39,7 +39,7 @@ architecture testbench of tb_classifier is
       {% for c in classes -%}class_{{c}} : out std_logic{{";" if not loop.last else ");"}}
       {% endfor %}
   end component;
-  constant test_vectors    : natural    := 10000;
+  constant test_vectors    : natural    := {{n_vectors}};
   constant clock_period    : time       := 10 ns;
   signal   simulate        : std_logic  := '1';
   constant data_width      : natural := 64;
@@ -53,6 +53,16 @@ architecture testbench of tb_classifier is
   {% for f in features -%}signal {{f['name']}} : std_logic_vector(data_width-1 downto nab_{{f['name']}});
   {% endfor %}{% for c in classes -%}signal class_{{c}} : std_logic;
   {% endfor %}
+
+  type std_logic_matrix is array (0 to {{n_vectors}}-1) of std_logic_vector(data_width-1 downto 0);
+  {% for input_signal, values in test_vectors.items() -%}
+  constant test_{{input_signal}} : std_logic_matrix := ({% for v in values -%}(b"{{v}}{{"\"), " if not loop.last else "\")"}}{% endfor %});
+  {% endfor %}
+
+  {% for class_name, expected_output in expected_outputs.items() -%}
+  constant expected_class_{{class_name}} : std_logic_vector(0 to {{n_vectors}}-1) := b"{{expected_output|join('')}}";
+  {% endfor %}
+
 begin
   uut : classifier
     generic map(data_width, parallel_blocks, pipe_stages, {% for feature in features -%}nab_{{feature['name']}}{{", " if not loop.last else ")"}}{% endfor %}
@@ -71,14 +81,22 @@ begin
     enable <= '0';
     wait for 50 ns;
     reset_n <= '1';
-    for i in 0 to test_vectors loop
-      {% for f in features -%}{{f['name']}} <= std_logic_vector(to_signed(random(-2**(data_width-1), 2**(data_width-1)-1), data_width - nab_{{f['name']}}));
+    for i in 0 to test_vectors-1 loop
+      {% for f in features -%}{{f['name']}} <= test_{{f['name']}}(i)(data_width-1 downto nab_{{f['name']}});
       {% endfor %}
       enable <= '1';
       wait for 2*clock_period;
       enable <= '0';
-      wait for (3+pipe_stages)*clock_period;
+
+      report "Simulating vector " & integer'image(i) & " of {{n_vectors}}" severity note;
+
+      wait for (3+pipe_stages+1)*clock_period;
+
+      {% for c in classes -%}
+      assert class_{{c}} = expected_class_{{c}}(i) report	"Error: {{c}} is " & std_logic'image(class_{{c}}) & " instead of " & std_logic'image(expected_class_{{c}}(i)) severity failure;
+      {% endfor %}
     end loop;
+    report "Simulation completed successfully" severity note;
     simulate <= '0';
     wait;
   end process;

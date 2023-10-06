@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import os
+import os, numpy as np
 from distutils.dir_util import mkpath, copy_tree
 from distutils.file_util import copy_file
 from jinja2 import Environment, FileSystemLoader
@@ -94,18 +94,34 @@ class HDLGenerator:
             out_file.write(tcl_file)
 
     def generate_tb(self, dest, features, env):
-        for i, (x, y) in enumerate(zip(self.classifier.x_test, self.classifier.y_test)):
-            print(x, [double_to_bin(i) for i in x])
-            print(y, self.classifier.predict(x), "")
-            if i == 5:
-                exit()
-        
+        n_vectors, test_vectors, expected_outputs = self.generate_test_vectors()
+       
         tb_classifier_template = env.get_template(self.vhdl_tb_classifier_template_file)
         tb_classifier = tb_classifier_template.render(
             features=features,
-            classes=self.classifier.model_classes)
+            classes=self.classifier.model_classes,
+            n_vectors = n_vectors,
+            test_vectors = test_vectors,
+            expected_outputs = expected_outputs)
         with open(f"{dest}/tb_classifier.vhd", "w") as out_file:
             out_file.write(tb_classifier)
+
+    def generate_test_vectors(self):
+        test_vectors = { f["name"] : [] for f in self.classifier.model_features }
+        expected_outputs = { c : [] for c in self.classifier.model_classes}
+        n_vectors = 0
+        for i, (x, y) in enumerate(zip(self.classifier.x_test, self.classifier.y_test)):
+            for k, v in zip(self.classifier.model_features, x):
+                test_vectors[k["name"]].append(double_to_bin(v))
+            o = np.argmax(self.classifier.predict(x))
+            output = [ 1 if i == o else 0 for i in range(len(self.classifier.model_classes)) ]
+            for c, v in zip(self.classifier.model_classes, output):
+                expected_outputs[c].append(v)
+            n_vectors += 1
+            if i == 10:
+                break
+        #return len(y), test_vectors, expected_outputs
+        return n_vectors, test_vectors, expected_outputs
 
     def generate_cmakelists(self, dest, trees_name, env):
         cmakelists_template = env.get_template(self.cmakelists_template_file)
