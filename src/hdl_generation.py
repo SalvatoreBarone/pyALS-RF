@@ -15,6 +15,7 @@ RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import json5
+from distutils.dir_util import mkpath
 from .HDLGenerators.PruningHdlGenerator import PruningHdlGenerator
 from .HDLGenerators.PsHdlGenerator import PsHdlGenerator
 from .HDLGenerators.SingleStepAlsHdlGenerator import SingleStepAlsHdlGenerator
@@ -25,8 +26,11 @@ from .HDLGenerators.TwoStepsAlsWcHdlGenerator import TwoStepsAlsWcHdlGenerator
 from .HDLGenerators.TwoStepsFullHdlGenerator import TwoStepsFullHdlGenerator
 from .ax_flows import load_configuration_ps, create_classifier, create_yshelper, load_flow
 
-def hdl_generation(ctx):
+def hdl_generation(ctx, output):
     load_configuration_ps(ctx)
+    if output is not None:
+        ctx.obj['configuration'].outdir = output
+        mkpath(ctx.obj["configuration"].outdir)
     create_classifier(ctx)
     create_yshelper(ctx)
     

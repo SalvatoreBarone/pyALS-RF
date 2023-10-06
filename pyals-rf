@@ -134,18 +134,21 @@ def full(ctx, conf, ncpus, onestep):
 @approx_flow.command("pruning")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-t', '--train', is_flag = True, help = f"Use training data")
+@click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = f"Override output directory configuration")
 @click.pass_context
-def assertions_pruning(ctx, conf, ncpus):
+def assertions_pruning(ctx, conf, ncpus, train, output):
     set_global_options(ctx, conf, ncpus, "pruning")
-    pruning_flow(ctx)
+    pruning_flow(ctx, train, output)
     store_flow(ctx)
     
 @approx_flow.command("genhdl")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = f"Override output directory configuration")
 @click.pass_context
-def generate_hdl(ctx, conf, ncpus):
-    set_global_options(ctx, conf, ncpus)
+def generate_hdl(ctx, conf, ncpus, output):
+    set_global_options(ctx, conf, ncpus, output)
     hdl_generation(ctx)
      
 approx_flow.add_command(bitwidth)

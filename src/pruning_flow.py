@@ -15,40 +15,58 @@ RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import json5, os
+from distutils.dir_util import mkpath
 from .ConfigParsers.PsConfigParser import *
 from .Model.Classifier import *
-from .ax_flows import load_configuration_ps, create_classifier, store_flow
+from .ax_flows import load_configuration_ps, create_classifier
 
-def pruning_flow(ctx):
+def pruning_flow(ctx, use_training_data, output):
     load_configuration_ps(ctx)
+    if output is not None:
+        ctx.obj['configuration'].outdir = output
+        mkpath(ctx.obj["configuration"].outdir)
+    
     create_classifier(ctx)
+    
+    if use_training_data:
+        assert ctx.obj["configuration"].training_dataset is not None, "You must provide a csv for the training dataset to use this command"
+        print("Reading the traininig data set")
+        ctx.obj["classifier"].read_training_set(ctx.obj["configuration"].training_dataset)
+        print(f"Read {len(ctx.obj['classifier'].x_train)} samples")
+    else:
+        print("Splitting the dataset to perform pruning")
+        ctx.obj["classifier"].split_test_dataset()
+        print(f"Pruning set: {len(ctx.obj['classifier'].x_val)} samples")
+        print(f"Test set: {len(ctx.obj['classifier'].x_test)} samples")
+        
+    
     print("Computing the baseline accuracy...")
     baseline_accuracy = ctx.obj["classifier"].evaluate_test_dataset()
     print(f"Baseline accuracy: {baseline_accuracy} %")
-    active_assertions_json = f"{ctx.obj['configuration'].outdir}/active_assertion.json5"
-    redundancy_json = f"{ctx.obj['configuration'].outdir}/redundancy.json5"
-    pruning_json = f"{ctx.obj['configuration'].outdir}/pruning.json5"
+    # active_assertions_json = f"{ctx.obj['configuration'].outdir}/active_assertion.json5"
+    # redundancy_json = f"{ctx.obj['configuration'].outdir}/redundancy.json5"
+    # pruning_json = f"{ctx.obj['configuration'].outdir}/pruning.json5"
     pruned_assertions_json = f"{ctx.obj['configuration'].outdir}/pruned_assertions.json5"
-    if os.path.exists(active_assertions_json) and os.path.exists(redundancy_json) and os.path.exists(pruning_json):
-        print("Reading pruning from JSON files...")
-        active_assertions = json5.load(open(active_assertions_json))
-        redundancy_table = json5.load(open(redundancy_json))
-        pruning_table = json5.load(open(pruning_json))
-    else:
-        active_assertions, redundancy_table, pruning_table = get_pruning_table(ctx.obj["classifier"])
-        with open(active_assertions_json, "w") as f:
-            json5.dump(active_assertions, f, indent=2)
-        with open(redundancy_json, "w") as f:
-            json5.dump(redundancy_table, f, indent=2)
-        with open(pruning_json, "w") as f:
-            json5.dump(pruning_table, f, indent=2)
+    # if os.path.exists(active_assertions_json) and os.path.exists(redundancy_json) and os.path.exists(pruning_json):
+    #     print("Reading pruning from JSON files...")
+    #     active_assertions = json5.load(open(active_assertions_json))
+    #     redundancy_table = json5.load(open(redundancy_json))
+    #     pruning_table = json5.load(open(pruning_json))
+    # else:
+    active_assertions, redundancy_table, pruning_table = get_pruning_table(ctx.obj["classifier"], use_training_data)
+        # with open(active_assertions_json, "w") as f:
+        #     json5.dump(active_assertions, f, indent=2)
+        # with open(redundancy_json, "w") as f:
+        #     json5.dump(redundancy_table, f, indent=2)
+        # with open(pruning_json, "w") as f:
+        #     json5.dump(pruning_table, f, indent=2)
         
-    hist = redundancy_histogram(redundancy_table)
-    threshold = int(np.ceil( len(ctx.obj["classifier"].trees) / 2 ))
-    print(f"Trees: {len(ctx.obj['classifier'].trees)}, threshold: {threshold}")
-    print("Redundancy:")
-    for k, v in hist.items():
-        print(f"{k}: {v}%")
+    # hist = redundancy_histogram(redundancy_table)
+    # threshold = int(np.ceil( len(ctx.obj["classifier"].trees) / 2 ))
+    # print(f"Trees: {len(ctx.obj['classifier'].trees)}, threshold: {threshold}")
+    # print("Redundancy:")
+    # for k, v in hist.items():
+    #     print(f"{k}: {v}%")
    
     total_cost, candidate_assertions, pruned_assertions = lossless_hedge_trimming(redundancy_table, pruning_table)
     savings = sum( i[3] for i in pruned_assertions ) / total_cost
@@ -60,8 +78,8 @@ def pruning_flow(ctx):
     with open(pruned_assertions_json, "w") as f:
         json5.dump(pruned_assertions, f, indent=2)
 
-def get_pruning_table(classifier):
-    active_assertions = classifier.get_assertion_activation()
+def get_pruning_table(classifier, use_training_data):
+    active_assertions = classifier.get_assertion_activation(use_training_data)
     redundancy_table = {}
     pruning_table = { c : {t.name : {} for t in classifier.trees } for c in classifier.model_classes }
     for m in active_assertions:

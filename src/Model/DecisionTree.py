@@ -162,9 +162,13 @@ class DecisionTree:
         for class_name, assertions in self.class_assertions.items():
             pruned = [assertion for class_label, tree_name, assertion, _ in pruning if tree_name == self.name and class_label == class_name ]            
             kept_assertions = [ assertion for assertion in assertions if assertion not in pruned ]
-            assertion_function = " or ".join(kept_assertions)
-            hdl_expression = assertion_function.replace("not ", "~").replace("or", "|").replace("and", "&")
-            hdl_expression = str(espresso_exprs(expr(hdl_expression))[0]).replace("~", "not ").replace("Or","func_or").replace("And","func_and")
+            if len(kept_assertions) > 0:
+                assertion_function = " or ".join(kept_assertions)
+                hdl_expression = assertion_function.replace("not ", "~").replace("or", "|").replace("and", "&")
+                hdl_expression = str(espresso_exprs(expr(hdl_expression))[0]).replace("~", "not ").replace("Or","func_or").replace("And","func_and")
+            else:
+                assertion_function = "False"
+                hdl_expression = "'0'"
             self.pruned_assertions.append({
                 "class"      : class_name,
                 "expression" : assertion_function,

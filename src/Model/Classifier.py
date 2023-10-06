@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import numpy as np, pandas as pd
+import numpy as np, pandas as pd, random
 from xml.etree import ElementTree
 from anytree import Node
 from multiprocessing import cpu_count, Pool
@@ -126,6 +126,8 @@ class Classifier:
         assert attribute_name == f_names, f"{attribute_name} != {f_names}"
         self.x_test = self.dataframe.loc[:, self.dataframe.columns != "Outcome"].values.tolist()
         self.y_test = sum(self.dataframe.loc[:, self.dataframe.columns == "Outcome"].values.tolist(), [])
+        self.x_val = self.x_test
+        self.y_val = self.y_test
         
     def read_training_set(self, dataset_csv):
         self.dataframe = pd.read_csv(dataset_csv, sep = ";")
@@ -135,7 +137,15 @@ class Classifier:
         assert attribute_name == f_names, f"{attribute_name} != {f_names}"
         self.x_train = self.dataframe.loc[:, self.dataframe.columns != "Outcome"].values.tolist()
         self.y_train = sum(self.dataframe.loc[:, self.dataframe.columns == "Outcome"].values.tolist(), [])
-
+        
+    def split_test_dataset(self):
+        validation_set = random.choices(range(len(self.x_test)), k = len(self.x_test) // 2)
+        self.x_val = [ self.x_test[i] for i in range(len(self.x_test)) if i in validation_set ]
+        self.y_val = [ self.y_test[i] for i in range(len(self.y_test)) if i in validation_set ]
+        self.x_test = [ self.x_test[i] for i in range(len(self.x_test)) if i not in validation_set ]
+        self.y_test = [ self.y_test[i] for i in range(len(self.y_test)) if i not in validation_set ]
+        self.args = [[t, self.x_test] for t in self.p_tree]
+    
     def brace4ALS(self, als_conf):
         if self.als_conf is None:
             self.als_conf = als_conf
@@ -209,9 +219,11 @@ class Classifier:
         outcomes = self.pool.starmap(Classifier.tree_predict, self.args)
         return sum( np.argmax([sum(s) for s in zip(*scores)]) == y for scores, y in zip(zip(*outcomes), self.y_test) ) / len(self.y_test) * 100
     
-    def get_assertion_activation(self):
+    def get_assertion_activation(self, use_training_data):
+        samples = self.x_train if use_training_data else self.x_val
+        labels = self.y_train if use_training_data else self.y_val
         activity_by_sample = []
-        for x, y in tqdm( zip(self.x_test, self.y_test), total=len(self.y_test), desc="Computing assertions' activation...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+        for x, y in tqdm( zip(samples, labels), total=len(labels), desc="Computing assertions' activation...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
             outcome = {"x" : x, "y": str(y), "redundancy" : 0, "rho": np.zeros((len(self.model_classes),), dtype=int), "Ig" : 0, "outcomes" : {}}
             for t in self.trees:
                 predicted_class, active_assertion, mask = t.get_assertion_activation(x)
