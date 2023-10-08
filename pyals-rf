@@ -15,58 +15,25 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import click, git, os, sys
-from git import RemoteProgress
+import click, os, sys
 from multiprocessing import cpu_count
-from src.Model.Classifier import Classifier
 from src.ax_flows import set_global_options, store_flow
 from src.ps_flow import ps_flow, ps_eval, ps_distance, ps_compare, compute_gini_dist
 from src.als_flow import als_one_step, als_two_steps
 from src.als_wc_flow import als_wc_one_step, als_wc_two_steps
 from src.combined_flow import full_one_step, full_two_steps
 from src.ConfigParsers.DtGenConfigParser import *
-from src.dtgen import dtgen
 from src.pruning_flow import pruning_flow
 from src.hdl_generation import hdl_generation
+from src.git_updater import git_updater
 
-def git_updater():
-    try:
-        print("Checking for updates...")
-        restart_needed = False
-        repo = git.Repo(os.path.dirname(os.path.realpath(__file__)))
-        for fetch_info in repo.remotes.origin.fetch(progress=RemoteProgress()):
-            print(f"Updated {fetch_info.ref} to {fetch_info.commit}")
-
-        local_head = repo.heads[0].commit
-        remote_head = repo.remotes.origin.refs[0].commit
-        print(f"Local commit: {local_head}")
-        print(f"Last remote commit: {remote_head}")
-
-        for fetch_info in repo.remotes.origin.pull(repo.heads[0], progress=RemoteProgress()):
-            print(f"Updated {fetch_info.ref} to {fetch_info.commit}")
-            if fetch_info.commit != local_head:
-                restart_needed = True
-                print(f"Local head moved to {local_head}. The program will be restarted.")
-
-        print("Checking for updates in submodules...")
-        for submodule in repo.submodules:
-            for fetch_info in submodule.update(init = True, recursive = True):
-                print(f"Updated {fetch_info.ref} to {fetch_info.commit}")
-                if fetch_info.commit != local_head:
-                    restart_needed = True
-                    print(f"Local head moved to {local_head}. The program will be restarted.")
-
-        return restart_needed
-    except git.exc.GitCommandError as e:
-        print(e)
-        return False
 
 @click.group(chain=True)
 @click.pass_context
-def approx_flow(ctx):
+def cli(ctx):
     ctx.ensure_object(dict)
     
-@approx_flow.command("ps")
+@cli.command("ps")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('--mode', type=click.Choice(["rank", "full"]), default = "full")
@@ -82,7 +49,7 @@ def bitwidth(ctx, conf, ncpus, mode, alpha, beta, gamma):
     ps_flow(ctx, mode, alpha, beta, gamma)
     store_flow(ctx)
     
-@approx_flow.command("als")
+@cli.command("als")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('--onestep', is_flag = True, default = False, help = "Enable one-step approximation flow")
@@ -99,7 +66,7 @@ def als(ctx, conf, ncpus, onestep):
         als_two_steps(ctx)
     store_flow(ctx)
         
-@approx_flow.command("als-wc")
+@cli.command("als-wc")
 @click.option('--onestep', is_flag = True, default = False, help = "Enable one-step approximation flow")
 @click.pass_context
 def als_wc(ctx, conf, ncpus, onestep):
@@ -114,7 +81,7 @@ def als_wc(ctx, conf, ncpus, onestep):
         als_wc_two_steps(ctx)
     store_flow(ctx)
         
-@approx_flow.command("full")
+@cli.command("full")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('--onestep', is_flag = True, default = False, help = "Enable one-step approximation flow")
@@ -131,7 +98,7 @@ def full(ctx, conf, ncpus, onestep):
         full_two_steps(ctx)
     store_flow(ctx)
         
-@approx_flow.command("pruning")
+@cli.command("pruning")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-t', '--train', is_flag = True, help = f"Use training data")
@@ -142,7 +109,7 @@ def assertions_pruning(ctx, conf, ncpus, train, output):
     pruning_flow(ctx, train, output)
     store_flow(ctx)
     
-@approx_flow.command("genhdl")
+@cli.command("genhdl")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = f"Override output directory configuration")
@@ -151,69 +118,16 @@ def generate_hdl(ctx, conf, ncpus, output):
     set_global_options(ctx, conf, ncpus, output)
     hdl_generation(ctx, output)
      
-approx_flow.add_command(bitwidth)
-approx_flow.add_command(als)
-approx_flow.add_command(als_wc)
-approx_flow.add_command(full)
-approx_flow.add_command(assertions_pruning)
-approx_flow.add_command(generate_hdl)
+cli.add_command(bitwidth)
+cli.add_command(als)
+cli.add_command(als_wc)
+cli.add_command(full)
+cli.add_command(assertions_pruning)
+cli.add_command(generate_hdl)
     
 @click.group()
 def other_commands():
     pass
-
-@other_commands.command("dump")
-@click.argument('pmmlfile', type=click.Path(exists=True, dir_okay=False))
-def dump(pmmlfile):
-    """
-    Dump the classifier and exit
-    
-    PMMLFILE is the PMML file describing the model
-    """
-    classifier = Classifier(None)
-    classifier.parse(pmmlfile)
-    classifier.dump()
-           
-@click.command("learn")
-@click.argument('clf', type = click.Choice(["dt", "rf", "wc"]), default = "rf")
-@click.argument('dataset', type=click.Path(exists=True, dir_okay=False))
-@click.argument('outputdir', type=click.Path(dir_okay=True), default = "output")
-@click.option("-f", "--fraction", type = float, default = 0.9, help = "Fraction of data to be used as learning set. The remaining will be used as test data.")
-@click.option("-d", "--depth", type = int, default = None, help = "Maximum depth of the tree(s)")
-@click.option("-n", "--predictors", type = int, default = 1, help = "The number of trees in the ensemble. Ignored if clf is dt.")
-@click.option("--criterion", type = click.Choice(["gini", "entropy", "log_loss"]), default = "gini", help = "The function to measure the quality of a split. Supported criteria are “gini” for the Gini impurity and “log_loss” and “entropy” both for the Shannon information gain")
-@click.option("--min_sample_split", type = int, default = 2, help = "The minimum number of samples required to split an internal node.")
-@click.option("--min_samples_leaf", type = int, default = 1, help = "The minimum number of samples required to be at a leaf node. A split point at any depth will only be considered if it leaves at least min_samples_leaf training samples in each of the left and right branches.")
-@click.option("--max_features", default = None, help = "The number of features to consider when looking for the best split. You can also specify one between \"sqrt\", \"log2\" or \"auto\"")
-@click.option("--max_leaf_nodes", type = int, default = None, help = "Grow trees with max_leaf_nodes in best-first fashion. Best nodes are defined as relative reduction in impurity. If None then unlimited number of leaf nodes.")
-@click.option("--min_impurity_decrease", type = float, default = 0.0, help = "A node will be split if this split induces a decrease of the impurity greater than or equal to this value.")
-@click.option("--ccp_alpha", type = float, default = 0.0, help = "Complexity parameter used for Minimal Cost-Complexity Pruning. The subtree with the largest cost complexity that is smaller than ccp_alpha will be chosen. By default, no pruning is performed.")
-@click.option("-b", "--disable_bootstrap", is_flag = True, help = "Disable the bootstrap")
-def learning(clf, dataset, configfile, outputdir, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap):
-    """
-    Generates a decision tree/ random forest / bagging from CSV data.
-
-    CLF is the classifier type: "dt" stands for decision tree, "rf" for random forest, "bag" for bagging, "wc" for worst-case speculation on random-forest/bagging classifiers.
-
-    DATASET is the csv file to be used as a learning set.
-
-    CONFIGFILE configuration file providing further information to the tool
-    
-    OUTPUTDIR is the path of the output directory.
-    """
-    dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap)
-
-@click.command("dump")
-@click.argument('pmmlfile', type=click.Path(exists=True, dir_okay=False))
-def dump(pmmlfile):
-    """
-    Dump the classifier and exit
-    
-    PMMLFILE is the PMML file describing the model
-    """
-    classifier = Classifier(None)
-    classifier.parse(pmmlfile)
-    classifier.dump()
 
 @click.command("eval")
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
@@ -263,19 +177,17 @@ def compare(configfile, axapproach, outdir, pareto, axmode, alpha, beta, gamma, 
 def compgini(configfile, outdir):
     compute_gini_dist(configfile, outdir)
     
-other_commands.add_command(learning)
-other_commands.add_command(dump)
+
 other_commands.add_command(eval)
 other_commands.add_command(distance)
 other_commands.add_command(compare)
 other_commands.add_command(compgini)
 
-cli = click.CommandCollection(sources=[approx_flow])
 
 if __name__ == '__main__':
-    if git_updater():
+    if git_updater(os.path.dirname(os.path.realpath(__file__))):
         os.execv(sys.argv[0], sys.argv)
     else:
         #cli(obj={})
-        approx_flow()
+        cli()
 
