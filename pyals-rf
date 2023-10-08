@@ -149,7 +149,7 @@ def assertions_pruning(ctx, conf, ncpus, train, output):
 @click.pass_context
 def generate_hdl(ctx, conf, ncpus, output):
     set_global_options(ctx, conf, ncpus, output)
-    hdl_generation(ctx)
+    hdl_generation(ctx, output)
      
 approx_flow.add_command(bitwidth)
 approx_flow.add_command(als)

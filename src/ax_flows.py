@@ -21,7 +21,7 @@ from .ConfigParsers.PsConfigParser import *
 from .Model.Classifier import *
 
 def set_global_options(ctx, confifile, ncpus, flow = None):
-    assert "flow" not in ctx.obj, f"Approximation flow already set ({ctx.obj['flow']}). You issued more than one approximation command. Bailing out."
+    #assert "flow" not in ctx.obj, f"Approximation flow already set ({ctx.obj['flow']}). You issued more than one approximation command. Bailing out."
     ctx.obj["flow"] = flow
     if "configfile" not in ctx.obj:
         ctx.obj["configfile"] = confifile
