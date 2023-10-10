@@ -115,7 +115,7 @@ def assertions_pruning(ctx, conf, ncpus, train, output):
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = f"Override output directory configuration")
 @click.pass_context
 def generate_hdl(ctx, conf, ncpus, output):
-    set_global_options(ctx, conf, ncpus, output)
+    set_global_options(ctx, conf, ncpus)
     hdl_generation(ctx, output)
      
 cli.add_command(bitwidth)

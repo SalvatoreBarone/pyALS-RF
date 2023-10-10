@@ -46,6 +46,7 @@ def load_configuration_ps(ctx):
         assert isinstance(ctx.obj["configuration"], PSConfigParser), "Unsuitable configuration file"
         
 def load_flow(ctx):
+    print(f"Loading approximation flow from {ctx.obj['configuration'].outdir}/.flow.json5")
     assert "configuration" in ctx.obj, "No configuration. Bailing out."
     ctx.obj["flow"] = json5.load(open(f"{ctx.obj['configuration'].outdir}/.flow.json5"))
     
