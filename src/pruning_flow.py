@@ -69,8 +69,11 @@ def pruning_flow(ctx, use_training_data, output):
     #     print(f"{k}: {v}%")
    
     total_cost, candidate_assertions, pruned_assertions = lossless_hedge_trimming(redundancy_table, pruning_table)
-    savings = sum( i[3] for i in pruned_assertions ) / total_cost
-    print(len(candidate_assertions), len(pruned_assertions), savings)
+    savings = sum( i[3] for i in pruned_assertions ) / total_cost * 100
+    print(f"Prunable assertions: {len(candidate_assertions)}")
+    print(f"Original cost (#literals): {total_cost}") 
+    print(f"Pruned assertiond {len(pruned_assertions)}")
+    print(f"Savings (%): {savings}")
     
     acc = ctx.obj["classifier"].test_pruning(pruned_assertions)
     print(f"Loss: {baseline_accuracy - acc}")
