@@ -18,42 +18,33 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
-entity swapper_cell is
-	port (
-		data_in  : in std_logic_vector(1 downto 0);
-		data_out : out std_logic_vector(1 downto 0));
-end entity;
-architecture swapper_cell of swapper_cell is
-begin
-	data_out(0) <= data_in(0) and data_in(1);
-	data_out(1) <= data_in(0) or data_in(1);
-end architecture;
-
-
-library ieee;
-use ieee.std_logic_1164.all;
 entity swapper_block is
-	generic (data_width : natural);
-	port (
-		data_in  : in std_logic_vector(data_width-1 downto 0);
-		data_out : out std_logic_vector(data_width-1 downto 0));
+    generic (data_width : natural);
+    port (
+        data_in  : in std_logic_vector(data_width-1 downto 0);
+        data_out : out std_logic_vector(data_width-1 downto 0));
 end entity;
 architecture dataflow of swapper_block is
-	component swapper_cell is
-    port (
-      data_in  : in std_logic_vector(1 downto 0);
-      data_out : out std_logic_vector(1 downto 0));
-  end component;
-	signal intermediate_data : std_logic_vector(data_width-1 downto 0) := (others => '0');
+    signal intermediate_data : std_logic_vector(data_width-1 downto 0) := (others => '0');
 begin
-	first_stage_swappers : for i in 0 to (data_width-1)/2-1 generate
-		fst_stg_cell : swapper_cell port map (data_in(2*i+2 downto 2*i+1), intermediate_data(2*i+2 downto 2*i+1));
-	end generate;
-	second_stage_swappers : for i in 0 to data_width/2-1 generate
-    	snd_stg_cell : swapper_cell	port map (intermediate_data(2*i+1 downto 2*i), data_out(2*i+1 downto 2*i));
-  	end generate;
-	data_out(0) <= intermediate_data(0);
-	data_out(data_width-1) <= intermediate_data(data_width-1);
+    intermediate_data(0) <= data_in(0);
+     
+    odd_stage_swappers : for i in 0 to (data_width-1)/2-1 generate
+       intermediate_data(2*i+1) <= data_in(2*i+1) or data_in(2*i+2);
+       intermediate_data(2*i+2) <= data_in(2*i+1) and data_in(2*i+2);
+    end generate;
+    last_pass_through_1st : if data_width mod 2 = 0 generate
+        intermediate_data(data_width-1) <= data_in(data_width-1);
+    end generate;
+    
+    even_stage_swappers : for i in 0 to data_width/2-1 generate
+         data_out(2*i) <= intermediate_data(2*i) or intermediate_data(2*i+1);
+         data_out(2*i+1) <= intermediate_data(2*i) and intermediate_data(2*i+1);
+      end generate;
+    last_pass_through_2st : if data_width mod 2 = 1 generate
+      data_out(data_width-1) <= intermediate_data(data_width-1);
+      end generate;
+
 end dataflow;
 
 
@@ -61,17 +52,17 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 entity voter is
-	generic	(
-		data_width  : natural;
-		pipe_stages : natural);
+    generic	(
+        data_width  : natural;
+        pipe_stages : natural);
   port (
     clock    : in  std_logic;
-		reset_n  : in  std_logic;
-		data_in  : in  std_logic_vector (data_width-1 downto 0);
-   	majority : out std_logic);
+        reset_n  : in  std_logic;
+        data_in  : in  std_logic_vector (data_width-1 downto 0);
+       majority : out std_logic);
 end voter;
 architecture voter of voter is
-	component swapper_block is
+    component swapper_block is
     generic (data_width : natural);
     port (
       data_in  : in std_logic_vector(data_width-1 downto 0);
@@ -86,19 +77,24 @@ architecture voter of voter is
       data_in  : in  std_logic_vector (data_width-1 downto 0);
       data_out : out std_logic_vector (data_width-1 downto 0));
   end component;
-	constant swapper_per_pipe : natural := data_width / pipe_stages;
-	type matrix is array (natural range <>) of std_logic_vector (data_width-1 downto 0);
-	signal intermediates : matrix (0 to data_width + pipe_stages);
+    constant swapper_per_pipe : natural := data_width / pipe_stages;
+    type matrix is array (natural range <>) of std_logic_vector (data_width-1 downto 0);
+    signal intermediates : matrix (0 to data_width + pipe_stages);
 begin
-	assert pipe_stages mod 2 = 0	report "pipe_stages must be a power of two"	severity failure;
-	data_in_buffer : pipe_reg	generic map (data_width)	port map (clock, reset_n, '1', data_in, intermediates(0));
-	majority <=	intermediates(data_width + pipe_stages)(data_width/2);
-	chain : for i in 0 to data_width + pipe_stages - 1 generate
-    pipe : if (i+1) mod (swapper_per_pipe+1) = 0 generate 
-      pipe_buffer: pipe_reg	generic map (data_width) port map (clock, reset_n, '1', intermediates(i), intermediates(i+1));
+    assert pipe_stages mod 2 = 0 report "pipe_stages must be a power of two" severity failure;
+    assert swapper_per_pipe >= 2 report "too many pipe stages" severity failure;
+    data_in_buffer : pipe_reg	generic map (data_width => data_width)	port map (clock => clock, reset_n => reset_n, enable => '1', data_in => data_in, data_out => intermediates(0));
+    majority <=	intermediates(data_width + pipe_stages)(data_width/2);
+    chain : for i in 0 to data_width + pipe_stages - 1 generate
+        pipe : if (i+1) mod (swapper_per_pipe+1) = 0 generate 
+              pipe_buffer: pipe_reg	
+                generic map (data_width => data_width) 
+                port map (clock => clock, reset_n => reset_n, enable => '1', data_in => intermediates(i), data_out => intermediates(i+1));
+        end generate;
+        swapper : if (i+1) mod (swapper_per_pipe+1) /= 0 generate 
+            swapper_inst: swapper_block
+                generic map (data_width => data_width)
+                port map(data_in => intermediates(i), data_out => intermediates(i+1));
+        end generate;
     end generate;
-    swapper : if (i+1) mod (swapper_per_pipe+1) /= 0 generate 
-      swapper_inst: swapper_block generic map (data_width) port map(intermediates(i), intermediates(i+1));
-    end generate;
-	end generate;
 end architecture;

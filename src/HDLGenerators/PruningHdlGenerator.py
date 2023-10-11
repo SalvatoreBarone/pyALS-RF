@@ -57,21 +57,20 @@ class PruningHdlGenerator(HDLGenerator):
         output = template.render(
             tree_name = tree.name,
             boxes = [b["name"] for b in tree.decision_boxes],
-            classes = self.classifier.model_classes,
-            assertions = tree.pruned_assertions)
+            assertions = [{"class" : n, "expression" : a["minimized"]} for n, a in zip(self.classifier.classes_name, tree.pruned_assertions)])
         with open(file_name, "w") as out_file:
             out_file.write(output)
         return file_name, module_name
     
     def generate_ax_test_vectors(self, **kwargs):    
         test_vectors = { f["name"] : [] for f in self.classifier.model_features }
-        expected_outputs = { c : [] for c in self.classifier.model_classes}
+        expected_outputs = { c : [] for c in self.classifier.classes_name}
         for x in self.classifier.x_test:
             for k, v in zip(self.classifier.model_features, x):
                 test_vectors[k["name"]].append(double_to_bin(v))
             o = np.argmax(self.classifier.predict_pruning(x))
-            output = [ 1 if i == o else 0 for i in range(len(self.classifier.model_classes)) ]
-            for c, v in zip(self.classifier.model_classes, output):
+            output = [ 1 if i == o else 0 for i in range(len(self.classifier.classes_name)) ]
+            for c, v in zip(self.classifier.classes_name, output):
                 expected_outputs[c].append(v)
         return len(self.classifier.y_test), test_vectors, expected_outputs
     
@@ -81,7 +80,7 @@ class PruningHdlGenerator(HDLGenerator):
         tb_classifier_template = env.get_template(self.vhdl_tb_classifier_template_file)
         tb_classifier = tb_classifier_template.render(
             features=features,
-            classes=self.classifier.model_classes,
+            classes=self.classifier.classes_name,
             n_vectors = n_vectors,
             test_vectors = test_vectors,
             expected_outputs = expected_outputs)

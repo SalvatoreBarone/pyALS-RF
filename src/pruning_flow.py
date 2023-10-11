@@ -54,12 +54,12 @@ def pruning_flow(ctx, use_training_data, output):
     #     pruning_table = json5.load(open(pruning_json))
     # else:
     active_assertions, redundancy_table, pruning_table = get_pruning_table(ctx.obj["classifier"], use_training_data)
-        # with open(active_assertions_json, "w") as f:
-        #     json5.dump(active_assertions, f, indent=2)
-        # with open(redundancy_json, "w") as f:
-        #     json5.dump(redundancy_table, f, indent=2)
-        # with open(pruning_json, "w") as f:
-        #     json5.dump(pruning_table, f, indent=2)
+    # with open(active_assertions_json, "w") as f:
+    #     json5.dump(active_assertions, f, indent=2)
+    # with open(redundancy_json, "w") as f:
+    #     json5.dump(redundancy_table, f, indent=2)
+    # with open(pruning_json, "w") as f:
+    #     json5.dump(pruning_table, f, indent=2)
         
     # hist = redundancy_histogram(redundancy_table)
     # threshold = int(np.ceil( len(ctx.obj["classifier"].trees) / 2 ))

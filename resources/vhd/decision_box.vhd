@@ -106,16 +106,16 @@ architecture structural of parallel_comparator is
   constant additional_bits : natural                                       := data_width mod parallel_blocks;
   constant last_comp_bits  : natural                                       := bits_per_stage + additional_bits;
 begin
-  inbuff_1 : pipe_reg generic map (data_width) port map (clock, reset_n, enable, data_1, buffered_data_1);
-  inbuff_2 : pipe_reg generic map (data_width) port map (clock, reset_n, enable, data_2, buffered_data_2);
+  inbuff_1 : pipe_reg generic map (data_width => data_width) port map (clock => clock, reset_n => reset_n, enable => enable, data_in => data_1, data_out => buffered_data_1);
+  inbuff_2 : pipe_reg generic map (data_width => data_width) port map (clock => clock, reset_n => reset_n, enable => enable, data_in => data_2, data_out => buffered_data_2);
   comp_blocks : for i in 0 to parallel_blocks-2 generate
     comp : basic_comparator
-      generic map (bits_per_stage, comp_operator)
+      generic map (data_width => bits_per_stage, comp_operator => comp_operator)
       port map (
-        buffered_data_1((i+1)*bits_per_stage-1 downto i*bits_per_stage),
-        buffered_data_2((i+1)*bits_per_stage-1 downto i*bits_per_stage),
-        blocks_result(i),
-        blocks_equal(i));
+        data_1 => buffered_data_1((i+1)*bits_per_stage-1 downto i*bits_per_stage),
+        data_2 => buffered_data_2((i+1)*bits_per_stage-1 downto i*bits_per_stage),
+        result => blocks_result(i),
+        equals => blocks_equal(i));
   end generate;
   -- When using bitwidth that is not a multiple of parallel_blocks (e.g. when using precision-scaling), reducing the
   -- comparator into blocks may cause the most significant bits to not be compared (the division
@@ -123,12 +123,12 @@ begin
   -- compared and extend the capacity (the bitwidth) of the last comparator so that they are not excluded from the
   -- comparison.
   last_block : basic_comparator
-  generic map (last_comp_bits, comp_operator)
-  port map (
-    buffered_data_1(data_width-1 downto data_width-last_comp_bits),
-    buffered_data_2(data_width-1 downto data_width-last_comp_bits),
-    blocks_result(parallel_blocks-1),
-    blocks_equal(parallel_blocks-1));
+    generic map (last_comp_bits, comp_operator)
+    port map (
+      data_1 => buffered_data_1(data_width-1 downto data_width-last_comp_bits),
+      data_2 => buffered_data_2(data_width-1 downto data_width-last_comp_bits),
+      result => blocks_result(parallel_blocks-1),
+      equals => blocks_equal(parallel_blocks-1));
   
   result_eq : if comp_operator = equal generate
     result <= and_reduce(blocks_equal);
@@ -190,11 +190,11 @@ begin
   abs_data_1 <= '0' & modulo_a;
   abs_data_2 <= '0' & modulo_b;
   eq_comp : parallel_comparator
-    generic map (data_width, equal, parallel_blocks)
-    port map (clock, reset_n, enable, abs_data_1, abs_data_2, a_eq_b);
+    generic map (data_width => data_width, comp_operator => equal, parallel_blocks => parallel_blocks)
+    port map (clock => clock, reset_n => reset_n, enable => enable, data_1 => abs_data_1, data_2 => abs_data_2, result => a_eq_b);
   gt_comp : parallel_comparator
-    generic map (data_width, greaterThan, parallel_blocks)
-    port map (clock, reset_n, enable, abs_data_1, abs_data_2, a_gt_b);
+    generic map (data_width => data_width, comp_operator => greaterThan, parallel_blocks => parallel_blocks)
+    port map (clock => clock, reset_n => reset_n, enable => enable, data_1 => abs_data_1, data_2 => abs_data_2, result => a_gt_b);
   conditions <= sign_a & sign_b & a_gt_b & a_eq_b;
   eq_comp_result : if comp_operator = equal generate
     with conditions select result <= '1' when b"0001" | b"1101", '0' when others;
@@ -243,8 +243,8 @@ architecture structural of db_int is
   end component;
 begin
   comp : parallel_comparator
-    generic map (data_width, comp_operator, parallel_blocks)
-    port map (clock, reset_n, enable, data_1, data_2, result);
+    generic map (data_width => data_width, comp_operator => comp_operator, parallel_blocks => parallel_blocks)
+    port map (clock => clock, reset_n => reset_n, enable => enable, data_1 => data_1, data_2 => data_2, result => result);
 end structural;
 
 
@@ -299,12 +299,12 @@ begin
   assert parallel_blocks >= 1 report "parallel_blocks must be greater or equal than 1" severity failure;
   fp_comp : if data_type = double generate
     comp : db_float 
-      generic map (data_width, comp_operator, parallel_blocks)
-      port map (clock, reset_n, enable, data_1, data_2, result);
+      generic map (data_width => data_width, comp_operator => comp_operator, parallel_blocks => parallel_blocks)
+      port map (clock => clock, reset_n => reset_n, enable => enable, data_1 => data_1, data_2 => data_2, result => result);
   end generate;
   int_comp : if data_type = int generate
     comp : db_int
-      generic map (data_width, comp_operator, parallel_blocks)
-      port map (clock, reset_n, enable, data_1, data_2, result);
+      generic map (data_width => data_width, comp_operator => comp_operator, parallel_blocks => parallel_blocks)
+      port map (clock => clock, reset_n => reset_n, enable => enable, data_1 => data_1, data_2 => data_2, result => result);
   end generate;
 end structural;

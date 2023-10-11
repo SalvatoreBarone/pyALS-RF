@@ -71,9 +71,23 @@ architecture structural of decision_tree_{{tree_name}} is
 
 begin
   {% for b in boxes -%}{{b['name']}}_inst : decision_box
-    generic map(data_width - nab_{{b['feature']}}, {{b['data_type']}}, {{b['operator']}}, parallel_blocks)
-    port map(clock, reset_n, enable, {{b['feature']}}, {{b['name']}}_thr(data_width-1 downto nab_{{b['feature']}}), {{b['name']}});
+    generic map(
+      data_width => data_width - nab_{{b['feature']}}, 
+      data_type => {{b['data_type']}}, 
+      comp_operator => {{b['operator']}}, 
+      parallel_blocks => parallel_blocks)
+    port map(
+      clock => clock, 
+      reset_n => reset_n, 
+      enable => enable, 
+      data_1 => {{b['feature']}}, 
+      data_2 => {{b['name']}}_thr(data_width-1 downto nab_{{b['feature']}}), 
+      result => {{b['name']}});
   {% endfor %}
   assertions : assertions_block_{{tree_name}}
-    port map ({% for b in boxes -%}{{b['name']}}, {% endfor %}{% for c in classes -%}class_{{c}}{{", " if not loop.last}}{% endfor %});
+    port map ({% for b in boxes -%}
+      {{b['name']}} => {{b['name']}}, 
+      {% endfor %}{% for c in classes -%}
+      class_{{c}} => class_{{c}}{{", " if not loop.last}}
+      {% endfor %});
 end structural;

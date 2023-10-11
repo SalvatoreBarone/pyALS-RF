@@ -52,12 +52,15 @@ class DecisionTree:
         tree.model_classes = copy.deepcopy(self.model_classes)
         tree.decision_boxes = copy.deepcopy(self.decision_boxes)
         tree.assertions = copy.deepcopy(self.assertions)
+        tree.class_assertions = copy.deepcopy(self.class_assertions)
+        tree.pruned_assertions = copy.deepcopy(self.pruned_assertions)
+        
         tree.als_conf = copy.deepcopy(self.als_conf)
         tree.assertions_graph = copy.deepcopy(self.assertions_graph)
         tree.catalog = copy.deepcopy(self.catalog)
         tree.assertions_catalog_entries = copy.deepcopy(self.assertions_catalog_entries)
         tree.current_als_configuration = copy.deepcopy(self.current_als_configuration)
-        tree.self.exact_box_output = copy.deepcopy(self.exact_box_output)
+        tree.exact_box_output = copy.deepcopy(self.exact_box_output)
         return tree
     
     def brace4ALS(self, als_conf):
@@ -207,14 +210,13 @@ class DecisionTree:
 
     def get_assertions(self):
         self.assertions = []
-        for class_name in self.model_classes:
-            assertion_function = self.get_assertion(class_name)
+        for c in self.model_classes:
+            assertion_function = self.get_assertion(c)
             hdl_expression = str(espresso_exprs(expr(assertion_function))[0]).replace("~", "not ").replace("Or","func_or").replace("And","func_and")
             self.assertions.append({
-                "class"      : class_name,
+                "class"      : c,
                 "expression" : assertion_function.replace("~", "not ").replace("|", "or").replace("&", "and"),
                 "minimized"  : "'0'" if assertion_function == "False" else hdl_expression})
-
 
     def get_assertions_for_classes(self):
         self.class_assertions = { c : [item["expression"].replace("~", "not ").replace("|", "or").replace("&", "and") for item in self.leaves if item["class"] == c] for c in self.model_classes}  

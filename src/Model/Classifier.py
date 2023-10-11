@@ -31,6 +31,7 @@ class Classifier:
         self.trees = []
         self.model_features = []
         self.model_classes = []
+        self.classes_name = []
         self.ncpus = min(ncpus, cpu_count()) if ncpus is not None else cpu_count()
         self.args = None
         self.p_tree = None
@@ -42,6 +43,7 @@ class Classifier:
         classifier.trees = copy.deepcopy(self.trees)
         classifier.model_features = copy.deepcopy(self.model_features)
         classifier.model_classes = copy.deepcopy(self.model_classes)
+        classifier.classes_name = copy.deepcopy(self.classes_name)
         classifier.ncpus = self.ncpus
         classifier.p_tree = None
         classifier.args = None
@@ -61,12 +63,15 @@ class Classifier:
         self.trees = []
         self.model_features = []
         self.model_classes = []
+        self.classes_name = []
         tree = ElementTree.parse(pmml_file_name)
         root = tree.getroot()
         self.__namespaces["pmml"] = Classifier.get_xmlns_uri(root)
         self.get_features_and_classes(root)
         if dataset_description is not None:
-            self.model_classes = dataset_description.classes_name
+            self.classes_name = dataset_description.classes_name
+        else:
+            self.classes_name = self.model_classes
         segmentation = root.find("pmml:MiningModel/pmml:Segmentation", self.__namespaces)
         if segmentation is not None:
             for tree_id, segment in enumerate(segmentation.findall("pmml:Segment", self.__namespaces)):

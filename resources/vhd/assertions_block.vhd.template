@@ -25,12 +25,12 @@ entity assertions_block_{{tree_name}} is
   port (
     {% for b in boxes -%}{{b}} : in std_logic;
     {% endfor %}
-    {% for c in classes -%}class_{{c}} : out std_logic{{";" if not loop.last else ");"}}
+    {% for f in assertions -%}class_{{f['class']}} : out std_logic{{";" if not loop.last else ");"}}
     {% endfor %}
 end assertions_block_{{tree_name}};
 
 architecture dataflow of assertions_block_{{tree_name}} is
 begin
-  {% for f in assertions -%}class_{{f['class']}} <= {{f['minimized']}};
+  {% for f in assertions -%}class_{{f['class']}} <= {{f['expression']}};
   {% endfor %}
 end dataflow;
