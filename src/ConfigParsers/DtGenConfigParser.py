@@ -18,11 +18,11 @@ import json
 from .ConfigParser import *
 
 
-class DtGenConfigParser:
+class DtGenConfigParser(ConfigParser):
 	def __init__(self, config_file):
-		configuration = json.load(open(config_file))
-		self.separator = search_field_in_config(configuration, "separator", False, ",")
-		self.outcome_col = search_field_in_config(configuration, "outcome_col", False, None)
-		self.skip_header = search_field_in_config(configuration, "skip_header", False, True)
-		self.attributes_name = search_field_in_config(configuration, "attributes_name", True)
-		self.classes_name = search_field_in_config(configuration, "classes_name", True)
+		super().__init__(config_file)
+		self.separator = search_field_in_config(self.configuration, "separator", False, ",")
+		self.outcome_col = search_field_in_config(self.configuration, "outcome_col", False, None)
+		self.skip_header = search_field_in_config(self.configuration, "skip_header", False, True)
+		self.attributes_name = search_field_in_config(self.configuration, "attributes_name", True)
+		self.classes_name = search_field_in_config(self.configuration, "classes_name", True)

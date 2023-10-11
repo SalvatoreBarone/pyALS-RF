@@ -18,27 +18,27 @@ import json, pyamosa
 from pyalslib import ALSConfig
 from .ConfigParser import *
 from ..Model.ErrorConfig import ErrorConfig
-class TwoStepsConfigParser:
-    def __init__(self, configfile):
-        configuration = json.load(open(configfile))
+class TwoStepsConfigParser(ConfigParser):
+    def __init__(self, config_file):
+        super().__init__(config_file)
 
-        self.pmml = search_field_in_config(configuration, "model", True)
-        self.outdir = search_field_in_config(configuration, "outdir", True)
+        self.pmml = search_field_in_config(self.configuration, "model", True)
+        self.outdir = search_field_in_config(self.configuration, "outdir", True)
 
         self.error_conf = ErrorConfig(
-            max_loss_perc = search_subfield_in_config(configuration, "error", "max_loss_perc", True),
-            test_dataset = search_subfield_in_config(configuration, "error", "test_dataset", True),
-            max_eprob = search_subfield_in_config(configuration, "error", "max_eprob_perc", True),
-            nvectors = search_subfield_in_config(configuration, "error", "nvectors", True),
-            dataset = search_subfield_in_config(configuration, "error", "dataset", False))
+            max_loss_perc = search_subfield_in_config(self.configuration, "error", "max_loss_perc", True),
+            test_dataset = search_subfield_in_config(self.configuration, "error", "test_dataset", True),
+            max_eprob = search_subfield_in_config(self.configuration, "error", "max_eprob_perc", True),
+            nvectors = search_subfield_in_config(self.configuration, "error", "nvectors", True),
+            dataset = search_subfield_in_config(self.configuration, "error", "dataset", False))
 
         self.als_conf = ALSConfig(
-            lut_cache = search_subfield_in_config(configuration, "als", "cache", True),
-            cut_size = str(search_subfield_in_config(configuration, "als", "cut_size", True)),
-            solver = search_subfield_in_config(configuration, "als", "solver", True),
-            timeout = int(search_subfield_in_config(configuration, "als", "timeout", False, 60000)))
+            lut_cache = search_subfield_in_config(self.configuration, "als", "cache", True),
+            cut_size = str(search_subfield_in_config(self.configuration, "als", "cut_size", True)),
+            solver = search_subfield_in_config(self.configuration, "als", "solver", True),
+            timeout = int(search_subfield_in_config(self.configuration, "als", "timeout", False, 60000)))
 
-        optimizer_conf = search_field_in_config(configuration, "optimizer", True)
+        optimizer_conf = search_field_in_config(self.configuration, "optimizer", True)
         assert isinstance(optimizer_conf, (list, tuple)), "the 'optimizer' field of the config file is not valid"
         assert len(optimizer_conf)  == 2, "the 'optimizer' field of the config file is not valid"
 
