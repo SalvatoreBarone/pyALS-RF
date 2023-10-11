@@ -60,7 +60,7 @@ def create_classifier(ctx):
         assert "ncpus" in ctx.obj, "No setting available for 'ncpus'. Bailing out!"
         assert "configuration" in ctx.obj, "No configuration loaded. Bailing out!"
         ctx.obj["classifier"] = Classifier(ctx.obj["ncpus"])
-        ctx.obj["classifier"].parse(ctx.obj["configuration"].pmml)
+        ctx.obj["classifier"].parse(ctx.obj["configuration"].pmml, ctx.obj["configuration"].error_conf.dataset_description)
         ctx.obj["classifier"].read_test_set(ctx.obj["configuration"].error_conf.test_dataset)
         ctx.obj["classifier"].enable_mt()
         ctx.obj["classifier"].reset_nabs_configuration()

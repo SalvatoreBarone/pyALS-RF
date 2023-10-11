@@ -57,7 +57,7 @@ class Classifier:
             uri = None
         return uri
 
-    def parse(self, pmml_file_name):
+    def parse(self, pmml_file_name, dataset_description = None):
         self.trees = []
         self.model_features = []
         self.model_classes = []
@@ -65,6 +65,8 @@ class Classifier:
         root = tree.getroot()
         self.__namespaces["pmml"] = Classifier.get_xmlns_uri(root)
         self.get_features_and_classes(root)
+        if dataset_description is not None:
+            self.model_classes = dataset_description.classes_name
         segmentation = root.find("pmml:MiningModel/pmml:Segmentation", self.__namespaces)
         if segmentation is not None:
             for tree_id, segment in enumerate(segmentation.findall("pmml:Segment", self.__namespaces)):
@@ -78,6 +80,7 @@ class Classifier:
                 "pmml:Node", self.__namespaces)
             tree = self.get_tree_model("0", tree_model_root)
             self.trees.append(tree)
+        print("\rDone")
         self.ncpus = min(self.ncpus, len(self.trees))
         
     def wc_parse(self, pmml_file_name, ncpus):
