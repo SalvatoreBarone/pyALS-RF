@@ -37,6 +37,7 @@ class PSConfigParser(ConfigParser):
         self.error_conf = ErrorConfig(
             max_loss_perc = search_subfield_in_config(self.configuration, "error", "max_loss_perc", True),
             test_dataset = search_subfield_in_config(self.configuration, "error", "test_dataset", True),
+            training_dataset = search_subfield_in_config(self.configuration, "error", "training_dataset", True),
             dataset_description = DtGenConfigParser(search_subfield_in_config(self.configuration, "error", "dataset_description", True)))
         
         

@@ -29,9 +29,9 @@ def pruning_flow(ctx, use_training_data, output):
     create_classifier(ctx)
     
     if use_training_data:
-        assert ctx.obj["configuration"].training_dataset is not None, "You must provide a csv for the training dataset to use this command"
+        assert ctx.obj["configuration"].error_conf.training_dataset is not None, "You must provide a csv for the training dataset to use this command"
         print("Reading the traininig data set")
-        ctx.obj["classifier"].read_training_set(ctx.obj["configuration"].training_dataset)
+        ctx.obj["classifier"].read_training_set(ctx.obj["configuration"].error_conf.training_dataset)
         print(f"Read {len(ctx.obj['classifier'].x_train)} samples")
     else:
         print("Splitting the dataset to perform pruning")
