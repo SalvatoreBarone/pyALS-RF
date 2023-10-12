@@ -107,5 +107,7 @@ def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, crit
     test_dataset_csv = f"{outputdir}/test_set.csv"
     print(f"Exporting the test set to {test_dataset_csv} ...")
     save_dataset_to_csv(test_dataset_csv, config.attributes_name, test_attributes, test_labels)
+    print(f"Exporting graphviz draws of leaned trees to {outputdir}/export ...")
+    graphviz_export(model, config.attributes_name, list(config.classes_name.values()) if isinstance(config.classes_name, dict) else config.classes_name, outputdir)
     print("Done!")
     

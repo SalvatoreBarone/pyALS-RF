@@ -25,6 +25,7 @@ from src.combined_flow import full_one_step, full_two_steps
 from src.ConfigParsers.DtGenConfigParser import *
 from src.pruning_flow import pruning_flow
 from src.hdl_generation import hdl_generation
+from src.hdl_debug_flow import hdl_debug_flow
 from src.git_updater import git_updater
 
 
@@ -117,6 +118,19 @@ def assertions_pruning(ctx, conf, ncpus, train, output):
 def generate_hdl(ctx, conf, ncpus, output):
     set_global_options(ctx, conf, ncpus)
     hdl_generation(ctx, output)
+    
+@cli.command("hdl-debug")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
+@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-i', '--index', type = int, help = f"Index of the test data to dump")
+@click.option('-o', '--output', type=click.Path(dir_okay=False), default = None, help = f"Output file")
+@click.pass_context
+def debug_hdl(ctx, conf, ncpus, index, output):
+    """
+    Dumps the output signals for HDL debugging purpose
+    """
+    set_global_options(ctx, conf, ncpus)
+    hdl_debug_flow(ctx, index, output)
      
 cli.add_command(bitwidth)
 cli.add_command(als)
@@ -124,6 +138,7 @@ cli.add_command(als_wc)
 cli.add_command(full)
 cli.add_command(assertions_pruning)
 cli.add_command(generate_hdl)
+cli.add_command(debug_hdl)
     
 @click.group()
 def other_commands():

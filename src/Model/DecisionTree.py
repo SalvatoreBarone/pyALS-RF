@@ -143,10 +143,10 @@ class DecisionTree:
             for box in self.decision_boxes
         }
     
-    def predict(self, attributes):
+    def visit(self, attributes, use_pruned = False):
         boxes_output = self.get_boxes_output(attributes)
         if self.als_conf is None:
-            return [eval(a["expression"], boxes_output) for a in self.assertions ]
+            return [eval(a["expression"], boxes_output) for a in self.pruned_assertions ] if use_pruned else [eval(a["expression"], boxes_output) for a in self.assertions ]
         exit()
         lut_io_info = {}
         output = self.assertions_graph.evaluate(boxes_output, lut_io_info, self.current_als_configuration)[0]
@@ -176,11 +176,6 @@ class DecisionTree:
                 "class"      : class_name,
                 "expression" : assertion_function,
                 "minimized"  : "'0'" if assertion_function == "False" else hdl_expression})
-    
-    def predict_pruning(self, attributes):
-        boxes_output = self.get_boxes_output(attributes)
-        if self.als_conf is None:
-            return [eval(a["expression"], boxes_output) for a in self.pruned_assertions ]
 
     def get_decision_boxes(self, root_node):
         self.decision_boxes = []
@@ -219,4 +214,10 @@ class DecisionTree:
                 "minimized"  : "'0'" if assertion_function == "False" else hdl_expression})
 
     def get_assertions_for_classes(self):
-        self.class_assertions = { c : [item["expression"].replace("~", "not ").replace("|", "or").replace("&", "and") for item in self.leaves if item["class"] == c] for c in self.model_classes}  
+        self.class_assertions = { c : [item["expression"].replace("~", "not ").replace("|", "or").replace("&", "and") for item in self.leaves if item["class"] == c] for c in self.model_classes}
+        
+    def get_assertions_cost(self):
+        return sum(len(a["expression"].split("and")) for a in self.assertions)
+    
+    def get_pruned_assertions_cost(self):
+        return sum(len(a["expression"].split("and")) for a in self.pruned_assertions)

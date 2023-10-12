@@ -68,14 +68,17 @@ def pruning_flow(ctx, use_training_data, output):
     # for k, v in hist.items():
     #     print(f"{k}: {v}%")
    
-    total_cost, candidate_assertions, pruned_assertions = lossless_hedge_trimming(redundancy_table, pruning_table)
-    savings = sum( i[3] for i in pruned_assertions ) / total_cost * 100
+    original_cost = ctx.obj["classifier"].get_assertions_cost()
+    candidate_assertions, pruned_assertions = lossless_hedge_trimming(redundancy_table, pruning_table)
     print(f"Prunable assertions: {len(candidate_assertions)}")
-    print(f"Original cost (#literals): {total_cost}") 
+    print(f"Original cost (#literals): {original_cost}") 
     print(f"Pruned assertiond {len(pruned_assertions)}")
-    print(f"Savings (%): {savings}")
+    savings = sum( i[3] for i in pruned_assertions ) / original_cost * 100
+    print(f"Expected Savings (%): {savings}")
+    ctx.obj["classifier"].set_pruning(pruned_assertions)
+    print(f"Savings (%): {ctx.obj['classifier'].get_pruned_assertions_cost() / original_cost * 100 }")
     
-    acc = ctx.obj["classifier"].test_pruning(pruned_assertions)
+    acc = ctx.obj["classifier"].evaluate_test_dataset(True)
     print(f"Loss: {baseline_accuracy - acc}")
     ctx.obj['pruned_assertions'] = pruned_assertions
     with open(pruned_assertions_json, "w") as f:
@@ -107,20 +110,18 @@ def redundancy_histogram(redundancy_table):
 
 def lossless_approximable_assertions(redundancy_table, pruning_table):
     assertion_cost = []
-    total_cost = 0
     for class_label, trees in pruning_table.items():
         for tree_name, assertions in trees.items():
             for assertion, samples in assertions.items():
                 approximable = all([ redundancy_table[sample] > 0 for sample in samples ])
                 literals = len(assertion.split("and"))
-                total_cost += literals
                 if approximable:
                     assertion_cost.append((class_label, tree_name, assertion, literals / len(samples)) )
     assertion_cost.sort(key=lambda x: x[3], reverse = True)
-    return total_cost, assertion_cost
+    return assertion_cost
 
 def lossless_hedge_trimming(redundancy_table, pruning_table):
-    total_cost, candidate_assertions = lossless_approximable_assertions(redundancy_table, pruning_table)
+    candidate_assertions = lossless_approximable_assertions(redundancy_table, pruning_table)
     pruned_assertions = []
     for class_label, tree_name, assertion, cost in candidate_assertions:
         samples = pruning_table[class_label][tree_name][assertion]
@@ -129,4 +130,4 @@ def lossless_hedge_trimming(redundancy_table, pruning_table):
             for sample in samples:
                 redundancy_table[sample] -= 1
             pruned_assertions.append((class_label, tree_name, assertion, cost))
-    return total_cost, candidate_assertions, pruned_assertions
+    return candidate_assertions, pruned_assertions

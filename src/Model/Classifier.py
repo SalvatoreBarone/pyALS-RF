@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import numpy as np, pandas as pd, random
+import numpy as np, pandas as pd, random, json5
 from xml.etree import ElementTree
 from anytree import Node
 from multiprocessing import cpu_count, Pool
@@ -131,7 +131,8 @@ class Classifier:
         attribute_name = list(self.dataframe.keys())[:-1]
         assert len(attribute_name) == len(self.model_features), f"Mismatch in features vectors. Read {len(attribute_name)} features, buth PMML says it must be {len(self.model_features)}!"
         f_names = [ f["name"] for f in self.model_features]
-        assert attribute_name == f_names, f"{attribute_name} != {f_names}"
+        name_matches = [ a == f for a, f in zip(attribute_name, f_names) ]
+        assert all(name_matches), f"Feature mismatch at index {name_matches.index(False)}: {attribute_name[name_matches.index(False)]} != {f_names[name_matches.index(False)]}"
         self.x_test = self.dataframe.loc[:, self.dataframe.columns != "Outcome"].values.tolist()
         self.y_test = sum(self.dataframe.loc[:, self.dataframe.columns == "Outcome"].values.tolist(), [])
         self.x_val = self.x_test
@@ -152,7 +153,7 @@ class Classifier:
         self.y_val = [ self.y_test[i] for i in range(len(self.y_test)) if i in validation_set ]
         self.x_test = [ self.x_test[i] for i in range(len(self.x_test)) if i not in validation_set ]
         self.y_test = [ self.y_test[i] for i in range(len(self.y_test)) if i not in validation_set ]
-        self.args = [[t, self.x_test] for t in self.p_tree]
+        self.args = [[t, self.x_test, False] for t in self.p_tree] if self.p_tree is not None else None
     
     def brace4ALS(self, als_conf):
         if self.als_conf is None:
@@ -217,67 +218,83 @@ class Classifier:
 
     def enable_mt(self):
         self.p_tree = list_partitioning(self.trees, self.ncpus)
-        self.args = [[t, self.x_test] for t in self.p_tree]
+        self.args = [[t, self.x_test, False] for t in self.p_tree]
         self.pool = Pool(self.ncpus)
 
-    def evaluate_test_dataset(self):
+    def evaluate_test_dataset(self, use_pruning = False):
         if self.args is None:
             print("Warning!\nMulti-threading is disabled. To enable it, call the enable_mt() member of the Classifier class")
-            return sum(np.argmax(self.predict(x)) == y for x, y in tqdm( zip(self.x_test, self.y_test), total=len(self.y_test), desc="Computing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False) ) / len(self.y_test) * 100
-        outcomes = self.pool.starmap(Classifier.tree_predict, self.args)
-        return sum( np.argmax([sum(s) for s in zip(*scores)]) == y for scores, y in zip(zip(*outcomes), self.y_test) ) / len(self.y_test) * 100
+            return sum(np.argmax(score := self.get_score(x,use_pruning)) == y and not Classifier.check_draw(score)[0] for x, y in tqdm( zip(self.x_test, self.y_test), total=len(self.y_test), desc="Computing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False) ) / len(self.y_test) * 100
+        for a in self.args:
+            a[2] = use_pruning
+        outcomes = self.pool.starmap(Classifier.compute_score, self.args)
+        return sum( np.argmax(score := [sum(s) for s in zip(*scores)]) == y and not Classifier.check_draw(score)[0] for scores, y in zip(zip(*outcomes), self.y_test) ) / len(self.y_test) * 100
     
     def get_assertion_activation(self, use_training_data):
         samples = self.x_train if use_training_data else self.x_val
         labels = self.y_train if use_training_data else self.y_val
         activity_by_sample = []
+        nclasses = len(self.model_classes)
+        ntrees = len(self.trees)
         for x, y in tqdm( zip(samples, labels), total=len(labels), desc="Computing assertions' activation...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
-            outcome = {"x" : x, "y": str(y), "redundancy" : 0, "rho": np.zeros((len(self.model_classes),), dtype=int), "Ig" : 0, "outcomes" : {}}
+            outcome = {"x" : x, "y": str(y), "redundancy" : 0, "rho": np.zeros((nclasses,), dtype=int), "Ig" : 0, "outcomes" : {}}
             for t in self.trees:
                 predicted_class, active_assertion, mask = t.get_assertion_activation(x)
                 cost = len(active_assertion.split("and"))
                 outcome["rho"] += mask
                 outcome["outcomes"][t.name] = {"assertion" : active_assertion, "cost": cost, "correct" : predicted_class == str(y)}
             outcome["Ig"] = giniImpurity(softmax(outcome["rho"]))
-            outcome["redundancy"] = int(sum(i["correct"] for i in outcome["outcomes"].values()) - np.ceil(len(self.trees)/2))
+            outcome["redundancy"] = int(sum(i["correct"] for i in outcome["outcomes"].values()) - np.ceil(ntrees/2))
             outcome["rho"] = outcome["rho"].tolist()
             activity_by_sample.append(outcome) 
         return activity_by_sample    
     
-    def test_pruning(self, pruning):
-        self.set_pruning(pruning)
-        return sum(np.argmax(self.predict_pruning(x)) == y for x, y in tqdm( zip(self.x_test, self.y_test), total=len(self.y_test), desc="Testing pruning...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False) ) / len(self.y_test) * 100
-
     def set_pruning(self, pruning):
         for t in self.trees:
             t.set_pruning(pruning)
             
+    def get_assertions_cost(self):
+        return sum( t.get_assertions_cost() for t in self.trees )
+    
+    def get_pruned_assertions_cost(self):
+        return sum( t.get_pruned_assertions_cost() for t in self.trees )
+               
     @staticmethod
-    def tree_predict(trees, x_test):
+    def compute_score(trees, x_test, pruning):
         scores = []
         for x in x_test:
-            outcomes = [ t.predict(x) for t in trees ]
+            outcomes = [ t.visit(x, pruning) for t in trees ]
             scores.append([sum(s) for s in zip(*outcomes)])
         return scores
          
-    def predict(self, x):
-        return Classifier.tree_predict_x(self.trees, x)
-    
-    def predict_pruning(self, x):
-        return Classifier.tree_predict_pruning_x(self.trees, x)
-    
-    def predict_mt(self, x):
-        assert self.p_tree is not None, "Multi-threading is disabled. To enable it, call the enable_mt() member of the Classifier class"
-        return [sum(s) for s in zip(*self.pool.starmap(Classifier.tree_predict_x, [[t, x] for t in self.p_tree]))]
-        
-    @staticmethod
-    def tree_predict_pruning_x(trees, x):
-        outcomes = [ t.predict_pruning(x) for t in trees ]
-        return [sum(s) for s in zip(*outcomes)]
+    def get_score(self, x, use_pruning = False):
+        return Classifier.compute_score_x(self.trees, x, use_pruning)
     
     @staticmethod
-    def tree_predict_x(trees, x):
-        outcomes = [ t.predict(x) for t in trees ]
+    def check_draw(scores):
+        m = max(scores)
+        return np.sum(s == m for s in scores) > 1, m
+    
+    def predict(self, x, use_pruning = False):
+        score = self.get_score(x, use_pruning)
+        draw, max_score = Classifier.check_draw(score)
+        return [0] * len(self.classes_name) if draw else [ int(s == max_score) for s in score ], draw
+    
+    def predict_dump(self, index, outfile):
+        score = self.get_score(self.x_test[index])
+        draw, max_score = Classifier.check_draw(score)
+        outcome = [0] * len(self.classes_name) if draw else [ int(s == max_score) for s in score ]
+        data = {
+                "score" : score,
+                "outcome" : { c: o for c, o in zip (self.classes_name, outcome) }, 
+                "trees" : {t.name : { "outcome" : {k : int(v) for k, v in zip(self.classes_name, t.visit(self.x_test[index]))} } for t in self.trees }
+                }
+        with open(outfile, "w") as f:
+            json5.dump(data, f, indent=2)
+    
+    @staticmethod
+    def compute_score_x(trees, x, use_pruning = False):
+        outcomes = [ t.visit(x, use_pruning) for t in trees ]
         return [sum(s) for s in zip(*outcomes)]
     
     def get_features_and_classes(self, root):

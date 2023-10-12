@@ -64,7 +64,7 @@ class PsHdlGenerator(HDLGenerator):
         for x in self.classifier.x_test:
             for k, v in zip(self.classifier.model_features, x):
                 test_vectors[k["name"]].append(double_to_bin(v))
-            o = np.argmax(self.classifier.predict(x))
+            o = np.argmax(self.classifier.get_score(x))
             output = [ 1 if i == o else 0 for i in range(len(self.classifier.model_classes)) ]
             for c, v in zip(self.classifier.model_classes, output):
                 expected_outputs[c].append(v)
@@ -78,6 +78,7 @@ class PsHdlGenerator(HDLGenerator):
             features=features,
             classes=self.classifier.model_classes,
             n_vectors = n_vectors,
+            pipe_stages = int(len(self.classifier.trees)/2),
             test_vectors = test_vectors,
             expected_outputs = expected_outputs)
         with open(f"{dest}/tb_classifier.vhd", "w") as out_file:
