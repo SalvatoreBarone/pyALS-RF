@@ -273,7 +273,10 @@ class Classifier:
     @staticmethod
     def check_draw(scores):
         m = max(scores)
-        return np.sum(s == m for s in scores) > 1, m
+        if m < np.ceil(sum(scores)/2):
+            return True, m  
+        else:
+            return np.sum(s == m for s in scores) > 1, m
     
     def predict(self, x, use_pruning = False):
         score = self.get_score(x, use_pruning)
@@ -286,6 +289,7 @@ class Classifier:
         outcome = [0] * len(self.classes_name) if draw else [ int(s == max_score) for s in score ]
         data = {
                 "score" : score,
+                "draw" : draw,
                 "outcome" : { c: o for c, o in zip (self.classes_name, outcome) }, 
                 "trees" : {t.name : { "outcome" : {k : int(v) for k, v in zip(self.classes_name, t.visit(self.x_test[index]))} } for t in self.trees }
                 }
