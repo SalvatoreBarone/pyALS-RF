@@ -17,7 +17,13 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import sys, csv, random, numpy as np, graphviz, sklearn2pmml
 from distutils.dir_util import mkpath
 from nyoka import skl_to_pmml
-from sklearn import tree, pipeline, ensemble
+#from sklearn import tree, pipeline, ensemble
+from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import export_graphviz, DecisionTreeClassifier
+from sklearn.pipeline import Pipeline
+from tabulate import tabulate
+
 from .ConfigParsers.DtGenConfigParser import DtGenConfigParser
 
 
@@ -61,7 +67,7 @@ def get_sets(dataset_file, config, fraction):
     learning_set_size = int(np.ceil(attributes.shape[0] * fraction))
     learning_vectors_indexes = random.sample(range(int(attributes.shape[0])), learning_set_size)
     test_vectors_indexes = [x for x in range(attributes.shape[0]) if x not in learning_vectors_indexes]
-    return attributes[learning_vectors_indexes, :], labels[learning_vectors_indexes], attributes[test_vectors_indexes, :], labels[test_vectors_indexes]
+    return list(attributes[learning_vectors_indexes, :]), list(labels[learning_vectors_indexes]), list(attributes[test_vectors_indexes, :]), list(labels[test_vectors_indexes])
 
 def save_dataset_to_csv(filename, attributes_name, attributes, labels):
     original_stdout = sys.stdout
@@ -73,41 +79,123 @@ def save_dataset_to_csv(filename, attributes_name, attributes, labels):
     sys.stdout = original_stdout  
     
 def graphviz_export(model, attributes_name, classes_name, outputdir):
-    if isinstance(model, (ensemble.RandomForestClassifier, ensemble.BaggingClassifier)):
-        for i in range(len(model.estimators_)):
-            dot_data = tree.export_graphviz(model.estimators_[i], feature_names = attributes_name, class_names = classes_name, filled=True, rounded=True)
+    if isinstance(model, RandomForestClassifier):
+        for i, estimator in enumerate(model.estimators_):
+            dot_data = export_graphviz(estimator, feature_names = attributes_name, class_names = classes_name, filled=True, rounded=True)
             graph = graphviz.Source(dot_data)
             graph.render(directory = f"{outputdir}/export", filename = f'tree_{i}.gv')
     else:
-        dot_data = tree.export_graphviz(model, feature_names = attributes_name, class_names = classes_name, filled=True, rounded=True)
+        dot_data = export_graphviz(model, feature_names = attributes_name, class_names = classes_name, filled=True, rounded=True)
         graph = graphviz.Source(dot_data)
         graph.render(directory = f"{outputdir}/export", filename = 'tree.gv')
+        
+def dt_learner():
+    pass
+
+def rf_learner_w_random_search_cv(n_trees, x_train, y_train, n_iter = 150, cv = 3):
+    search_grid = { #'n_estimators' : [int(x) for x in np.linspace(5, 200, num = 20)],
+                    'max_features': ['auto', 'log2', 'sqrt'],
+                    'criterion' : ["gini", "entropy", "log_loss"],
+                    'max_depth': [int(x) for x in np.linspace(10, 50, num = 10)],
+                    'min_samples_split': [int(x) for x in np.linspace(10, 100, num = 10)],
+                    'min_samples_leaf': [int(x) for x in np.linspace(20, 100, num = 10)],
+                    'bootstrap': [True, False]}
+    rf_random = RandomizedSearchCV(estimator = RandomForestClassifier(n_estimators = n_trees), param_distributions = search_grid, n_iter = n_iter, cv = cv, verbose=2, random_state = np.random.default_rng().integers(0, 100), n_jobs = -1)
+    rf_random.fit(x_train, y_train)
+    print(rf_random.best_params_)
+    return rf_random.best_estimator_
     
-def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap):
+def rf_learner_w_grid_search_cv(n_trees, x_train, y_train, cv = 3):
+    search_grid = { #'n_estimators' : [int(x) for x in np.linspace(5, 200, num = 20)],
+                    'max_features': ['auto', 'log2', 'sqrt'],
+                    'criterion' : ["gini", "entropy", "log_loss"],
+                    'max_depth': [int(x) for x in np.linspace(5, 20, num = 11)],
+                    'min_samples_split': [int(x) for x in np.linspace(2, 15, num = 5)],
+                    'min_samples_leaf': [int(x) for x in np.linspace(20, 140, num = 10)],
+                    'bootstrap': [True, False]}
+    rf_random = GridSearchCV(estimator = RandomForestClassifier(n_estimators = n_trees), param_grid = search_grid, cv = cv, verbose=2, n_jobs = -1)
+    rf_random.fit(x_train, y_train)
+    print(rf_random.best_params_)
+    return rf_random.best_estimator_
+
+def random_search_cv(clf, dataset, configfile, outputdir, fraction, ntrees, niter):
     config = DtGenConfigParser(configfile)
-    learning_attributes, learning_labels, test_attributes, test_labels = get_sets(dataset, config, fraction)
+    x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
     if clf == "dt":
-        model = tree.DecisionTreeClassifier(max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha).fit(learning_attributes, learning_labels)
-    elif clf == "rf":
-        model = ensemble.RandomForestClassifier(n_estimators = predictors, max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha, bootstrap = not disable_bootstrap, n_jobs = -1, verbose = 1).fit(list(learning_attributes), list(learning_labels))
-    elif clf == "wc":
-        st = tree.DecisionTreeClassifier( max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha).fit(learning_attributes, learning_labels)
-        model = ensemble.RandomForestClassifier( n_estimators = predictors, max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha, bootstrap = not disable_bootstrap, n_jobs = -1, verbose = 1).fit(list(learning_attributes), list(learning_labels))
-        for i in range(len(model.estimators_)):
-            model.estimators_[i] = st
-    print(f"Classification accuracy: {sum(pred == ans for pred, ans in zip(model.predict(test_attributes), test_labels)) / len(test_labels)}")
+        pass
+    else:
+        model = rf_learner_w_random_search_cv(ntrees, x_train, y_train, niter)
+        data = [ [i, estimator.tree_.node_count, estimator.tree_.max_depth ] for i, estimator in enumerate(model.estimators_) ]
+        print(tabulate(data, headers=["#", "#nodes", "depth"]))
+            
+    print(f"Classification accuracy: {sum(pred == ans for pred, ans in zip(model.predict(x_test), y_test)) / len(y_test)}")
     mkpath(outputdir)
-    pmml_file = f"{outputdir}/{clf}_{predictors}.pmml" if predictors > 1 else f"{outputdir}/{clf}.pmml"
+    pmml_file = f"{outputdir}/classifier.pmml"
     print(f"Exporting PMML model to {pmml_file} ...")
-    pipe = pipeline.Pipeline([('clf', model)])
+    pipe = Pipeline([('clf', model)])
     skl_to_pmml(pipeline = pipe, col_names = config.attributes_name, pmml_f_name = pmml_file )
     training_set_csv = f"{outputdir}/training_set.csv"
     print(f"Exporting the training set to {training_set_csv} ...")
-    save_dataset_to_csv(training_set_csv, config.attributes_name, learning_attributes, learning_labels)
+    save_dataset_to_csv(training_set_csv, config.attributes_name, x_train, y_train)
     test_dataset_csv = f"{outputdir}/test_set.csv"
     print(f"Exporting the test set to {test_dataset_csv} ...")
-    save_dataset_to_csv(test_dataset_csv, config.attributes_name, test_attributes, test_labels)
-    print(f"Exporting graphviz draws of leaned trees to {outputdir}/export ...")
+    save_dataset_to_csv(test_dataset_csv, config.attributes_name, x_test, y_test)
+    print(f"Exporting graphviz draws of learned trees to {outputdir}/export ...")
+    graphviz_export(model, config.attributes_name, list(config.classes_name.values()) if isinstance(config.classes_name, dict) else config.classes_name, outputdir)
+    print("Done!")
+
+def grid_search_cv(clf, dataset, configfile, outputdir, fraction, ntrees):
+    config = DtGenConfigParser(configfile)
+    x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
+    if clf == "dt":
+        pass
+    else:
+        model = rf_learner_w_grid_search_cv(ntrees, x_train, y_train)
+        data = [ [i, estimator.tree_.node_count, estimator.tree_.max_depth ] for i, estimator in enumerate(model.estimators_) ]
+        print(tabulate(data, headers=["#", "#nodes", "depth"]))
+            
+    print(f"Classification accuracy: {sum(pred == ans for pred, ans in zip(model.predict(x_test), y_test)) / len(y_test)}")
+    mkpath(outputdir)
+    pmml_file = f"{outputdir}/classifier.pmml"
+    print(f"Exporting PMML model to {pmml_file} ...")
+    pipe = Pipeline([('clf', model)])
+    skl_to_pmml(pipeline = pipe, col_names = config.attributes_name, pmml_f_name = pmml_file )
+    training_set_csv = f"{outputdir}/training_set.csv"
+    print(f"Exporting the training set to {training_set_csv} ...")
+    save_dataset_to_csv(training_set_csv, config.attributes_name, x_train, y_train)
+    test_dataset_csv = f"{outputdir}/test_set.csv"
+    print(f"Exporting the test set to {test_dataset_csv} ...")
+    save_dataset_to_csv(test_dataset_csv, config.attributes_name, x_test, y_test)
+    print(f"Exporting graphviz draws of learned trees to {outputdir}/export ...")
+    graphviz_export(model, config.attributes_name, list(config.classes_name.values()) if isinstance(config.classes_name, dict) else config.classes_name, outputdir)
+    print("Done!")
+    
+     
+def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap):
+    config = DtGenConfigParser(configfile)
+    x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
+    if clf == "dt":
+       model = DecisionTreeClassifier(max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha).fit(x_train, y_train)
+       print(model.tree_.node_count())
+       print(model.tree_.max_dept)
+    elif clf == "rf":
+        model = RandomForestClassifier(n_estimators = predictors, max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha, bootstrap = not disable_bootstrap, n_jobs = -1, verbose = 1).fit(x_train, y_train)
+        data = [ [i, estimator.tree_.node_count, estimator.tree_.max_depth ] for i, estimator in enumerate(model.estimators_) ]
+        print(tabulate(data, headers=["#", "#nodes", "depth"]))
+            
+    print(f"Classification accuracy: {sum(pred == ans for pred, ans in zip(model.predict(x_test), y_test)) / len(y_test)}")
+    mkpath(outputdir)
+    pmml_file = f"{outputdir}/classifier.pmml"
+    print(f"Exporting PMML model to {pmml_file} ...")
+    pipe = Pipeline([('clf', model)])
+    skl_to_pmml(pipeline = pipe, col_names = config.attributes_name, pmml_f_name = pmml_file )
+    training_set_csv = f"{outputdir}/training_set.csv"
+    print(f"Exporting the training set to {training_set_csv} ...")
+    save_dataset_to_csv(training_set_csv, config.attributes_name, x_train, y_train)
+    test_dataset_csv = f"{outputdir}/test_set.csv"
+    print(f"Exporting the test set to {test_dataset_csv} ...")
+    save_dataset_to_csv(test_dataset_csv, config.attributes_name, x_test, y_test)
+    print(f"Exporting graphviz draws of learned trees to {outputdir}/export ...")
     graphviz_export(model, config.attributes_name, list(config.classes_name.values()) if isinstance(config.classes_name, dict) else config.classes_name, outputdir)
     print("Done!")
     
