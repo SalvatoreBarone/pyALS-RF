@@ -40,6 +40,15 @@ entity classifier is
 end classifier;
 
 architecture structural of classifier is
+  component pipe_reg is
+    generic(data_width : natural);
+    port ( 
+      clock    : in  std_logic;
+      reset_n  : in  std_logic;
+      enable   : in  std_logic;
+      data_in  : in  std_logic_vector (data_width-1 downto 0);
+      data_out : out std_logic_vector (data_width-1 downto 0));
+  end component;
   component voter is
     generic	(
       data_width  : natural;
@@ -60,7 +69,6 @@ architecture structural of classifier is
     port (
       clock   : in std_logic;
       reset_n : in std_logic;
-      enable  : in std_logic;
       {% for feature in features -%}
       {{feature['name']}}: in std_logic_vector(data_width-1 downto nab_{{feature['name']}});
       {% endfor %}{% for c in classes -%}
@@ -68,10 +76,25 @@ architecture structural of classifier is
   end component;{{"\n  " if not loop.last}}
   {% endfor %}
 
+  {% for feature in features -%}
+  signal buffered_{{feature['name']}} : std_logic_vector(data_width-1 downto nab_{{feature['name']}}) := (others => '0');
+  {% endfor %}
+
   {% for c in classes -%}
   signal class_{{c}}_results : std_logic_vector({{trees|length-1}} downto 0) := (others => '0');
   {% endfor %}
 begin
+  {% for feature in features -%}
+  buffer_4_{{feature['name']}} : pipe_reg
+    generic map(data_width => data_width - nab_{{feature['name']}})
+    port map (
+      clock => clock,
+      reset_n => reset_n,
+      enable => enable,
+      data_in  =>  {{feature['name']}},
+      data_out => buffered_{{feature['name']}});
+  {% endfor %}
+
   {% for tree in trees -%}{% set outer_loop = loop %}
   tree_{{tree}} : decision_tree_{{tree}} 
     generic map (
@@ -81,8 +104,7 @@ begin
       {% endfor %}port map (
       clock => clock, 
       reset_n => reset_n, 
-      enable => enable, 
-      {% for feature in features -%}{{feature['name']}} => {{feature['name']}}, 
+      {% for feature in features -%}{{feature['name']}} => buffered_{{feature['name']}}, 
       {% endfor %}{% for c in classes -%}
       class_{{c}} => class_{{c}}_results({{outer_loop.index-1}}){{", " if not loop.last else ");"}}
       {% endfor %}

@@ -123,14 +123,17 @@ def generate_hdl(ctx, conf, ncpus, output):
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-i', '--index', type = int, help = f"Index of the test data to dump")
-@click.option('-o', '--output', type=click.Path(dir_okay=False), default = None, help = f"Output file")
+@click.option('-a', '--axflow', type = click.Choice(["none", "pruning", "ps", "als", "full"]), help = f"Approximation flow")
+@click.option('-r', '--results', type = click.Path(dir_okay=True), default = None, help = f"Overriden output directory")
+@click.option('-v', '--variant', type = int, default = None, help = f"Variant")
+@click.option('-o', '--output', type = click.Path(dir_okay=False), default = None, help = f"Output file")
 @click.pass_context
-def debug_hdl(ctx, conf, ncpus, index, output):
+def debug_hdl(ctx, conf, ncpus, index, axflow, results, variant, output):
     """
     Dumps the output signals for HDL debugging purpose
     """
     set_global_options(ctx, conf, ncpus)
-    hdl_debug_flow(ctx, index, output)
+    hdl_debug_flow(ctx, index, axflow, results, variant, output)
      
 cli.add_command(bitwidth)
 cli.add_command(als)

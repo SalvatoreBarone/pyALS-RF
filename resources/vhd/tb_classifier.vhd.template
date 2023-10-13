@@ -90,13 +90,14 @@ begin
   begin
     reset_n <= '0';
     enable <= '0';
-    wait for 50 ns;
+    wait for 2*clock_period;
     reset_n <= '1';
+    wait for 2*clock_period;
     for i in 0 to test_vectors-1 loop
       {% for f in features -%}{{f['name']}} <= test_{{f['name']}}(i)(data_width-1 downto nab_{{f['name']}});
       {% endfor %}
       enable <= '1';
-      wait for 2*clock_period;
+      wait for clock_period;
       enable <= '0';
 
       report "Simulating vector " & integer'image(i) & " of " & integer'image(test_vectors) severity note;

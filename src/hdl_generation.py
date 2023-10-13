@@ -43,6 +43,7 @@ def hdl_generation(ctx, output):
         if "pruned_assertions" not in ctx.obj:
             print(f"Reading pruning configuration from {pruned_assertions_json}")
             ctx.obj['pruned_assertions'] = json5.load(open(pruned_assertions_json))
+            
         hdl_generator = PruningHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
         hdl_generator.generate_axhdl(pruned_assertions = ctx.obj['pruned_assertions'])
     elif ctx.obj["flow"] == "ps":

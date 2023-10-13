@@ -16,10 +16,36 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 from .ConfigParsers.PsConfigParser import *
 from .Model.Classifier import *
-from .ax_flows import load_configuration_ps, create_classifier
+from .ax_flows import load_configuration_ps, create_classifier, create_yshelper
 
-def hdl_debug_flow(ctx, index, output):
+def none_hdl_debug_flow(ctx, index, output):
+    ctx.obj["classifier"].predict_dump(index, output)
+
+def pruning_hdl_debug_flow(ctx, index, results, output):
+    if results is not None:
+        ctx.obj['configuration'].outdir = results
+        
+    pruned_assertions_json = f"{ctx.obj['configuration'].outdir}/pruned_assertions.json5"
+    if "pruned_assertions" not in ctx.obj:
+        print(f"Reading pruning configuration from {pruned_assertions_json}")
+        ctx.obj['pruned_assertions'] = json5.load(open(pruned_assertions_json))
+    ctx.obj["classifier"].set_pruning(ctx.obj['pruned_assertions'])
+    ctx.obj["classifier"].predict_dump(index, output, True)
+    
+
+def ps_hdl_debug_flow(ctx, index, results, variant, output):
+    pass
+
+
+def hdl_debug_flow(ctx, index, axflow, results, variant, output):
     load_configuration_ps(ctx)
     create_classifier(ctx)
+    create_yshelper(ctx)
     ctx.obj["classifier"].predict_dump(index, output)
+    if axflow == "none":
+        none_hdl_debug_flow(ctx, index, output)
+    elif axflow == "pruning":
+        pruning_hdl_debug_flow(ctx, index, results, output)
+    elif  axflow == "ps":
+        ps_hdl_debug_flow(ctx, index, results, variant, output)
     

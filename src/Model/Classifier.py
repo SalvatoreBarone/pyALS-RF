@@ -281,17 +281,19 @@ class Classifier:
     def predict(self, x, use_pruning = False):
         score = self.get_score(x, use_pruning)
         draw, max_score = Classifier.check_draw(score)
-        return [0] * len(self.classes_name) if draw else [ int(s == max_score) for s in score ], draw
+        if max_score < np.ceil(len(self.trees)/2):
+            return [0] * len(self.classes_name), draw
+        return [ int(s == max_score) for s in score ], draw
     
-    def predict_dump(self, index, outfile):
-        score = self.get_score(self.x_test[index])
+    def predict_dump(self, index, outfile, use_pruning = False):
+        score = self.get_score(self.x_test[index], use_pruning)
         draw, max_score = Classifier.check_draw(score)
-        outcome = [0] * len(self.classes_name) if draw else [ int(s == max_score) for s in score ]
+        outcome = [0] * len(self.classes_name) if max_score < np.ceil(len(self.trees)/2) else [ int(s == max_score) for s in score ]
         data = {
                 "score" : score,
                 "draw" : draw,
                 "outcome" : { c: o for c, o in zip (self.classes_name, outcome) }, 
-                "trees" : {t.name : { "outcome" : {k : int(v) for k, v in zip(self.classes_name, t.visit(self.x_test[index]))} } for t in self.trees }
+                "trees" : {t.name : { "outcome" : {k : int(v) for k, v in zip(self.classes_name, t.visit(self.x_test[index], use_pruning))} } for t in self.trees }
                 }
         with open(outfile, "w") as f:
             json5.dump(data, f, indent=2)

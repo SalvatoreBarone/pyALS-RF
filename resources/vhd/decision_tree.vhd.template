@@ -31,7 +31,6 @@ entity decision_tree_{{tree_name}} is
   port (
     clock   : in std_logic;
     reset_n : in std_logic;
-    enable  : in std_logic;
     {% for feature in features -%}
     {{feature['name']}} : in std_logic_vector(data_width-1 downto nab_{{feature['name']}});
     {% endfor %}
@@ -79,7 +78,7 @@ begin
     port map(
       clock => clock, 
       reset_n => reset_n, 
-      enable => enable, 
+      enable => '1', 
       data_1 => {{b['feature']}}, 
       data_2 => {{b['name']}}_thr(data_width-1 downto nab_{{b['feature']}}), 
       result => {{b['name']}});
