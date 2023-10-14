@@ -81,7 +81,7 @@ architecture voter of voter is
     type matrix is array (natural range <>) of std_logic_vector (data_width-1 downto 0);
     signal intermediates : matrix (0 to data_width + pipe_stages);
 begin
-    assert pipe_stages mod 2 = 0 report "pipe_stages must be a power of two" severity failure;
+    assert pipe_stages mod 2 = 0 report "pipe_stages must be a multiple of two" severity failure;
     assert swapper_per_pipe >= 2 report "too many pipe stages" severity failure;
     data_in_buffer : pipe_reg	generic map (data_width => data_width)	port map (clock => clock, reset_n => reset_n, enable => '1', data_in => data_in, data_out => intermediates(0));
     majority <=	intermediates(data_width + pipe_stages)(data_width/2);

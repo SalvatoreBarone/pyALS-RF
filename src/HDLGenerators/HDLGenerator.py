@@ -101,7 +101,7 @@ class HDLGenerator:
             features=features,
             classes=self.classifier.classes_name,
             n_vectors = n_vectors,
-            pipe_stages = int(len(self.classifier.trees)/2),
+            pipe_stages = min(2, HDLGenerator.roundUp(np.log2(len(self.classifier.trees)), 2)),
             test_vectors = test_vectors,
             expected_outputs = expected_outputs)
         with open(f"{dest}/tb_classifier.vhd", "w") as out_file:
@@ -193,3 +193,12 @@ class HDLGenerator:
         self.yshelper.clean()
         self.yshelper.opt()
         self.yshelper.write_verilog(f"{self.destination}/assertions_block_{tree.name}")
+        
+    @staticmethod
+    def roundUp(numToRound : int, multiple : int):
+        if multiple == 0:
+            return numToRound
+        remainder = numToRound % multiple
+        if remainder == 0:
+            return numToRound
+        return numToRound + multiple - remainder
