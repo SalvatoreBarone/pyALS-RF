@@ -281,7 +281,7 @@ class Classifier:
     def predict(self, x, use_pruning = False):
         score = self.get_score(x, use_pruning)
         draw, max_score = Classifier.check_draw(score)
-        if max_score < np.ceil(len(self.trees)/2):
+        if max_score < (np.floor(len(self.trees)/2) + 1):
             return [0] * len(self.classes_name), draw
         return [ int(s == max_score) for s in score ], draw
     
