@@ -15,25 +15,55 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import click, sys, os
-from src.dtgen import dtgen, random_search_cv, grid_search_cv
+import click, sys, os, json5, numpy as np
+from src.dtgen import dtgen, random_search_cv, grid_search_cv, save_dataset_to_csv
 from src.git_updater import git_updater
 
 @click.group()
 def cli():
     pass
+
+@click.command("synth")
+@click.argument('outputdir', type = click.Path(dir_okay=True))
+@click.option('-n', '--n_samples', type = int, required = True, help = "Number of samples")
+@click.option('-f', '--n_features', type = int, required = True, help = "Number of features")
+@click.option('-c', '--n_classes', type = int, required = True, help = "Number of classes")
+@click.option('-w' , '--weights', type = str, default = None, help = "The proportions of samples assigned to each class. If None, then classes are balanced.")
+def synthetic_dataset(outputdir, n_samples : int, n_features : int, n_classes : int, weights : str):
+    from sklearn.datasets import make_classification
+    from distutils.dir_util import mkpath
+    if weights is not None:
+        weights = [ float(w) for w in weights.replace("[", "").replace("]", "").replace(" ", "").split(",") ]
+    x, y = make_classification(n_samples = n_samples, n_features = n_features, n_classes = n_classes, n_informative =  int(np.sqrt(n_features)), n_clusters_per_class = 1, weights = weights)
+    attribute_names = [ f"feature_{i}" for i in range(n_features) ]
+    mkpath(outputdir)
+    save_dataset_to_csv(f"{outputdir}/dataset.csv", attribute_names, x, y)
+    dataset_description = {
+        "separator": ";",
+        "outcome_col": -1,
+        "skip_header": True,
+        "attributes_name" : attribute_names,
+        "classes_name" : [ f"{i}" for i in range(n_classes) ]
+    }
+    with open(f"{outputdir}/config.json5", "w") as f:
+         json5.dump(dataset_description, f, indent = 2)
+    print(f"Done generating synthetic dataset. Take a look at {outputdir}.")
     
-@click.command("random")
+    
+@click.command("train")
 @click.argument('clf', type = click.Choice(["dt", "rf", "wc"]), default = "rf")
+@click.argument('tuning', type = click.Choice(["random", "grid"]), default = "random")
 @click.argument('dataset', type=click.Path(exists=True, dir_okay=False))
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
 @click.argument('outputdir', type=click.Path(dir_okay=True), default = "output")
 @click.option("-f", "--fraction", type = float, default = 0.9, help = "Fraction of data to be used as learning set. The remaining will be used as test data.")
 @click.option("-n", "--ntrees", type = int, default = 1, help = "The number of trees in the ensemble. Ignored if clf is dt.")
 @click.option("-i", "--niter", type = int, default = 150, help = "The number of iterations")
-def random_search(clf, dataset, configfile, outputdir, fraction, ntrees, niter):
+def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter):
     """
     Generates a decision tree / random forest from CSV data using random search.
+    
+    TUNING is the hyperparameter tuning strategy (random/grid based)
 
     CLF is the classifier type: "dt" stands for decision tree, "rf" for random forest.
 
@@ -43,28 +73,10 @@ def random_search(clf, dataset, configfile, outputdir, fraction, ntrees, niter):
     
     OUTPUTDIR is the path of the output directory.
     """
-    random_search_cv(clf, dataset, configfile, outputdir, fraction, ntrees, niter)
-    
-@click.command("grid")
-@click.argument('clf', type = click.Choice(["dt", "rf"]), default = "rf")
-@click.argument('dataset', type=click.Path(exists=True, dir_okay=False))
-@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-@click.argument('outputdir', type=click.Path(dir_okay=True), default = "output")
-@click.option("-f", "--fraction", type = float, default = 0.9, help = "Fraction of data to be used as learning set. The remaining will be used as test data.")
-@click.option("-n", "--ntrees", type = int, default = 1, help = "The number of trees in the ensemble. Ignored if clf is dt.")
-def grid_search(clf, dataset, configfile, outputdir, fraction, ntrees):
-    """
-    Generates a decision tree / random forest from CSV data using grid search.
-
-    CLF is the classifier type: "dt" stands for decision tree, "rf" for random forest.
-
-    DATASET is the csv file to be used as a learning set.
-
-    CONFIGFILE configuration file providing further information to the tool
-    
-    OUTPUTDIR is the path of the output directory.
-    """
-    grid_search_cv(clf, dataset, configfile, outputdir, fraction, ntrees)
+    if tuning == "random":
+        random_search_cv(clf, dataset, configfile, outputdir, fraction, ntrees, niter)
+    else:
+        grid_search_cv(clf, dataset, configfile, outputdir, fraction, ntrees)
     
 @click.command("dtgen")
 @click.argument('clf', type = click.Choice(["dt", "rf"]), default = "rf")
@@ -96,9 +108,8 @@ def learning(clf, dataset, configfile, outputdir, fraction, depth, ntrees, crite
     """
     dtgen(clf, dataset, configfile, outputdir, fraction, depth, ntrees, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap)
 
-
-cli.add_command(random_search)
-cli.add_command(grid_search)
+cli.add_command(synthetic_dataset)
+cli.add_command(parameter_tuning)
 cli.add_command(learning)
 
 if __name__ == '__main__':
