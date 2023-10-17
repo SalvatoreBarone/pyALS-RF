@@ -16,7 +16,7 @@ RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import click, sys, os, json5, numpy as np
-from src.dtgen import dtgen, random_search_cv, grid_search_cv, save_dataset_to_csv
+from src.dtgen import dtgen, training_with_parameter_tuning, save_dataset_to_csv
 from src.git_updater import git_updater
 
 @click.group()
@@ -24,12 +24,18 @@ def cli():
     pass
 
 @click.command("synth")
-@click.argument('outputdir', type = click.Path(dir_okay=True))
+@click.argument('outputdir', type = click.Path(dir_okay=True, file_okay = False))
 @click.option('-n', '--n_samples', type = int, required = True, help = "Number of samples")
 @click.option('-f', '--n_features', type = int, required = True, help = "Number of features")
 @click.option('-c', '--n_classes', type = int, required = True, help = "Number of classes")
 @click.option('-w' , '--weights', type = str, default = None, help = "The proportions of samples assigned to each class. If None, then classes are balanced.")
 def synthetic_dataset(outputdir, n_samples : int, n_features : int, n_classes : int, weights : str):
+    """
+    Generates a Synthetic dataset for classification problems
+    
+    OUTPUTDIR the output directory
+    
+    """
     from sklearn.datasets import make_classification
     from distutils.dir_util import mkpath
     if weights is not None:
@@ -73,10 +79,7 @@ def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntre
     
     OUTPUTDIR is the path of the output directory.
     """
-    if tuning == "random":
-        random_search_cv(clf, dataset, configfile, outputdir, fraction, ntrees, niter)
-    else:
-        grid_search_cv(clf, dataset, configfile, outputdir, fraction, ntrees)
+    training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter)
     
 @click.command("dtgen")
 @click.argument('clf', type = click.Choice(["dt", "rf"]), default = "rf")

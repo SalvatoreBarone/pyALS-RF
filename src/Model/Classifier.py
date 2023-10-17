@@ -222,13 +222,19 @@ class Classifier:
         self.pool = Pool(self.ncpus)
 
     def evaluate_test_dataset(self, use_pruning = False):
-        if self.args is None:
-            print("Warning!\nMulti-threading is disabled. To enable it, call the enable_mt() member of the Classifier class")
-            return sum(np.argmax(score := self.get_score(x,use_pruning)) == y and not Classifier.check_draw(score)[0] for x, y in tqdm( zip(self.x_test, self.y_test), total=len(self.y_test), desc="Computing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False) ) / len(self.y_test) * 100
-        for a in self.args:
-            a[2] = use_pruning
-        outcomes = self.pool.starmap(Classifier.compute_score, self.args)
-        return sum(np.argmax(score := [sum(s) for s in zip(*scores)]) == y and not self.check_draw(score)[0] for scores, y in zip(zip(*outcomes), self.y_test)) / len(self.y_test) * 100
+        # if self.args is None:
+        #     print("Warning!\nMulti-threading is disabled. To enable it, call the enable_mt() member of the Classifier class")
+            accuracy = 0
+            for x, y in tqdm(zip(self.x_test, self.y_test), total=len(self.y_test), desc="Computing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+                outcome, draw = self.predict(x, use_pruning)
+                if not draw and np.argmax(outcome) == y:
+                    accuracy += 1
+            return accuracy / len(self.y_test) * 100
+            #return sum(np.argmax(score := self.get_score(x,use_pruning)) == y and not Classifier.check_draw(score)[0]  ) / len(self.y_test) * 100
+        # for a in self.args:
+        #     a[2] = use_pruning
+        # outcomes = self.pool.starmap(Classifier.compute_score, self.args)
+        # return sum(np.argmax(score := [sum(s) for s in zip(*scores)]) == y and not self.check_draw(score)[0] for scores, y in zip(zip(*outcomes), self.y_test)) / len(self.y_test) * 100
     
     def get_assertion_activation(self, use_training_data):
         samples = self.x_train if use_training_data else self.x_val

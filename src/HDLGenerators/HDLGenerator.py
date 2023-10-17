@@ -99,7 +99,7 @@ class HDLGenerator:
             out_file.write(majority_voter)
 
     def generate_rejection_module(self, dest, env):
-        rejection_module_template = env.get_template(self.vhdl_rejection_module)
+        rejection_module_template = env.get_template(self.vhdl_rejection_module_template)
         rejection_module = rejection_module_template.render(classes=self.classifier.classes_name)
         with open(f"{dest}/rejection_module.vhd", "w") as out_file:
             out_file.write(rejection_module)

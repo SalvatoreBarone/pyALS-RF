@@ -76,7 +76,7 @@ def pruning_flow(ctx, use_training_data, output):
     savings = sum( i[3] for i in pruned_assertions ) / original_cost * 100
     print(f"Expected Savings (%): {savings}")
     ctx.obj["classifier"].set_pruning(pruned_assertions)
-    print(f"Savings (%): {ctx.obj['classifier'].get_pruned_assertions_cost() / original_cost * 100 }")
+    print(f"Savings (%): {original_cost - ctx.obj['classifier'].get_pruned_assertions_cost() / original_cost * 100 }")
     
     acc = ctx.obj["classifier"].evaluate_test_dataset(True)
     print(f"Loss: {baseline_accuracy - acc}")
