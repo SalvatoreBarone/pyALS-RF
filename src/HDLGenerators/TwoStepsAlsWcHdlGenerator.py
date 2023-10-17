@@ -57,7 +57,7 @@ class TwoStepsAlsWcHdlGenerator(HDLGenerator):
             copy_file(self.source_dir + self.vhdl_bnf_source, ax_dest)
             copy_file(self.source_dir + self.vhdl_reg_source, ax_dest)
             copy_file(self.source_dir + self.vhdl_decision_box_source, ax_dest)
-            copy_file(self.source_dir + self.vhdl_voter_source, ax_dest)
+            copy_file(self.source_dir + self.vhdl_simple_voter_source, ax_dest)
             copy_file(self.source_dir + self.vhdl_debugfunc_source, ax_dest)
             copy_file(self.source_dir + self.tcl_sim_file, ax_dest)
             copy_file(self.source_dir + self.constraint_file, ax_dest)

@@ -16,52 +16,23 @@
 -- RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 -- Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-library ieee;
-use ieee.std_logic_1164.all;
-entity swapper_block is
-    generic (data_width : natural);
-    port (
-        data_in  : in std_logic_vector(data_width-1 downto 0);
-        data_out : out std_logic_vector(data_width-1 downto 0));
-end entity;
-architecture dataflow of swapper_block is
-    signal intermediate_data : std_logic_vector(data_width-1 downto 0) := (others => '0');
-begin
-    intermediate_data(0) <= data_in(0);
-     
-    odd_stage_swappers : for i in 0 to (data_width-1)/2-1 generate
-       intermediate_data(2*i+1) <= data_in(2*i+1) or data_in(2*i+2);
-       intermediate_data(2*i+2) <= data_in(2*i+1) and data_in(2*i+2);
-    end generate;
-    last_pass_through_1st : if data_width mod 2 = 0 generate
-        intermediate_data(data_width-1) <= data_in(data_width-1);
-    end generate;
-    
-    even_stage_swappers : for i in 0 to data_width/2-1 generate
-         data_out(2*i) <= intermediate_data(2*i) or intermediate_data(2*i+1);
-         data_out(2*i+1) <= intermediate_data(2*i) and intermediate_data(2*i+1);
-      end generate;
-    last_pass_through_2st : if data_width mod 2 = 1 generate
-      data_out(data_width-1) <= intermediate_data(data_width-1);
-      end generate;
-
-end dataflow;
-
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-entity voter is
+entity simple_voter is
     generic	(
         data_width  : natural;
-        pipe_stages : natural);
+        pipe_stages : natural;
+        threshold : natural := data_width / 2);
   port (
     clock    : in  std_logic;
         reset_n  : in  std_logic;
         data_in  : in  std_logic_vector (data_width-1 downto 0);
        majority : out std_logic);
-end voter;
-architecture voter of voter is
+end simple_voter;
+
+architecture simple_voter of simple_voter is
     component swapper_block is
     generic (data_width : natural);
     port (
@@ -84,7 +55,7 @@ begin
     assert pipe_stages mod 2 = 0 report "pipe_stages must be a multiple of two" severity failure;
     assert swapper_per_pipe >= 2 report "too many pipe stages" severity failure;
     data_in_buffer : pipe_reg	generic map (data_width => data_width)	port map (clock => clock, reset_n => reset_n, enable => '1', data_in => data_in, data_out => intermediates(0));
-    majority <=	intermediates(data_width + pipe_stages)(data_width/2);
+    majority <=	intermediates(data_width + pipe_stages)(threshold);
     chain : for i in 0 to data_width + pipe_stages - 1 generate
         pipe : if (i+1) mod (swapper_per_pipe+1) = 0 generate 
               pipe_buffer: pipe_reg	
@@ -98,3 +69,4 @@ begin
         end generate;
     end generate;
 end architecture;
+

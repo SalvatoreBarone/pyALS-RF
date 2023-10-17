@@ -29,8 +29,13 @@ class HDLGenerator:
     vhdl_bnf_source = "vhd/bnf.vhd"
     vhdl_reg_source = "vhd/pipe_reg.vhd"
     vhdl_decision_box_source = "vhd/decision_box.vhd"
-    vhdl_voter_source = "vhd/voter.vhd"
+    vhdl_swapper_block_source = "vhd/swapper_block.vhd"
+    vhdl_simple_voter_source = "vhd/simple_voter.vhd"
+    vhdl_combiner_source = "vhd/combiner.vhd"
+
     vhdl_debugfunc_source = "vhd/debug_func.vhd"
+    vhdl_majority_voter_template = "vhd/majority_voter.vhd.template"
+    vhdl_rejection_module_template = "vhd/rejection_module.vhd.template"
     vhdl_classifier_template_file = "vhd/classifier.vhd.template"
     vhdl_tb_classifier_template_file = "vhd/tb_classifier.vhd.template"
     bnf_vhd = "bnf.vhd"
@@ -70,6 +75,8 @@ class HDLGenerator:
         trees_name = [t.name for t in self.classifier.trees]
         env = Environment(loader = FileSystemLoader(self.source_dir))
         
+        self.generate_rejection_module(f"{dest}/src", env)
+        self.generate_majority_voter(f"{dest}/src", env)
         self.generate_classifier(f"{dest}/src", features, trees_name, env)
         self.generate_exact_tb(f"{dest}/tb", features, env)
         self.generate_tcl(dest, trees_name, env)
@@ -81,9 +88,21 @@ class HDLGenerator:
 
     def generate_classifier(self, dest, features, trees_name, env):
         classifier_template = env.get_template(self.vhdl_classifier_template_file)
-        classifier = classifier_template.render(trees=trees_name, features=features, classes=self.classifier.classes_name, pipe_stages = int(len(self.classifier.trees)/2))
+        classifier = classifier_template.render(trees=trees_name, features=features, classes=self.classifier.classes_name)
         with open(f"{dest}/classifier.vhd", "w") as out_file:
             out_file.write(classifier)
+
+    def generate_majority_voter(self, dest, env):
+        majority_voter_template = env.get_template(self.vhdl_majority_voter_template)
+        majority_voter = majority_voter_template.render(classes=self.classifier.classes_name)
+        with open(f"{dest}/majority_voter.vhd", "w") as out_file:
+            out_file.write(majority_voter)
+
+    def generate_rejection_module(self, dest, env):
+        rejection_module_template = env.get_template(self.vhdl_rejection_module)
+        rejection_module = rejection_module_template.render(classes=self.classifier.classes_name)
+        with open(f"{dest}/rejection_module.vhd", "w") as out_file:
+            out_file.write(rejection_module)
 
     def generate_tcl(self, dest, trees_name, env):
         tcl_template = env.get_template(self.tcl_project_file)
@@ -95,7 +114,6 @@ class HDLGenerator:
 
     def generate_exact_tb(self, dest, features, env):
         n_vectors, test_vectors, expected_outputs = self.generate_exact_test_vectors()
-       
         tb_classifier_template = env.get_template(self.vhdl_tb_classifier_template_file)
         tb_classifier = tb_classifier_template.render(
             features=features,
@@ -118,7 +136,6 @@ class HDLGenerator:
                 expected_outputs[c].append(v)
         return len(self.classifier.x_test), test_vectors, expected_outputs
         
-
     def generate_cmakelists(self, dest, trees_name, env):
         cmakelists_template = env.get_template(self.cmakelists_template_file)
         cmakelists = cmakelists_template.render(tree_names = trees_name)
@@ -131,7 +148,9 @@ class HDLGenerator:
         copy_file(self.source_dir + self.vhdl_bnf_source, f"{ax_dest}/src")
         copy_file(self.source_dir + self.vhdl_reg_source, f"{ax_dest}/src")
         copy_file(self.source_dir + self.vhdl_decision_box_source, f"{ax_dest}/src")
-        copy_file(self.source_dir + self.vhdl_voter_source, f"{ax_dest}/src")
+        copy_file(self.source_dir + self.vhdl_swapper_block_source, f"{ax_dest}/src")
+        copy_file(self.source_dir + self.vhdl_simple_voter_source, f"{ax_dest}/src")
+        copy_file(self.source_dir + self.vhdl_combiner_source, f"{ax_dest}/src")
         copy_file(self.source_dir + self.vhdl_debugfunc_source, f"{ax_dest}/tb")
         copy_file(self.source_dir + self.tcl_sim_file, ax_dest)
         copy_file(self.source_dir + self.constraint_file, ax_dest)
@@ -202,3 +221,4 @@ class HDLGenerator:
         if remainder == 0:
             return numToRound
         return numToRound + multiple - remainder
+    

@@ -228,7 +228,7 @@ class Classifier:
         for a in self.args:
             a[2] = use_pruning
         outcomes = self.pool.starmap(Classifier.compute_score, self.args)
-        return sum( np.argmax(score := [sum(s) for s in zip(*scores)]) == y and not Classifier.check_draw(score)[0] for scores, y in zip(zip(*outcomes), self.y_test) ) / len(self.y_test) * 100
+        return sum(np.argmax(score := [sum(s) for s in zip(*scores)]) == y and not self.check_draw(score)[0] for scores, y in zip(zip(*outcomes), self.y_test)) / len(self.y_test) * 100
     
     def get_assertion_activation(self, use_training_data):
         samples = self.x_train if use_training_data else self.x_val
@@ -270,31 +270,26 @@ class Classifier:
     def get_score(self, x, use_pruning = False):
         return Classifier.compute_score_x(self.trees, x, use_pruning)
     
-    @staticmethod
-    def check_draw(scores):
+    def check_draw(self, scores):
         m = max(scores)
-        if m < np.ceil(sum(scores)/2):
-            return True, m  
-        else:
-            return np.sum(s == m for s in scores) > 1, m
+        return np.sum(s == m for s in scores) > 1, m
     
-    def predict(self, x, use_pruning = False):
+    def predict(self, x, use_pruning=False):
         score = self.get_score(x, use_pruning)
-        draw, max_score = Classifier.check_draw(score)
-        if max_score < (np.floor(len(self.trees)/2) + 1):
+        draw, max_score = self.check_draw(score)
+        if draw:
             return [0] * len(self.classes_name), draw
-        return [ int(s == max_score) for s in score ], draw
+        return [int(s == max_score) for s in score], draw
     
-    def predict_dump(self, index, outfile, use_pruning = False):
+    def predict_dump(self, index: int, outfile: str, use_pruning=False):
         score = self.get_score(self.x_test[index], use_pruning)
-        draw, max_score = Classifier.check_draw(score)
-        outcome = [0] * len(self.classes_name) if max_score < np.ceil(len(self.trees)/2) else [ int(s == max_score) for s in score ]
+        draw, max_score = self.check_draw(score)
+        outcome = [0] * len(self.classes_name) if draw else [int(s == max_score) for s in score]
         data = {
-                "score" : score,
-                "draw" : draw,
-                "outcome" : { c: o for c, o in zip (self.classes_name, outcome) }, 
-                "trees" : {t.name : { "outcome" : {k : int(v) for k, v in zip(self.classes_name, t.visit(self.x_test[index], use_pruning))} } for t in self.trees }
-                }
+            "score": score,
+            "draw": draw,
+            "outcome": dict(zip(self.classes_name, outcome)),
+            "trees": {t.name: {"outcome": {k: int(v) for k, v in zip(self.classes_name, t.visit(self.x_test[index], use_pruning))}} for t in self.trees}}
         with open(outfile, "w") as f:
             json5.dump(data, f, indent=2)
     

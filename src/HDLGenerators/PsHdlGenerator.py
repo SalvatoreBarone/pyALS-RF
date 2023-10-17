@@ -52,6 +52,8 @@ class PsHdlGenerator(HDLGenerator):
             
             self.generate_tcl(dest, trees_name, env)
             self.generate_cmakelists(dest, trees_name, env)
+            self.generate_rejection_module(f"{dest}/src", env)
+            self.generate_majority_voter(f"{dest}/src", env)
             self.generate_classifier(f"{dest}/src", features, trees_name, env)
             self.generate_ax_tb(f"{dest}/tb/", features, env)
             for tree in self.classifier.trees:

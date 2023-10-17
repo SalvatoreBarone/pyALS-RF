@@ -38,6 +38,8 @@ class PruningHdlGenerator(HDLGenerator):
         trees_name = [t.name for t in self.classifier.trees]
         env = Environment(loader = FileSystemLoader(self.source_dir))
         
+        self.generate_rejection_module(f"{dest}/src", env)
+        self.generate_majority_voter(f"{dest}/src", env)
         self.generate_classifier(f"{dest}/src", features, trees_name, env)
         self.generate_tcl(dest, trees_name, env)
         self.generate_cmakelists(dest, trees_name, env)

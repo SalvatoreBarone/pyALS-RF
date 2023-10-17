@@ -53,10 +53,22 @@ add_vhdl_source(src/decision_tree_{{tree_name}}.vhd decision_tree_{{tree_name}})
 add_dependencies(decision_tree_{{tree_name}} assertions_block_{{tree_name}})
 {% endfor %}
 
-add_vhdl_source(src/voter.vhd voter)
+add_vhdl_source(swapper_block.vhd swapper_block)
+
+add_vhdl_source(src/simple_voter.vhd simple_voter)
+add_dependencies(simple_voter swapper_block pipe_reg)
+
+add_vhdl_source(src/combiner.vhd combiner)
+add_dependencies(combiner swapper_block pipe_reg)
+
+add_vhdl_source(src/rejection_module.vhd rejection_module)
+add_dependencies(rejection_module combiner simple_voter)
+
+add_vhdl_source(src/majority_voter.vhd majority_voter)
+add_dependencies(majority_voter combiner rejection_module)
 
 add_vhdl_source(src/classifier.vhd classifier)
-add_dependencies(classifier pipe_reg decision_box voter {% for tree_name in tree_names %}decision_tree_{{tree_name}} {% endfor %})
+add_dependencies(classifier pipe_reg decision_box majority_voter {% for tree_name in tree_names %}decision_tree_{{tree_name}} {% endfor %})
 
 add_vhdl_source(tb/debug_func.vhd debug_func)
 add_testbench_source(tb/tb_classifier.vhd tb_classifier)
