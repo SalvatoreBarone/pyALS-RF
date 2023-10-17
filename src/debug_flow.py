@@ -33,12 +33,12 @@ def debug_with_scikit(ctx, output):
     classifier = ctx.obj["classifier"]
     acc_pyals = 0
     acc_scikit = 0
+    data = []
     for x, y in tqdm(zip(classifier.x_test, classifier.y_test), total=len(classifier.y_test), desc="Comparing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
         score = classifier.get_score(x)
         outcome, draw = classifier.predict(x)
         rho = scikit_model.predict_proba(np.array(x).reshape((1, -1)))
         prediction = scikit_model.predict(np.array(x).reshape((1, -1)))
-        data = []
         if np.argmax(rho) == y:
             acc_scikit += 1
         if np.argmax(outcome) == y:

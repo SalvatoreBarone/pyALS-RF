@@ -66,8 +66,8 @@ def get_sets(dataset_file, config, fraction):
         config.outcome_col = -1
     attributes, outcomes = read_dataset_from_csv(dataset_file, config.separator, config.skip_header, config.outcome_col)
     print(f"Read {len(attributes)} feature vectors and {len(outcomes)} labels")
-    #x_train, x_test, y_train, y_test = train_test_split(attributes, np.array(get_labels(outcomes, config)).reshape((attributes.shape[0],)), train_size = fraction)
-    x_train, x_test, y_train, y_test = train_test_split(attributes, outcomes, train_size = fraction)
+    x_train, x_test, y_train, y_test = train_test_split(attributes, np.array(get_labels(outcomes, config)).reshape((attributes.shape[0],)), train_size = fraction)
+    #x_train, x_test, y_train, y_test = train_test_split(attributes, outcomes, train_size = fraction)
     print(f"Training sets is {len(x_train)} feature vectors and {len(y_train)} labels")
     print(f"Testing sets is {len(x_test)} feature vectors and {len(y_test)} labels")
     return list(x_train), list(y_train), list(x_test), list(y_test)
@@ -120,14 +120,34 @@ def save_model(outputdir, config, model, x_train, y_train, x_test, y_test):
     classifier.parse(pmml_file, config)
     classifier.read_test_set(test_dataset_csv)
     
-    for x, y, x_prime, y_prime in tqdm(zip(classifier.x_test, classifier.y_test, x_test, y_test), desc="Testing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
-        assert x == x_prime
-        assert y == y_prime
+    acc_pyals = 0
+    acc_scikit = 0
+    data = []
+    for x, y, x_prime, y_prime in tqdm(zip(classifier.x_test, classifier.y_test, x_test, y_test), total = len(y_test), desc="Testing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+        assert all(i == j for i, j in zip(x, x_prime)), "Error reading attributes"
+        assert y == y_prime, "Error reading labels"
         score_1 = classifier.get_score(x)
         score_2 = classifier.get_score(x_prime)
-        print (x, x_prime, y, y_prime)
-        exit()
-    
+        rho_1 = model.predict_proba(np.array(x).reshape((1, -1)))
+        rho_2 = model.predict_proba(np.array(x_prime).reshape((1, -1)))
+        assert all(i == j for i, j in zip(score_1, score_2)), f"Error in scores: {score_1} {score_2}"
+        assert all(i == j for i, j in zip(rho_1[0], rho_2[0])), f"Error in rho: {rho_1} {rho_2}"
+        #assert all(i == j for i, j in zip(score_1, rho_1[0])), f"Error in model response: {score_1} {rho_1}"
+
+        outcome_1, draw_1 = classifier.predict(x)
+        outcome_2, draw_2 = classifier.predict(x_prime)
+        assert all(i == j for i, j in zip(outcome_1, outcome_2)), f"Error in outcome: {outcome_1} {outcome_2}"
+        assert draw_1 == draw_2
+        
+        if np.argmax(rho_1) == y:
+            acc_scikit += 1
+        if np.argmax(outcome_1) == y:
+            acc_pyals += 1
+        if np.argmax(outcome_1) != np.argmax(rho_1):
+            data.append((score_1, draw_1, outcome_1, np.argmax(outcome_1), rho_1[0].tolist(), np.argmax(rho_1), y))
+    print(tabulate(data, headers=["Score", "Draw", "Outcome", "argmax", "Scikit Rho", "argmax", "Label"]))
+    print(f"Accuracy pyALS : {acc_pyals / len(classifier.y_test)} {acc_pyals / len(y_test)}")
+    print(f"Accuracy scikit : {acc_scikit / len(classifier.y_test)} {acc_scikit / len(y_test)}")
 
 def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter):
     config = DtGenConfigParser(configfile)
