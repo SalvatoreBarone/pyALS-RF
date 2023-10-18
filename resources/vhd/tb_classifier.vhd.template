@@ -36,8 +36,9 @@ architecture testbench of tb_classifier is
       enable  : in std_logic;
       {% for feature in features -%}{{feature['name']}} : in std_logic_vector(data_width-1 downto nab_{{feature['name']}});
       {% endfor %}
-      {% for c in classes -%}class_{{c}} : out std_logic{{";" if not loop.last else ");"}}
+      {% for c in classes -%}class_{{c}} : out std_logic;
       {% endfor %}
+      draw : out std_logic;
   end component;
   constant test_vectors    : natural    := {{n_vectors}};
   constant clock_period    : time       := 10 ns;
@@ -51,8 +52,9 @@ architecture testbench of tb_classifier is
   signal reset_n         : std_logic   := '0';
   signal enable          : std_logic   := '0';
   {% for f in features -%}signal {{f['name']}} : std_logic_vector(data_width-1 downto nab_{{f['name']}}) := (others => '0');
-  {% endfor %}{% for c in classes -%}signal class_{{c}} : std_logic;
+  {% endfor %}{% for c in classes -%}signal class_{{c}} : std_logic := '0';
   {% endfor %}
+  signal draw : std_logic := '0';
 
   type std_logic_matrix is array (0 to test_vectors-1) of std_logic_vector(data_width-1 downto 0);
   {% for input_signal, values in test_vectors.items() -%}
@@ -75,8 +77,9 @@ begin
       clock => clock,
       reset_n => reset_n,
       enable => enable, {% for f in features -%}{{f['name']}} => {{f['name']}},
-      {% endfor %}{% for c in classes -%}class_{{c}} => class_{{c}}{{", " if not loop.last else ");"}}
+      {% endfor %}{% for c in classes -%}class_{{c}} => class_{{c}},
       {% endfor %}
+      draw => draw);
 
   clock_process : process
   begin
@@ -107,6 +110,8 @@ begin
       {% for c in classes -%}
       assert class_{{c}} = expected_class_{{c}}(i) report	"Error: {{c}} is " & std_logic'image(class_{{c}}) & " instead of " & std_logic'image(expected_class_{{c}}(i)) severity failure;
       {% endfor %}
+      assert draw == expected_class_draw(i)  report	"Error: draw is " & std_logic'image(draw) & " instead of " & std_logic'image(expected_class_draw(i)) severity failure;
+      assert 
     end loop;
     report "Simulation completed successfully" severity note;
     simulate <= '0';

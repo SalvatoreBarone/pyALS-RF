@@ -10,7 +10,7 @@ add_executable(tb_basic_comparator                        tb_basic_comparator.c)
 add_executable(tb_parallel_comparator                  tb_parallel_comparator.c)
 add_executable(tb_decision_box_int                        tb_decision_box_int.c)
 add_executable(tb_decision_box_fp                         tb_decision_box_fp.cc)
-add_executable(tb_combiner                                        tb_combiner.c)
+add_executable(tb_sorting_network                                        tb_sorting_network.c)
 
 add_custom_target(
     oracle_files ALL
@@ -20,6 +20,6 @@ add_custom_target(
     COMMAND ./tb_parallel_comparator > ${ORACLES_DESTINATION_DIRECTORY}/tb_parallel_comparator.txt 
     COMMAND ./tb_decision_box_int    > ${ORACLES_DESTINATION_DIRECTORY}/tb_decision_box_int.txt 
     COMMAND ./tb_decision_box_fp     > ${ORACLES_DESTINATION_DIRECTORY}/tb_decision_box_fp.txt 
-    COMMAND ./tb_combiner            > ${ORACLES_DESTINATION_DIRECTORY}/tb_combiner.txt 
-    DEPENDS tb_basic_comparator tb_parallel_comparator tb_decision_box_int tb_decision_box_fp tb_combiner
+    COMMAND ./tb_sorting_network            > ${ORACLES_DESTINATION_DIRECTORY}/tb_sorting_network.txt 
+    DEPENDS tb_basic_comparator tb_parallel_comparator tb_decision_box_int tb_decision_box_fp tb_sorting_network
     VERBATIM)

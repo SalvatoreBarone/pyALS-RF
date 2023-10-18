@@ -60,18 +60,6 @@ class PsHdlGenerator(HDLGenerator):
                 self.implement_decision_boxes(tree, f"{dest}/src")
                 self.implement_assertions(tree, f"{dest}/src")
                 
-    def generate_ax_test_vectors(self, **kwargs):    
-        test_vectors = { f["name"] : [] for f in self.classifier.model_features }
-        expected_outputs = { c : [] for c in self.classifier.model_classes}
-        for x in self.classifier.x_test:
-            for k, v in zip(self.classifier.model_features, x):
-                test_vectors[k["name"]].append(double_to_bin(v))
-            o = np.argmax(self.classifier.get_score(x))
-            output = [ 1 if i == o else 0 for i in range(len(self.classifier.model_classes)) ]
-            for c, v in zip(self.classifier.model_classes, output):
-                expected_outputs[c].append(v)
-        return len(self.classifier.y_test), test_vectors, expected_outputs
-    
     def generate_ax_tb(self, dest, features, env, **kwargs):    
         n_vectors, test_vectors, expected_outputs = self.generate_exact_test_vectors()
        

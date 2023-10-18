@@ -66,11 +66,12 @@ class PruningHdlGenerator(HDLGenerator):
     
     def generate_ax_test_vectors(self, **kwargs):    
         test_vectors = { f["name"] : [] for f in self.classifier.model_features }
-        expected_outputs = { c : [] for c in self.classifier.classes_name}
+        expected_outputs = { **{ c : [] for c in self.classifier.classes_name},  **{ "draw" : []} }
         for x in self.classifier.x_test:
             for k, v in zip(self.classifier.model_features, x):
                 test_vectors[k["name"]].append(double_to_bin(v))
             output, draw = self.classifier.predict(x, True)
+            expected_outputs["draw"].append(int(draw))
             for c, v in zip(self.classifier.classes_name, output):
                 expected_outputs[c].append(v)
         return len(self.classifier.y_test), test_vectors, expected_outputs

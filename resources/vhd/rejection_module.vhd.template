@@ -33,7 +33,7 @@ entity rejection_module is
         clock    : in  std_logic;
         reset_n  : in  std_logic;
         {% for c in classes -%}
-        class_{{c}}_combined : in std_logic_vector(n_trees*(n_classes-2)/(2*n_classes)-1 downto 0));
+        class_{{c}}_combined : in std_logic_vector(n_trees * (n_classes - 2) / (2 * n_classes) - 1 downto 0));
         {% endfor %}
         {% for c in classes -%}class_{{c}} : out std_logic;
         {% endfor %}

@@ -68,14 +68,10 @@ architecture structural of classifier is
   {% endfor %}
 
   component majority_voter
-  generic (
     generic	(
         n_trees  : natural;
         n_classes : natural;
         pipe_stages : natural);
-  port (
-        clock    : in  std_logic;
-        reset_n  : in  std_logic;
   port (
     clock   : in std_logic;
     reset_n : in std_logic;
@@ -133,6 +129,7 @@ begin
       {% endfor %}
       draw => draw);
   end component;
+  {% else %}
   {% for c in classes -%}
   class_{{c}} <= class_{{c}}_results(0);
   {% endfor %}{% endif %}

@@ -14,9 +14,11 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import sys, csv, random, numpy as np, graphviz, sklearn2pmml, joblib
+import sys, csv, random, numpy as np, graphviz, joblib
 from distutils.dir_util import mkpath
 from nyoka import skl_to_pmml
+#from sklearn2pmml.pipeline import PMMLPipeline
+#from sklearn2pmml import sklearn2pmml
 from tqdm import tqdm
 #from sklearn import tree, pipeline, ensemble
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV, train_test_split
@@ -68,7 +70,6 @@ def get_sets(dataset_file, config, fraction):
     attributes, outcomes = read_dataset_from_csv(dataset_file, config.separator, config.skip_header, config.outcome_col)
     print(f"Read {len(attributes)} feature vectors and {len(outcomes)} labels")
     x_train, x_test, y_train, y_test = train_test_split(attributes, np.array(get_labels(outcomes, config)).reshape((attributes.shape[0],)), train_size = fraction)
-    #x_train, x_test, y_train, y_test = train_test_split(attributes, outcomes, train_size = fraction)
     print(f"Training sets is {len(x_train)} feature vectors and {len(y_train)} labels")
     print(f"Testing sets is {len(x_test)} feature vectors and {len(y_test)} labels")
     return list(x_train), list(y_train), list(x_test), list(y_test)
@@ -104,26 +105,31 @@ def save_model(outputdir, config, model, x_train, y_train, x_test, y_test):
     pmml_file = f"{outputdir}/classifier.pmml"
     training_set_csv = f"{outputdir}/training_set.csv"
     test_dataset_csv = f"{outputdir}/test_set.csv"
-    print(f"Dumping to {dump_file} ...")
-    joblib.dump(model, dump_file)
-    print(f"Exporting PMML model to {pmml_file} ...")
-    pipe = Pipeline([('clf', model)])
-    skl_to_pmml(pipeline = pipe, col_names = config.attributes_name, pmml_f_name = pmml_file )
+    
     print(f"Exporting the training set to {training_set_csv} ...")
     save_dataset_to_csv(training_set_csv, config.attributes_name, x_train, y_train)
     print(f"Exporting the test set to {test_dataset_csv} ...")
     save_dataset_to_csv(test_dataset_csv, config.attributes_name, x_test, y_test)
     print(f"Exporting graphviz draws of learned trees to {outputdir}/export ...")
     graphviz_export(model, config.attributes_name, list(config.classes_name.values()) if isinstance(config.classes_name, dict) else config.classes_name, outputdir)
+    
+    
+    print(f"Dumping to {dump_file} ...")
+    joblib.dump(model, dump_file)
+    
+    print(f"Exporting PMML model to {pmml_file} ...")
+    model.fake() #! This is vital! Call this function right before the PMML export
+    skl_to_pmml(pipeline = Pipeline([('rfc', model)]), col_names = config.attributes_name, pmml_f_name = pmml_file )
+    model = joblib.load(dump_file) #! after calling the fake() method you have no choice but reloading the model from file...
     print("Done!")
     
+    print("Performing model debugging and validation...")
     classifier = Classifier(cpu_count())
     classifier.parse(pmml_file, config)
     classifier.read_test_set(test_dataset_csv)
-    
     acc_pyals = 0
     acc_scikit = 0
-    data = []
+    mismatches = []
     for x, y, x_prime, y_prime in tqdm(zip(classifier.x_test, classifier.y_test, x_test, y_test), total = len(y_test), desc="Testing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
         assert all(i == j for i, j in zip(x, x_prime)), "Error reading attributes"
         assert y == y_prime, "Error reading labels"
@@ -133,35 +139,37 @@ def save_model(outputdir, config, model, x_train, y_train, x_test, y_test):
         rho_2 = model.predict_proba(np.array(x_prime).reshape((1, -1)))
         assert all(i == j for i, j in zip(score_1, score_2)), f"Error in scores: {score_1} {score_2}"
         assert all(i == j for i, j in zip(rho_1[0], rho_2[0])), f"Error in rho: {rho_1} {rho_2}"
-        #assert all(i == j for i, j in zip(score_1, rho_1[0])), f"Error in model response: {score_1} {rho_1}"
+        assert all(i == int(j) for i, j in zip(score_1, rho_1[0])), f"Error in model response: {score_1} {rho_1}"
 
         outcome_1, draw_1 = classifier.predict(x)
         outcome_2, draw_2 = classifier.predict(x_prime)
         assert all(i == j for i, j in zip(outcome_1, outcome_2)), f"Error in outcome: {outcome_1} {outcome_2}"
         assert draw_1 == draw_2
         
-        if np.argmax(rho_1) == y:
+        draw_scikit, _ = classifier.check_draw(rho_1[0].tolist())
+        if np.argmax(rho_1) == y and not draw_scikit:
             acc_scikit += 1
         if np.argmax(outcome_1) == y:
             acc_pyals += 1
-        if np.argmax(outcome_1) != np.argmax(rho_1):
-            data.append((score_1, draw_1, outcome_1, np.argmax(outcome_1), rho_1[0].tolist(), np.argmax(rho_1), y))
-    print(tabulate(data, headers=["Score", "Draw", "Outcome", "argmax", "Scikit Rho", "argmax", "Label"]))
-    print(f"Accuracy pyALS : {acc_pyals / len(classifier.y_test)} {acc_pyals / len(y_test)}")
-    print(f"Accuracy scikit : {acc_scikit / len(classifier.y_test)} {acc_scikit / len(y_test)}")
-    print(f"{len(data)} mismatches")
+        if (np.argmax(outcome_1) != np.argmax(rho_1)) and (draw_1 != draw_scikit):
+            mismatches.append((', '.join(str(s) for s in score_1), draw_1, ', '.join(str(s) for s in outcome_1), np.argmax(outcome_1), ', '.join(f'{q:.2f}' for q in rho_1[0]), np.argmax(rho_1), y))
+            
+    print(tabulate(mismatches, headers=["Score", "Draw", "Outcome", "argmax", "Scikit Rho", "argmax", "Label"]))
+    print(f"{len(mismatches)} mismatches")
+    print(f"Accuracy of the pyALS model: {acc_pyals / len(y_test)}")
+    print(f"Accuracy of the scikit-learn model: {acc_scikit / len(y_test)}")
 
 def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter):
     config = DtGenConfigParser(configfile)
     x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
-    search_grid = { #'n_estimators' : [int(x) for x in np.linspace(5, 200, num = 20)],
-                    'max_features': ['auto', 'log2', 'sqrt'],
+    search_grid = { 'max_features': [None, 'log2', 'sqrt'],
                     'criterion' : ["gini", "entropy", "log_loss"],
                     'max_depth': [int(x) for x in np.linspace(10, 50, num = 10)],
                     'min_samples_split': [int(x) for x in np.linspace(10, 100, num = 10)],
                     'min_samples_leaf': [int(x) for x in np.linspace(20, 100, num = 10)],
                     'bootstrap': [True, False]}
     estimator = RandomForestClassifierMV(n_estimators = ntrees)
+    #estimator = RandomForestClassifier(n_estimators = ntrees)
     if clf == "dt":
         pass
     else:
@@ -184,6 +192,7 @@ def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, crit
        print(model.tree_.max_dept)
     elif clf == "rf":
         model = RandomForestClassifierMV(n_estimators = predictors, max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha, bootstrap = not disable_bootstrap, n_jobs = -1, verbose = 1).fit(x_train, y_train)
+        #model = RandomForestClassifier(n_estimators = predictors, max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha, bootstrap = not disable_bootstrap, n_jobs = -1, verbose = 1).fit(x_train, y_train)
         data = [ [i, estimator.tree_.node_count, estimator.tree_.max_depth ] for i, estimator in enumerate(model.estimators_) ]
         print(tabulate(data, headers=["#", "#nodes", "depth"]))
     save_model(outputdir, config, model, x_train, y_train, x_test, y_test)    

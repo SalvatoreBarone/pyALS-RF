@@ -22,14 +22,10 @@ use work.common_types.all;
 use work.bnf.all;
 
 entity majority_voter is
-  generic (
     generic	(
         n_trees  : natural;
         n_classes : natural;
         pipe_stages : natural);
-  port (
-        clock    : in  std_logic;
-        reset_n  : in  std_logic;
   port (
     clock   : in std_logic;
     reset_n : in std_logic;
@@ -51,7 +47,7 @@ architecture structural of majority_voter is
           data_in  : in  std_logic_vector (data_width-1 downto 0);
           data_out : out std_logic_vector (data_width-1 downto 0));
       end component;
-    component combiner is
+    component sorting_network is
         generic	(
         n_trees  : natural;
         n_classes : natural;
@@ -71,18 +67,18 @@ architecture structural of majority_voter is
             clock    : in  std_logic;
             reset_n  : in  std_logic;
             {% for c in classes -%}
-            class_{{c}}_combined : in std_logic_vector(n_trees*(n_classes-2)/(2*n_classes)-1 downto 0));
+            class_{{c}}_combined : in std_logic_vector(n_trees*(n_classes-2)/(2*n_classes)-1 downto 0);
             {% endfor %}
             {% for c in classes -%}class_{{c}} : out std_logic;
             {% endfor %}
-            draw : std_logic);
+            draw : out std_logic);
     end component;
     {% for c in classes -%}
-    signal class_{{c}}_combined : std_logic_vector(n_trees*(n_classes-2)/(2*n_classes)-1 downto 0)) => (others => '0');
+    signal class_{{c}}_combined : std_logic_vector(n_trees*(n_classes-2)/(2*n_classes)-1 downto 0) => (others => '0');
     {% endfor %}
 begin
   {% for c in classes -%}
-  comb_{{c}} : combiner 
+  comb_{{c}} : sorting_network 
     generic map(
         data_width => n_trees,
         n_classes => n_classes,

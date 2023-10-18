@@ -19,7 +19,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-entity combiner is
+entity sorting_network is
     generic	(
         n_trees  : natural;
         n_classes : natural;
@@ -29,8 +29,8 @@ entity combiner is
         reset_n  : in  std_logic;
         data_in  : in  std_logic_vector (n_trees-1 downto 0);
         majority : out std_logic_vector(n_trees*(n_classes-2)/(2*n_classes)-1 downto 0));  -- N/2 - N/C = (N*C - 2*N)/2C = N*(C-2)/2C-1
-end combiner;
-architecture combiner of combiner is
+end sorting_network;
+architecture sorting_network of sorting_network is
     component swapper_block is
     generic (n_trees : natural);
     port (

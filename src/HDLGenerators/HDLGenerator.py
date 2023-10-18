@@ -31,7 +31,7 @@ class HDLGenerator:
     vhdl_decision_box_source = "vhd/decision_box.vhd"
     vhdl_swapper_block_source = "vhd/swapper_block.vhd"
     vhdl_simple_voter_source = "vhd/simple_voter.vhd"
-    vhdl_combiner_source = "vhd/combiner.vhd"
+    vhdl_sorting_network_source = "vhd/sorting_network.vhd"
 
     vhdl_debugfunc_source = "vhd/debug_func.vhd"
     vhdl_majority_voter_template = "vhd/majority_voter.vhd.template"
@@ -127,11 +127,12 @@ class HDLGenerator:
 
     def generate_exact_test_vectors(self):
         test_vectors = { f["name"] : [] for f in self.classifier.model_features }
-        expected_outputs = { c : [] for c in self.classifier.classes_name}
+        expected_outputs = { **{ c : [] for c in self.classifier.classes_name},  **{ "draw" : []} }
         for x in self.classifier.x_test:
             for k, v in zip(self.classifier.model_features, x):
                 test_vectors[k["name"]].append(double_to_bin(v))
             output, draw = self.classifier.predict(x)
+            expected_outputs["draw"].append(int(draw))
             for c, v in zip(self.classifier.classes_name, output):
                 expected_outputs[c].append(v)
         return len(self.classifier.x_test), test_vectors, expected_outputs
@@ -150,7 +151,7 @@ class HDLGenerator:
         copy_file(self.source_dir + self.vhdl_decision_box_source, f"{ax_dest}/src")
         copy_file(self.source_dir + self.vhdl_swapper_block_source, f"{ax_dest}/src")
         copy_file(self.source_dir + self.vhdl_simple_voter_source, f"{ax_dest}/src")
-        copy_file(self.source_dir + self.vhdl_combiner_source, f"{ax_dest}/src")
+        copy_file(self.source_dir + self.vhdl_sorting_network_source, f"{ax_dest}/src")
         copy_file(self.source_dir + self.vhdl_debugfunc_source, f"{ax_dest}/tb")
         copy_file(self.source_dir + self.tcl_sim_file, ax_dest)
         copy_file(self.source_dir + self.constraint_file, ax_dest)
