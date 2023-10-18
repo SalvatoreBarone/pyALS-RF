@@ -25,6 +25,7 @@ from sklearn.tree import export_graphviz, DecisionTreeClassifier
 from sklearn.pipeline import Pipeline
 from tabulate import tabulate
 from .ConfigParsers.DtGenConfigParser import DtGenConfigParser
+from .scikit.RandonForestClassifierMV import RandomForestClassifierMV
 
 
 from .Model.Classifier import *
@@ -82,7 +83,7 @@ def save_dataset_to_csv(filename, attributes_name, attributes, labels):
     sys.stdout = original_stdout  
     
 def graphviz_export(model, attributes_name, classes_name, outputdir):
-    if isinstance(model, RandomForestClassifier):
+    if isinstance(model, (RandomForestClassifier, RandomForestClassifierMV)):
         for i, estimator in enumerate(model.estimators_):
             dot_data = export_graphviz(estimator, feature_names = attributes_name, class_names = classes_name, filled=True, rounded=True)
             graph = graphviz.Source(dot_data)
@@ -148,6 +149,7 @@ def save_model(outputdir, config, model, x_train, y_train, x_test, y_test):
     print(tabulate(data, headers=["Score", "Draw", "Outcome", "argmax", "Scikit Rho", "argmax", "Label"]))
     print(f"Accuracy pyALS : {acc_pyals / len(classifier.y_test)} {acc_pyals / len(y_test)}")
     print(f"Accuracy scikit : {acc_scikit / len(classifier.y_test)} {acc_scikit / len(y_test)}")
+    print(f"{len(data)} mismatches")
 
 def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter):
     config = DtGenConfigParser(configfile)
@@ -159,7 +161,7 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
                     'min_samples_split': [int(x) for x in np.linspace(10, 100, num = 10)],
                     'min_samples_leaf': [int(x) for x in np.linspace(20, 100, num = 10)],
                     'bootstrap': [True, False]}
-    estimator = RandomForestClassifier(n_estimators = ntrees)
+    estimator = RandomForestClassifierMV(n_estimators = ntrees)
     if clf == "dt":
         pass
     else:
@@ -181,7 +183,7 @@ def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, crit
        print(model.tree_.node_count())
        print(model.tree_.max_dept)
     elif clf == "rf":
-        model = RandomForestClassifier(n_estimators = predictors, max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha, bootstrap = not disable_bootstrap, n_jobs = -1, verbose = 1).fit(x_train, y_train)
+        model = RandomForestClassifierMV(n_estimators = predictors, max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha, bootstrap = not disable_bootstrap, n_jobs = -1, verbose = 1).fit(x_train, y_train)
         data = [ [i, estimator.tree_.node_count, estimator.tree_.max_depth ] for i, estimator in enumerate(model.estimators_) ]
         print(tabulate(data, headers=["#", "#nodes", "depth"]))
     save_model(outputdir, config, model, x_train, y_train, x_test, y_test)    

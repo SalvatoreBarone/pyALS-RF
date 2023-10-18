@@ -278,7 +278,7 @@ class Classifier:
     
     def check_draw(self, scores):
         m = max(scores)
-        return (m < len(self.trees) // len(self.model_classes)) or np.sum(s == m for s in scores) > 1, m
+        return (m <= (len(self.trees) // len(self.model_classes))) or np.sum(s == m for s in scores) > 1, m
     
     def predict(self, x, use_pruning=False):
         score = self.get_score(x, use_pruning)

@@ -47,7 +47,7 @@ def debug_with_scikit(ctx, output):
             data.append((score, draw, outcome, np.argmax(outcome), rho[0].tolist(), np.argmax(rho), prediction[0], y))
     print(tabulate(data, headers=["Score", "Draw", "Outcome", "argmax", "Scikit Rho", "argmax", "Scikit Pred", "Label"]))
     print(f"Accuracy pyALS : {acc_pyals / len(classifier.y_test)}")
-    print(f"Accuracy scikit : {acc_pyals / len(classifier.y_test)}")
+    print(f"Accuracy scikit : {acc_scikit / len(classifier.y_test)}")
         
 
 def none_hdl_debug_flow(ctx, index, output):
