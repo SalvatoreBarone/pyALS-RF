@@ -27,17 +27,16 @@ entity classifier is
     data_width      : natural := 64;
     parallel_blocks : natural := 8;
     pipe_stages     : natural := 2;
-    {% for f in features -%}nab_{{f['name']}} : natural := {{f['nab']}}{{";" if not loop.last else ");"}}
+    {% for f in features -%}  
+      nab_{{f['name']}} : natural := {{f['nab']}}{{";" if not loop.last else ");"}}
     {% endfor %}
   port (
     clock   : in std_logic;
     reset_n : in std_logic;
     enable  : in std_logic;
     {% for feature in features -%}{{feature['name']}} : in std_logic_vector(data_width-1 downto nab_{{feature['name']}});
-    {% endfor %}
-    {% for c in classes -%}class_{{c}} : out std_logic;
-    {% endfor %}
-    draw : out std_logic);
+    {% endfor %}{% for c in classes -%}class_{{c}} : out std_logic;
+    {% endfor %}draw : out std_logic);
 end classifier;
 
 architecture structural of classifier is
@@ -50,6 +49,10 @@ architecture structural of classifier is
       data_in  : in  std_logic_vector (data_width-1 downto 0);
       data_out : out std_logic_vector (data_width-1 downto 0));
   end component;
+
+  constant n_trees : natural := {{trees|length}};
+  constant n_classes : natural := {{classes|length}};
+
   {% for tree in trees -%}
   component decision_tree_{{tree}} is
     generic (
@@ -60,33 +63,30 @@ architecture structural of classifier is
     port (
       clock   : in std_logic;
       reset_n : in std_logic;
-      {% for feature in features -%}
+    {% for feature in features -%}
       {{feature['name']}}: in std_logic_vector(data_width-1 downto nab_{{feature['name']}});
-      {% endfor %}{% for c in classes -%}
-      class_{{c}} : out std_logic{{";" if not loop.last else ");"}}{% endfor %}
-  end component;{{"\n  " if not loop.last}}
+    {% endfor %}{% for c in classes -%}class_{{c}} : out std_logic{{";" if not loop.last else ");"}}
+    {% endfor %}end component;{{"\n  " if not loop.last}}
   {% endfor %}
-
   component majority_voter
     generic	(
-        n_trees  : natural;
-        n_classes : natural;
+        n_voting  : natural;
+        n_candidates : natural;
         pipe_stages : natural);
-  port (
-    clock   : in std_logic;
-    reset_n : in std_logic;
-    {% for c in classes -%}
-    class_{{c}}_score : in std_logic_vector(n_trees-1 downto 0);;
-    {% endfor %}
-    {% for c in classes -%}class_{{c}} : out std_logic;
-    {% endfor %}
-    draw : std_logic);
+    port (
+        clock   : in std_logic;
+        reset_n : in std_logic;
+        {% for c in candidates -%}
+        candidate_{{c}}_preferences : in std_logic_vector(n_voting - 1 downto 0);
+        {% endfor %}
+        {% for c in candidates -%}candidate_{{c}} : out std_logic;
+        {% endfor %}
+        draw : out std_logic);
   end component;
+
   {% for feature in features -%}
   signal buffered_{{feature['name']}} : std_logic_vector(data_width-1 downto nab_{{feature['name']}}) := (others => '0');
-  {% endfor %}
-  {% for c in classes -%}
-  signal class_{{c}}_results : std_logic_vector({{trees|length-1}} downto 0) := (others => '0');
+  {% endfor %}{% for c in classes -%}signal class_{{c}}_results : std_logic_vector(n_trees-1 downto 0) := (others => '0');
   {% endfor %}
 begin
   {% for feature in features -%}
@@ -116,19 +116,18 @@ begin
   {% if trees|length > 1 %}
   voter: majority_voter
     generic	map(
-        n_trees  => n_trees,
-        n_classes => n_classes,
-        pipe_stages => pipe_stages);
+        n_voting  => n_trees,
+        n_candidates => n_classes,
+        pipe_stages => pipe_stages)
     port map (
       clock  => clock,
       reset_n => reset_n,
-      {% for c in classes -%}
-      class_{{c}}_score => class_{{c}}_results,
+      {% for c in candidates -%}
+      candidate_{{c}}_preferences => class_{{c}}_results,
       {% endfor %}
-      {% for c in classes -%}class_{{c}} => class_{{c}},
+      {% for c in candidates -%}candidate_{{c}} => class_{{c}},
       {% endfor %}
       draw => draw);
-  end component;
   {% else %}
   {% for c in classes -%}
   class_{{c}} <= class_{{c}}_results(0);

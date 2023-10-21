@@ -18,26 +18,24 @@
 library ieee;
 use ieee.std_logic_1164.all;
 library work;
-use work.common_types.all;
-use work.bnf.all;
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 entity rejection_module is
     generic	(
-        n_trees  : natural;
-        n_classes : natural;
+        n_voting  : natural;
+        n_candidates : natural;
         pipe_stages : natural);
     port (
         clock    : in  std_logic;
         reset_n  : in  std_logic;
-        {% for c in classes -%}
-        class_{{c}}_combined : in std_logic_vector(n_trees * (n_classes - 2) / (2 * n_classes) - 1 downto 0));
+        {% for c in candidates -%}
+        candidate_{{c}}_sorted_preferences : in std_logic_vector(n_voting * (n_candidates - 2) / (2 * n_candidates) - 1 downto 0);
         {% endfor %}
-        {% for c in classes -%}class_{{c}} : out std_logic;
+        {% for c in candidates -%}candidate_{{c}} : out std_logic;
         {% endfor %}
-        draw : std_logic);
+        draw : out std_logic);
 end rejection_module;
 
 architecture dataflow of rejection_module is

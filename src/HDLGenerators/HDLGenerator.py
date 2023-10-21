@@ -88,19 +88,22 @@ class HDLGenerator:
 
     def generate_classifier(self, dest, features, trees_name, env):
         classifier_template = env.get_template(self.vhdl_classifier_template_file)
-        classifier = classifier_template.render(trees=trees_name, features=features, classes=self.classifier.classes_name)
+        classifier = classifier_template.render(
+            trees=trees_name, 
+            features=features, classes=self.classifier.classes_name,
+            candidates=self.classifier.classes_name)
         with open(f"{dest}/classifier.vhd", "w") as out_file:
             out_file.write(classifier)
 
     def generate_majority_voter(self, dest, env):
         majority_voter_template = env.get_template(self.vhdl_majority_voter_template)
-        majority_voter = majority_voter_template.render(classes=self.classifier.classes_name)
+        majority_voter = majority_voter_template.render(candidates=self.classifier.classes_name)
         with open(f"{dest}/majority_voter.vhd", "w") as out_file:
             out_file.write(majority_voter)
 
     def generate_rejection_module(self, dest, env):
         rejection_module_template = env.get_template(self.vhdl_rejection_module_template)
-        rejection_module = rejection_module_template.render(classes=self.classifier.classes_name)
+        rejection_module = rejection_module_template.render(candidates=self.classifier.classes_name)
         with open(f"{dest}/rejection_module.vhd", "w") as out_file:
             out_file.write(rejection_module)
 

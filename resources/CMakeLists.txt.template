@@ -53,7 +53,7 @@ add_vhdl_source(src/decision_tree_{{tree_name}}.vhd decision_tree_{{tree_name}})
 add_dependencies(decision_tree_{{tree_name}} assertions_block_{{tree_name}})
 {% endfor %}
 
-add_vhdl_source(swapper_block.vhd swapper_block)
+add_vhdl_source(src/swapper_block.vhd swapper_block)
 
 add_vhdl_source(src/simple_voter.vhd simple_voter)
 add_dependencies(simple_voter swapper_block pipe_reg)

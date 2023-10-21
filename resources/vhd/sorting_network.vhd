@@ -21,58 +21,58 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 entity sorting_network is
     generic	(
-        n_trees  : natural;
-        n_classes : natural;
+        n_voting  : natural;
+        n_candidates : natural;
         pipe_stages : natural);
     port (
         clock    : in  std_logic;
         reset_n  : in  std_logic;
-        data_in  : in  std_logic_vector (n_trees-1 downto 0);
-        majority : out std_logic_vector(n_trees*(n_classes-2)/(2*n_classes)-1 downto 0));  -- N/2 - N/C = (N*C - 2*N)/2C = N*(C-2)/2C-1
+        preferences  : in  std_logic_vector (n_voting-1 downto 0);
+        sorted_preferences : out std_logic_vector(n_voting*(n_candidates-2)/(2*n_candidates)-1 downto 0));  -- N/2 - N/C = (N*C - 2*N)/2C = N*(C-2)/2C-1
 end sorting_network;
 architecture sorting_network of sorting_network is
     component swapper_block is
-    generic (n_trees : natural);
-    port (
-      data_in  : in std_logic_vector(n_trees-1 downto 0);
-      data_out : out std_logic_vector(n_trees-1 downto 0));
-  end component;
-  component pipe_reg is
-    generic(n_trees : natural);
-    port ( 
-      clock    : in  std_logic;
-      reset_n  : in  std_logic;
-      enable   : in  std_logic;
-      data_in  : in  std_logic_vector (n_trees-1 downto 0);
-      data_out : out std_logic_vector (n_trees-1 downto 0));
-  end component;
-    constant swapper_per_pipe : natural := n_trees / pipe_stages;
-    type matrix is array (natural range <>) of std_logic_vector (n_trees-1 downto 0);
-    signal intermediates : matrix (0 to n_trees + pipe_stages);
+        generic (data_width : natural);
+        port (
+        data_in  : in std_logic_vector(data_width-1 downto 0);
+        data_out : out std_logic_vector(data_width-1 downto 0));
+    end component;
+    component pipe_reg is
+        generic(data_width : natural);
+        port ( 
+        clock    : in  std_logic;
+        reset_n  : in  std_logic;
+        enable   : in  std_logic;
+        data_in  : in  std_logic_vector (data_width-1 downto 0);
+        data_out : out std_logic_vector (data_width-1 downto 0));
+    end component;
+    constant swapper_per_pipe : natural := n_voting / pipe_stages;
+    type matrix is array (natural range <>) of std_logic_vector (n_voting-1 downto 0);
+    signal intermediates : matrix (0 to n_voting + pipe_stages);
 begin
     assert pipe_stages mod 2 = 0 report "pipe_stages must be a multiple of two" severity failure;
     assert swapper_per_pipe >= 2 report "too many pipe stages" severity failure;
 
-    data_in_buffer : pipe_reg
-        generic map (n_trees => n_trees)
+    preferences_buffer : pipe_reg
+        generic map (data_width => n_voting)
         port map (
             clock => clock,
             reset_n => reset_n,
             enable => '1', 
-            data_in => data_in,
+            data_in => preferences,
             data_out => intermediates(0));
 
-    majority <=	intermediates(n_trees + pipe_stages)(n_trees / 2 downto n_trees / n_classes);
+    sorted_preferences <=	intermediates(n_voting + pipe_stages)(n_voting / 2 downto n_voting / n_candidates);
 
-    chain : for i in 0 to n_trees + pipe_stages - 1 generate
+    chain : for i in 0 to n_voting + pipe_stages - 1 generate
         pipe : if (i+1) mod (swapper_per_pipe+1) = 0 generate 
               pipe_buffer: pipe_reg	
-                generic map (n_trees => n_trees) 
+                generic map (data_width => n_voting) 
                 port map (clock => clock, reset_n => reset_n, enable => '1', data_in => intermediates(i), data_out => intermediates(i+1));
         end generate;
         swapper : if (i+1) mod (swapper_per_pipe+1) /= 0 generate 
             swapper_inst: swapper_block
-                generic map (n_trees => n_trees)
+                generic map (data_width => n_voting)
                 port map(data_in => intermediates(i), data_out => intermediates(i+1));
         end generate;
     end generate;

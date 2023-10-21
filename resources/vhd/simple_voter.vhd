@@ -24,7 +24,7 @@ entity simple_voter is
     generic	(
         data_width  : natural;
         pipe_stages : natural;
-        threshold : natural := data_width / 2);
+        threshold : natural);
   port (
     clock    : in  std_logic;
         reset_n  : in  std_logic;
