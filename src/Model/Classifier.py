@@ -283,7 +283,7 @@ class Classifier:
     def predict(self, x, use_pruning=False):
         score = self.get_score(x, use_pruning)
         draw, max_score = self.check_draw(score)
-        return [int(s == max_score) for s in score], draw
+        return [int(s == max_score) for s in score] , draw
     
     def predict_dump(self, index: int, outfile: str, use_pruning=False):
         score = self.get_score(self.x_test[index], use_pruning)
@@ -291,7 +291,7 @@ class Classifier:
         outcome = [int(s == max_score) for s in score]
         data = {
             "score": score,
-            "draw": draw,
+            "draw": int(draw),
             "outcome": dict(zip(self.classes_name, outcome)),
             "trees": {t.name: {"outcome": {k: int(v) for k, v in zip(self.classes_name, t.visit(self.x_test[index], use_pruning))}} for t in self.trees}}
         with open(outfile, "w") as f:

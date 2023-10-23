@@ -61,10 +61,13 @@ architecture dataflow of rejection_module is
             return voting / candidates;
         end if;
     end function;
-
     constant t_min : natural := minimum_threshold(n_voting, n_candidates);
     constant t_max : natural := n_voting / 2;
     constant n_thresholds : natural := n_voting * (n_candidates - 2) / (2 * n_candidates);  -- N/2 - N/C = (N*C - 2*N)/2C = N*(C-2)/2C-1
+
+    -- constant t_min : natural := 0;
+    -- constant t_max : natural := n_voting / 2;
+    -- constant n_thresholds : natural := n_voting / 2;
 
     signal at_most_one : std_logic_vector(n_thresholds - 1 downto 0) := (others => '0');
     signal at_least_one : std_logic_vector(n_thresholds - 1 downto 0) := (others => '0');
@@ -78,10 +81,10 @@ begin
 
     rej_gen : for i in 0 to n_thresholds - 1 generate
         begin
-            at_least_one(i) <= {% for c in candidates %}candidate_{{c}}_sorted_preferences(i+t_min){{";" if loop.last else " or "}}{% endfor %}
+            at_least_one(i) <= {% for c in candidates %}candidate_{{c}}_sorted_preferences(i+t_min-1){{";" if loop.last else " or "}}{% endfor %}
             -- at_most_one(i) <= {% for i in range(candidates|length) %}{% set loop_over_i = loop %}{% for j in range(i, candidates|length) %}{% set loop_over_j = loop %}(candidate_{{candidates[i]}}_sorted_preferences(i) and candidate_{{candidates[j]}}_sorted_preferences(i)){{";" if loop_over_i.last and loop_over_j.last else " or "}}{% endfor %}{% endfor %}
 
-            sort_nets_in(i) <= {% for c in candidates %}candidate_{{c}}_sorted_preferences(i+t_min){{";" if loop.last else " & "}}{% endfor %}
+            sort_nets_in(i) <= {% for c in candidates %}candidate_{{c}}_sorted_preferences(i+t_min-1){{";" if loop.last else " & "}}{% endfor %}
 
             sort_net : sorting_network
                 generic	map (
@@ -97,8 +100,8 @@ begin
             sort_nets_out_and(i) <= sort_nets_out(i)(0) and sort_nets_out(i)(1);
         end generate;
 
-    draw <= {% for i, m in thresholds.items() %} sort_nets_out_and({{i}}) when (at_least_one = b"{{m}}") else {% endfor %}'0';
+    draw <= {% for i, m in thresholds.items() %} sort_nets_out_and({{i}}) when (at_least_one = b"{{m}}") else {% endfor %}'1';
     
-    {% for c in candidates %}candidate_{{c}} <= {% for i, m in thresholds.items() %} candidate_{{c}}_sorted_preferences({{i}}+t_min) when (at_least_one = b"{{m}}") else {% endfor %}'0';
+    {% for c in candidates %}candidate_{{c}} <= {% for i, m in thresholds.items() %} candidate_{{c}}_sorted_preferences({{i}}+t_min-1) when (at_least_one = b"{{m}}") else {% endfor %}candidate_{{c}}_sorted_preferences(t_min-2);
     {% endfor %}
 end dataflow;
