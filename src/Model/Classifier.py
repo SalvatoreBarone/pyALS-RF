@@ -283,14 +283,12 @@ class Classifier:
     def predict(self, x, use_pruning=False):
         score = self.get_score(x, use_pruning)
         draw, max_score = self.check_draw(score)
-        if draw:
-            return [0] * len(self.classes_name), draw
         return [int(s == max_score) for s in score], draw
     
     def predict_dump(self, index: int, outfile: str, use_pruning=False):
         score = self.get_score(self.x_test[index], use_pruning)
         draw, max_score = self.check_draw(score)
-        outcome = [0] * len(self.classes_name) if draw else [int(s == max_score) for s in score]
+        outcome = [int(s == max_score) for s in score]
         data = {
             "score": score,
             "draw": draw,

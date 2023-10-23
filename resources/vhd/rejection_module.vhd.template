@@ -22,6 +22,7 @@ library work;
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+
 entity rejection_module is
     generic	(
         n_voting  : natural;
@@ -31,7 +32,7 @@ entity rejection_module is
         clock    : in  std_logic;
         reset_n  : in  std_logic;
         {% for c in candidates -%}
-        candidate_{{c}}_sorted_preferences : in std_logic_vector(n_voting * (n_candidates - 2) / (2 * n_candidates) - 1 downto 0);
+        candidate_{{c}}_sorted_preferences : in std_logic_vector(n_voting - 1 downto 0);
         {% endfor %}
         {% for c in candidates -%}candidate_{{c}} : out std_logic;
         {% endfor %}
@@ -39,7 +40,65 @@ entity rejection_module is
 end rejection_module;
 
 architecture dataflow of rejection_module is
+    component sorting_network is
+        generic	(
+            n_voting  : natural;
+            n_candidates : natural;
+            pipe_stages : natural);
+        port (
+            clock    : in  std_logic;
+            reset_n  : in  std_logic;
+            preferences  : in  std_logic_vector (n_voting-1 downto 0);
+            sorted_preferences : out std_logic_vector(n_voting-1 downto 0)); 
+    end component;
 
+    function minimum_threshold(voting : natural; candidates : natural) 
+        return natural is
+    begin
+        if voting < candidates then
+            return 2;
+        else
+            return voting / candidates;
+        end if;
+    end function;
+
+    constant t_min : natural := minimum_threshold(n_voting, n_candidates);
+    constant t_max : natural := n_voting / 2;
+    constant n_thresholds : natural := n_voting * (n_candidates - 2) / (2 * n_candidates);  -- N/2 - N/C = (N*C - 2*N)/2C = N*(C-2)/2C-1
+
+    signal at_most_one : std_logic_vector(n_thresholds - 1 downto 0) := (others => '0');
+    signal at_least_one : std_logic_vector(n_thresholds - 1 downto 0) := (others => '0');
+
+    type std_logic_matrix is array (n_thresholds-1 downto 0) of std_logic_vector(n_candidates-1 downto 0);
+    signal sort_nets_out : std_logic_matrix := (others => (others => '0'));
+    signal sort_nets_in : std_logic_matrix := (others => (others => '0'));
+    signal sort_nets_out_and : std_logic_vector(n_thresholds-1 downto 0) := (others => '0');
+    
 begin
 
+    rej_gen : for i in 0 to n_thresholds - 1 generate
+        begin
+            at_least_one(i) <= {% for c in candidates %}candidate_{{c}}_sorted_preferences(i+t_min){{";" if loop.last else " or "}}{% endfor %}
+            -- at_most_one(i) <= {% for i in range(candidates|length) %}{% set loop_over_i = loop %}{% for j in range(i, candidates|length) %}{% set loop_over_j = loop %}(candidate_{{candidates[i]}}_sorted_preferences(i) and candidate_{{candidates[j]}}_sorted_preferences(i)){{";" if loop_over_i.last and loop_over_j.last else " or "}}{% endfor %}{% endfor %}
+
+            sort_nets_in(i) <= {% for c in candidates %}candidate_{{c}}_sorted_preferences(i+t_min){{";" if loop.last else " & "}}{% endfor %}
+
+            sort_net : sorting_network
+                generic	map (
+                    n_voting  => n_candidates,
+                    n_candidates => n_thresholds,
+                    pipe_stages => pipe_stages)
+                port map (
+                    clock => clock,
+                    reset_n  => reset_n,
+                    preferences  => sort_nets_in(i),
+                    sorted_preferences => sort_nets_out(i));
+
+            sort_nets_out_and(i) <= sort_nets_out(i)(0) and sort_nets_out(i)(1);
+        end generate;
+
+    draw <= {% for i, m in thresholds.items() %} sort_nets_out_and({{i}}) when (at_least_one = b"{{m}}") else {% endfor %}'0';
+    
+    {% for c in candidates %}candidate_{{c}} <= {% for i, m in thresholds.items() %} candidate_{{c}}_sorted_preferences({{i}}+t_min) when (at_least_one = b"{{m}}") else {% endfor %}'0';
+    {% endfor %}
 end dataflow;

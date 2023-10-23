@@ -103,7 +103,14 @@ class HDLGenerator:
 
     def generate_rejection_module(self, dest, env):
         rejection_module_template = env.get_template(self.vhdl_rejection_module_template)
-        rejection_module = rejection_module_template.render(candidates=self.classifier.classes_name)
+
+        n_thresholds = int(len(self.classifier.trees) * (len(self.classifier.classes_name) - 2) // (2 * len(self.classifier.classes_name)))
+        thresholds = {}
+        for i in range(n_thresholds):
+            mask = ['0'] * (n_thresholds - i - 1) + ['1'] * (i + 1)
+            thresholds[i] = ''.join(mask)
+
+        rejection_module = rejection_module_template.render(candidates = self.classifier.classes_name, thresholds = thresholds)
         with open(f"{dest}/rejection_module.vhd", "w") as out_file:
             out_file.write(rejection_module)
 

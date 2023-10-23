@@ -54,7 +54,7 @@ architecture structural of majority_voter is
             clock    : in  std_logic;
             reset_n  : in  std_logic;
             preferences  : in  std_logic_vector (n_voting-1 downto 0);
-            sorted_preferences : out std_logic_vector(n_voting*(n_candidates-2)/(2*n_candidates)-1 downto 0));  -- N/2 - N/C = (N*C - 2*N)/2C = N*(C-2)/2C-1
+            sorted_preferences : out std_logic_vector(n_voting-1 downto 0));
     end component;
     component rejection_module is
         generic	(
@@ -65,14 +65,14 @@ architecture structural of majority_voter is
             clock    : in  std_logic;
             reset_n  : in  std_logic;
             {% for c in candidates -%}
-            candidate_{{c}}_sorted_preferences : in std_logic_vector(n_voting * (n_candidates - 2) / (2 * n_candidates) - 1 downto 0);
+            candidate_{{c}}_sorted_preferences : in std_logic_vector(n_voting  - 1 downto 0);
             {% endfor %}
             {% for c in candidates -%}candidate_{{c}} : out std_logic;
             {% endfor %}
             draw : out std_logic);
     end component;
     {% for c in candidates -%}
-    signal candidate_{{c}}_sorted_preferences : std_logic_vector(n_voting*(n_candidates-2)/(2*n_candidates)-1 downto 0) := (others => '0');
+    signal candidate_{{c}}_sorted_preferences : std_logic_vector(n_voting - 1 downto 0) := (others => '0');
     {% endfor %}
 begin
   {% for c in candidates -%}

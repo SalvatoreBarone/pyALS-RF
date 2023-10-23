@@ -149,7 +149,7 @@ def save_model(outputdir, config, model, x_train, y_train, x_test, y_test):
         draw_scikit, _ = classifier.check_draw(rho_1[0].tolist())
         if np.argmax(rho_1) == y and not draw_scikit:
             acc_scikit += 1
-        if np.argmax(outcome_1) == y:
+        if np.argmax(outcome_1) == y and not draw_1:
             acc_pyals += 1
         if (np.argmax(outcome_1) != np.argmax(rho_1)) and (draw_1 != draw_scikit):
             mismatches.append((', '.join(str(s) for s in score_1), draw_1, ', '.join(str(s) for s in outcome_1), np.argmax(outcome_1), ', '.join(f'{q:.2f}' for q in rho_1[0]), np.argmax(rho_1), y))

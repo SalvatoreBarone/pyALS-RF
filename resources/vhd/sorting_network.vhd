@@ -28,9 +28,9 @@ entity sorting_network is
         clock    : in  std_logic;
         reset_n  : in  std_logic;
         preferences  : in  std_logic_vector (n_voting-1 downto 0);
-        sorted_preferences : out std_logic_vector(n_voting*(n_candidates-2)/(2*n_candidates)-1 downto 0));  -- N/2 - N/C = (N*C - 2*N)/2C = N*(C-2)/2C-1
+        sorted_preferences : out std_logic_vector(n_voting-1 downto 0));  -- N/2 - N/C = (N*C - 2*N)/2C = N*(C-2)/2C-1
 end sorting_network;
-architecture sorting_network of sorting_network is
+architecture structural of sorting_network is
     component swapper_block is
         generic (data_width : natural);
         port (
@@ -62,7 +62,7 @@ begin
             data_in => preferences,
             data_out => intermediates(0));
 
-    sorted_preferences <=	intermediates(n_voting + pipe_stages)(n_voting / 2 downto n_voting / n_candidates);
+    sorted_preferences <=	intermediates(n_voting + pipe_stages); --(n_voting / 2 downto n_voting / n_candidates);
 
     chain : for i in 0 to n_voting + pipe_stages - 1 generate
         pipe : if (i+1) mod (swapper_per_pipe+1) = 0 generate 
