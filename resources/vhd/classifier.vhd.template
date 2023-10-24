@@ -26,7 +26,6 @@ entity classifier is
   generic (
     data_width      : natural := 64;
     parallel_blocks : natural := 8;
-    pipe_stages     : natural := 2;
     {% for f in features -%}  
       nab_{{f['name']}} : natural := {{f['nab']}}{{";" if not loop.last else ");"}}
     {% endfor %}
@@ -52,6 +51,8 @@ architecture structural of classifier is
 
   constant n_trees : natural := {{trees|length}};
   constant n_classes : natural := {{classes|length}};
+  constant sorting_pipe_stages : natural := {{sorting_pipe_stages}}; 
+  constant reject_pipe_stages : natural := {{reject_pipe_stages}};
 
   {% for tree in trees -%}
   component decision_tree_{{tree}} is
@@ -72,7 +73,8 @@ architecture structural of classifier is
     generic	(
         n_voting  : natural;
         n_candidates : natural;
-        pipe_stages : natural);
+        sorting_pipe_stages : natural;
+        reject_pipe_stages : natural);
     port (
         clock   : in std_logic;
         reset_n : in std_logic;
@@ -118,7 +120,8 @@ begin
     generic	map(
         n_voting  => n_trees,
         n_candidates => n_classes,
-        pipe_stages => pipe_stages)
+        sorting_pipe_stages => sorting_pipe_stages,
+        reject_pipe_stages => reject_pipe_stages)
     port map (
       clock  => clock,
       reset_n => reset_n,

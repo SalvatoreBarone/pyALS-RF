@@ -23,7 +23,8 @@ entity majority_voter is
     generic	(
         n_voting  : natural;
         n_candidates : natural;
-        pipe_stages : natural);
+        sorting_pipe_stages : natural;
+        reject_pipe_stages : natural);
     port (
         clock   : in std_logic;
         reset_n : in std_logic;
@@ -80,7 +81,7 @@ begin
     generic map(
         n_voting => n_voting,
         n_candidates => n_candidates,
-        pipe_stages => pipe_stages) 
+        pipe_stages => sorting_pipe_stages) 
     port map(
         clock => clock,
         reset_n => reset_n, 
@@ -91,7 +92,7 @@ begin
     generic map(
         n_voting => n_voting,
         n_candidates => n_candidates,
-        pipe_stages => pipe_stages) 
+        pipe_stages => reject_pipe_stages) 
     port map(
             clock => clock,
             reset_n => reset_n, 

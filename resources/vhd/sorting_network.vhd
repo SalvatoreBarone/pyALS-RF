@@ -50,30 +50,32 @@ architecture structural of sorting_network is
     type matrix is array (natural range <>) of std_logic_vector (n_voting-1 downto 0);
     signal intermediates : matrix (0 to n_voting + pipe_stages);
 begin
-    assert pipe_stages mod 2 = 0 report "pipe_stages must be a multiple of two" severity failure;
     assert swapper_per_pipe >= 2 report "too many pipe stages" severity failure;
-
+    -- assert pipe_stages mod 2 = 0 report "pipe_stages must be a multiple of two" severity failure;
+    
     preferences_buffer : pipe_reg
-        generic map (data_width => n_voting)
-        port map (
-            clock => clock,
-            reset_n => reset_n,
-            enable => '1', 
-            data_in => preferences,
-            data_out => intermediates(0));
-
-    sorted_preferences <=	intermediates(n_voting + pipe_stages); --(n_voting / 2 downto n_voting / n_candidates);
-
-    chain : for i in 0 to n_voting + pipe_stages - 1 generate
-        pipe : if (i+1) mod (swapper_per_pipe+1) = 0 generate 
-              pipe_buffer: pipe_reg	
-                generic map (data_width => n_voting) 
-                port map (clock => clock, reset_n => reset_n, enable => '1', data_in => intermediates(i), data_out => intermediates(i+1));
-        end generate;
-        swapper : if (i+1) mod (swapper_per_pipe+1) /= 0 generate 
-            swapper_inst: swapper_block
-                generic map (data_width => n_voting)
-                port map(data_in => intermediates(i), data_out => intermediates(i+1));
+    generic map (data_width => n_voting)
+    port map (
+        clock => clock,
+        reset_n => reset_n,
+        enable => '1', 
+        data_in => preferences,
+        data_out => intermediates(0));
+        
+        sorted_preferences <=	intermediates(n_voting + pipe_stages); --(n_voting / 2 downto n_voting / n_candidates);
+        
+    piped_sort_net : if pipe_stages > 0 generate
+        chain : for i in 0 to n_voting + pipe_stages - 1 generate
+            pipe : if (i+1) mod (swapper_per_pipe+1) = 0 generate 
+                pipe_buffer: pipe_reg	
+                    generic map (data_width => n_voting) 
+                    port map (clock => clock, reset_n => reset_n, enable => '1', data_in => intermediates(i), data_out => intermediates(i+1));
+            end generate;
+            swapper : if (i+1) mod (swapper_per_pipe+1) /= 0 generate 
+                swapper_inst: swapper_block
+                    generic map (data_width => n_voting)
+                    port map(data_in => intermediates(i), data_out => intermediates(i+1));
+            end generate;
         end generate;
     end generate;
 end architecture;

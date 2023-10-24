@@ -84,7 +84,7 @@ class PruningHdlGenerator(HDLGenerator):
             features=features,
             classes=self.classifier.classes_name,
             n_vectors = n_vectors,
-            pipe_stages = min(2, HDLGenerator.roundUp(np.log2(len(self.classifier.trees)), 2)),
+            latency = min(2, HDLGenerator.roundUp(np.log2(len(self.classifier.trees)), 2)) + min(2, HDLGenerator.roundUp(np.log2(len(self.classifier.model_classes)), 2)) + 3,
             test_vectors = test_vectors,
             expected_outputs = expected_outputs)
         with open(f"{dest}/tb_classifier.vhd", "w") as out_file:

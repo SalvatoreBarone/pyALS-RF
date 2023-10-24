@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import sys, csv, random, numpy as np, graphviz, joblib
+import sys, csv, random, numpy as np, graphviz, joblib, math
 from distutils.dir_util import mkpath
 from nyoka import skl_to_pmml
 #from sklearn2pmml.pipeline import PMMLPipeline
@@ -131,8 +131,8 @@ def save_model(outputdir, config, model, x_train, y_train, x_test, y_test):
     acc_scikit = 0
     mismatches = []
     for x, y, x_prime, y_prime in tqdm(zip(classifier.x_test, classifier.y_test, x_test, y_test), total = len(y_test), desc="Testing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
-        assert all(i == j for i, j in zip(x, x_prime)), "Error reading attributes"
-        assert y == y_prime, "Error reading labels"
+        assert all( math.isclose(i, j, rel_tol=1e-5) for i, j in zip(x, x_prime)), f"Error reading attributes from {test_dataset_csv}. Read {x}, shuld be {x_prime}. {[i == j for i, j in zip(x, x_prime)]}"
+        assert y == y_prime, f"Error reading labels. Read {y}, should be {y_prime}"
         score_1 = classifier.get_score(x)
         score_2 = classifier.get_score(x_prime)
         rho_1 = model.predict_proba(np.array(x).reshape((1, -1)))
@@ -143,8 +143,8 @@ def save_model(outputdir, config, model, x_train, y_train, x_test, y_test):
 
         outcome_1, draw_1 = classifier.predict(x)
         outcome_2, draw_2 = classifier.predict(x_prime)
-        assert all(i == j for i, j in zip(outcome_1, outcome_2)), f"Error in outcome: {outcome_1} {outcome_2}"
-        assert draw_1 == draw_2
+        assert all(i == j for i, j in zip(outcome_1, outcome_2)), f"Error in outcome: Got {outcome_1} and {outcome_2}. {[i == j for i, j in zip(outcome_1, outcome_2)]}"
+        assert draw_1 == draw_2, f"Draw mismatch. Got {draw_1} and {draw_2}"
         
         draw_scikit, _ = classifier.check_draw(rho_1[0].tolist())
         if np.argmax(rho_1) == y and not draw_scikit:

@@ -91,7 +91,9 @@ class HDLGenerator:
         classifier = classifier_template.render(
             trees=trees_name, 
             features=features, classes=self.classifier.classes_name,
-            candidates=self.classifier.classes_name)
+            candidates=self.classifier.classes_name,
+            sorting_pipe_stages  = min(2, HDLGenerator.roundUp(np.log2(len(self.classifier.trees)), 2)), 
+            reject_pipe_stages = min(1, HDLGenerator.roundUp(np.log2(len(self.classifier.model_classes)), 2)))
         with open(f"{dest}/classifier.vhd", "w") as out_file:
             out_file.write(classifier)
 
@@ -103,8 +105,9 @@ class HDLGenerator:
 
     def generate_rejection_module(self, dest, env):
         rejection_module_template = env.get_template(self.vhdl_rejection_module_template)
-
-        n_thresholds = int(len(self.classifier.trees) * (len(self.classifier.classes_name) - 2) // (2 * len(self.classifier.classes_name)))
+        t_min = 2 if len(self.classifier.trees) < len(self.classifier.classes_name) else len(self.classifier.trees) // len(self.classifier.classes_name) + 1
+        t_max = len(self.classifier.trees) // 2 + 1
+        n_thresholds = t_max - t_min + 1
         thresholds = {}
         for i in range(n_thresholds):
             mask = ['0'] * (n_thresholds - i - 1) + ['1'] * (i + 1)
@@ -129,7 +132,7 @@ class HDLGenerator:
             features=features,
             classes=self.classifier.classes_name,
             n_vectors = n_vectors,
-            pipe_stages = min(2, HDLGenerator.roundUp(np.log2(len(self.classifier.trees)), 2)),
+            latency = min(2, HDLGenerator.roundUp(np.log2(len(self.classifier.trees)), 2)) + min(2, HDLGenerator.roundUp(np.log2(len(self.classifier.model_classes)), 2)) + 3,
             test_vectors = test_vectors,
             expected_outputs = expected_outputs)
         with open(f"{dest}/tb_classifier.vhd", "w") as out_file:
