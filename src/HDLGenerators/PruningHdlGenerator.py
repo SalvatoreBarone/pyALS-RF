@@ -47,10 +47,33 @@ class PruningHdlGenerator(HDLGenerator):
         self.classifier.set_pruning(kwargs['pruned_assertions'])
         self.generate_ax_tb(f"{dest}/tb", features, env)
         for tree in self.classifier.trees:
-            self.implement_decision_boxes(tree, f"{dest}/src")
-            self.implement_pruned_assertions(tree, f"{dest}/src")
+            boxes = self.get_dbs(tree)
+            self.implement_pruned_decision_boxes(tree, boxes, f"{dest}/src")
+            self.implement_pruned_assertions(tree, boxes, f"{dest}/src")
             
-    def implement_pruned_assertions(self, tree : DecisionTree, destination : str):
+    def get_dbs(self, tree: DecisionTree):
+        used_db_names = set()
+        for a in tree.pruned_assertions:
+            used_db_names.update(set(a['expression'].replace('(', '').replace('not ', '').replace(')', '').replace('and ', ''). replace('or ', '').split(" ")))
+        used_db = [ b for b in tree.decision_boxes if b["name"] in used_db_names ]
+        print(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to pruning, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources")
+        return used_db
+            
+    def implement_pruned_decision_boxes(self, tree : DecisionTree, boxes : list, destination):
+        file_name = f"{destination}/decision_tree_{tree.name}.vhd"
+        file_loader = FileSystemLoader(self.source_dir)
+        env = Environment(loader=file_loader)
+        template = env.get_template(self.vhdl_decision_tree_source_template)
+        output = template.render(
+            tree_name = tree.name,
+            features  = self.classifier.model_features,
+            classes = self.classifier.classes_name,
+            boxes = [b["box"].get_struct() for b in boxes])
+        with open(file_name, "w") as out_file:
+            out_file.write(output)
+        return file_name
+            
+    def implement_pruned_assertions(self, tree : DecisionTree, boxes : list, destination : str):
         module_name = f"assertions_block_{tree.name}"
         file_name = f"{destination}/assertions_block_{tree.name}.vhd"
         file_loader = FileSystemLoader(self.source_dir)
@@ -58,7 +81,7 @@ class PruningHdlGenerator(HDLGenerator):
         template = env.get_template(self.vhdl_assertions_source_template)
         output = template.render(
             tree_name = tree.name,
-            boxes = [b["name"] for b in tree.decision_boxes],
+            boxes = [b["name"] for b in boxes],
             assertions = [{"class" : n, "expression" : a["minimized"]} for n, a in zip(self.classifier.classes_name, tree.pruned_assertions)])
         with open(file_name, "w") as out_file:
             out_file.write(output)
