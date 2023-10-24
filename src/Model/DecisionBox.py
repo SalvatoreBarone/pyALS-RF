@@ -25,110 +25,89 @@ class DecisionBox:
     greaterThan = 3
     
   def __init__(self, box_name = None, feature_name = None, data_type = None, operator = None, threashold = None, nab = 0):
-    self.__name = box_name
-    self.__feature_name = feature_name
-    self.__data_type = data_type
+    self.name = box_name
+    self.feature_name = feature_name
+    self.data_type = data_type
     if operator:
       if operator == "greaterThan":
-          self.__operator = DecisionBox.CompOperator.greaterThan
+          self.operator = DecisionBox.CompOperator.greaterThan
       elif operator == "lessThan":
-        self.__operator = DecisionBox.CompOperator.lessThan
+        self.operator = DecisionBox.CompOperator.lessThan
       elif operator == "equal":
-        self.__operator = DecisionBox.CompOperator.equal
+        self.operator = DecisionBox.CompOperator.equal
       else:
         raise Exception("Sorry, operator not recognized") 
-    self.__threshold = threashold
-    self.__nab = int(nab)
+    self.threshold = threashold
+    self.nab = int(nab)
 
   def __deepcopy__(self, memo = None):
     box = DecisionBox()
-    box.__name = copy.deepcopy(self.__name)
-    box.__feature_name = copy.deepcopy(self.__feature_name)
-    box.__data_type = copy.deepcopy(self.__data_type)
-    box.__operator = copy.deepcopy(self.__operator)
-    box.__threshold = copy.deepcopy(self.__threshold)
-    box.__nab = copy.deepcopy(self.__nab)
+    box.name = copy.deepcopy(self.name)
+    box.feature_name = copy.deepcopy(self.feature_name)
+    box.data_type = copy.deepcopy(self.data_type)
+    box.operator = copy.deepcopy(self.operator)
+    box.threshold = copy.deepcopy(self.threshold)
+    box.nab = copy.deepcopy(self.nab)
     return box
 
-  def get_name(self):
-    return self.__name
-
-  def get_feature(self):
-    return self.__feature_name
-
-  def get_data_type(self):
-    return self.__data_type
-
-  def get_operator(self):
-    return self.__operator
-
   def get_c_operator(self):
-    if self.__operator == DecisionBox.CompOperator.greaterThan:
+    if self.operator == DecisionBox.CompOperator.greaterThan:
       return ">"
-    elif self.__operator == DecisionBox.CompOperator.lessThan:
+    elif self.operator == DecisionBox.CompOperator.lessThan:
       return "<"
     else: 
       return "==" 
 
-  def get_threshold(self):
-    return self.__threshold
-
   def get_hexstr_threashold(self):
-    if self.__data_type == "double":
-      return str(double_to_hex(self.__threshold))[2:]
+    if self.data_type == "double":
+      return str(double_to_hex(self.threshold))[2:]
     else:
-      return hex(int(self.__threshold))[2:]
+      return hex(int(self.threshold))[2:]
 
   def get_struct(self):
     c_operator = "=="
     operator = "equals"
-    if self.__operator == DecisionBox.CompOperator.greaterThan:
+    if self.operator == DecisionBox.CompOperator.greaterThan:
       c_operator = ">"
       operator = "greaterThan"
-    elif self.__operator == DecisionBox.CompOperator.lessThan:
+    elif self.operator == DecisionBox.CompOperator.lessThan:
       c_operator = "<"
       operator = "lessThan"
-    threshold = str(self.__threshold)
+    threshold = str(self.threshold)
     hex_threshold = ""
-    if self.__data_type == "double":
-      hex_threshold = str(double_to_hex(float(self.__threshold)))[2:]
+    if self.data_type == "double":
+      hex_threshold = str(double_to_hex(float(self.threshold)))[2:]
     else: 
-      hex_threshold = hex(int(self.__threshold))[2:]
-    return {"name"          : self.__name,
-            "feature"       : self.__feature_name,
-            "data_type"     : self.__data_type,
+      hex_threshold = hex(int(self.threshold))[2:]
+    return {"name"          : self.name,
+            "feature"       : self.feature_name,
+            "data_type"     : self.data_type,
             "operator"      : operator,
             "c_operator"    : c_operator,
             "threshold"     : threshold,
             "threshold_hex" : hex_threshold}
 
-  def get_nab(self):
-    return self.__nab
-
-  def set_nab(self, nab):
-    self.__nab = int(nab)
-
   def compare(self, input):
-    if self.__data_type == "double":
+    if self.data_type == "double":
       # Both the input value and the threshold are masked according to the configured number of approximate bits before
       # the comparison takes place.
-      if self.__nab == 0:
+      if self.nab == 0:
         # Whether no approximation is required, input and threshold are simply converted to the suitable data-type.
         input_to_compare = float(input) 
-        threshold = float(self.__threshold)
+        threshold = float(self.threshold)
       else:
-        input_to_compare = apply_mask_to_double(float(input), self.__nab) 
-        threshold = apply_mask_to_double(float(self.__threshold), self.__nab)
-    elif self.__nab != 0:
-      input_to_compare = apply_mask_to_int(int(input), self.__nab) 
-      threshold = apply_mask_to_int(int(self.__threshold), self.__nab)
+        input_to_compare = apply_mask_to_double(float(input), self.nab) 
+        threshold = apply_mask_to_double(float(self.threshold), self.nab)
+    elif self.nab != 0:
+      input_to_compare = apply_mask_to_int(int(input), self.nab) 
+      threshold = apply_mask_to_int(int(self.threshold), self.nab)
     else:
       # Whether no approximation is required, input and threshold are simply converted to the suitable data-type.
       input_to_compare = int(input) 
-      threshold = int(self.__threshold)
-    if self.__operator == DecisionBox.CompOperator.greaterThan:
+      threshold = int(self.threshold)
+    if self.operator == DecisionBox.CompOperator.greaterThan:
       return input_to_compare > threshold
-    elif self.__operator == DecisionBox.CompOperator.lessThan:
+    elif self.operator == DecisionBox.CompOperator.lessThan:
       return input_to_compare < threshold
     else: 
       return input_to_compare == threshold

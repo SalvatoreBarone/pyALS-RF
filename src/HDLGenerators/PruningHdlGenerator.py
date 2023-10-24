@@ -37,41 +37,46 @@ class PruningHdlGenerator(HDLGenerator):
         features = [{"name": f["name"], "nab": 0} for f in self.classifier.model_features]
         trees_name = [t.name for t in self.classifier.trees]
         env = Environment(loader = FileSystemLoader(self.source_dir))
-        
-        self.generate_rejection_module(f"{dest}/src", env)
-        self.generate_majority_voter(f"{dest}/src", env)
-        self.generate_classifier(f"{dest}/src", features, trees_name, env)
-        self.generate_tcl(dest, trees_name, env)
-        self.generate_cmakelists(dest, trees_name, env)
-        
+        trees_inputs = {}
         self.classifier.set_pruning(kwargs['pruned_assertions'])
         self.generate_ax_tb(f"{dest}/tb", features, env)
         for tree in self.classifier.trees:
-            boxes = self.get_dbs(tree)
-            self.implement_pruned_decision_boxes(tree, boxes, f"{dest}/src")
+            boxes = self.get_pruned_dbs(tree)
+            inputs = self.implement_pruned_decision_boxes(tree, boxes, f"{dest}/src")
             self.implement_pruned_assertions(tree, boxes, f"{dest}/src")
+            trees_inputs[tree.name] = inputs
             
-    def get_dbs(self, tree: DecisionTree):
+        self.generate_rejection_module(f"{dest}/src", env)
+        self.generate_majority_voter(f"{dest}/src", env)
+        self.generate_classifier(f"{dest}/src", features, trees_inputs, env)
+        self.generate_tcl(dest, trees_name, env)
+        self.generate_cmakelists(dest, trees_name, env)
+        
+            
+    def get_pruned_dbs(self, tree: DecisionTree):
         used_db_names = set()
         for a in tree.pruned_assertions:
-            used_db_names.update(set(a['expression'].replace('(', '').replace('not ', '').replace(')', '').replace('and ', ''). replace('or ', '').split(" ")))
+            used_db_names.update(set(a['minimized'].replace('not ', '').replace('func_and(', ''). replace('func_or(', '').replace(')', '').replace(',', '').split(" ")))
         used_db = [ b for b in tree.decision_boxes if b["name"] in used_db_names ]
         print(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to pruning, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources")
         return used_db
             
     def implement_pruned_decision_boxes(self, tree : DecisionTree, boxes : list, destination):
+        feature_names = set(b["box"].feature_name for b in boxes )
+        features = [ f for f in self.classifier.model_features if f['name'] in feature_names ]
+        print(f"Tree {tree.name} is using {len(features)} out of {len(tree.model_features)} DBs due to pruning, saving {(1 - len(features) / len(tree.model_features))*100}% of resources")
         file_name = f"{destination}/decision_tree_{tree.name}.vhd"
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         template = env.get_template(self.vhdl_decision_tree_source_template)
         output = template.render(
             tree_name = tree.name,
-            features  = self.classifier.model_features,
+            features  = features,
             classes = self.classifier.classes_name,
             boxes = [b["box"].get_struct() for b in boxes])
         with open(file_name, "w") as out_file:
             out_file.write(output)
-        return file_name
+        return features
             
     def implement_pruned_assertions(self, tree : DecisionTree, boxes : list, destination : str):
         module_name = f"assertions_block_{tree.name}"

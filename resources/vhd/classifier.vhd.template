@@ -54,20 +54,18 @@ architecture structural of classifier is
   constant sorting_pipe_stages : natural := {{sorting_pipe_stages}}; 
   constant reject_pipe_stages : natural := {{reject_pipe_stages}};
 
-  {% for tree in trees -%}
-  component decision_tree_{{tree}} is
+  {% for name, inputs in trees.items() %}
+  component decision_tree_{{name}} is
     generic (
       data_width      : natural;
       parallel_blocks : natural;
-      {% for feature in features -%}
-      nab_{{feature['name']}} : natural{{";" if not loop.last else ");"}}{% endfor %}
+      {% for feature in inputs %}nab_{{feature['name']}} : natural{{";" if not loop.last else ");"}}{% endfor %}
     port (
       clock   : in std_logic;
       reset_n : in std_logic;
-    {% for feature in features -%}
-      {{feature['name']}}: in std_logic_vector(data_width-1 downto nab_{{feature['name']}});
-    {% endfor %}{% for c in classes -%}class_{{c}} : out std_logic{{";" if not loop.last else ");"}}
-    {% endfor %}end component;{{"\n  " if not loop.last}}
+    {% for feature in inputs -%}{{feature['name']}}: in std_logic_vector(data_width-1 downto nab_{{feature['name']}});{% endfor %}
+    {% for c in classes %}class_{{c}} : out std_logic{{";" if not loop.last else ");"}}{% endfor %}
+    end component;{{"\n  " if not loop.last}}
   {% endfor %}
   component majority_voter
     generic	(
@@ -101,16 +99,16 @@ begin
       data_in  =>  {{feature['name']}},
       data_out => buffered_{{feature['name']}});
   {% endfor %}
-  {% for tree in trees -%}{% set outer_loop = loop %}
-  tree_{{tree}} : decision_tree_{{tree}} 
+  {% for name, inputs in trees.items() %}{% set outer_loop = loop %}
+  tree_{{name}} : decision_tree_{{name}} 
     generic map (
       data_width => data_width, 
       parallel_blocks => parallel_blocks, 
-      {% for feature in features -%} nab_{{feature['name']}} => nab_{{feature['name']}}{{", " if not loop.last else ")"}}
+      {% for feature in inputs -%} nab_{{feature['name']}} => nab_{{feature['name']}}{{", " if not loop.last else ")"}}
       {% endfor %}port map (
       clock => clock, 
       reset_n => reset_n, 
-      {% for feature in features -%}{{feature['name']}} => buffered_{{feature['name']}}, 
+      {% for feature in inputs -%}{{feature['name']}} => buffered_{{feature['name']}}, 
       {% endfor %}{% for c in classes -%}
       class_{{c}} => class_{{c}}_results({{outer_loop.index-1}}){{", " if not loop.last else ");"}}
       {% endfor %}

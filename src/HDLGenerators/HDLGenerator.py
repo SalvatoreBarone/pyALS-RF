@@ -75,22 +75,26 @@ class HDLGenerator:
         trees_name = [t.name for t in self.classifier.trees]
         env = Environment(loader = FileSystemLoader(self.source_dir))
         
+        trees_inputs = {}
+        for tree in self.classifier.trees:
+            boxes = self.get_dbs(tree)
+            inputs = self.implement_decision_boxes(tree, boxes, f"{dest}/src")
+            self.implement_assertions(tree, boxes, f"{dest}/src")
+            trees_inputs[tree.name] = inputs
+        
+        self.generate_classifier(f"{dest}/src", features, trees_inputs, env)
         self.generate_rejection_module(f"{dest}/src", env)
         self.generate_majority_voter(f"{dest}/src", env)
-        self.generate_classifier(f"{dest}/src", features, trees_name, env)
         self.generate_exact_tb(f"{dest}/tb", features, env)
-        self.generate_tcl(dest, trees_name, env)
         self.generate_cmakelists(dest, trees_name, env)
-            
-        for tree in self.classifier.trees:
-            self.implement_decision_boxes(tree, f"{dest}/src")
-            self.implement_assertions(tree, f"{dest}/src")
+        self.generate_tcl(dest, trees_name, env)
 
-    def generate_classifier(self, dest, features, trees_name, env):
+    def generate_classifier(self, dest, features, trees, env):
         classifier_template = env.get_template(self.vhdl_classifier_template_file)
         classifier = classifier_template.render(
-            trees=trees_name, 
-            features=features, classes=self.classifier.classes_name,
+            trees=trees, 
+            features=features, 
+            classes=self.classifier.classes_name,
             candidates=self.classifier.classes_name,
             sorting_pipe_stages  = min(2, HDLGenerator.roundUp(np.log2(len(self.classifier.trees)), 2)), 
             reject_pipe_stages = min(1, HDLGenerator.roundUp(np.log2(len(self.classifier.model_classes)), 2)))
@@ -181,22 +185,34 @@ class HDLGenerator:
     
     def generate_ax_tb(self, **kwargs):    
         pass
+    
+    def get_dbs(self, tree: DecisionTree):
+        used_db_names = set()
+        for a in tree.assertions:
+            used_db_names.update(set(a['minimized'].replace('not ', '').replace('func_and(', ''). replace('func_or(', '').replace(')', '').replace(',', '').split(" ")))
+        used_db = [ b for b in tree.decision_boxes if b["name"] in used_db_names ]
+        print(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to optimization, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources")
+        return used_db
 
-    def implement_decision_boxes(self, tree : DecisionTree, destination):
+    def implement_decision_boxes(self, tree : DecisionTree, boxes : list,  destination : str):
+        feature_names = set(b["box"].feature_name for b in boxes )
+        features = [ f for f in self.classifier.model_features if f['name'] in feature_names ]
+        print(f"Tree {tree.name} is using {len(features)} out of {len(tree.model_features)} DBs due to optimization, saving {(1 - len(features) / len(tree.model_features))*100}% of resources")
         file_name = f"{destination}/decision_tree_{tree.name}.vhd"
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         template = env.get_template(self.vhdl_decision_tree_source_template)
         output = template.render(
             tree_name = tree.name,
-            features  = self.classifier.model_features,
+            features  = features,
             classes = self.classifier.classes_name,
-            boxes = [ b["box"].get_struct() for b in tree.decision_boxes ])
+            boxes = [ b["box"].get_struct() for b in boxes ])
         with open(file_name, "w") as out_file:
             out_file.write(output)
-        return file_name
+        return features
+        
 
-    def implement_assertions(self, tree : DecisionTree, destination):
+    def implement_assertions(self, tree : DecisionTree, boxes: list, destination : str):
         module_name = f"assertions_block_{tree.name}"
         file_name = f"{destination}/assertions_block_{tree.name}.vhd"
         file_loader = FileSystemLoader(self.source_dir)
@@ -204,7 +220,7 @@ class HDLGenerator:
         template = env.get_template(self.vhdl_assertions_source_template)
         output = template.render(
             tree_name = tree.name,
-            boxes = [b["name"] for b in tree.decision_boxes],
+            boxes = [b["name"] for b in boxes],
             assertions = [{"class" : n, "expression" : a["minimized"]} for n, a in zip(self.classifier.classes_name, tree.assertions)])
         with open(file_name, "w") as out_file:
             out_file.write(output)

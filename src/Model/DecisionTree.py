@@ -98,7 +98,7 @@ class DecisionTree:
 
     def set_nabs(self, nabs):
         for box in self.decision_boxes:
-            box["box"].set_nab(nabs[box["box"].get_feature()])
+            box["box"].nab = nabs[box["box"].feature_name]
 
     def set_assertions_configuration(self, configuration):
         assert len(configuration) == self.assertions_graph.get_num_cells(), f"wrong amount of variables. Needed {self.assertions_graph.get_num_cells()}, get {len(configuration)}"
@@ -138,8 +138,8 @@ class DecisionTree:
 
     def get_boxes_output(self, attributes):
         return {
-            box["box"].get_name() if self.als_conf is None else "\\" + box["box"].get_name() : 
-                box["box"].compare(attributes[self.attrbutes_name.index(box["box"].get_feature())])
+            box["box"].name if self.als_conf is None else "\\" + box["box"].name() : 
+                box["box"].compare(attributes[self.attrbutes_name.index(box["box"].feature_name)])
             for box in self.decision_boxes
         }
     
