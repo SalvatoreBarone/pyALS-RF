@@ -20,13 +20,15 @@ from distutils.dir_util import mkpath
 from .ConfigParsers.PsConfigParser import *
 from .Model.Classifier import *
 
-def set_global_options(ctx, confifile, ncpus, flow = None):
+def set_global_options(ctx, confifile, ncpus, use_espresso, flow = None):
     #assert "flow" not in ctx.obj, f"Approximation flow already set ({ctx.obj['flow']}). You issued more than one approximation command. Bailing out."
     ctx.obj["flow"] = flow
     if "configfile" not in ctx.obj:
         ctx.obj["configfile"] = confifile
     if "ncpus" not in ctx.obj:
         ctx.obj["ncpus"] = ncpus
+    if "espresso" not in ctx.obj:
+        ctx.obj["espresso"] = use_espresso
 
 def create_yshelper(ctx):
     if "yshelper" not in ctx.obj:
@@ -59,7 +61,7 @@ def create_classifier(ctx):
     if "classifier" not in ctx.obj:
         assert "ncpus" in ctx.obj, "No setting available for 'ncpus'. Bailing out!"
         assert "configuration" in ctx.obj, "No configuration loaded. Bailing out!"
-        ctx.obj["classifier"] = Classifier(ctx.obj["ncpus"])
+        ctx.obj["classifier"] = Classifier(ctx.obj["ncpus"], ctx.obj["espresso"])
         ctx.obj["classifier"].parse(ctx.obj["configuration"].pmml, ctx.obj["configuration"].error_conf.dataset_description)
         ctx.obj["classifier"].read_test_set(ctx.obj["configuration"].error_conf.test_dataset)
         ctx.obj["classifier"].enable_mt()

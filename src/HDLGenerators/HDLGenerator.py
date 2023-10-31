@@ -63,7 +63,7 @@ class HDLGenerator:
         self.destination = destination
         self.source_dir = f"{Path(os.path.dirname(os.path.abspath(__file__))).resolve().parents[1]}{self.resource_dir}"
     
-    def generate_exact_implementation(self):
+    def generate_exact_implementation(self, **kwargs):
         dest = f"{self.destination}/exact/"
         mkpath(self.destination)
         mkpath(dest)
@@ -188,16 +188,18 @@ class HDLGenerator:
     
     def get_dbs(self, tree: DecisionTree):
         used_db_names = set()
-        for a in tree.assertions:
-            used_db_names.update(set(a['minimized'].replace('not ', '').replace('func_and(', ''). replace('func_or(', '').replace(')', '').replace(',', '').split(" ")))
+        for a in tree.boolean_networks:
+            used_db_names.update(set(a['hdl_expression'].replace('not ', '').replace('func_and(', ''). replace('func_or(', '').replace(')', '').replace(',', '').split(" ")))
         used_db = [ b for b in tree.decision_boxes if b["name"] in used_db_names ]
-        print(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to optimization, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources")
+        if len(used_db) != len(tree.decision_boxes):
+            print(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to optimization, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources")
         return used_db
 
     def implement_decision_boxes(self, tree : DecisionTree, boxes : list,  destination : str):
         feature_names = set(b["box"].feature_name for b in boxes )
         features = [ f for f in self.classifier.model_features if f['name'] in feature_names ]
-        print(f"Tree {tree.name} is using {len(features)} out of {len(tree.model_features)} DBs due to optimization, saving {(1 - len(features) / len(tree.model_features))*100}% of resources")
+        if len(features) != len(tree.model_features):
+            print(f"Tree {tree.name} is using {len(features)} out of {len(tree.model_features)} features.")
         file_name = f"{destination}/decision_tree_{tree.name}.vhd"
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
@@ -218,10 +220,12 @@ class HDLGenerator:
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         template = env.get_template(self.vhdl_assertions_source_template)
+        assertion_list = [{"class" : n, "expression" : a["hdl_expression"]} for n, a in zip(self.classifier.classes_name, tree.boolean_networks)]
+        box_list = [b["name"] for b in boxes]
         output = template.render(
             tree_name = tree.name,
-            boxes = [b["name"] for b in boxes],
-            assertions = [{"class" : n, "expression" : a["minimized"]} for n, a in zip(self.classifier.classes_name, tree.assertions)])
+            boxes = box_list,
+            assertions = assertion_list)
         with open(file_name, "w") as out_file:
             out_file.write(output)
         return file_name, module_name

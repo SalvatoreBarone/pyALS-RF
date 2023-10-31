@@ -25,7 +25,7 @@ from src.combined_flow import full_one_step, full_two_steps
 from src.ConfigParsers.DtGenConfigParser import *
 from src.pruning_flow import pruning_flow
 from src.hdl_generation import hdl_generation
-from src.debug_flow import hdl_debug_flow, debug_with_scikit
+from src.debug_flow import hdl_debug_flow, debug_with_scikit, print_model
 from src.git_updater import git_updater
 
 
@@ -37,30 +37,32 @@ def cli(ctx):
 @cli.command("ps")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-e', '--espresso', is_flag = True, help = f"Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.option('--mode', type=click.Choice(["rank", "full"]), default = "full")
 @click.option('--alpha', type=float, default = 0.07)
 @click.option('--beta', type=float, default = 0.5)
 @click.option('--gamma', type=float, default = 2)
 @click.pass_context
-def bitwidth(ctx, conf, ncpus, mode, alpha, beta, gamma):
+def bitwidth(ctx, conf, ncpus, espresso, mode, alpha, beta, gamma):
     """
     Performs precision-scaling approximation
     """
-    set_global_options(ctx, conf, ncpus, "ps")
+    set_global_options(ctx, conf, ncpus, espresso, "ps")
     ps_flow(ctx, mode, alpha, beta, gamma)
     store_flow(ctx)
     
 @cli.command("als")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-e', '--espresso', is_flag = True, help = f"Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.option('--onestep', is_flag = True, default = False, help = "Enable one-step approximation flow")
 @click.pass_context
-def als(ctx, conf, ncpus, onestep):
+def als(ctx, conf, ncpus, espresso, onestep):
     """
     Performs the standard ALS approximation flow
     """
     flow = "als-onestep" if onestep else "als-twosteps"
-    set_global_options(ctx, conf, ncpus, flow)
+    set_global_options(ctx, conf, ncpus, espresso, flow)
     if onestep:
         als_one_step(ctx)
     else:
@@ -68,14 +70,17 @@ def als(ctx, conf, ncpus, onestep):
     store_flow(ctx)
         
 @cli.command("als-wc")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
+@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-e', '--espresso', is_flag = True, help = f"Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.option('--onestep', is_flag = True, default = False, help = "Enable one-step approximation flow")
 @click.pass_context
-def als_wc(ctx, conf, ncpus, onestep):
+def als_wc(ctx, conf, ncpus, espresso, onestep):
     """
     Performs ALS-WC approximation
     """
     flow = "wcals-onestep" if onestep else "wcals-twosteps"
-    set_global_options(ctx, conf, ncpus, flow)
+    set_global_options(ctx, conf, ncpus, espresso, flow)
     if onestep:
         als_wc_one_step(ctx)
     else:
@@ -85,14 +90,15 @@ def als_wc(ctx, conf, ncpus, onestep):
 @cli.command("full")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-e', '--espresso', is_flag = True, help = f"Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.option('--onestep', is_flag = True, default = False, help = "Enable one-step approximation flow")
 @click.pass_context
-def full(ctx, conf, ncpus, onestep):
+def full(ctx, conf, ncpus, espresso, onestep):
     """
     Performs full approximation, i.e, both precision scaling on features and approximate logic synthesis on boolean functions
     """
     flow = "full-onestep" if onestep else "full-twosteps"
-    set_global_options(ctx, conf, ncpus, flow)
+    set_global_options(ctx, conf, ncpus, espresso, flow)
     if onestep:
         full_one_step(ctx)
     else:
@@ -102,11 +108,12 @@ def full(ctx, conf, ncpus, onestep):
 @cli.command("pruning")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-e', '--espresso', is_flag = True, help = f"Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.option('-t', '--train', is_flag = True, help = f"Use training data")
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = f"Override output directory configuration")
 @click.pass_context
-def assertions_pruning(ctx, conf, ncpus, train, output):
-    set_global_options(ctx, conf, ncpus, "pruning")
+def assertions_pruning(ctx, conf, ncpus, espresso, train, output):
+    set_global_options(ctx, conf, ncpus, espresso, "pruning")
     pruning_flow(ctx, train, output)
     store_flow(ctx)
     
@@ -114,12 +121,13 @@ def assertions_pruning(ctx, conf, ncpus, train, output):
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = f"Override output directory configuration")
+@click.option('-e', '--espresso', is_flag = True, help = f"Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.pass_context
-def generate_hdl(ctx, conf, ncpus, output):
+def generate_hdl(ctx, conf, ncpus, output, espresso):
     """
     Generates HDL implementation
     """
-    set_global_options(ctx, conf, ncpus)
+    set_global_options(ctx, conf, ncpus, espresso)
     hdl_generation(ctx, output)
     
 @cli.command("debug")
@@ -149,6 +157,16 @@ def debug_hdl(ctx, conf, ncpus, index, axflow, results, variant, output):
     """
     set_global_options(ctx, conf, ncpus)
     hdl_debug_flow(ctx, index, axflow, results, variant, output)
+    
+@cli.command("dump")
+@click.option('-d', '--dumpfile', type = click.Path(dir_okay=False), default = None, help = f"dump file")
+@click.option('-p', '--pmml', type = click.Path(dir_okay=False), default = None, help = f"PMML file")
+@click.pass_context
+def debug_hdl(ctx, dumpfile, pmml):
+    """
+    Dumps the model
+    """
+    print_model(dumpfile, pmml)
      
 cli.add_command(bitwidth)
 cli.add_command(als)

@@ -22,21 +22,22 @@ from pyalslib import YosysHelper, ALSGraph, ALSCatalog, negate
 
 class DecisionTree:
 
-    def __init__(self, name = None, root_node = None, features = None, classes = None):
+    def __init__(self, name = None, root_node = None, features = None, classes = None, use_espresso = False):
         self.name = name
         self.model_features = features
         self.attrbutes_name = [f["name"] for f in self.model_features]
         self.model_classes = classes
         self.decision_boxes = []
         self.leaves = []
-        self.assertions = []
+        self.boolean_networks = []
         self.class_assertions = {}
         if root_node:
-            self.get_decision_boxes(root_node)
-            self.get_leaves(root_node)
-            self.get_assertions()
+            #self.get_decision_boxes(root_node)
+            #self.get_leaves(root_node)
+            self.parse(root_node)
+            self.get_boolean_networks(use_espresso)
             self.get_assertions_for_classes()
-            self.pruned_assertions = []
+            self.pruned_boolean_nets = []
         self.als_conf = None
         self.yosys_helper = None
         self.assertions_graph = None
@@ -51,9 +52,9 @@ class DecisionTree:
         tree.model_features = copy.deepcopy(self.model_features)
         tree.model_classes = copy.deepcopy(self.model_classes)
         tree.decision_boxes = copy.deepcopy(self.decision_boxes)
-        tree.assertions = copy.deepcopy(self.assertions)
+        tree.boolean_networks = copy.deepcopy(self.boolean_networks)
         tree.class_assertions = copy.deepcopy(self.class_assertions)
-        tree.pruned_assertions = copy.deepcopy(self.pruned_assertions)
+        tree.pruned_boolean_nets = copy.deepcopy(self.pruned_boolean_nets)
         
         tree.als_conf = copy.deepcopy(self.als_conf)
         tree.assertions_graph = copy.deepcopy(self.assertions_graph)
@@ -133,8 +134,8 @@ class DecisionTree:
         for b in self.decision_boxes:
             print("\t\t",  b["box"].get_name(), "(", b["box"].get_feature(), " " , b["box"].get_c_operator(), " ", b["box"].get_threshold(), "), nab ", b["box"].get_nab())
         print("\tAssertions:")
-        for a in self.assertions:
-            print("\t\t", a["class"], " = ", a["expression"])
+        for a in self.boolean_networks:
+            print("\t\t", a["class"], " = ", a["boolean_net"])
 
     def get_boxes_output(self, attributes):
         return {
@@ -146,7 +147,7 @@ class DecisionTree:
     def visit(self, attributes, use_pruned = False):
         boxes_output = self.get_boxes_output(attributes)
         if self.als_conf is None:
-            return [eval(a["expression"], boxes_output) for a in self.pruned_assertions ] if use_pruned else [eval(a["expression"], boxes_output) for a in self.assertions ]
+            return [eval(a["boolean_net"], boxes_output) for a in self.pruned_boolean_nets ] if use_pruned else [eval(a["boolean_net"], boxes_output) for a in self.boolean_networks ]
         exit()
         lut_io_info = {}
         output = self.assertions_graph.evaluate(boxes_output, lut_io_info, self.current_als_configuration)[0]
@@ -154,31 +155,16 @@ class DecisionTree:
 
     def get_assertion_activation(self, attributes):
         boxes_output = self.get_boxes_output(attributes)
-        mask = np.array([eval(a["expression"], boxes_output) for a in self.assertions ], dtype=int)
+        mask = np.array([eval(a["boolean_net"], boxes_output) for a in self.boolean_networks ], dtype=int)
         for k, v in self.class_assertions.items():
             for m in v:
                 if eval(m, boxes_output):
                     return k, m, mask
                 
-    def set_pruning(self, pruning):
-        self.pruned_assertions = []
-        for class_name, assertions in self.class_assertions.items():
-            pruned = [assertion for class_label, tree_name, assertion, _ in pruning if tree_name == self.name and class_label == class_name ]            
-            kept_assertions = [ assertion for assertion in assertions if assertion not in pruned ]
-            if len(kept_assertions) > 0:
-                assertion_function = " or ".join(kept_assertions)
-                hdl_expression = assertion_function.replace("not ", "~").replace("or", "|").replace("and", "&")
-                hdl_expression = str(espresso_exprs(expr(hdl_expression))[0]).replace("~", "not ").replace("Or","func_or").replace("And","func_and")
-            else:
-                assertion_function = "False"
-                hdl_expression = "'0'"
-            self.pruned_assertions.append({
-                "class"      : class_name,
-                "expression" : assertion_function,
-                "minimized"  : "'0'" if assertion_function == "False" else hdl_expression})
-
-    def get_decision_boxes(self, root_node):
+    def parse(self, root_node):
+        db_aliases = {}
         self.decision_boxes = []
+        self.leaves = []
         for node in PreOrderIter(root_node):
             if any(node.children):
                 try:
@@ -186,38 +172,82 @@ class DecisionTree:
                     self.decision_boxes.append({
                         "name" : node.name,
                         "box"  : DecisionBox(node.name, node.feature, feature["type"], node.operator, node.threshold_value)})
+                    #! this is to check that there are no db processing the same feature with the same threshold
+                    k = (node.feature, feature["type"], node.operator, node.threshold_value)
+                    if k not in db_aliases:
+                        db_aliases[k] = []
+                    db_aliases[k].append(node.name)
+                        
                 except Exception:
                     print(node.feature, "Feature not found")
                     print("Recognized model features", self.model_features)
                     exit()
+            elif not any(node.children):
+                self.leaves.append({"name": node.name, "class": node.score, "boolean_net": f"({str(node.boolean_expression)})"})
+                
+        for k, v in db_aliases.items():
+            if len (v) > 1:
+                print(k)
+                for i in v:
+                    print("\t", i)
+        exit()
+                
+                
+    # def get_decision_boxes(self, root_node):
+    #     self.decision_boxes = []
+    #     for node in PreOrderIter(root_node):
+    #         if any(node.children):
+    #             try:
+    #                 feature = next(item for item in self.model_features if item["name"] == node.feature)
+    #                 self.decision_boxes.append({
+    #                     "name" : node.name,
+    #                     "box"  : DecisionBox(node.name, node.feature, feature["type"], node.operator, node.threshold_value)})
+    #             except Exception:
+    #                 print(node.feature, "Feature not found")
+    #                 print("Recognized model features", self.model_features)
+    #                 exit()
 
-    def get_leaves(self, root_node):
-        self.leaves = [{"name": node.name, "class": node.score, "expression": f"({str(node.boolean_expression)})"} for node in PreOrderIter(root_node) if not any(node.children)]
-
-    def get_assertion(self, class_name):
-        conditions = [item["expression"] for item in self.leaves if item["class"] == class_name]
-        if not conditions:
-            return "False"
-        elif len(conditions) == 1:
-            return conditions[0]
+    # def get_leaves(self, root_node):
+    #     self.leaves = [{"name": node.name, "class": node.score, "boolean_net": f"({str(node.boolean_expression)})"} for node in PreOrderIter(root_node) if not any(node.children)]
+        
+    def define_boolean_expression(self, minterms, use_espresso):
+        if not minterms:
+            boolean_net = 'False'
+            hdl_expression = '\'0\''
+        elif len(minterms) == 1:
+            boolean_net = minterms[0]
+            hdl_expression = f"func_and{minterms[0].replace('~', 'not ').replace(' & ', ', ').replace(' and ', ', ')}"
         else:
-            return " | ".join(conditions)
+            if use_espresso:
+                print("Using ")
+                hdl_expression = str(espresso_exprs(expr(" | ".join(minterms)))[0]).replace("~", "not ").replace("Or","func_or").replace("And","func_and")
+            else:
+                and_gates = [f"func_and{m.replace('~', 'not ').replace(' & ', ', ').replace(' and ', ', ')}" for m in minterms]
+                hdl_expression = f"func_or({', '.join(and_gates)})"
+            boolean_net = " or ".join(minterms).replace("~", "not ").replace("&", "and")
+        return boolean_net,hdl_expression
+    
+    def get_boolean_net(self, class_name : str, use_espresso : bool):
+        minterms = [item["boolean_net"] for item in self.leaves if item["class"] == class_name]
+        boolean_net, hdl_expression = self.define_boolean_expression(minterms, use_espresso)
+        return {"class" : class_name, "minterms" : minterms, "boolean_net" : boolean_net, "hdl_expression" : hdl_expression}
 
-    def get_assertions(self):
-        self.assertions = []
-        for c in self.model_classes:
-            assertion_function = self.get_assertion(c)
-            hdl_expression = str(espresso_exprs(expr(assertion_function))[0]).replace("~", "not ").replace("Or","func_or").replace("And","func_and")
-            self.assertions.append({
-                "class"      : c,
-                "expression" : assertion_function.replace("~", "not ").replace("|", "or").replace("&", "and"),
-                "minimized"  : "'0'" if assertion_function == "False" else hdl_expression})
+    def get_boolean_networks(self, use_espresso : bool):
+        self.boolean_networks = [ self.get_boolean_net(c, use_espresso) for c in self.model_classes ]
+        
+    def set_pruning(self, pruning, use_espresso : bool):
+        self.pruned_boolean_nets = []
+        for class_name, assertions in self.class_assertions.items():
+            pruned = [assertion for class_label, tree_name, assertion, _ in pruning if tree_name == self.name and class_label == class_name ]            
+            kept_assertions = [ assertion for assertion in assertions if assertion not in pruned ]
+            boolean_net, hdl_expression = self.define_boolean_expression(kept_assertions, use_espresso)
+            self.pruned_boolean_nets.append({"class" : class_name, "minterms" : kept_assertions, "boolean_net" : boolean_net, "hdl_expression" : hdl_expression})
 
     def get_assertions_for_classes(self):
-        self.class_assertions = { c : [item["expression"].replace("~", "not ").replace("|", "or").replace("&", "and") for item in self.leaves if item["class"] == c] for c in self.model_classes}
+        self.class_assertions = { c : [item["boolean_net"].replace("~", "not ").replace("|", "or").replace("&", "and") for item in self.leaves if item["class"] == c] for c in self.model_classes}
         
     def get_assertions_cost(self):
-        return sum(len(a["expression"].split("and")) for a in self.assertions)
+        return sum(len(a["boolean_net"].split("and")) for a in self.boolean_networks)
     
     def get_pruned_assertions_cost(self):
-        return sum(len(a["expression"].split("and")) for a in self.pruned_assertions)
+        return sum(len(a["boolean_net"].split("and")) for a in self.pruned_boolean_nets)

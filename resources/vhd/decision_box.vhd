@@ -34,12 +34,10 @@ entity basic_comparator is
   port (
     data_1 : in  std_logic_vector (data_width-1 downto 0);
     data_2 : in  std_logic_vector (data_width-1 downto 0);
-    result : out std_logic;
-    equals : out std_logic);
+    result : out std_logic);
 end basic_comparator;
 architecture data_flow of basic_comparator is
 begin
-  equals <= '1' when data_1 = data_2 else '0';
   eq_comp : if comp_operator = equal generate
     result <= '1' when data_1 = data_2 else '0';
   end generate;
@@ -73,15 +71,6 @@ entity parallel_comparator is
     result  : out std_logic);
 end parallel_comparator;
 architecture structural of parallel_comparator is
-  component pipe_reg is
-    generic(data_width : natural);
-    port ( 
-      clock    : in  std_logic;
-      reset_n  : in  std_logic;
-      enable   : in  std_logic;
-      data_in  : in  std_logic_vector (data_width-1 downto 0);
-      data_out : out std_logic_vector (data_width-1 downto 0));
-  end component;
   component basic_comparator is
     generic(
       data_width     : natural;
@@ -89,11 +78,8 @@ architecture structural of parallel_comparator is
      port (
       data_1 : in  std_logic_vector (data_width-1 downto 0);
       data_2 : in  std_logic_vector (data_width-1 downto 0);
-      result : out std_logic;
-      equals : out std_logic);
+      result : out std_logic);
   end component;
-  signal   buffered_data_1 : std_logic_vector (data_width-1 downto 0)      := (others => '0');
-  signal   buffered_data_2 : std_logic_vector (data_width-1 downto 0)      := (others => '0');
   signal   blocks_result   : std_logic_vector (parallel_blocks-1 downto 0) := (others => '0');
   signal   blocks_equal    : std_logic_vector (parallel_blocks-1 downto 0) := (others => '0');
   signal   partial_result  : std_logic_vector (parallel_blocks downto 0)   := (others => '0');
@@ -106,29 +92,37 @@ architecture structural of parallel_comparator is
   constant additional_bits : natural                                       := data_width mod parallel_blocks;
   constant last_comp_bits  : natural                                       := bits_per_stage + additional_bits;
 begin
-  inbuff_1 : pipe_reg generic map (data_width => data_width) port map (clock => clock, reset_n => reset_n, enable => enable, data_in => data_1, data_out => buffered_data_1);
-  inbuff_2 : pipe_reg generic map (data_width => data_width) port map (clock => clock, reset_n => reset_n, enable => enable, data_in => data_2, data_out => buffered_data_2);
   comp_blocks : for i in 0 to parallel_blocks-2 generate
     comp : basic_comparator
       generic map (data_width => bits_per_stage, comp_operator => comp_operator)
       port map (
-        data_1 => buffered_data_1((i+1)*bits_per_stage-1 downto i*bits_per_stage),
-        data_2 => buffered_data_2((i+1)*bits_per_stage-1 downto i*bits_per_stage),
-        result => blocks_result(i),
-        equals => blocks_equal(i));
+        data_1 => data_1((i+1)*bits_per_stage-1 downto i*bits_per_stage),
+        data_2 => data_2((i+1)*bits_per_stage-1 downto i*bits_per_stage),
+        result => blocks_result(i));
+    eq_comp : basic_comparator
+      generic map (data_width => bits_per_stage, comp_operator => equal)
+      port map (
+        data_1 => data_1((i+1)*bits_per_stage-1 downto i*bits_per_stage),
+        data_2 => data_2((i+1)*bits_per_stage-1 downto i*bits_per_stage),
+        result => blocks_equal(i));
   end generate;
   -- When using bitwidth that is not a multiple of parallel_blocks (e.g. when using precision-scaling), reducing the
   -- comparator into blocks may cause the most significant bits to not be compared (the division
   -- data_width / parallel_blocks may have non-zero remainder). For this reason, we keep track of any bits that are not
   -- compared and extend the capacity (the bitwidth) of the last comparator so that they are not excluded from the
   -- comparison.
-  last_block : basic_comparator
-    generic map (last_comp_bits, comp_operator)
+  last_block_comp : basic_comparator
+    generic map (data_width => last_comp_bits, comp_operator => comp_operator)
     port map (
-      data_1 => buffered_data_1(data_width-1 downto data_width-last_comp_bits),
-      data_2 => buffered_data_2(data_width-1 downto data_width-last_comp_bits),
-      result => blocks_result(parallel_blocks-1),
-      equals => blocks_equal(parallel_blocks-1));
+      data_1 => data_1(data_width-1 downto data_width-last_comp_bits),
+      data_2 => data_2(data_width-1 downto data_width-last_comp_bits),
+      result => blocks_result(parallel_blocks-1));
+  last_block_eq_comp : basic_comparator
+    generic map (data_width => last_comp_bits, comp_operator => equal)
+    port map (
+      data_1 => data_1(data_width-1 downto data_width-last_comp_bits),
+      data_2 => data_2(data_width-1 downto data_width-last_comp_bits),
+      result => blocks_equal(parallel_blocks-1));
   
   result_eq : if comp_operator = equal generate
     result <= and_reduce(blocks_equal);
@@ -163,6 +157,15 @@ entity db_float is
     result  : out std_logic);
 end db_float;
 architecture structural of db_float is
+  component pipe_reg is
+    generic(data_width : natural);
+    port ( 
+      clock    : in  std_logic;
+      reset_n  : in  std_logic;
+      enable   : in  std_logic;
+      data_in  : in  std_logic_vector (data_width-1 downto 0);
+      data_out : out std_logic_vector (data_width-1 downto 0));
+  end component;
   component parallel_comparator is
     generic(
       data_width      : natural;
@@ -176,17 +179,23 @@ architecture structural of db_float is
       data_2  : in  std_logic_vector (data_width-1 downto 0);
       result  : out std_logic);
   end component;
-  alias  sign_a     : std_logic                               is data_1(data_width-1);
-  alias  modulo_a   : std_logic_vector(data_width-2 downto 0) is data_1(data_width-2 downto 0);
-  signal abs_data_1 : std_logic_vector(data_width-1 downto 0) := (others => '0');
-  alias  sign_b     : std_logic                               is data_2(data_width-1);
-  alias  modulo_b   : std_logic_vector(data_width-2 downto 0) is data_2(data_width-2 downto 0);
-  signal abs_data_2 : std_logic_vector(data_width-1 downto 0) := '0' & data_2(data_width-2 downto 0);
 
-  signal a_eq_b     : std_logic                               := '0';
-  signal a_gt_b     : std_logic                               := '0';
-  signal conditions : std_logic_vector(3 downto 0)            := (others => '0');
+  signal buffered_data_1 : std_logic_vector (data_width-1 downto 0) := (others => '0');
+  alias  sign_a : std_logic is buffered_data_1(data_width-1);
+  alias  modulo_a : std_logic_vector(data_width-2 downto 0) is buffered_data_1(data_width-2 downto 0);
+  signal abs_data_1 : std_logic_vector(data_width-1 downto 0) := (others => '0');
+  
+  signal buffered_data_2 : std_logic_vector (data_width-1 downto 0) := (others => '0');
+  alias  sign_b : std_logic is buffered_data_2(data_width-1);
+  alias  modulo_b  : std_logic_vector(data_width-2 downto 0) is buffered_data_2(data_width-2 downto 0);
+  signal abs_data_2 : std_logic_vector(data_width-1 downto 0) := '0' & buffered_data_2(data_width-2 downto 0);
+
+  signal a_eq_b : std_logic := '0';
+  signal a_gt_b : std_logic := '0';
+  signal conditions : std_logic_vector(3 downto 0) := (others => '0');
 begin
+  inbuff_1 : pipe_reg generic map (data_width => data_width) port map (clock => clock, reset_n => reset_n, enable => enable, data_in => data_1, data_out => buffered_data_1);
+  inbuff_2 : pipe_reg generic map (data_width => data_width) port map (clock => clock, reset_n => reset_n, enable => enable, data_in => data_2, data_out => buffered_data_2);
   abs_data_1 <= '0' & modulo_a;
   abs_data_2 <= '0' & modulo_b;
   eq_comp : parallel_comparator
@@ -228,6 +237,15 @@ entity db_int is
     result  : out std_logic);
 end db_int;
 architecture structural of db_int is
+  component pipe_reg is
+    generic(data_width : natural);
+    port ( 
+      clock    : in  std_logic;
+      reset_n  : in  std_logic;
+      enable   : in  std_logic;
+      data_in  : in  std_logic_vector (data_width-1 downto 0);
+      data_out : out std_logic_vector (data_width-1 downto 0));
+  end component;
   component parallel_comparator is
     generic(
       data_width      : natural;
@@ -241,10 +259,14 @@ architecture structural of db_int is
       data_2  : in  std_logic_vector (data_width-1 downto 0);
       result  : out std_logic);
   end component;
+  signal buffered_data_1 : std_logic_vector (data_width-1 downto 0) := (others => '0');
+  signal buffered_data_2 : std_logic_vector (data_width-1 downto 0) := (others => '0');
 begin
+  inbuff_1 : pipe_reg generic map (data_width => data_width) port map (clock => clock, reset_n => reset_n, enable => enable, data_in => data_1, data_out => buffered_data_1);
+  inbuff_2 : pipe_reg generic map (data_width => data_width) port map (clock => clock, reset_n => reset_n, enable => enable, data_in => data_2, data_out => buffered_data_2);
   comp : parallel_comparator
     generic map (data_width => data_width, comp_operator => comp_operator, parallel_blocks => parallel_blocks)
-    port map (clock => clock, reset_n => reset_n, enable => enable, data_1 => data_1, data_2 => data_2, result => result);
+    port map (clock => clock, reset_n => reset_n, enable => enable, data_1 => buffered_data_1, data_2 => buffered_data_2, result => result);
 end structural;
 
 

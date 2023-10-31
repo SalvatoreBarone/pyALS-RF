@@ -16,7 +16,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import numpy as np, pandas as pd, random, json5
 from xml.etree import ElementTree
-from anytree import Node
+from anytree import Node, RenderTree, AsciiStyle
 from multiprocessing import cpu_count, Pool
 from tqdm import tqdm
 from pyalslib import list_partitioning
@@ -27,12 +27,13 @@ from .rank_based import softmax, giniImpurity
 class Classifier:
     __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_4'}
 
-    def __init__(self, ncpus = None):
+    def __init__(self, ncpus = None, use_espresso = False):
         self.trees = []
         self.model_features = []
         self.model_classes = []
         self.classes_name = []
         self.ncpus = min(ncpus, cpu_count()) if ncpus is not None else cpu_count()
+        self.use_espresso = use_espresso
         self.args = None
         self.p_tree = None
         self.pool = None
@@ -257,7 +258,7 @@ class Classifier:
     
     def set_pruning(self, pruning):
         for t in self.trees:
-            t.set_pruning(pruning)
+            t.set_pruning(pruning, self.use_espresso)
             
     def get_assertions_cost(self):
         return sum( t.get_assertions_cost() for t in self.trees )
@@ -317,20 +318,21 @@ class Classifier:
     def get_tree_model(self, tree_name, tree_model_root, id=0):
         tree = Node(f"Node_{tree_model_root.attrib['id']}" if "id" in tree_model_root.attrib else f"Node_{id}", feature="", operator="", threshold_value="", boolean_expression="")
         self.get_tree_nodes_recursively(tree_model_root, tree, id)
-        return DecisionTree(tree_name, tree, self.model_features, self.model_classes)
+        
+        # print(RenderTree(tree, style=AsciiStyle()).by_attr())
+        # exit()
+        return DecisionTree(tree_name, tree, self.model_features, self.model_classes, self.use_espresso)
 
     def get_tree_nodes_recursively(self, element_tree_node, parent_tree_node, id=0):
         children = element_tree_node.findall("pmml:Node", self.__namespaces)
-        assert len(
-            children) == 2, f"Only binary trees are supported. Aborting. {children}"
+        assert len(children) == 2, f"Only binary trees are supported. Aborting. {children}"
         for child in children:
             boolean_expression = parent_tree_node.boolean_expression
             if boolean_expression:
                 boolean_expression += " & "
             predicate = None
             if compound_predicate := child.find("pmml:CompoundPredicate", self.__namespaces):
-                predicate = next(item for item in compound_predicate.findall(
-                    "pmml:SimplePredicate", self.__namespaces) if item.attrib["operator"] != "isMissing")
+                predicate = next(item for item in compound_predicate.findall("pmml:SimplePredicate", self.__namespaces) if item.attrib["operator"] != "isMissing")
             else:
                 predicate = child.find("pmml:SimplePredicate", self.__namespaces)
             if predicate is not None:
@@ -345,10 +347,8 @@ class Classifier:
                 else:
                     boolean_expression += f"~{parent_tree_node.name}"
             if child.find("pmml:Node", self.__namespaces) is None:
-                Node(f"Node_{child.attrib['id']}" if "id" in child.attrib else f"Node_{id}", parent=parent_tree_node,
-                    score=child.attrib['score'].replace('-', '_'), boolean_expression=boolean_expression)
+                Node(f"Node_{child.attrib['id']}" if "id" in child.attrib else f"Node_{id}", parent = parent_tree_node, score = child.attrib['score'].replace('-', '_'), boolean_expression = boolean_expression)
             else:
-                new_tree_node = Node(f"Node_{child.attrib['id']}" if "id" in child.attrib else f"Node_{id}",
-                                    parent=parent_tree_node, feature="", operator="", threshold_value="", boolean_expression=boolean_expression)
+                new_tree_node = Node(f"Node_{child.attrib['id']}" if "id" in child.attrib else f"Node_{id}", parent = parent_tree_node, feature = "", operator = "", threshold_value = "", boolean_expression = boolean_expression)
                 self.get_tree_nodes_recursively(child, new_tree_node, id + 1)
 

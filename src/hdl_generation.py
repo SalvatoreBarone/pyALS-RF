@@ -43,9 +43,8 @@ def hdl_generation(ctx, output):
         if "pruned_assertions" not in ctx.obj:
             print(f"Reading pruning configuration from {pruned_assertions_json}")
             ctx.obj['pruned_assertions'] = json5.load(open(pruned_assertions_json))
-            
         hdl_generator = PruningHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
-        hdl_generator.generate_axhdl(pruned_assertions = ctx.obj['pruned_assertions'])
+        hdl_generator.generate_axhdl(pruned_assertions = ctx.obj['pruned_assertions'], enable_espresso = ctx.obj['espresso'])
     elif ctx.obj["flow"] == "ps":
         hdl_generator = PsHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
     elif ctx.obj["flow"] == "als-onestep":
@@ -65,5 +64,5 @@ def hdl_generation(ctx, output):
         exit()
     
     print("Generating reference (non-approximate) implementation...")
-    hdl_generator.generate_exact_implementation()
+    hdl_generator.generate_exact_implementation(enable_espresso =  ctx.obj['configuration'].outdir)
     print("All done!")

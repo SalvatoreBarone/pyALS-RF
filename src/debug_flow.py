@@ -19,6 +19,7 @@ from tabulate import tabulate
 from .ConfigParsers.PsConfigParser import *
 from .Model.Classifier import *
 from .ax_flows import load_configuration_ps, create_classifier, create_yshelper
+from .dtgen import print_nodes
 
 def debug_with_scikit(ctx, output):
     load_configuration_ps(ctx)
@@ -63,7 +64,15 @@ def pruning_hdl_debug_flow(ctx, index, results, output):
     ctx.obj["classifier"].set_pruning(ctx.obj['pruned_assertions'])
     ctx.obj["classifier"].predict_dump(index, output, True)
     
-
+def print_model(dump_file, pmml_file):
+    model = joblib.load(dump_file)
+    print_nodes(model)
+    if pmml_file is not None:
+        from sklearn2pmml.pipeline import PMMLPipeline
+        from sklearn2pmml import sklearn2pmml   
+        pipeline = PMMLPipeline([("classifier", model)])
+        sklearn2pmml(pipeline, pmml_file, with_repr = True)
+    
 def ps_hdl_debug_flow(ctx, index, results, variant, output):
     pass
 
