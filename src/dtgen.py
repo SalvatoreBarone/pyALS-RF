@@ -188,7 +188,7 @@ def save_model(outputdir, config, model, x_train, y_train, x_test, y_test):
     
     print("Performing model debugging and validation...")
     classifier = Classifier(cpu_count())
-    classifier.parse(pmml_file, config)
+    classifier.pmml_parser(pmml_file, config)
     classifier.read_test_set(test_dataset_csv)
     acc_pyals = 0
     acc_scikit = 0

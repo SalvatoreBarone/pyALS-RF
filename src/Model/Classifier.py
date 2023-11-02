@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import numpy as np, pandas as pd, random, json5
+import numpy as np, pandas as pd, random, json5, joblib
 from xml.etree import ElementTree
 from anytree import Node, RenderTree, AsciiStyle
 from multiprocessing import cpu_count, Pool
@@ -23,6 +23,9 @@ from pyalslib import list_partitioning
 from .DecisionTree import *
 from .rank_based import softmax, giniImpurity
 
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import export_graphviz, DecisionTreeClassifier
+from ..scikit.RandonForestClassifierMV import RandomForestClassifierMV
 
 class Classifier:
     __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_4'}
@@ -59,8 +62,14 @@ class Classifier:
         else:
             uri = None
         return uri
+    
+    def parse(self, model_source : str, dataset_description = None):
+        if model_source.endswith(".pmml"):
+            self.pmml_parser(model_source, dataset_description)
+        elif model_source.endswith(".joblib"):
+            self.joblib_parser(model_source, dataset_description)
 
-    def parse(self, pmml_file_name, dataset_description = None):
+    def pmml_parser(self, pmml_file_name, dataset_description = None):
         self.trees = []
         self.model_features = []
         self.model_classes = []
@@ -68,7 +77,7 @@ class Classifier:
         tree = ElementTree.parse(pmml_file_name)
         root = tree.getroot()
         self.__namespaces["pmml"] = Classifier.get_xmlns_uri(root)
-        self.get_features_and_classes(root)
+        self.get_features_and_classes_from_pmml(root)
         if dataset_description is not None:
             self.classes_name = dataset_description.classes_name
         else:
@@ -78,43 +87,37 @@ class Classifier:
             for tree_id, segment in enumerate(segmentation.findall("pmml:Segment", self.__namespaces)):
                 print(f"Parsing tree {tree_id}... ")
                 tree_model_root = segment.find("pmml:TreeModel", self.__namespaces).find("pmml:Node", self.__namespaces)
-                tree = self.get_tree_model(str(tree_id), tree_model_root)
+                tree = self.get_tree_model_from_pmml(str(tree_id), tree_model_root)
                 self.trees.append(tree)
             print("\rDone")
         else:
             tree_model_root = root.find("pmml:TreeModel", self.__namespaces).find(
                 "pmml:Node", self.__namespaces)
-            tree = self.get_tree_model("0", tree_model_root)
+            tree = self.get_tree_model_from_pmml("0", tree_model_root)
             self.trees.append(tree)
-        print("\rDone")
+        print(f"Done parsing {len(self.trees)} trees")
         self.ncpus = min(self.ncpus, len(self.trees))
-        
-    def wc_parse(self, pmml_file_name, ncpus):
+
+    def joblib_parser(self, joblib_file_name, dataset_description):
+        print(f"Parsing {joblib_file_name}")
         self.trees = []
         self.model_features = []
         self.model_classes = []
-        tree = ElementTree.parse(pmml_file_name)
-        root = tree.getroot()
-        self.__namespaces["pmml"] = Classifier.get_xmlns_uri(root)
-        self.get_features_and_classes(root)
-        segmentation = root.find("pmml:MiningModel/pmml:Segmentation", self.__namespaces)
-        assert segmentation is not None, "This mode is suitable only for WC DT-based MCSs"
-        segments = segmentation.findall("pmml:Segment", self.__namespaces)
-        tree = None
-        for tree_id, segment in enumerate(segments):
-            print(f"Parsing tree {tree_id}... ")
-            if tree is None:
-                tree_model_root = segment.find("pmml:TreeModel", self.__namespaces).find("pmml:Node", self.__namespaces)
-                tree = self.get_tree_model("tree_0", tree_model_root, ncpus)
-            print("\rDone")
-        self.trees = [tree] + [ copy.deepcopy(tree) for _ in range(len(segments) - 1) ]
-        for i, t in enumerate(self.trees[1:]):
-            t.set_name(f"tree_{i+1}")
+        self.classes_name = []
+        model = joblib.load(joblib_file_name)
+        self.classes_name = dataset_description.classes_name
+        self.model_classes = dataset_description.classes_name
+        self.model_features = [ {"name": f, "type": "double" } for f in dataset_description.attributes_name ]
+        if isinstance(model, (RandomForestClassifier, RandomForestClassifierMV)):
+            for i, estimator in enumerate(model.estimators_):
+                print(f"Parsing tree_{i}")
+                root_node = self.get_tree_model_from_joblib(estimator)
+                self.trees.append(DecisionTree(f"tree_{i}", root_node, self.model_features, self.model_classes, self.use_espresso))
+        elif isinstance(model, DecisionTreeClassifier):
+            root_node = self.get_tree_model_from_joblib(model)
+            self.trees.append(DecisionTree(f"tree_0", root_node, self.model_features, self.model_classes, self.use_espresso))
+        print(f"Done parsing {len(self.trees)} trees")
         self.ncpus = min(self.ncpus, len(self.trees))
-        
-    def wc_fix_ys_helper(self):
-        for t in self.trees[1:]:
-            t.yosys_helper = copy.deepcopy(self.trees[0].yosys_helper)
 
     def dump(self):
         print("Features:")
@@ -265,7 +268,7 @@ class Classifier:
     
     def get_pruned_assertions_cost(self):
         return sum( t.get_pruned_assertions_cost() for t in self.trees )
-               
+
     @staticmethod
     def compute_score(trees, x_test, pruning):
         scores = []
@@ -273,7 +276,7 @@ class Classifier:
             outcomes = [ t.visit(x, pruning) for t in trees ]
             scores.append([sum(s) for s in zip(*outcomes)])
         return scores
-         
+
     def get_score(self, x, use_pruning = False):
         return Classifier.compute_score_x(self.trees, x, use_pruning)
     
@@ -303,7 +306,7 @@ class Classifier:
         outcomes = [ t.visit(x, use_pruning) for t in trees ]
         return [sum(s) for s in zip(*outcomes)]
     
-    def get_features_and_classes(self, root):
+    def get_features_and_classes_from_pmml(self, root):
         for child in root.find("pmml:DataDictionary", self.__namespaces).findall('pmml:DataField', self.__namespaces):
             if child.attrib["optype"] == "continuous":
                 # the child is PROBABLY a feature
@@ -315,15 +318,15 @@ class Classifier:
                 for element in child.findall("pmml:Value", self.__namespaces):
                     self.model_classes.append(element.attrib['value'].replace('-', '_'))
 
-    def get_tree_model(self, tree_name, tree_model_root, id=0):
+    def get_tree_model_from_pmml(self, tree_name, tree_model_root, id=0):
         tree = Node(f"Node_{tree_model_root.attrib['id']}" if "id" in tree_model_root.attrib else f"Node_{id}", feature="", operator="", threshold_value="", boolean_expression="")
-        self.get_tree_nodes_recursively(tree_model_root, tree, id)
+        self.get_tree_nodes_from_pmml_recursively(tree_model_root, tree, id)
         
         # print(RenderTree(tree, style=AsciiStyle()).by_attr())
         # exit()
         return DecisionTree(tree_name, tree, self.model_features, self.model_classes, self.use_espresso)
 
-    def get_tree_nodes_recursively(self, element_tree_node, parent_tree_node, id=0):
+    def get_tree_nodes_from_pmml_recursively(self, element_tree_node, parent_tree_node, id=0):
         children = element_tree_node.findall("pmml:Node", self.__namespaces)
         assert len(children) == 2, f"Only binary trees are supported. Aborting. {children}"
         for child in children:
@@ -350,5 +353,42 @@ class Classifier:
                 Node(f"Node_{child.attrib['id']}" if "id" in child.attrib else f"Node_{id}", parent = parent_tree_node, score = child.attrib['score'].replace('-', '_'), boolean_expression = boolean_expression)
             else:
                 new_tree_node = Node(f"Node_{child.attrib['id']}" if "id" in child.attrib else f"Node_{id}", parent = parent_tree_node, feature = "", operator = "", threshold_value = "", boolean_expression = boolean_expression)
-                self.get_tree_nodes_recursively(child, new_tree_node, id + 1)
+                self.get_tree_nodes_from_pmml_recursively(child, new_tree_node, id + 1)
 
+    def get_tree_model_from_joblib(self, clf : DecisionTreeClassifier):
+        n_nodes = clf.tree_.node_count
+        children_left = clf.tree_.children_left
+        children_right = clf.tree_.children_right
+        feature = clf.tree_.feature
+        threshold = clf.tree_.threshold
+        values = clf.tree_.value
+        node_depth = np.zeros(shape=n_nodes, dtype=np.int64)
+        is_leaves = np.zeros(shape=n_nodes, dtype=bool)
+        
+        root_node = Node(f"Node_0", feature="", operator="", threshold_value="", boolean_expression="")
+        stack = [(0, 0, root_node)]  # start with the root node id (0) and its depth (0)
+        while len(stack) > 0:
+            # `pop` ensures each node is only visited once
+            current_node_id, depth, current_node = stack.pop()
+            node_depth[current_node_id] = depth
+            # If the left and right child of a node is not the same we have a split node
+            is_split_node = children_left[current_node_id] != children_right[current_node_id]
+            if is_split_node:
+                # If a split node, append left and right children and depth to `stack` so we can loop through them
+                current_node.feature = self.model_features[feature[current_node_id]]["name"]
+                #* sklearn only supports the <= (less or equal), which is not supported by pyALS-rf.
+                #* For this reason, boolean expressions are generated by reversing the comparison condition
+                current_node.operator = 'greaterThan' 
+                current_node.threshold_value =threshold[current_node_id]
+                boolean_expression = current_node.boolean_expression
+                if len(boolean_expression) > 0:
+                    boolean_expression += " & "
+                child_l = Node(f"Node_{children_left[current_node_id]}", parent = current_node, feature = "", operator = "", threshold_value = "", boolean_expression = f"{boolean_expression}~{current_node.name}")
+                stack.append((children_left[current_node_id], depth + 1, child_l))
+                child_r = Node(f"Node_{children_right[current_node_id]}", parent = current_node, feature = "", operator = "", threshold_value = "", boolean_expression = f"{boolean_expression}{current_node.name}")
+                stack.append((children_right[current_node_id], depth + 1, child_r))
+            else:
+                current_node.score = self.model_classes[np.argmax(values[current_node_id])]
+                is_leaves[current_node_id] = True
+        return root_node
+                

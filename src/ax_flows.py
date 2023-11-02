@@ -40,7 +40,7 @@ def load_configuration_ps(ctx):
     if "configuration" not in ctx.obj:
         assert "configfile" in ctx.obj, "You must provide a JSON configuration file to run this command(s)"
         ctx.obj["configuration"] = PSConfigParser(ctx.obj["configfile"])
-        check_for_file(ctx.obj["configuration"].pmml)
+        check_for_file(ctx.obj["configuration"].model_source)
         check_for_file(ctx.obj["configuration"].error_conf.test_dataset) 
         if ctx.obj["configuration"].outdir != ".":
             mkpath(ctx.obj["configuration"].outdir)
@@ -62,7 +62,7 @@ def create_classifier(ctx):
         assert "ncpus" in ctx.obj, "No setting available for 'ncpus'. Bailing out!"
         assert "configuration" in ctx.obj, "No configuration loaded. Bailing out!"
         ctx.obj["classifier"] = Classifier(ctx.obj["ncpus"], ctx.obj["espresso"])
-        ctx.obj["classifier"].parse(ctx.obj["configuration"].pmml, ctx.obj["configuration"].error_conf.dataset_description)
+        ctx.obj["classifier"].parse(ctx.obj["configuration"].model_source, ctx.obj["configuration"].error_conf.dataset_description)
         ctx.obj["classifier"].read_test_set(ctx.obj["configuration"].error_conf.test_dataset)
         ctx.obj["classifier"].enable_mt()
         ctx.obj["classifier"].reset_nabs_configuration()

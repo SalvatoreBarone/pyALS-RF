@@ -25,7 +25,7 @@ class PSConfigParser(ConfigParser):
         super().__init__(config_file)
         
 
-        self.pmml = search_field_in_config(self.configuration, "model", True)
+        self.model_source = search_field_in_config(self.configuration, "model", True)
         self.outdir = search_field_in_config(self.configuration, "outdir", True)
 
         self.als_conf = ALSConfig(

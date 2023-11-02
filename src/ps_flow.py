@@ -25,12 +25,12 @@ from .Model.plot import scatterplot, boxplot
 
 def ps_flow(configfile, mode, alpha, beta, gamma, ncpus):
     configuration = PSConfigParser(configfile)
-    check_for_file(configuration.pmml)
+    check_for_file(configuration.model_source)
     check_for_file(configuration.error_conf.test_dataset)
     if configuration.outdir != ".":
         mkpath(configuration.outdir)
     classifier = Classifier(ncpus)
-    classifier.parse(configuration.pmml)
+    classifier.pmml_parser(configuration.model_source)
     classifier.read_test_set(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
     classifier.enable_mt()
     problem = PsMop(classifier, configuration.error_conf.max_loss_perc, ncpus) if mode == "full" else RankBasedPsMop(classifier, configuration.error_conf.max_loss_perc, alpha, beta, gamma, ncpus)
@@ -63,12 +63,12 @@ def ps_flow(configfile, mode, alpha, beta, gamma, ncpus):
 
 def ps_eval(configfile, nabs):
     configuration = PSConfigParser(configfile)
-    check_for_file(configuration.pmml)
+    check_for_file(configuration.model_source)
     check_for_file(configuration.error_conf.test_dataset)
     if configuration.outdir != ".":
         mkpath(configuration.outdir)
     classifier = Classifier(cpu_count())
-    classifier.parse(configuration.pmml)
+    classifier.pmml_parser(configuration.model_source)
     nabs = nabs.replace(" ", "").split(",")
     assert len(nabs) == len(classifier.model_features), f"You must set nabs for each of the model featuer (you provided {len(nabs)}, but {len(classifier.model_features)} are required"
     classifier.read_test_set(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
@@ -94,12 +94,12 @@ def ps_distance(configfile, pareto = None):
         plt.savefig(f"{outdir}/boxplot_{samples}.pdf", bbox_inches='tight', pad_inches=0)
 
     configuration = PSConfigParser(configfile)
-    check_for_file(configuration.pmml)
+    check_for_file(configuration.model_source)
     check_for_file(configuration.error_conf.test_dataset)
     if configuration.outdir != ".":
         mkpath(configuration.outdir)
     classifier = Classifier(cpu_count())
-    classifier.parse(configuration.pmml)
+    classifier.pmml_parser(configuration.model_source)
     classifier.read_test_set(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
     classifier.enable_mt()
     archive_json = f"{configuration.outdir}/final_archive.json" if pareto is None else pareto
@@ -133,12 +133,12 @@ def ps_distance(configfile, pareto = None):
 def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
             
     configuration = PSConfigParser(configfile)
-    check_for_file(configuration.pmml)
+    check_for_file(configuration.model_source)
     check_for_file(configuration.error_conf.test_dataset)
     if configuration.outdir != ".":
         mkpath(configuration.outdir)
     classifier = Classifier(cpu_count())
-    classifier.parse(configuration.pmml)
+    classifier.pmml_parser(configuration.model_source)
     classifier.read_test_set(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
     classifier.enable_mt()
     problem = PsMop(classifier, configuration.error_conf.max_loss_perc, cpu_count())
@@ -190,10 +190,10 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
 
 def compute_gini_dist(configfile, outdir):
     configuration = PSConfigParser(configfile)
-    check_for_file(configuration.pmml)
+    check_for_file(configuration.model_source)
     check_for_file(configuration.error_conf.test_dataset)
     classifier = Classifier(cpu_count())
-    classifier.parse(configuration.pmml)
+    classifier.pmml_parser(configuration.model_source)
     classifier.read_test_set(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
     classifier.enable_mt()
     classifier.reset_nabs_configuration()

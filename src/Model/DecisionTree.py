@@ -73,7 +73,6 @@ class DecisionTree:
             self.assertions_catalog_entries = ALSCatalog(self.als_conf.lut_cache, self.als_conf.solver).generate_catalog(self.yosys_helper.get_luts_set(), self.als_conf.timeout, ncpus)
             self.set_assertions_configuration([0] * self.assertions_graph.get_num_cells())
             self.yosys_helper.save_design(self.name)
-         
 
     def get_total_bits(self):
         return 64 * len(self.decision_boxes)
@@ -147,7 +146,7 @@ class DecisionTree:
     def visit(self, attributes, use_pruned = False):
         boxes_output = self.get_boxes_output(attributes)
         if self.als_conf is None:
-            return [eval(a["boolean_net"], boxes_output) for a in self.pruned_boolean_nets ] if use_pruned else [eval(a["boolean_net"], boxes_output) for a in self.boolean_networks ]
+            return ([eval(a["boolean_net"], boxes_output) for a in self.pruned_boolean_nets ] if use_pruned else [eval(a["boolean_net"], boxes_output) for a in self.boolean_networks ])
         exit()
         lut_io_info = {}
         output = self.assertions_graph.evaluate(boxes_output, lut_io_info, self.current_als_configuration)[0]
@@ -163,36 +162,43 @@ class DecisionTree:
                 
     def parse(self, root_node):
         db_aliases = {}
-        self.decision_boxes = []
         self.leaves = []
+        self.decision_boxes = []
         for node in PreOrderIter(root_node):
             if any(node.children):
                 try:
-                    feature = next(item for item in self.model_features if item["name"] == node.feature)
-                    self.decision_boxes.append({
-                        "name" : node.name,
-                        "box"  : DecisionBox(node.name, node.feature, feature["type"], node.operator, node.threshold_value)})
-                    #! this is to check that there are no db processing the same feature with the same threshold
-                    k = (node.feature, feature["type"], node.operator, node.threshold_value)
+                    #! Do not instantiate DBs here!
+                    # feature = next(item for item in self.model_features if item["name"] == node.feature)
+                    # self.decision_boxes.append({
+                    #     "name" : node.name,
+                    #     "box"  : DecisionBox(node.name, node.feature, feature["type"], node.operator, node.threshold_value)})
+                    
+                    #! check that there are no db processing the same feature with the same threshold
+                    k = (node.feature, node.threshold_value)
                     if k not in db_aliases:
                         db_aliases[k] = []
-                    db_aliases[k].append(node.name)
+                    db_aliases[k].append(node)
+                    
                         
                 except Exception:
-                    print(node.feature, "Feature not found")
-                    print("Recognized model features", self.model_features)
+                    print(f"\"{node.feature}\": Feature not found! Recognized model features: {self.model_features}")
                     exit()
             elif not any(node.children):
                 self.leaves.append({"name": node.name, "class": node.score, "boolean_net": f"({str(node.boolean_expression)})"})
                 
         for k, v in db_aliases.items():
+            #! db instantiation is here!
+            feature = next(item for item in self.model_features if item["name"] == v[0].feature)
+            self.decision_boxes.append({
+                "name" : v[0].name,
+                "box"  : DecisionBox(v[0].name, v[0].feature, feature["type"], v[0].operator, v[0].threshold_value)})
             if len (v) > 1:
-                print(k)
-                for i in v:
-                    print("\t", i)
-        exit()
-                
-                
+                for n in v[1:]:
+                    print(f"Merging {n.name} to {v[0].name} in {self.name}. Both use {v[0].feature} {v[0].operator} {v[0].threshold_value}")
+                    #! every time a db is merged, the boolean expression has to be amended, replacing the name of the old db with the new one
+                    for l in range(len(self.leaves)):
+                        self.leaves[l]["boolean_net"] = self.leaves[l]["boolean_net"].replace(n.name, v[0].name)
+
     # def get_decision_boxes(self, root_node):
     #     self.decision_boxes = []
     #     for node in PreOrderIter(root_node):
