@@ -17,8 +17,8 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import sys, csv, random, numpy as np, graphviz, joblib, math
 from distutils.dir_util import mkpath
 from nyoka import skl_to_pmml
-from sklearn2pmml.pipeline import PMMLPipeline
-from sklearn2pmml import sklearn2pmml
+#from sklearn2pmml.pipeline import PMMLPipeline
+#from sklearn2pmml import sklearn2pmml
 from tqdm import tqdm
 #from sklearn import tree, pipeline, ensemble
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV, train_test_split
@@ -28,10 +28,8 @@ from sklearn.pipeline import Pipeline
 from tabulate import tabulate
 from .ConfigParsers.DtGenConfigParser import DtGenConfigParser
 from .scikit.RandonForestClassifierMV import RandomForestClassifierMV
-
-
 from .Model.Classifier import *
-     
+    
 
 def read_dataset_from_csv(csv_file, delimiter, skip_header, outcome_col):
     attributes = []
@@ -178,9 +176,9 @@ def save_model(outputdir, config, model, x_train, y_train, x_test, y_test):
     
     print(f"Exporting PMML model to {pmml_file} ...")
     model.fake() #! This is vital! Call this function right before the PMML export
-    #skl_to_pmml(pipeline = Pipeline([('rfc', model)]), col_names = config.attributes_name, pmml_f_name = pmml_file )
-    pipeline = PMMLPipeline([("classifier", model)])
-    sklearn2pmml(pipeline, pmml_file, with_repr = True)
+    skl_to_pmml(pipeline = Pipeline([('rfc', model)]), col_names = config.attributes_name, pmml_f_name = pmml_file )
+    # pipeline = PMMLPipeline([("classifier", model)])
+    # sklearn2pmml(pipeline, pmml_file, with_repr = True)
     
     
     model = joblib.load(dump_file) #! after calling the fake() method you have no choice but reloading the model from file...

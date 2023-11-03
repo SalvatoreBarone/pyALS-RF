@@ -67,7 +67,6 @@ def pruning_flow(ctx, use_training_data, output):
     # print("Redundancy:")
     # for k, v in hist.items():
     #     print(f"{k}: {v}%")
-   
     original_cost = ctx.obj["classifier"].get_assertions_cost()
     candidate_assertions, pruned_assertions = lossless_hedge_trimming(redundancy_table, pruning_table)
     print(f"Prunable assertions: {len(candidate_assertions)}")
@@ -127,6 +126,9 @@ def lossless_hedge_trimming(redundancy_table, pruning_table):
         samples = pruning_table[class_label][tree_name][assertion]
         approximable = all([ redundancy_table[sample] > 0 for sample in samples ])
         if approximable:
+            # TODO setta la configurazione di pruning, valuta la perdita di accuratezza, 
+            # e prosegui se la perdita è sotto soglia (con soglia parametrica)
+            
             for sample in samples:
                 redundancy_table[sample] -= 1
             pruned_assertions.append((class_label, tree_name, assertion, cost))

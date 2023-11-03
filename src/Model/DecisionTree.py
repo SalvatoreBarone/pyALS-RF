@@ -22,7 +22,7 @@ from pyalslib import YosysHelper, ALSGraph, ALSCatalog, negate
 
 class DecisionTree:
 
-    def __init__(self, name = None, root_node = None, features = None, classes = None, use_espresso = False):
+    def __init__(self, name = None, root_node = None, features = None, classes = None, use_espresso : bool = False):
         self.name = name
         self.model_features = features
         self.attrbutes_name = [f["name"] for f in self.model_features]
@@ -30,14 +30,8 @@ class DecisionTree:
         self.decision_boxes = []
         self.leaves = []
         self.boolean_networks = []
+        self.pruned_boolean_nets = []
         self.class_assertions = {}
-        if root_node:
-            #self.get_decision_boxes(root_node)
-            #self.get_leaves(root_node)
-            self.parse(root_node)
-            self.get_boolean_networks(use_espresso)
-            self.get_assertions_for_classes()
-            self.pruned_boolean_nets = []
         self.als_conf = None
         self.yosys_helper = None
         self.assertions_graph = None
@@ -45,6 +39,8 @@ class DecisionTree:
         self.assertions_catalog_entries = None
         self.current_als_configuration = []
         self.exact_box_output = None
+        if root_node:
+            self.parse(root_node, use_espresso)
 
     def __deepcopy__(self, memo = None):
         tree = DecisionTree()
@@ -137,11 +133,7 @@ class DecisionTree:
             print("\t\t", a["class"], " = ", a["boolean_net"])
 
     def get_boxes_output(self, attributes):
-        return {
-            box["box"].name if self.als_conf is None else "\\" + box["box"].name() : 
-                box["box"].compare(attributes[self.attrbutes_name.index(box["box"].feature_name)])
-            for box in self.decision_boxes
-        }
+        return {box["box"].name if self.als_conf is None else "\\" + box["box"].name() : box["box"].compare(attributes[self.attrbutes_name.index(box["box"].feature_name)]) for box in self.decision_boxes}
     
     def visit(self, attributes, use_pruned = False):
         boxes_output = self.get_boxes_output(attributes)
@@ -160,61 +152,74 @@ class DecisionTree:
                 if eval(m, boxes_output):
                     return k, m, mask
                 
-    def parse(self, root_node):
+    def parse(self, root_node, use_espresso):
         db_aliases = {}
+        leaves_name = []
         self.leaves = []
         self.decision_boxes = []
+        
         for node in PreOrderIter(root_node):
             if any(node.children):
                 try:
+                    feature = next(item for item in self.model_features if item["name"] == node.feature)
                     #! Do not instantiate DBs here!
-                    # feature = next(item for item in self.model_features if item["name"] == node.feature)
                     # self.decision_boxes.append({
                     #     "name" : node.name,
                     #     "box"  : DecisionBox(node.name, node.feature, feature["type"], node.operator, node.threshold_value)})
                     
-                    #! check that there are no db processing the same feature with the same threshold
-                    k = (node.feature, node.threshold_value)
-                    if k not in db_aliases:
-                        db_aliases[k] = []
-                    db_aliases[k].append(node)
-                    
-                        
+                    #! check that there are no db processing the same feature with the same threshold first
+                    condition = (node.feature, node.threshold_value)
+                    if condition not in db_aliases:
+                        db_aliases[condition] = []
+                    db_aliases[condition].append(node)
+                    print(f"Tree {self.name}: found split node {node.name} evaluating feature \"{node.feature} {node.operator} {node.threshold_value}\"")
                 except Exception:
                     print(f"\"{node.feature}\": Feature not found! Recognized model features: {self.model_features}")
                     exit()
             elif not any(node.children):
                 self.leaves.append({"name": node.name, "class": node.score, "boolean_net": f"({str(node.boolean_expression)})"})
-                
-        for k, v in db_aliases.items():
-            #! db instantiation is here!
-            feature = next(item for item in self.model_features if item["name"] == v[0].feature)
-            self.decision_boxes.append({
-                "name" : v[0].name,
-                "box"  : DecisionBox(v[0].name, v[0].feature, feature["type"], v[0].operator, v[0].threshold_value)})
-            if len (v) > 1:
-                for n in v[1:]:
-                    print(f"Merging {n.name} to {v[0].name} in {self.name}. Both use {v[0].feature} {v[0].operator} {v[0].threshold_value}")
-                    #! every time a db is merged, the boolean expression has to be amended, replacing the name of the old db with the new one
+                leaves_name.append(node.name)
+                print(f"Tree {self.name}: found leaf node {node.name} resulting in class \"{node.score}\" with condition when \"{str(node.boolean_expression)}\"")
+        for l in self.leaves:
+            for n in leaves_name:
+                assert f"{n} " not in l["boolean_net"], f"Leaf name found in boolean expression! {n} found in {l}"
+        for condition, aliases in db_aliases.items():
+            try:
+                #! db instantiation is here!
+                print(f"Instantiating {aliases[0].name} DB in DT {self.name} evaluating feature \"{aliases[0].feature} {aliases[0].operator} {aliases[0].threshold_value}\"")
+                feature = next(item for item in self.model_features if item["name"] == aliases[0].feature)
+                self.decision_boxes.append({
+                    "name" : aliases[0].name,
+                    "box"  : DecisionBox(aliases[0].name, aliases[0].feature, feature["type"], aliases[0].operator, aliases[0].threshold_value)})
+                for n in aliases[1:]:
+                    print(f"\tMerging {n.name} to {aliases[0].name} in DT {self.name}.")
+                    # #! every time a db is merged, any assertion function involving it has to be amended, replacing the name of the merged db with the retained one
                     for l in range(len(self.leaves)):
-                        self.leaves[l]["boolean_net"] = self.leaves[l]["boolean_net"].replace(n.name, v[0].name)
-
-    # def get_decision_boxes(self, root_node):
-    #     self.decision_boxes = []
-    #     for node in PreOrderIter(root_node):
-    #         if any(node.children):
-    #             try:
-    #                 feature = next(item for item in self.model_features if item["name"] == node.feature)
-    #                 self.decision_boxes.append({
-    #                     "name" : node.name,
-    #                     "box"  : DecisionBox(node.name, node.feature, feature["type"], node.operator, node.threshold_value)})
-    #             except Exception:
-    #                 print(node.feature, "Feature not found")
-    #                 print("Recognized model features", self.model_features)
-    #                 exit()
-
-    # def get_leaves(self, root_node):
-    #     self.leaves = [{"name": node.name, "class": node.score, "boolean_net": f"({str(node.boolean_expression)})"} for node in PreOrderIter(root_node) if not any(node.children)]
+                        if f"{n.name} " in self.leaves[l]["boolean_net"] or f"{n.name})" in self.leaves[l]["boolean_net"] :
+                            print(f"\t\tReplacing {n.name} with {aliases[0].name} at node {self.leaves[l]['name']}")
+                            print(f"\t\tOld: {self.leaves[l]['boolean_net']}")
+                            new_assertion = self.leaves[l]["boolean_net"].replace(f"{n.name} ", f"{aliases[0].name} ").replace(f"{n.name})", f"{aliases[0].name})")
+                            print(f"\t\tNew: {new_assertion}")
+                            assert f"{n.name} " not in new_assertion, f"Merge failed. {n.name} found in {new_assertion}"
+                            assert f"{n.name})" not in new_assertion, f"Merge failed. {n.name} found in {new_assertion}"
+                            assert f"{aliases[0].name}" in new_assertion, f"Merge failed. {aliases[0].name} not found in {new_assertion}"
+                            self.leaves[l]['boolean_net'] = new_assertion
+                            assert f"{n.name} " not in self.leaves[l]['boolean_net'], f"Merge failed. {n.name} found in {self.leaves[l]['boolean_net']}"
+                            assert f"{n.name})" not in self.leaves[l]['boolean_net'], f"Merge failed. {n.name} found in {self.leaves[l]['boolean_net']}"
+                            assert f"{aliases[0].name}" in self.leaves[l]['boolean_net'], f"Merge failed. {aliases[0].name} not found in {self.leaves[l]['boolean_net']}"
+            except Exception as e:
+                    print(e)
+                    exit()            
+        assert len(db_aliases) == len(self.decision_boxes), f"Error during DBs instantiation"
+        print(f"\n{len(self.decision_boxes)} DBs instantiated.")
+        for l in self.leaves:
+            for n in leaves_name:
+                assert f"{n} " not in l["boolean_net"], f"Leaf name found in assertion function! {n} found in {l}"
+        self.boolean_networks = [ self.get_boolean_net(c, use_espresso) for c in self.model_classes ]
+        for l in self.boolean_networks:
+            for n in leaves_name:
+                assert f"{n} " not in l["boolean_net"], f"Leaf name found in boolean expression for class {l['class']}! {n} found in {l['boolean_net']}"
+        self.class_assertions = { c : [item["boolean_net"].replace("~", "not ").replace("|", "or").replace("&", "and") for item in self.leaves if item["class"] == c] for c in self.model_classes}
         
     def define_boolean_expression(self, minterms, use_espresso):
         if not minterms:
@@ -238,9 +243,6 @@ class DecisionTree:
         boolean_net, hdl_expression = self.define_boolean_expression(minterms, use_espresso)
         return {"class" : class_name, "minterms" : minterms, "boolean_net" : boolean_net, "hdl_expression" : hdl_expression}
 
-    def get_boolean_networks(self, use_espresso : bool):
-        self.boolean_networks = [ self.get_boolean_net(c, use_espresso) for c in self.model_classes ]
-        
     def set_pruning(self, pruning, use_espresso : bool):
         self.pruned_boolean_nets = []
         for class_name, assertions in self.class_assertions.items():
@@ -249,9 +251,6 @@ class DecisionTree:
             boolean_net, hdl_expression = self.define_boolean_expression(kept_assertions, use_espresso)
             self.pruned_boolean_nets.append({"class" : class_name, "minterms" : kept_assertions, "boolean_net" : boolean_net, "hdl_expression" : hdl_expression})
 
-    def get_assertions_for_classes(self):
-        self.class_assertions = { c : [item["boolean_net"].replace("~", "not ").replace("|", "or").replace("&", "and") for item in self.leaves if item["class"] == c] for c in self.model_classes}
-        
     def get_assertions_cost(self):
         return sum(len(a["boolean_net"].split("and")) for a in self.boolean_networks)
     

@@ -349,11 +349,12 @@ class Classifier:
                     boolean_expression += parent_tree_node.name
                 else:
                     boolean_expression += f"~{parent_tree_node.name}"
-            if child.find("pmml:Node", self.__namespaces) is None:
-                Node(f"Node_{child.attrib['id']}" if "id" in child.attrib else f"Node_{id}", parent = parent_tree_node, score = child.attrib['score'].replace('-', '_'), boolean_expression = boolean_expression)
-            else:
+            if child.find("pmml:Node", self.__namespaces) is not None:
                 new_tree_node = Node(f"Node_{child.attrib['id']}" if "id" in child.attrib else f"Node_{id}", parent = parent_tree_node, feature = "", operator = "", threshold_value = "", boolean_expression = boolean_expression)
                 self.get_tree_nodes_from_pmml_recursively(child, new_tree_node, id + 1)
+            else:
+                Node(f"Node_{child.attrib['id']}" if "id" in child.attrib else f"Node_{id}", parent = parent_tree_node, score = child.attrib['score'].replace('-', '_'), boolean_expression = boolean_expression)
+                
 
     def get_tree_model_from_joblib(self, clf : DecisionTreeClassifier):
         n_nodes = clf.tree_.node_count

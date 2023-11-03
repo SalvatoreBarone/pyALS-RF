@@ -52,7 +52,7 @@ def synthetic_dataset(outputdir, n_samples : int, n_features : int, n_classes : 
         "classes_name" : [ f"{i}" for i in range(n_classes) ]
     }
     with open(f"{outputdir}/config.json5", "w") as f:
-         json5.dump(dataset_description, f, indent = 2)
+        json5.dump(dataset_description, f, indent = 2)
     print(f"Done generating synthetic dataset. Take a look at {outputdir}.")
     
     
