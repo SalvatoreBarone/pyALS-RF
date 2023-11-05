@@ -139,9 +139,9 @@ def debug_model(ctx, conf, ncpus, output):
     """
     Tests the pyALS-RF model against the scikit one.
     """
-    set_global_options(ctx, conf, ncpus)
+    set_global_options(ctx, conf, ncpus, False)
     debug_with_scikit(ctx, output)
-      
+
 @cli.command("hdl-debug")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
@@ -155,7 +155,7 @@ def debug_hdl(ctx, conf, ncpus, index, axflow, results, variant, output):
     """
     Dumps the output signals for HDL debugging purpose
     """
-    set_global_options(ctx, conf, ncpus)
+    set_global_options(ctx, conf, ncpus, False)
     hdl_debug_flow(ctx, index, axflow, results, variant, output)
     
 @cli.command("dump")
