@@ -14,3 +14,41 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
+import json5
+from ..Model.Classifier import Classifier
+from .HedgeTrimming import HedgeTrimming
+
+class LosslessHedgeTrimming(HedgeTrimming):
+    def __init__(self, classifier: Classifier, use_training_data: bool = False) -> None:
+        super().__init__(classifier, use_training_data)
+        
+    def compute_candidates(self):
+        self.candidate_assertions = []
+        for class_label, trees in self.pruning_table.items():
+            for tree_name, assertions in trees.items():
+                for assertion, samples in assertions.items():
+                    approximable = all([ self.redundancy_table[sample] > 0 for sample in samples ])
+                    literals = len(assertion.split("and"))
+                    if approximable:
+                        self.candidate_assertions.append((class_label, tree_name, assertion, literals / len(samples)) )
+        self.candidate_assertions.sort(key=lambda x: x[3], reverse = True)
+    
+    def trim(self):
+        self.compute_candidates()
+        self.pruned_assertions = []
+        for class_label, tree_name, assertion, cost in self.candidate_assertions:
+            samples = self.pruning_table[class_label][tree_name][assertion]
+            approximable = all([ self.redundancy_table[sample] > 0 for sample in samples ])
+            if approximable:
+                # TODO setta la configurazione di pruning, valuta la perdita di accuratezza, 
+                # e prosegui se la perdita è sotto soglia (con soglia parametrica)
+                
+                for sample in samples:
+                    self.redundancy_table[sample] -= 1
+                self.pruned_assertions.append((class_label, tree_name, assertion, cost))
+    
+    def store(self, outputdir : str):
+        HedgeTrimming.store(self, outputdir)
+        candidate_assertions_json = f"{outputdir}/candidate_assertions.json5"
+        with open(candidate_assertions_json, "w") as f:
+            json5.dump(self.candidate_assertions, f, indent=2)
