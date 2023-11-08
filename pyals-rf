@@ -121,15 +121,16 @@ def assertions_pruning(ctx, conf, ncpus, espresso, train, maxloss, output):
 @cli.command("genhdl")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-e', '--espresso', is_flag = True, help = "Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
+@click.option('-k', '--luts', type = int, default = 6, help = "Number of inputs for look-up tables")
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = f"Override output directory configuration")
-@click.option('-e', '--espresso', is_flag = True, help = f"Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.pass_context
-def generate_hdl(ctx, conf, ncpus, output, espresso):
+def generate_hdl(ctx, conf, ncpus, espresso, luts, output):
     """
     Generates HDL implementation
     """
     set_global_options(ctx, conf, ncpus, espresso)
-    hdl_generation(ctx, output)
+    hdl_generation(ctx, luts, output)
     
 @cli.command("debug")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")

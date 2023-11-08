@@ -45,7 +45,7 @@ class LosslessHedgeTrimming(HedgeTrimming):
                     self.redundancy_table[sample] -= 1
                 self.pruned_assertions.append((class_label, tree_name, assertion, cost))
         self.classifier.set_pruning(self.pruned_assertions)
-        self.loss = self.baseline - self.classifier.evaluate_test_dataset(True)
+        self.loss = self.baseline_accuracy - self.classifier.evaluate_test_dataset(True)
     
     def store(self, outputdir : str):
         HedgeTrimming.store(self, outputdir)

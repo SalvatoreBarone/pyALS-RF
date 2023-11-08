@@ -18,19 +18,8 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
--- library work;
--- use work.bnf.all;
-
-entity assertions_block_{{tree_name}} is
-  port (
-    {% for b in boxes -%}{{b}} : in std_logic;
-    {% endfor %}
-    {% for c in classes -%}class_{{c}} : out std_logic{{";" if not loop.last else ");"}}
-    {% endfor %}
-end assertions_block_{{tree_name}};
-
-architecture dataflow of assertions_block_{{tree_name}} is
-  component LUT6 is
+use ieee.numeric_std.all;
+entity LUT6 is
     generic (INIT : std_logic_vector(63 downto 0)); -- Specify LUT Contents
     port (
         O  : out std_logic; -- LUT general output
@@ -41,8 +30,18 @@ architecture dataflow of assertions_block_{{tree_name}} is
         I4 : in std_logic;  -- LUT input
         I5 : in std_logic   -- LUT input
     );
-  end component;
-  component LUT5 is
+end LUT6;
+architecture data_flow of LUT6 is
+    signal input_vector : std_logic_vector(5 downto 0) := (others => '0');
+begin
+    input_vector <= I5 & I4 & I3 & I2 & I1 & I0;
+    O <= INIT(to_integer(unsigned(input_vector)));
+end data_flow;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+entity LUT5 is
     generic (INIT : std_logic_vector(31 downto 0)); -- Specify LUT Contents
     port (
         O  : out std_logic; -- LUT general output
@@ -52,8 +51,18 @@ architecture dataflow of assertions_block_{{tree_name}} is
         I3 : in std_logic;  -- LUT input
         I4 : in std_logic   -- LUT input
     );
-  end component;
-  component LUT4 is
+end LUT5;
+architecture data_flow of LUT5 is
+    signal input_vector : std_logic_vector(4 downto 0) := (others => '0');
+begin
+    input_vector <= I4 & I3 & I2 & I1 & I0;
+    O <= INIT(to_integer(unsigned(input_vector)));
+end data_flow;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+entity LUT4 is
     generic (INIT : std_logic_vector(15 downto 0)); -- Specify LUT Contents
     port (
         O  : out std_logic; -- LUT general output
@@ -62,28 +71,11 @@ architecture dataflow of assertions_block_{{tree_name}} is
         I2 : in std_logic;  -- LUT input
         I3 : in std_logic   -- LUT input
     );
-  end component;
-  {% for b in boxes -%}signal not_{{b}} : std_logic := '0';
-  {% endfor %}
-  {% for f in nontrivial_classes -%}
-  {% for l in f['luts'] -%}{% if not l['o'].startswith('class') %}signal {{l['o']}} : std_logic := '0';{% endif %}
-  {% endfor %}{% endfor %}
+end LUT4;
+architecture data_flow of LUT4 is
+    signal input_vector : std_logic_vector(3 downto 0) := (others => '0');
 begin
-  {% for b in boxes -%}not_{{b}} <= not {{b}};
-  {% endfor %}
-  {% for f in trivial_classes -%}class_{{f['class']}} <= {{f['expression']}};
-  {% endfor %}
+    input_vector <= I3 & I2 & I1 & I0;
+    O <= INIT(to_integer(unsigned(input_vector)));
+end data_flow;
 
-  {% for f in nontrivial_classes -%}
-    {% for l in f['luts'] -%}
-    {{l['inst']}} : {{l['type']}}
-      generic map(INIT => {{l['conf']}})
-      port map(
-        O => {{l['o']}},
-        {% for i in l['pi'] -%}
-        I{{loop.index0}} => {{i}}{{"," if not loop.last}}
-        {% endfor %});
-    {% endfor %}
-  {% endfor %}
-
-end dataflow;

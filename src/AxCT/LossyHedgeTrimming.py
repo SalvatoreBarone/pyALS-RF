@@ -17,25 +17,14 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import json5, copy
 from tqdm import tqdm
 from ..Model.Classifier import Classifier
-from .HedgeTrimming import HedgeTrimming
+from .LosslessHedgeTrimming import LosslessHedgeTrimming
 
-class LossyHedgeTrimming(HedgeTrimming):
+class LossyHedgeTrimming(LosslessHedgeTrimming):
     def __init__(self, classifier: Classifier, use_training_data: bool = False, max_loss_perc : float = 5.0) -> None:
         super().__init__(classifier, use_training_data)
         assert 0.0 < max_loss_perc < 100.0, "Maximum allowed accuracy loss must be in (0, 100)"
         self.max_loss_perc = max_loss_perc
         self.loss = 0.0
-        
-    def compute_candidates(self):
-        self.candidate_assertions = []
-        for class_label, trees in self.pruning_table.items():
-            for tree_name, assertions in trees.items():
-                for assertion, samples in assertions.items():
-                    approximable = all([ self.redundancy_table[sample] > 0 for sample in samples ])
-                    literals = len(assertion.split("and"))
-                    if approximable:
-                        self.candidate_assertions.append((class_label, tree_name, assertion, literals / len(samples)) )
-        self.candidate_assertions.sort(key=lambda x: x[3], reverse = True)
         
     def trim(self):
         self.compute_candidates()
@@ -54,9 +43,3 @@ class LossyHedgeTrimming(HedgeTrimming):
             if self.loss > self.max_loss_perc:
                 tqdm.write(f"Adding {assertion} to the list of prunable assertions (Class: {class_label}, Tree: {tree_name}, Cost: {cost}, Acc.Loss: {loss}%)")
                 self.pruned_assertions.append((class_label, tree_name, assertion, cost))
-                
-    def store(self, outputdir : str):
-        HedgeTrimming.store(self, outputdir)
-        candidate_assertions_json = f"{outputdir}/candidate_assertions.json5"
-        with open(candidate_assertions_json, "w") as f:
-            json5.dump(self.candidate_assertions, f, indent=2)

@@ -38,8 +38,8 @@ add_custom_target(
 	COMMAND ${CMAKE_CTEST_COMMAND} --verbose --build-run-dir=${CMAKE_CURRENT_BINARY_DIR}
 )
 
-add_vhdl_source(src/bnf.vhd bnf)
-
+#add_vhdl_source(src/bnf.vhd bnf)
+add_vhdl_source(src/luts.vhd LUT6)
 add_vhdl_source(src/pipe_reg.vhd pipe_reg)
 
 add_vhdl_source(src/decision_box.vhd decision_box)
@@ -47,7 +47,8 @@ add_dependencies(decision_box pipe_reg)
 
 {% for tree_name in tree_names %}
 add_vhdl_source(src/assertions_block_{{tree_name}}.vhd assertions_block_{{tree_name}})
-add_dependencies(assertions_block_{{tree_name}} bnf)
+#add_dependencies(assertions_block_{{tree_name}} bnf)
+add_dependencies(assertions_block_{{tree_name}} LUT6)
 
 add_vhdl_source(src/decision_tree_{{tree_name}}.vhd decision_tree_{{tree_name}})
 add_dependencies(decision_tree_{{tree_name}} assertions_block_{{tree_name}})

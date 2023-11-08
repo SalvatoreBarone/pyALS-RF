@@ -26,7 +26,7 @@ from .HDLGenerators.TwoStepsAlsWcHdlGenerator import TwoStepsAlsWcHdlGenerator
 from .HDLGenerators.TwoStepsFullHdlGenerator import TwoStepsFullHdlGenerator
 from .ax_flows import load_configuration_ps, create_classifier, create_yshelper, load_flow
 
-def hdl_generation(ctx, output):
+def hdl_generation(ctx, luts, output):
     load_configuration_ps(ctx)
     if output is not None:
         ctx.obj['configuration'].outdir = output

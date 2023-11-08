@@ -16,9 +16,11 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import os, numpy as np
 from distutils.dir_util import mkpath
+
 from pyalslib import YosysHelper, double_to_bin
 from jinja2 import Environment, FileSystemLoader
 from .HDLGenerator import HDLGenerator
+from .LutMapper import LutMapper
 from ..Model.Classifier import Classifier
 from ..Model.DecisionTree import DecisionTree
 
@@ -80,18 +82,27 @@ class PruningHdlGenerator(HDLGenerator):
             out_file.write(output)
         return features
             
-    def implement_pruned_assertions(self, tree : DecisionTree, boxes : list, destination : str):
+    def implement_pruned_assertions(self, tree : DecisionTree, boxes : list, destination : str, lut_tech : int = 6):
         module_name = f"assertions_block_{tree.name}"
         file_name = f"{destination}/assertions_block_{tree.name}.vhd"
+        mapper = LutMapper(lut_tech)
+        trivial_classes = []
+        nontrivial_classes = []
+        for c, bn in zip(self.classifier.classes_name, tree.pruned_boolean_nets):
+            if bn["minterms"]:
+                nontrivial_classes.append({"class" : c, "luts": mapper.map(bn["minterms"], c)})
+            else:
+                trivial_classes.append({"class" : c, "expression" : bn["hdl_expression"]})
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         template = env.get_template(self.vhdl_assertions_source_template)
         box_list = [b["name"] for b in boxes]
-        assertion_list = [{"class" : n, "expression" : a["hdl_expression"]} for n, a in zip(self.classifier.classes_name, tree.pruned_boolean_nets)]
         output = template.render(
             tree_name = tree.name,
+            classes = self.classifier.classes_name,
             boxes = box_list,
-            assertions = assertion_list)
+            trivial_classes = trivial_classes,
+            nontrivial_classes = nontrivial_classes)
         with open(file_name, "w") as out_file:
             out_file.write(output)
         return file_name, module_name
@@ -110,7 +121,6 @@ class PruningHdlGenerator(HDLGenerator):
     
     def generate_ax_tb(self, dest, features, env, **kwargs):    
         n_vectors, test_vectors, expected_outputs = self.generate_ax_test_vectors()
-       
         tb_classifier_template = env.get_template(self.vhdl_tb_classifier_template_file)
         tb_classifier = tb_classifier_template.render(
             features=features,

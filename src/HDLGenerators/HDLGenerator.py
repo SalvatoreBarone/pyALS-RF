@@ -20,6 +20,7 @@ from distutils.file_util import copy_file
 from jinja2 import Environment, FileSystemLoader
 from pyalslib import YosysHelper, double_to_bin
 from pathlib import Path
+from .LutMapper import LutMapper
 from ..Model.Classifier import Classifier
 from ..Model.DecisionTree import DecisionTree
 
@@ -27,6 +28,7 @@ class HDLGenerator:
     resource_dir = "/resources/"
     # VHDL sources
     vhdl_bnf_source = "vhd/bnf.vhd"
+    vhdl_luts_source = "vhd/luts.vhd"
     vhdl_reg_source = "vhd/pipe_reg.vhd"
     vhdl_decision_box_source = "vhd/decision_box.vhd"
     vhdl_swapper_block_source = "vhd/swapper_block.vhd"
@@ -164,6 +166,7 @@ class HDLGenerator:
         copy_file(self.source_dir + self.extract_luts_file, ax_dest)
         copy_file(self.source_dir + self.extract_pwr_file, ax_dest)
         copy_file(self.source_dir + self.vhdl_bnf_source, f"{ax_dest}/src")
+        copy_file(self.source_dir + self.vhdl_luts_source, f"{ax_dest}/src")
         copy_file(self.source_dir + self.vhdl_reg_source, f"{ax_dest}/src")
         copy_file(self.source_dir + self.vhdl_decision_box_source, f"{ax_dest}/src")
         copy_file(self.source_dir + self.vhdl_swapper_block_source, f"{ax_dest}/src")
@@ -176,7 +179,7 @@ class HDLGenerator:
         copy_file(self.source_dir + self.run_sim_file, ax_dest)
         copy_file(self.source_dir + self.ghdl_build, ax_dest)
         copy_tree(self.source_dir + self.cmake_files_dir, ax_dest)
-  
+        
     def generate_axhdl(self, **kwargs):    
         pass
     
@@ -214,18 +217,28 @@ class HDLGenerator:
         return features
         
 
-    def implement_assertions(self, tree : DecisionTree, boxes: list, destination : str):
+    def implement_assertions(self, tree : DecisionTree, boxes: list, destination : str, lut_tech : int = 6):        
         module_name = f"assertions_block_{tree.name}"
         file_name = f"{destination}/assertions_block_{tree.name}.vhd"
+        
+        mapper = LutMapper(lut_tech)
+        trivial_classes = []
+        nontrivial_classes = []
+        for c, bn in zip(self.classifier.classes_name, tree.pruned_boolean_nets):
+            if bn["minterms"]:
+                nontrivial_classes.append({"class" : c, "luts": mapper.map(bn["minterms"], c)})
+            else:
+                trivial_classes.append({"class" : c, "expression" : bn["hdl_expression"]})
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         template = env.get_template(self.vhdl_assertions_source_template)
-        assertion_list = [{"class" : n, "expression" : a["hdl_expression"]} for n, a in zip(self.classifier.classes_name, tree.boolean_networks)]
         box_list = [b["name"] for b in boxes]
         output = template.render(
             tree_name = tree.name,
+            classes = self.classifier.classes_name,
             boxes = box_list,
-            assertions = assertion_list)
+            trivial_classes = trivial_classes,
+            nontrivial_classes = nontrivial_classes)
         with open(file_name, "w") as out_file:
             out_file.write(output)
         return file_name, module_name
@@ -255,4 +268,3 @@ class HDLGenerator:
         if remainder == 0:
             return numToRound
         return numToRound + multiple - remainder
-    
