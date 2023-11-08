@@ -15,6 +15,7 @@ RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import json5
+from tqdm import tqdm
 from ..Model.Classifier import Classifier
 from .HedgeTrimming import HedgeTrimming
 
@@ -36,16 +37,15 @@ class LosslessHedgeTrimming(HedgeTrimming):
     def trim(self):
         self.compute_candidates()
         self.pruned_assertions = []
-        for class_label, tree_name, assertion, cost in self.candidate_assertions:
+        for class_label, tree_name, assertion, cost in tqdm(self.candidate_assertions, total=len(self.candidate_assertions), desc="Lossless hedge trimming...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
             samples = self.pruning_table[class_label][tree_name][assertion]
             approximable = all([ self.redundancy_table[sample] > 0 for sample in samples ])
             if approximable:
-                # TODO setta la configurazione di pruning, valuta la perdita di accuratezza, 
-                # e prosegui se la perdita è sotto soglia (con soglia parametrica)
-                
                 for sample in samples:
                     self.redundancy_table[sample] -= 1
                 self.pruned_assertions.append((class_label, tree_name, assertion, cost))
+        self.classifier.set_pruning(self.pruned_assertions)
+        self.loss = self.baseline - self.classifier.evaluate_test_dataset(True)
     
     def store(self, outputdir : str):
         HedgeTrimming.store(self, outputdir)

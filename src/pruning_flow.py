@@ -18,8 +18,9 @@ from distutils.dir_util import mkpath
 from .ax_flows import load_configuration_ps, create_classifier
 from .ConfigParsers.PsConfigParser import *
 from .AxCT.LosslessHedgeTrimming import LosslessHedgeTrimming
+from .AxCT.LossyHedgeTrimming import LossyHedgeTrimming
 
-def pruning_flow(ctx, use_training_data, output):
+def pruning_flow(ctx : dict, use_training_data : bool, max_loss_perc : float, output : str):
     load_configuration_ps(ctx)
     if output is not None:
         ctx.obj['configuration'].outdir = output
@@ -38,16 +39,9 @@ def pruning_flow(ctx, use_training_data, output):
         print(f"Pruning set: {len(ctx.obj['classifier'].x_val)} samples")
         print(f"Test set: {len(ctx.obj['classifier'].x_test)} samples")
         
-    print("Computing the baseline accuracy...")
-    baseline_accuracy = ctx.obj["classifier"].evaluate_test_dataset()
-    print(f"Baseline accuracy: {baseline_accuracy} %")
-    
-    trimmer = LosslessHedgeTrimming(ctx.obj["classifier"])
+    trimmer = LosslessHedgeTrimming(ctx.obj["classifier"]) if max_loss_perc is None else LossyHedgeTrimming(ctx.obj["classifier"], False, max_loss_perc)
     trimmer.trim()
     trimmer.store(ctx.obj["configuration"].outdir)
-    
-    ctx.obj["classifier"].set_pruning(trimmer.pruned_assertions)
-    acc = ctx.obj["classifier"].evaluate_test_dataset(True)
 
     original = ctx.obj['classifier'].get_assertions_cost()
     after_pruning = ctx.obj['classifier'].get_pruned_assertions_cost()
@@ -55,5 +49,5 @@ def pruning_flow(ctx, use_training_data, output):
     print(f"Original cost (#literals): {original}") 
     print(f"Pruned assertiond {len(trimmer.pruned_assertions)}  ({len(trimmer.pruned_assertions) / len(trimmer.candidate_assertions) * 100}%)")
     print(f"Pruned cost (#literals): {after_pruning} ({(1 - after_pruning / original) * 100})") 
-    print(f"Loss: {baseline_accuracy - acc}")
+    print(f"Loss: {trimmer.loss}")
 

@@ -14,3 +14,49 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
+import json5, copy
+from tqdm import tqdm
+from ..Model.Classifier import Classifier
+from .HedgeTrimming import HedgeTrimming
+
+class LossyHedgeTrimming(HedgeTrimming):
+    def __init__(self, classifier: Classifier, use_training_data: bool = False, max_loss_perc : float = 5.0) -> None:
+        super().__init__(classifier, use_training_data)
+        assert 0.0 < max_loss_perc < 100.0, "Maximum allowed accuracy loss must be in (0, 100)"
+        self.max_loss_perc = max_loss_perc
+        self.loss = 0.0
+        
+    def compute_candidates(self):
+        self.candidate_assertions = []
+        for class_label, trees in self.pruning_table.items():
+            for tree_name, assertions in trees.items():
+                for assertion, samples in assertions.items():
+                    approximable = all([ self.redundancy_table[sample] > 0 for sample in samples ])
+                    literals = len(assertion.split("and"))
+                    if approximable:
+                        self.candidate_assertions.append((class_label, tree_name, assertion, literals / len(samples)) )
+        self.candidate_assertions.sort(key=lambda x: x[3], reverse = True)
+        
+    def trim(self):
+        self.compute_candidates()
+        self.pruned_assertions = []
+        for class_label, tree_name, assertion, cost in tqdm(self.candidate_assertions, total=len(self.candidate_assertions), desc="Lossy hedge trimming...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+            #samples = self.pruning_table[class_label][tree_name][assertion]
+            #approximable = all([ self.redundancy_table[sample] > 0 for sample in samples ])
+            #if approximable:
+            # TODO setta la configurazione di pruning
+            tentative = copy.deepcopy(self.pruned_assertions)
+            tentative.append((class_label, tree_name, assertion, cost))
+            self.classifier.set_pruning(tentative)
+            # TODO valuta la perdita di accuratezza
+            self.loss = self.baseline_accuracy - self.classifier.evaluate_test_dataset(True)
+            # TODO prosegui se la perdita è sotto soglia (con soglia parametrica)
+            if self.loss > self.max_loss_perc:
+                tqdm.write(f"Adding {assertion} to the list of prunable assertions (Class: {class_label}, Tree: {tree_name}, Cost: {cost}, Acc.Loss: {loss}%)")
+                self.pruned_assertions.append((class_label, tree_name, assertion, cost))
+                
+    def store(self, outputdir : str):
+        HedgeTrimming.store(self, outputdir)
+        candidate_assertions_json = f"{outputdir}/candidate_assertions.json5"
+        with open(candidate_assertions_json, "w") as f:
+            json5.dump(self.candidate_assertions, f, indent=2)

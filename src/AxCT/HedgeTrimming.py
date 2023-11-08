@@ -20,6 +20,8 @@ class HedgeTrimming:
     def __init__(self, classifier : Classifier, use_training_data : bool = False) -> None:
         self.classifier = classifier
         self.use_training_data = use_training_data
+        self.baseline_accuracy = self.classifier.evaluate_test_dataset()
+        print(f"Baseline accuracy: {self.baseline_accuracy} %")
         self.get_pruning_table()
         self.pruned_assertions = []
         

@@ -110,11 +110,12 @@ def full(ctx, conf, ncpus, espresso, onestep):
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-e', '--espresso', is_flag = True, help = f"Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.option('-t', '--train', is_flag = True, help = f"Use training data")
+@click.option('-t', '--maxloss', type = float, default = None, help = f"Use training data")
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = f"Override output directory configuration")
 @click.pass_context
-def assertions_pruning(ctx, conf, ncpus, espresso, train, output):
+def assertions_pruning(ctx, conf, ncpus, espresso, train, maxloss, output):
     set_global_options(ctx, conf, ncpus, espresso, "pruning")
-    pruning_flow(ctx, train, output)
+    pruning_flow(ctx, train, maxloss, output)
     store_flow(ctx)
     
 @cli.command("genhdl")
