@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import joblib
+import joblib, logging
 from tabulate import tabulate
 from .ConfigParsers.PsConfigParser import *
 from .Model.Classifier import *
@@ -26,6 +26,7 @@ def debug_with_scikit(ctx, output):
     if output is not None:
         ctx.obj['configuration'].outdir = output
     create_classifier(ctx)
+    logger = logging.getLogger("pyALS-RF")
     dump_file = f"{ctx.obj['configuration'].outdir}/classifier.joblib"
     model = joblib.load(dump_file)
     classifier = ctx.obj["classifier"]
@@ -45,10 +46,10 @@ def debug_with_scikit(ctx, output):
         if (np.argmax(outcome_pyals) != np.argmax(rho_scikit)) and (draw_pyals != draw_scikit):
             mismatches.append((', '.join(str(s) for s in rho_pyals), draw_pyals, ', '.join(str(s) for s in outcome_pyals), np.argmax(outcome_pyals), ', '.join(f'{q:.2f}' for q in rho_scikit[0]), np.argmax(rho_scikit), y))
             
-    print(tabulate(mismatches, headers=["Score", "Draw", "Outcome", "argmax", "Scikit Rho", "argmax", "Label"]))
-    print(f"{len(mismatches)} mismatches")
-    print(f"Accuracy pyALS : {acc_pyals / len(classifier.y_test)}")
-    print(f"Accuracy scikit : {acc_scikit / len(classifier.y_test)}")
+    logger.info(tabulate(mismatches, headers=["Score", "Draw", "Outcome", "argmax", "Scikit Rho", "argmax", "Label"]))
+    logger.info(f"{len(mismatches)} mismatches")
+    logger.info(f"Accuracy pyALS : {acc_pyals / len(classifier.y_test)}")
+    logger.info(f"Accuracy scikit : {acc_scikit / len(classifier.y_test)}")
 
 def none_hdl_debug_flow(ctx, index, output):
     ctx.obj["classifier"].predict_dump(index, output)
@@ -56,10 +57,10 @@ def none_hdl_debug_flow(ctx, index, output):
 def pruning_hdl_debug_flow(ctx, index, results, output):
     if results is not None:
         ctx.obj['configuration'].outdir = results
-        
+    logger = logging.getLogger("pyALS-RF")
     pruned_assertions_json = f"{ctx.obj['configuration'].outdir}/pruned_assertions.json5"
     if "pruned_assertions" not in ctx.obj:
-        print(f"Reading pruning configuration from {pruned_assertions_json}")
+        logger.debug(f"Reading pruning configuration from {pruned_assertions_json}")
         ctx.obj['pruned_assertions'] = json5.load(open(pruned_assertions_json))
     ctx.obj["classifier"].set_pruning(ctx.obj['pruned_assertions'])
     ctx.obj["classifier"].predict_dump(index, output, True)

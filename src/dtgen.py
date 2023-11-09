@@ -235,7 +235,6 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
                     'ccp_alpha' : np.arange(0.01, 0.5, 0.02),
                     'bootstrap': [True, False]}
     estimator = RandomForestClassifierMV(n_estimators = ntrees)
-    #estimator = RandomForestClassifier(n_estimators = ntrees)
     if clf == "dt":
         pass
     else:

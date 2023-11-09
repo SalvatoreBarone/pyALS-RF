@@ -91,18 +91,18 @@ class Classifier:
                 tree_model_root = segment.find("pmml:TreeModel", self.__namespaces).find("pmml:Node", self.__namespaces)
                 tree = self.get_tree_model_from_pmml(str(tree_id), tree_model_root)
                 self.trees.append(tree)
-            logger.debug("\rDone")
+                logger.debug(f"Done parsing tree {tree_id}")
         else:
             tree_model_root = root.find("pmml:TreeModel", self.__namespaces).find(
                 "pmml:Node", self.__namespaces)
             tree = self.get_tree_model_from_pmml("0", tree_model_root)
             self.trees.append(tree)
-        logger.debug(f"Done parsing {len(self.trees)} trees")
+        logger.debug(f"Done parsing {pmml_file_name}")
         self.ncpus = min(self.ncpus, len(self.trees))
 
     def joblib_parser(self, joblib_file_name, dataset_description):
         logger = logging.getLogger("pyALS-RF")
-        logger.debug(f"Parsing {joblib_file_name}")
+        logger.info(f"Parsing {joblib_file_name}")
         self.trees = []
         self.model_features = []
         self.model_classes = []
@@ -116,10 +116,11 @@ class Classifier:
                 logger.debug(f"Parsing tree_{i}")
                 root_node = self.get_tree_model_from_joblib(estimator)
                 self.trees.append(DecisionTree(f"tree_{i}", root_node, self.model_features, self.model_classes, self.use_espresso))
+                logger.debug(f"Done parsing tree_{i}")
         elif isinstance(model, DecisionTreeClassifier):
             root_node = self.get_tree_model_from_joblib(model)
             self.trees.append(DecisionTree(f"tree_0", root_node, self.model_features, self.model_classes, self.use_espresso))
-        logger.debug(f"Done parsing {len(self.trees)} trees")
+        logger.info(f"Done parsing {joblib_file_name}")
         self.ncpus = min(self.ncpus, len(self.trees))
 
     def dump(self):

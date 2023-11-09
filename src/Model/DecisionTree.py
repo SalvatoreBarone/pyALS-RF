@@ -212,7 +212,7 @@ class DecisionTree:
                     print(e)
                     exit()            
         assert len(db_aliases) == len(self.decision_boxes), f"Error during DBs instantiation"
-        logger.debug(f"\n{len(self.decision_boxes)} DBs instantiated.")
+        logger.info(f"Tree {self.name}: {len(self.decision_boxes)} DBs instantiated.")
         for l in self.leaves:
             for n in leaves_name:
                 assert f"{n} " not in l["boolean_net"], f"Leaf name found in assertion function! {n} found in {l}"
@@ -223,6 +223,7 @@ class DecisionTree:
         self.class_assertions = { c : [item["boolean_net"].replace("~", "not ").replace("|", "or").replace("&", "and") for item in self.leaves if item["class"] == c] for c in self.model_classes}
         
     def define_boolean_expression(self, minterms, use_espresso):
+        logger = logging.getLogger("pyALS-RF")
         if not minterms:
             boolean_net = 'False'
             hdl_expression = '\'0\''
@@ -231,7 +232,7 @@ class DecisionTree:
             hdl_expression = f"func_and{minterms[0].replace('~', 'not ').replace(' & ', ', ').replace(' and ', ', ')}"
         else:
             if use_espresso:
-                print("Using ")
+                logger.info("Using espresso heuristic logic minimizer")
                 hdl_expression = str(espresso_exprs(expr(" | ".join(minterms)))[0]).replace("~", "not ").replace("Or","func_or").replace("And","func_and")
             else:
                 and_gates = [f"func_and{m.replace('~', 'not ').replace(' & ', ', ').replace(' and ', ', ')}" for m in minterms]

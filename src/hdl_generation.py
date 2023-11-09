@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import json5
+import json5, logging
 from distutils.dir_util import mkpath
 from .HDLGenerators.PruningHdlGenerator import PruningHdlGenerator
 from .HDLGenerators.PsHdlGenerator import PsHdlGenerator
@@ -33,15 +33,16 @@ def hdl_generation(ctx, luts, output):
         mkpath(ctx.obj["configuration"].outdir)
     create_classifier(ctx)
     create_yshelper(ctx)
+    logger = logging.getLogger("pyALS-RF")
     
     if ctx.obj["flow"] is None:
         load_flow(ctx)
     
-    print("Generating the approximate implementation...")
+    logging.info("Generating the approximate implementation...")
     if ctx.obj["flow"] == "pruning":
         pruned_assertions_json = f"{ctx.obj['configuration'].outdir}/pruned_assertions.json5"
         if "pruned_assertions" not in ctx.obj:
-            print(f"Reading pruning configuration from {pruned_assertions_json}")
+            logger.debug(f"Reading pruning configuration from {pruned_assertions_json}")
             ctx.obj['pruned_assertions'] = json5.load(open(pruned_assertions_json))
         hdl_generator = PruningHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
         hdl_generator.generate_axhdl(pruned_assertions = ctx.obj['pruned_assertions'], enable_espresso = ctx.obj['espresso'])
@@ -63,6 +64,6 @@ def hdl_generation(ctx, luts, output):
         print(f"{ctx.obj['flow']}: unrecognized approximation flow. Bailing out.")
         exit()
     
-    print("Generating reference (non-approximate) implementation...")
+    logger.info("Generating reference (non-approximate) implementation...")
     hdl_generator.generate_exact_implementation(enable_espresso =  ctx.obj['configuration'].outdir)
-    print("All done!")
+    logger.info("All done!")
