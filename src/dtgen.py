@@ -152,38 +152,39 @@ def print_nodes(model):
     elif isinstance(model, DecisionTreeClassifier):
         print_clf(model)
         
-def save_model(outputdir, config, model, x_train, y_train, x_test, y_test):
-    acc = 0
-    for x, y in tqdm(zip(x_test, y_test), total = len(y_test), desc="Comparing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
-        if model.predict(np.array(x).reshape((1, -1))) == y:
-            acc += 1
+def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, y_test):
+    acc = sum( model.predict(np.array(x).reshape((1, -1))) == y for x, y in tqdm( zip(x_test, y_test), total=len(y_test), desc="Comparing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False, ))
     print(f"Classification accuracy: {acc}/{len(y_test)}*100={acc / len(y_test) * 100}")
     mkpath(outputdir)
     dump_file = f"{outputdir}/classifier.joblib"
     pmml_file = f"{outputdir}/classifier.pmml"
+    params_file = f"{outputdir}/best_parameters.json5"
     training_set_csv = f"{outputdir}/training_set.csv"
     test_dataset_csv = f"{outputdir}/test_set.csv"
-    
+
+    print(f"Saving training parameters to {params_file}")
+    with open(params_file, "w") as f:
+        json5.dump(best_params, f, indent=2)
     print(f"Exporting the training set to {training_set_csv} ...")
     save_dataset_to_csv(training_set_csv, config.attributes_name, x_train, y_train)
     print(f"Exporting the test set to {test_dataset_csv} ...")
     save_dataset_to_csv(test_dataset_csv, config.attributes_name, x_test, y_test)
     print(f"Exporting graphviz draws of learned trees to {outputdir}/export ...")
     graphviz_export(model, config.attributes_name, list(config.classes_name.values()) if isinstance(config.classes_name, dict) else config.classes_name, outputdir)
-    
+
     print(f"Dumping to {dump_file} ...")
     joblib.dump(model, dump_file)
-    
+
     print(f"Exporting PMML model to {pmml_file} ...")
     model.fake() #! This is vital! Call this function right before the PMML export
     skl_to_pmml(pipeline = Pipeline([('rfc', model)]), col_names = config.attributes_name, pmml_f_name = pmml_file )
     # pipeline = PMMLPipeline([("classifier", model)])
     # sklearn2pmml(pipeline, pmml_file, with_repr = True)
-    
-    
+
+
     model = joblib.load(dump_file) #! after calling the fake() method you have no choice but reloading the model from file...
     print("Done!")
-    
+
     print("Performing model debugging and validation...")
     classifier = Classifier(cpu_count())
     classifier.pmml_parser(pmml_file, config)
@@ -206,7 +207,7 @@ def save_model(outputdir, config, model, x_train, y_train, x_test, y_test):
         outcome_2, draw_2 = classifier.predict(x_prime)
         assert all(i == j for i, j in zip(outcome_1, outcome_2)), f"Error in outcome: Got {outcome_1} and {outcome_2}. {[i == j for i, j in zip(outcome_1, outcome_2)]}"
         assert draw_1 == draw_2, f"Draw mismatch. Got {draw_1} and {draw_2}"
-        
+
         draw_scikit, _ = classifier.check_draw(rho_1[0].tolist())
         if np.argmax(rho_1) == y and not draw_scikit:
             acc_scikit += 1
@@ -214,7 +215,7 @@ def save_model(outputdir, config, model, x_train, y_train, x_test, y_test):
             acc_pyals += 1
         if (np.argmax(outcome_1) != np.argmax(rho_1)) and (draw_1 != draw_scikit):
             mismatches.append((', '.join(str(s) for s in score_1), draw_1, ', '.join(str(s) for s in outcome_1), np.argmax(outcome_1), ', '.join(f'{q:.2f}' for q in rho_1[0]), np.argmax(rho_1), y))
-            
+
     print(tabulate(mismatches, headers=["Score", "Draw", "Outcome", "argmax", "Scikit Rho", "argmax", "Label"]))
     print(f"{len(mismatches)} mismatches")
     print(f"Accuracy of the pyALS model: {acc_pyals / len(y_test)}")
@@ -225,9 +226,10 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
     x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
     search_grid = { 'max_features': [None, 'log2', 'sqrt'],
                     'criterion' : ["gini", "entropy", "log_loss"],
-                    'max_depth': [int(x) for x in np.linspace(10, 50, num = 10)],
-                    'min_samples_split': [int(x) for x in np.linspace(10, 100, num = 10)],
-                    'min_samples_leaf': [int(x) for x in np.linspace(20, 100, num = 10)],
+                    'max_depth': [int(x) for x in np.linspace(6, 100, 2)],
+                    'min_samples_split': [int(x) for x in np.linspace(10, 100, 1)],
+                    'min_samples_leaf': [int(x) for x in np.linspace(10, 100, 1)],
+                    'ccp_alpha' : np.arange(0.01, 0.5, 0.02),
                     'bootstrap': [True, False]}
     estimator = RandomForestClassifierMV(n_estimators = ntrees)
     #estimator = RandomForestClassifier(n_estimators = ntrees)
@@ -241,7 +243,7 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
         rf_random.fit(x_train, y_train)
         data = [ [i, estimator.tree_.node_count, estimator.tree_.max_depth ] for i, estimator in enumerate(rf_random.best_estimator_.estimators_) ]
         print(tabulate(data, headers=["#", "#nodes", "depth"]))
-        save_model(outputdir, config, rf_random.best_estimator_, x_train, y_train, x_test, y_test)
+        save_model(outputdir, config, rf_random.best_estimator_, rf_random.best_params_, x_train, y_train, x_test, y_test)
         
         
 def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap):
@@ -256,5 +258,6 @@ def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, crit
         #model = RandomForestClassifier(n_estimators = predictors, max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha, bootstrap = not disable_bootstrap, n_jobs = -1, verbose = 1).fit(x_train, y_train)
         data = [ [i, estimator.tree_.node_count, estimator.tree_.max_depth ] for i, estimator in enumerate(model.estimators_) ]
         print(tabulate(data, headers=["#", "#nodes", "depth"]))
-    save_model(outputdir, config, model, x_train, y_train, x_test, y_test)    
+    #Todo Store training parameters on file (in place of None)
+    save_model(outputdir, config, model, None, x_train, y_train, x_test, y_test)    
     
