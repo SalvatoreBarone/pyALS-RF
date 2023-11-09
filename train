@@ -25,7 +25,7 @@ from typing import Union
 def cli():
     pass
 
-@click.command("synth")
+@click.command("gensynth")
 @click.argument('outputdir', type = click.Path(dir_okay=True, file_okay = False))
 @click.option('-n', '--n_samples', type = int, required = True, help = "Number of samples")
 @click.option('-f', '--n_features', type = int, required = True, help = "Number of features")
@@ -60,7 +60,7 @@ def synthetic_dataset(outputdir, n_samples : int, n_features : int, n_classes : 
     print(f"Done generating synthetic dataset. Take a look at {outputdir}.")
     
     
-@click.command("train")
+@click.command("autotune")
 @click.argument('clf', type = click.Choice(["dt", "rf", "wc"]), default = "rf")
 @click.argument('tuning', type = click.Choice(["random", "grid"]), default = "random")
 @click.argument('dataset', type=click.Path(exists=True, dir_okay=False))
@@ -69,8 +69,9 @@ def synthetic_dataset(outputdir, n_samples : int, n_features : int, n_classes : 
 @click.option("-f", "--fraction", type = float, default = 0.9, help = "Fraction of data to be used as learning set. The remaining will be used as test data.")
 @click.option("-n", "--ntrees", type = int, default = 1, help = "The number of trees in the ensemble. Ignored if clf is dt.")
 @click.option("-i", "--niter", type = int, default = 150, help = "The number of iterations")
+@click.option("-x", "--crossvalidate", is_flag = True, help = "Enable crossvalidation between sklearn and pyALS-RF")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
-def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, verbose : Union[int,str]):
+def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, crossvalidate, verbose : Union[int,str]):
     """
     Generates a decision tree / random forest from CSV data using random search.
     
@@ -85,7 +86,7 @@ def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntre
     OUTPUTDIR is the path of the output directory.
     """
     get_logger_instance("pyALS-RF", verbose)
-    training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter)
+    training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, crossvalidate)
     
 @click.command("dtgen")
 @click.argument('clf', type = click.Choice(["dt", "rf"]), default = "rf")
@@ -96,15 +97,16 @@ def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntre
 @click.option("-d", "--depth", type = int, default = None, help = "Maximum depth of the tree(s)")
 @click.option("-n", "--ntrees", type = int, default = 1, help = "The number of trees in the ensemble. Ignored if clf is dt.")
 @click.option("--criterion", type = click.Choice(["gini", "entropy", "log_loss"]), default = "gini", help = "The function to measure the quality of a split. Supported criteria are “gini” for the Gini impurity and “log_loss” and “entropy” both for the Shannon information gain")
-@click.option("--min_sample_split", type = int, default = 2, help = "The minimum number of samples required to split an internal node.")
+@click.option("--min_samples_split", type = int, default = 2, help = "The minimum number of samples required to split an internal node.")
 @click.option("--min_samples_leaf", type = int, default = 1, help = "The minimum number of samples required to be at a leaf node. A split point at any depth will only be considered if it leaves at least min_samples_leaf training samples in each of the left and right branches.")
 @click.option("--max_features", type = int, default = None, help = "The number of features to consider when looking for the best split. You can also specify one between \"sqrt\", \"log2\" or \"auto\"")
 @click.option("--max_leaf_nodes", type = int, default = None, help = "Grow trees with max_leaf_nodes in best-first fashion. Best nodes are defined as relative reduction in impurity. If None then unlimited number of leaf nodes.")
 @click.option("--min_impurity_decrease", type = float, default = 0.0, help = "A node will be split if this split induces a decrease of the impurity greater than or equal to this value.")
 @click.option("--ccp_alpha", type = float, default = 0.0, help = "Complexity parameter used for Minimal Cost-Complexity Pruning. The subtree with the largest cost complexity that is smaller than ccp_alpha will be chosen. By default, no pruning is performed.")
 @click.option("-b", "--disable_bootstrap", is_flag = True, help = "Disable the bootstrap")
+@click.option("-x", "--crossvalidate", is_flag = True, help = "Enable crossvalidation between sklearn and pyALS-RF")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
-def learning(clf : str, dataset : str, configfile : str, outputdir : str, fraction : float, depth : int, ntrees : int, criterion : str, min_sample_split : int, min_samples_leaf : int, max_features : int, max_leaf_nodes : int, min_impurity_decrease : float, ccp_alpha : float, disable_bootstrap : bool, verbose : Union[int,str]):
+def learning(clf : str, dataset : str, configfile : str, outputdir : str, fraction : float, depth : int, ntrees : int, criterion : str, min_samples_split : int, min_samples_leaf : int, max_features : int, max_leaf_nodes : int, min_impurity_decrease : float, ccp_alpha : float, disable_bootstrap : bool, crossvalidate : bool, verbose : Union[int,str]):
     """
     Generates a decision tree/ random forest from CSV data.
 
@@ -117,7 +119,7 @@ def learning(clf : str, dataset : str, configfile : str, outputdir : str, fracti
     OUTPUTDIR is the path of the output directory.
     """
     get_logger_instance("pyALS-RF", verbose)
-    dtgen(clf, dataset, configfile, outputdir, fraction, depth, ntrees, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap)
+    dtgen(clf, dataset, configfile, outputdir, fraction, depth, ntrees, criterion, min_samples_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap, crossvalidate)
 
 cli.add_command(synthetic_dataset)
 cli.add_command(parameter_tuning)

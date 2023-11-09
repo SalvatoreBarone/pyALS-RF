@@ -154,9 +154,9 @@ def print_nodes(model):
     elif isinstance(model, DecisionTreeClassifier):
         print_clf(model)
         
-def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, y_test):
+def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, y_test, cross_validate):
     logger = logging.getLogger("pyALS-RF")
-    acc = sum( model.predict(np.array(x).reshape((1, -1))) == y for x, y in tqdm( zip(x_test, y_test), total=len(y_test), desc="Comparing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False, ))
+    acc = sum( model.predict(np.array(x).reshape((1, -1))) == y for x, y in tqdm( zip(x_test, y_test), total=len(y_test), desc="Computing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False, ))[0]
     logger.info(f"Classification accuracy: {acc}/{len(y_test)}*100={acc / len(y_test) * 100}")
     mkpath(outputdir)
     dump_file = f"{outputdir}/classifier.joblib"
@@ -184,8 +184,13 @@ def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, 
     # pipeline = PMMLPipeline([("classifier", model)])
     # sklearn2pmml(pipeline, pmml_file, with_repr = True)
     model = joblib.load(dump_file) #! after calling the fake() method you have no choice but reloading the model from file...
-    logger.info("Done!")
+    logger.info("Done PMML export!")
+    if cross_validate:
+        
+        models_crossvalidation(config, model, x_test, y_test, pmml_file, test_dataset_csv)
 
+def models_crossvalidation(config, model, x_test, y_test, pmml_file, test_dataset_csv):
+    logger = logging.getLogger("pyALS-RF")
     logger.info("Performing model debugging and validation...")
     classifier = Classifier(cpu_count())
     classifier.pmml_parser(pmml_file, config)
@@ -204,12 +209,10 @@ def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, 
         assert all(i == j for i, j in zip(rho_1[0], rho_2[0])), f"Error in rho: {rho_1} {rho_2}"
         if any(i != int(j) for i, j in zip(score_1, rho_1[0])):
             logger.warn(f"Error in model response: {score_1} {rho_1[0]}")
-
         outcome_1, draw_1 = classifier.predict(x)
         outcome_2, draw_2 = classifier.predict(x_prime)
         assert all(i == j for i, j in zip(outcome_1, outcome_2)), f"Error in outcome: Got {outcome_1} and {outcome_2}. {[i == j for i, j in zip(outcome_1, outcome_2)]}"
         assert draw_1 == draw_2, f"Draw mismatch. Got {draw_1} and {draw_2}"
-
         draw_scikit, _ = classifier.check_draw(rho_1[0].tolist())
         if np.argmax(rho_1) == y and not draw_scikit:
             acc_scikit += 1
@@ -217,14 +220,13 @@ def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, 
             acc_pyals += 1
         if (np.argmax(outcome_1) != np.argmax(rho_1)) and (draw_1 != draw_scikit):
             mismatches.append((', '.join(str(s) for s in score_1), draw_1, ', '.join(str(s) for s in outcome_1), np.argmax(outcome_1), ', '.join(f'{q:.2f}' for q in rho_1[0]), np.argmax(rho_1), y))
-
     if mismatches:
         logger.info(f'Mismatches in models:\n{tabulate(mismatches, headers=["Score", "Draw", "Outcome", "argmax", "Scikit Rho", "argmax", "Label"])}')
         logger.info(f"{len(mismatches)} mismatches")
     logger.info(f"Accuracy of the pyALS model: {acc_pyals / len(y_test) * 100}%")
     logger.info(f"Accuracy of the scikit-learn model: {acc_scikit / len(y_test)*100}%")
 
-def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter):
+def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, cross_validate):
     logger = logging.getLogger("pyALS-RF")
     config = DtGenConfigParser(configfile)
     x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
@@ -247,9 +249,9 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
         logger.info(f'Best parameters:\n{tabulate([ [k, v] for k, v in rf_random.best_params_.items()])}')
         data = [ [i, estimator.tree_.node_count, estimator.tree_.max_depth ] for i, estimator in enumerate(rf_random.best_estimator_.estimators_) ]
         logger.info(f'DTs Stats.:\n{tabulate(data, headers=["tree", "#nodes", "depth"])}\n')
-        save_model(outputdir, config, rf_random.best_estimator_, rf_random.best_params_, x_train, y_train, x_test, y_test)
+        save_model(outputdir, config, rf_random.best_estimator_, rf_random.best_params_, x_train, y_train, x_test, y_test, cross_validate)
         
-def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap):
+def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap, cross_validate):
     logger = logging.getLogger("pyALS-RF")
     config = DtGenConfigParser(configfile)
     x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
@@ -258,10 +260,10 @@ def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, crit
        logger.info(f"Node count: {model.tree_.node_count()}")
        logger.info(f"Depth: {model.tree_.max_dept}")
     elif clf == "rf":
-        model = RandomForestClassifierMV(n_estimators = predictors, max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha, bootstrap = not disable_bootstrap, n_jobs = -1, verbose = 1).fit(x_train, y_train)
+        model = RandomForestClassifierMV(n_estimators = predictors, max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha, bootstrap = not disable_bootstrap, n_jobs = -1, verbose = 0).fit(x_train, y_train)
         #model = RandomForestClassifier(n_estimators = predictors, max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha, bootstrap = not disable_bootstrap, n_jobs = -1, verbose = 1).fit(x_train, y_train)
         data = [ [i, estimator.tree_.node_count, estimator.tree_.max_depth ] for i, estimator in enumerate(model.estimators_) ]
         logger.info(f'DTs Stats.:\n{tabulate(data, headers=["Tree", "#nodes", "depth"])}')
     #Todo Store training parameters on file (in place of None)
-    save_model(outputdir, config, model, None, x_train, y_train, x_test, y_test)    
+    save_model(outputdir, config, model, None, x_train, y_train, x_test, y_test, cross_validate)    
     

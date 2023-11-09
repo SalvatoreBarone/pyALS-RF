@@ -33,13 +33,13 @@ class LossyHedgeTrimming(LosslessHedgeTrimming):
             #samples = self.pruning_table[class_label][tree_name][assertion]
             #approximable = all([ self.redundancy_table[sample] > 0 for sample in samples ])
             #if approximable:
-            # TODO setta la configurazione di pruning
+            # setta la configurazione di pruning
             tentative = copy.deepcopy(self.pruned_assertions)
             tentative.append((class_label, tree_name, assertion, cost))
             self.classifier.set_pruning(tentative)
-            # TODO valuta la perdita di accuratezza
-            self.loss = self.baseline_accuracy - self.classifier.evaluate_test_dataset(True)
-            # TODO prosegui se la perdita è sotto soglia (con soglia parametrica)
-            if self.loss > self.max_loss_perc:
-                tqdm.write(f"Adding {assertion} to the list of prunable assertions (Class: {class_label}, Tree: {tree_name}, Cost: {cost}, Acc.Loss: {loss}%)")
+            # valuta la perdita di accuratezza
+            self.accuracy = self.classifier.evaluate_test_dataset(True)
+            self.loss = self.baseline_accuracy - self.accuracy
+            # prosegui se la perdita è sotto soglia (con soglia parametrica)
+            if self.loss < self.max_loss_perc:
                 self.pruned_assertions.append((class_label, tree_name, assertion, cost))

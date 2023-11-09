@@ -246,18 +246,20 @@ class Classifier:
         return sum(np.argmax(score := [sum(s) for s in zip(*scores)]) == y and not self.check_draw(score)[0] for scores, y in zip(zip(*outcomes), self.y_test)) / len(self.y_test) * 100
     
     def get_assertion_activation(self, use_training_data):
+        logger = logging.getLogger("pyALS-RF")
         samples = self.x_train if use_training_data else self.x_val
         labels = self.y_train if use_training_data else self.y_val
         activity_by_sample = []
         nclasses = len(self.model_classes)
         ntrees = len(self.trees)
-        for x, y in tqdm( zip(samples, labels), total=len(labels), desc="Computing assertions' activation...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+        for x, y in tqdm( zip(samples, labels), total=len(labels), desc="Computing resiliency...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
             outcome = {"x" : x, "y": str(y), "redundancy" : 0, "rho": np.zeros((nclasses,), dtype=int), "Ig" : 0, "outcomes" : {}}
             for t in self.trees:
-                predicted_class, active_assertion, mask = t.get_assertion_activation(x)
+                predicted_class, active_assertion, prediction_as_one_hot = t.get_assertion_activation(x)
                 cost = len(active_assertion.split("and"))
-                outcome["rho"] += mask
+                outcome["rho"] += prediction_as_one_hot
                 outcome["outcomes"][t.name] = {"assertion" : active_assertion, "cost": cost, "correct" : predicted_class == str(y)}
+                logger.debug(f"Predicted class: {predicted_class} (Predict OK: {predicted_class == str(y)}), mask: {prediction_as_one_hot}, active minterm: {active_assertion} (cost: {cost})")
             outcome["Ig"] = giniImpurity(softmax(outcome["rho"]))
             outcome["redundancy"] = int(sum(i["correct"] for i in outcome["outcomes"].values()) - np.ceil(ntrees/2))
             outcome["rho"] = outcome["rho"].tolist()

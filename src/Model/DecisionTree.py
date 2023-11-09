@@ -146,11 +146,11 @@ class DecisionTree:
 
     def get_assertion_activation(self, attributes):
         boxes_output = self.get_boxes_output(attributes)
-        mask = np.array([eval(a["boolean_net"], boxes_output) for a in self.boolean_networks ], dtype=int)
-        for k, v in self.class_assertions.items():
-            for m in v:
-                if eval(m, boxes_output):
-                    return k, m, mask
+        prediction_as_one_hot = np.array([eval(a["boolean_net"], boxes_output) for a in self.boolean_networks ], dtype=int)
+        for class_name, assertions in self.class_assertions.items():
+            for minterm in assertions:
+                if eval(minterm, boxes_output):
+                    return class_name, minterm, prediction_as_one_hot
                 
     def parse(self, root_node, use_espresso):
         logger = logging.getLogger("pyALS-RF")
@@ -246,23 +246,24 @@ class DecisionTree:
         return {"class" : class_name, "minterms" : minterms, "boolean_net" : boolean_net, "hdl_expression" : hdl_expression}
 
     def set_pruning(self, pruning, use_espresso : bool):
+        logger = logging.getLogger("pyALS-RF")
         self.pruned_boolean_nets = []
-        # print(f"Setting pruning configuration for {self.name}")
+        logger.debug(f"Setting pruning configuration for {self.name}")
         for class_name, assertions in self.class_assertions.items():
             pruned = [assertion for class_label, tree_name, assertion, _ in pruning if tree_name == self.name and class_label == class_name ]            
             kept_assertions = [ assertion for assertion in assertions if assertion not in pruned ]
             boolean_net, hdl_expression = self.define_boolean_expression(kept_assertions, use_espresso)
-            self.pruned_boolean_nets.append({"class" : class_name, "minterms" : kept_assertions, "boolean_net" : boolean_net, "hdl_expression" : hdl_expression})
-            # print(f"\tClass: {class_name}")
-            # print(f"\tMinterms:")
+            self.pruned_boolean_nets.append({"class" : class_name, "minterms" : [k.replace("and", "&") for k in kept_assertions], "boolean_net" : boolean_net, "hdl_expression" : hdl_expression})
+            # logger.debug(f"\tClass: {class_name}")
+            # logger.debug(f"\tMinterms:")
             # for m in kept_assertions:
-            #     print(f"\t\t{m}")
-            # print(f"Boolean Network: {boolean_net}")
-            # print(f"HDL statement: {hdl_expression}")
+            #     logger.debug(f"\t\t{m}")
+            # logger.debug(f"Boolean Network: {boolean_net}")
+            # logger.debug(f"HDL statement: {hdl_expression}")
             
-
     def get_assertions_cost(self):
-        return sum(len(a["boolean_net"].split("and")) for a in self.boolean_networks)
+        return sum(len(minterm.split(" & ")) for network in self.boolean_networks for minterm in network["minterms"])
     
     def get_pruned_assertions_cost(self):
-        return sum(len(a["boolean_net"].split("and")) for a in self.pruned_boolean_nets)
+        return sum(len(minterm.split(" & ")) for network in self.pruned_boolean_nets for minterm in network["minterms"])
+        

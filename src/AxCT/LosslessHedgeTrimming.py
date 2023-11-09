@@ -14,8 +14,9 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import json5
+import json5, logging
 from tqdm import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 from ..Model.Classifier import Classifier
 from .HedgeTrimming import HedgeTrimming
 
@@ -25,27 +26,37 @@ class LosslessHedgeTrimming(HedgeTrimming):
         
     def compute_candidates(self):
         self.candidate_assertions = []
+        logger = logging.getLogger("pyALS-RF")
         for class_label, trees in self.pruning_table.items():
             for tree_name, assertions in trees.items():
                 for assertion, samples in assertions.items():
-                    approximable = all([ self.redundancy_table[sample] > 0 for sample in samples ])
-                    literals = len(assertion.split("and"))
-                    if approximable:
-                        self.candidate_assertions.append((class_label, tree_name, assertion, literals / len(samples)) )
+                    if all(self.redundancy_table[sample] > 0 for sample in samples ):
+                        cost = len(assertion.split("and")) / len(samples)
+                        candidate = (class_label, tree_name, assertion, cost)
+                        self.candidate_assertions.append(candidate)
+                        logger.debug(f"Adding {candidate} to pruning-candidate")
+        logger.debug("Performing cost-based sorting for pruning-candidates")
         self.candidate_assertions.sort(key=lambda x: x[3], reverse = True)
     
     def trim(self):
         self.compute_candidates()
+        logger = logging.getLogger("pyALS-RF")
         self.pruned_assertions = []
-        for class_label, tree_name, assertion, cost in tqdm(self.candidate_assertions, total=len(self.candidate_assertions), desc="Lossless hedge trimming...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+        #with logging_redirect_tqdm():
+            #for class_label, tree_name, assertion, cost in tqdm(self.candidate_assertions, total=len(self.candidate_assertions), desc="Lossless hedge trimming...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+        for class_label, tree_name, assertion, cost in self.candidate_assertions:
             samples = self.pruning_table[class_label][tree_name][assertion]
-            approximable = all([ self.redundancy_table[sample] > 0 for sample in samples ])
+            approximable = all( self.redundancy_table[sample] > 0 for sample in samples )
             if approximable:
+                candidate = (class_label, tree_name, assertion, cost) 
+                logger.debug(f"Adding {candidate} to the list of pruned assertions")
                 for sample in samples:
                     self.redundancy_table[sample] -= 1
-                self.pruned_assertions.append((class_label, tree_name, assertion, cost))
+                    logger.debug(f"\tDecreasing resiliency for sample {sample}. Residual redundancy: {self.redundancy_table[sample]}")
+                self.pruned_assertions.append(candidate)
         self.classifier.set_pruning(self.pruned_assertions)
-        self.loss = self.baseline_accuracy - self.classifier.evaluate_test_dataset(True)
+        self.accuracy = self.classifier.evaluate_test_dataset(True)
+        self.loss = self.baseline_accuracy - self.accuracy
     
     def store(self, outputdir : str):
         HedgeTrimming.store(self, outputdir)
