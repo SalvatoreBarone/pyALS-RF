@@ -18,6 +18,8 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import click, sys, os, json5, numpy as np
 from src.dtgen import dtgen, training_with_parameter_tuning, save_dataset_to_csv
 from src.git_updater import git_updater
+from src.logger import get_logger_instance
+from typing import Union
 
 @click.group()
 def cli():
@@ -29,13 +31,15 @@ def cli():
 @click.option('-f', '--n_features', type = int, required = True, help = "Number of features")
 @click.option('-c', '--n_classes', type = int, required = True, help = "Number of classes")
 @click.option('-w' , '--weights', type = str, default = None, help = "The proportions of samples assigned to each class. If None, then classes are balanced.")
-def synthetic_dataset(outputdir, n_samples : int, n_features : int, n_classes : int, weights : str):
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
+def synthetic_dataset(outputdir, n_samples : int, n_features : int, n_classes : int, weights : str, verbose : Union[int,str]):
     """
     Generates a Synthetic dataset for classification problems
     
     OUTPUTDIR the output directory
     
     """
+    get_logger_instance("pyALS-RF", verbose)
     from sklearn.datasets import make_classification
     from distutils.dir_util import mkpath
     if weights is not None:
@@ -65,7 +69,8 @@ def synthetic_dataset(outputdir, n_samples : int, n_features : int, n_classes : 
 @click.option("-f", "--fraction", type = float, default = 0.9, help = "Fraction of data to be used as learning set. The remaining will be used as test data.")
 @click.option("-n", "--ntrees", type = int, default = 1, help = "The number of trees in the ensemble. Ignored if clf is dt.")
 @click.option("-i", "--niter", type = int, default = 150, help = "The number of iterations")
-def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter):
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
+def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, verbose : Union[int,str]):
     """
     Generates a decision tree / random forest from CSV data using random search.
     
@@ -79,6 +84,7 @@ def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntre
     
     OUTPUTDIR is the path of the output directory.
     """
+    get_logger_instance("pyALS-RF", verbose)
     training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter)
     
 @click.command("dtgen")
@@ -92,12 +98,13 @@ def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntre
 @click.option("--criterion", type = click.Choice(["gini", "entropy", "log_loss"]), default = "gini", help = "The function to measure the quality of a split. Supported criteria are “gini” for the Gini impurity and “log_loss” and “entropy” both for the Shannon information gain")
 @click.option("--min_sample_split", type = int, default = 2, help = "The minimum number of samples required to split an internal node.")
 @click.option("--min_samples_leaf", type = int, default = 1, help = "The minimum number of samples required to be at a leaf node. A split point at any depth will only be considered if it leaves at least min_samples_leaf training samples in each of the left and right branches.")
-@click.option("--max_features", default = None, help = "The number of features to consider when looking for the best split. You can also specify one between \"sqrt\", \"log2\" or \"auto\"")
+@click.option("--max_features", type = int, default = None, help = "The number of features to consider when looking for the best split. You can also specify one between \"sqrt\", \"log2\" or \"auto\"")
 @click.option("--max_leaf_nodes", type = int, default = None, help = "Grow trees with max_leaf_nodes in best-first fashion. Best nodes are defined as relative reduction in impurity. If None then unlimited number of leaf nodes.")
 @click.option("--min_impurity_decrease", type = float, default = 0.0, help = "A node will be split if this split induces a decrease of the impurity greater than or equal to this value.")
 @click.option("--ccp_alpha", type = float, default = 0.0, help = "Complexity parameter used for Minimal Cost-Complexity Pruning. The subtree with the largest cost complexity that is smaller than ccp_alpha will be chosen. By default, no pruning is performed.")
 @click.option("-b", "--disable_bootstrap", is_flag = True, help = "Disable the bootstrap")
-def learning(clf, dataset, configfile, outputdir, fraction, depth, ntrees, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap):
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
+def learning(clf : str, dataset : str, configfile : str, outputdir : str, fraction : float, depth : int, ntrees : int, criterion : str, min_sample_split : int, min_samples_leaf : int, max_features : int, max_leaf_nodes : int, min_impurity_decrease : float, ccp_alpha : float, disable_bootstrap : bool, verbose : Union[int,str]):
     """
     Generates a decision tree/ random forest from CSV data.
 
@@ -109,6 +116,7 @@ def learning(clf, dataset, configfile, outputdir, fraction, depth, ntrees, crite
     
     OUTPUTDIR is the path of the output directory.
     """
+    get_logger_instance("pyALS-RF", verbose)
     dtgen(clf, dataset, configfile, outputdir, fraction, depth, ntrees, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap)
 
 cli.add_command(synthetic_dataset)

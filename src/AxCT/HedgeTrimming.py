@@ -14,14 +14,15 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import json5
+import json5, logging
 from ..Model.Classifier import *
 class HedgeTrimming:
     def __init__(self, classifier : Classifier, use_training_data : bool = False) -> None:
+        logger = logging.getLogger("pyALS-RF")
         self.classifier = classifier
         self.use_training_data = use_training_data
         self.baseline_accuracy = self.classifier.evaluate_test_dataset()
-        print(f"Baseline accuracy: {self.baseline_accuracy} %")
+        logger.info(f"Baseline accuracy: {self.baseline_accuracy} %")
         self.get_pruning_table()
         self.pruned_assertions = []
         

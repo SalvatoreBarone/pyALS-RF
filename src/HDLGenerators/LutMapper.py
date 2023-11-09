@@ -14,6 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
+import logging
 from itertools import islice 
 from typing import List
 
@@ -24,6 +25,7 @@ class LutMapper:
         self.or_conf = 'X\"' + 'F' * (2**(self.k-2)-1) + "E\""
 
     def map(self, minterms : List[str], signal_name : str):
+        logger = logging.getLogger("pyALS-RF")
         and_luts = {}
         or_luts = {}
         stack = []
@@ -36,7 +38,7 @@ class LutMapper:
             
         while len(stack) > 0:
             m = stack.pop()
-            print(f"Processing minterm {m}")
+            logger.debug(f"Processing minterm {m}")
             slices = LutMapper.split_minterm(m, self.k)
             and_of_and = []
             for s in slices:
@@ -49,7 +51,7 @@ class LutMapper:
                     inputs = tuple(s)
                 if inputs not in and_luts:
                     and_luts[inputs] = {"inst" : f"and{self.k}_{signal_name}_inst_{len(and_luts)}", "conf": self.and_conf, "o": f"and{self.k}_{signal_name}_inst_{len(and_luts)}_o"}
-                    print(f"\tInstantiating {and_luts[inputs]['inst']} with inputs {inputs}")
+                    logger.debug(f"\tInstantiating {and_luts[inputs]['inst']} with inputs {inputs}")
                 and_of_and.append(and_luts[inputs]["o"])
             if len(and_of_and) > 1:
                 stack.append(and_of_and)
@@ -60,7 +62,7 @@ class LutMapper:
             stack.append(to_be_ored)
             while len(stack) > 0:
                 m = stack.pop()
-                print(f"Processing maxterm {m}")
+                logger.debug(f"Processing maxterm {m}")
                 slices = LutMapper.split_minterm(m, self.k)
                 if len(slices) > 1:
                     or_of_or = []
@@ -74,7 +76,7 @@ class LutMapper:
                             inputs = tuple(s)
                         if inputs not in or_luts:
                             or_luts[inputs] = {"inst" : f"or{self.k}_{signal_name}_inst_{len(or_luts)}", "conf": self.or_conf, "o": f"or{self.k}_{signal_name}_inst_{len(or_luts)}_o"}
-                            print(f"\tInstantiating {or_luts[inputs]['inst']} with inputs {inputs}")
+                            logger.debug(f"\tInstantiating {or_luts[inputs]['inst']} with inputs {inputs}")
                         or_of_or.append(or_luts[inputs]['o'])
                     stack.append(or_of_or)
                 else:
@@ -83,7 +85,7 @@ class LutMapper:
                     else:
                         inputs = tuple(slices[0])
                     or_luts[inputs] = {"inst" : f"or{self.k}_{signal_name}_inst_{len(or_luts)}", "conf": self.or_conf, "o": f"class_{signal_name}"}
-                    print(f"\tInstantiating {or_luts[inputs]['inst']} with inputs {inputs}")
+                    logger.debug(f"\tInstantiating {or_luts[inputs]['inst']} with inputs {inputs}")
         else:
             and_luts[ list(and_luts.keys())[-1] ]['o'] = f"class_{signal_name}"    
         return [ {"inst" : lut['inst'], "type": f"LUT{self.k}", "conf" : lut['conf'], 'o' : lut['o'], "pi": pis} for pis, lut in {**and_luts, **or_luts}.items() ]

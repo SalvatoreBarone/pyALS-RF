@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import os, numpy as np
+import os, numpy as np, logging
 from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
 from jinja2 import Environment, FileSystemLoader

@@ -15,7 +15,7 @@ RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 from distutils.dir_util import mkpath
-from .ax_flows import load_configuration_ps, create_classifier
+from .ctx_factory import load_configuration_ps, create_classifier
 from .ConfigParsers.PsConfigParser import *
 from .AxCT.LosslessHedgeTrimming import LosslessHedgeTrimming
 from .AxCT.LossyHedgeTrimming import LossyHedgeTrimming

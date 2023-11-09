@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import numpy as np, pandas as pd, random, json5, joblib
+import numpy as np, pandas as pd, random, json5, joblib, logging
 from xml.etree import ElementTree
 from anytree import Node, RenderTree, AsciiStyle
 from multiprocessing import cpu_count, Pool
@@ -70,6 +70,8 @@ class Classifier:
             self.joblib_parser(model_source, dataset_description)
 
     def pmml_parser(self, pmml_file_name, dataset_description = None):
+        logger = logging.getLogger("pyALS-RF")
+        logger.debug(f"Parsing {pmml_file_name}")
         self.trees = []
         self.model_features = []
         self.model_classes = []
@@ -85,21 +87,22 @@ class Classifier:
         segmentation = root.find("pmml:MiningModel/pmml:Segmentation", self.__namespaces)
         if segmentation is not None:
             for tree_id, segment in enumerate(segmentation.findall("pmml:Segment", self.__namespaces)):
-                print(f"Parsing tree {tree_id}... ")
+                logger.debug(f"Parsing tree {tree_id}... ")
                 tree_model_root = segment.find("pmml:TreeModel", self.__namespaces).find("pmml:Node", self.__namespaces)
                 tree = self.get_tree_model_from_pmml(str(tree_id), tree_model_root)
                 self.trees.append(tree)
-            print("\rDone")
+            logger.debug("\rDone")
         else:
             tree_model_root = root.find("pmml:TreeModel", self.__namespaces).find(
                 "pmml:Node", self.__namespaces)
             tree = self.get_tree_model_from_pmml("0", tree_model_root)
             self.trees.append(tree)
-        print(f"Done parsing {len(self.trees)} trees")
+        logger.debug(f"Done parsing {len(self.trees)} trees")
         self.ncpus = min(self.ncpus, len(self.trees))
 
     def joblib_parser(self, joblib_file_name, dataset_description):
-        print(f"Parsing {joblib_file_name}")
+        logger = logging.getLogger("pyALS-RF")
+        logger.debug(f"Parsing {joblib_file_name}")
         self.trees = []
         self.model_features = []
         self.model_classes = []
@@ -110,13 +113,13 @@ class Classifier:
         self.model_features = [ {"name": f, "type": "double" } for f in dataset_description.attributes_name ]
         if isinstance(model, (RandomForestClassifier, RandomForestClassifierMV)):
             for i, estimator in enumerate(model.estimators_):
-                print(f"Parsing tree_{i}")
+                logger.debug(f"Parsing tree_{i}")
                 root_node = self.get_tree_model_from_joblib(estimator)
                 self.trees.append(DecisionTree(f"tree_{i}", root_node, self.model_features, self.model_classes, self.use_espresso))
         elif isinstance(model, DecisionTreeClassifier):
             root_node = self.get_tree_model_from_joblib(model)
             self.trees.append(DecisionTree(f"tree_0", root_node, self.model_features, self.model_classes, self.use_espresso))
-        print(f"Done parsing {len(self.trees)} trees")
+        logger.debug(f"Done parsing {len(self.trees)} trees")
         self.ncpus = min(self.ncpus, len(self.trees))
 
     def dump(self):
@@ -226,8 +229,9 @@ class Classifier:
         self.pool = Pool(self.ncpus)
 
     def evaluate_test_dataset(self, use_pruning = False):
+        logger = logging.getLogger("pyALS-RF")
         if self.args is None:
-            print("Warning!\nMulti-threading is disabled. To enable it, call the enable_mt() member of the Classifier class")
+            logger.warn("Multi-threading is disabled. To enable it, call the enable_mt() member of the Classifier class")
             accuracy = 0
             for x, y in tqdm(zip(self.x_test, self.y_test), total=len(self.y_test), desc="Computing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
                 outcome, draw = self.predict(x, use_pruning)
@@ -317,9 +321,6 @@ class Classifier:
     def get_tree_model_from_pmml(self, tree_name, tree_model_root, id=0):
         tree = Node(f"Node_{tree_model_root.attrib['id']}" if "id" in tree_model_root.attrib else f"Node_{id}", feature="", operator="", threshold_value="", boolean_expression="")
         self.get_tree_nodes_from_pmml_recursively(tree_model_root, tree, id)
-        
-        # print(RenderTree(tree, style=AsciiStyle()).by_attr())
-        # exit()
         return DecisionTree(tree_name, tree, self.model_features, self.model_classes, self.use_espresso)
 
     def get_tree_nodes_from_pmml_recursively(self, element_tree_node, parent_tree_node, id=0):
@@ -351,7 +352,6 @@ class Classifier:
             else:
                 Node(f"Node_{child.attrib['id']}" if "id" in child.attrib else f"Node_{id}", parent = parent_tree_node, score = child.attrib['score'].replace('-', '_'), boolean_expression = boolean_expression)
                 
-
     def get_tree_model_from_joblib(self, clf : DecisionTreeClassifier):
         n_nodes = clf.tree_.node_count
         children_left = clf.tree_.children_left
@@ -362,7 +362,7 @@ class Classifier:
         node_depth = np.zeros(shape=n_nodes, dtype=np.int64)
         is_leaves = np.zeros(shape=n_nodes, dtype=bool)
         
-        root_node = Node(f"Node_0", feature="", operator="", threshold_value="", boolean_expression="")
+        root_node = Node("Node_0", feature="", operator="", threshold_value="", boolean_expression="")
         stack = [(0, 0, root_node)]  # start with the root node id (0) and its depth (0)
         while len(stack) > 0:
             # `pop` ensures each node is only visited once

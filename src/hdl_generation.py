@@ -24,7 +24,7 @@ from .HDLGenerators.SingleStepFullHdlGenerator import SingleStepFullHdlGenerator
 from .HDLGenerators.TwoStepsAlsHdlGenerator import TwoStepsAlsHdlGenerator
 from .HDLGenerators.TwoStepsAlsWcHdlGenerator import TwoStepsAlsWcHdlGenerator
 from .HDLGenerators.TwoStepsFullHdlGenerator import TwoStepsFullHdlGenerator
-from .ax_flows import load_configuration_ps, create_classifier, create_yshelper, load_flow
+from .ctx_factory import load_configuration_ps, create_classifier, create_yshelper, load_flow
 
 def hdl_generation(ctx, luts, output):
     load_configuration_ps(ctx)

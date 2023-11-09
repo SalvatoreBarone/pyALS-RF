@@ -18,7 +18,7 @@ import joblib
 from tabulate import tabulate
 from .ConfigParsers.PsConfigParser import *
 from .Model.Classifier import *
-from .ax_flows import load_configuration_ps, create_classifier, create_yshelper
+from .ctx_factory import load_configuration_ps, create_classifier, create_yshelper
 from .dtgen import print_nodes
 
 def debug_with_scikit(ctx, output):

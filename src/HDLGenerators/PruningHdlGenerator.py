@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import os, numpy as np
+import os, numpy as np, logging
 from distutils.dir_util import mkpath
 
 from pyalslib import YosysHelper, double_to_bin
@@ -56,19 +56,21 @@ class PruningHdlGenerator(HDLGenerator):
         
             
     def get_pruned_dbs(self, tree: DecisionTree):
+        logger = logging.getLogger("pyALS-RF")
         used_db_names = set()
         for a in tree.pruned_boolean_nets:
             used_db_names.update(set(a['hdl_expression'].replace('not ', '').replace('func_and(', ''). replace('func_or(', '').replace(')', '').replace(',', '').split(" ")))
         used_db = [ b for b in tree.decision_boxes if b["name"] in used_db_names ]
         if len(used_db) != len(tree.decision_boxes):
-            print(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to pruning, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources")
+            logger.debug(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to pruning, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources")
         return used_db
             
     def implement_pruned_decision_boxes(self, tree : DecisionTree, boxes : list, destination):
+        logger = logging.getLogger("pyALS-RF")
         feature_names = set(b["box"].feature_name for b in boxes )
         features = [ f for f in self.classifier.model_features if f['name'] in feature_names ]
         if len(features) != len(tree.model_features):
-            print(f"Tree {tree.name} is using {len(features)} out of {len(tree.model_features)} features.")
+            logger.debug(f"Tree {tree.name} is using {len(features)} out of {len(tree.model_features)} features.")
         file_name = f"{destination}/decision_tree_{tree.name}.vhd"
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)

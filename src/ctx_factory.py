@@ -19,9 +19,13 @@ from pyalslib import YosysHelper, check_for_file
 from distutils.dir_util import mkpath
 from .ConfigParsers.PsConfigParser import *
 from .Model.Classifier import *
+from .logger import get_logger_instance
 
-def set_global_options(ctx, confifile, ncpus, use_espresso, flow = None):
+def set_global_options(ctx, confifile, logger_name, verbosity, ncpus, use_espresso, flow = None):
     #assert "flow" not in ctx.obj, f"Approximation flow already set ({ctx.obj['flow']}). You issued more than one approximation command. Bailing out."
+    if "logger" not in ctx.obj:
+        ctx.obj["logger"] = logger_name
+        get_logger_instance(logger_name, verbosity)
     ctx.obj["flow"] = flow
     if "configfile" not in ctx.obj:
         ctx.obj["configfile"] = confifile

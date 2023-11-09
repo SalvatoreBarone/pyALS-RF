@@ -17,7 +17,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import click, os, sys
 from multiprocessing import cpu_count
-from src.ax_flows import set_global_options, store_flow
+from src.ctx_factory import set_global_options, store_flow
 from src.ps_flow import ps_flow, ps_eval, ps_distance, ps_compare, compute_gini_dist
 from src.als_flow import als_one_step, als_two_steps
 from src.als_wc_flow import als_wc_one_step, als_wc_two_steps
@@ -28,7 +28,6 @@ from src.hdl_generation import hdl_generation
 from src.debug_flow import hdl_debug_flow, debug_with_scikit, print_model
 from src.git_updater import git_updater
 
-
 @click.group(chain=True)
 @click.pass_context
 def cli(ctx):
@@ -37,32 +36,34 @@ def cli(ctx):
 @cli.command("ps")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
-@click.option('-e', '--espresso', is_flag = True, help = f"Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
+@click.option('-e', '--espresso', is_flag = True, help = "Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.option('--mode', type=click.Choice(["rank", "full"]), default = "full")
 @click.option('--alpha', type=float, default = 0.07)
 @click.option('--beta', type=float, default = 0.5)
 @click.option('--gamma', type=float, default = 2)
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def bitwidth(ctx, conf, ncpus, espresso, mode, alpha, beta, gamma):
+def bitwidth(ctx, conf, ncpus, espresso, mode, alpha, beta, gamma, verbose):
     """
     Performs precision-scaling approximation
     """
-    set_global_options(ctx, conf, ncpus, espresso, "ps")
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, espresso, "ps")
     ps_flow(ctx, mode, alpha, beta, gamma)
     store_flow(ctx)
     
 @cli.command("als")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
-@click.option('-e', '--espresso', is_flag = True, help = f"Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
+@click.option('-e', '--espresso', is_flag = True, help = "Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.option('--onestep', is_flag = True, default = False, help = "Enable one-step approximation flow")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def als(ctx, conf, ncpus, espresso, onestep):
+def als(ctx, conf, ncpus, espresso, onestep, verbose):
     """
     Performs the standard ALS approximation flow
     """
     flow = "als-onestep" if onestep else "als-twosteps"
-    set_global_options(ctx, conf, ncpus, espresso, flow)
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, espresso, flow)
     if onestep:
         als_one_step(ctx)
     else:
@@ -72,15 +73,16 @@ def als(ctx, conf, ncpus, espresso, onestep):
 @cli.command("als-wc")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
-@click.option('-e', '--espresso', is_flag = True, help = f"Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
+@click.option('-e', '--espresso', is_flag = True, help = "Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.option('--onestep', is_flag = True, default = False, help = "Enable one-step approximation flow")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def als_wc(ctx, conf, ncpus, espresso, onestep):
+def als_wc(ctx, conf, ncpus, espresso, onestep, verbose):
     """
     Performs ALS-WC approximation
     """
     flow = "wcals-onestep" if onestep else "wcals-twosteps"
-    set_global_options(ctx, conf, ncpus, espresso, flow)
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, espresso, flow)
     if onestep:
         als_wc_one_step(ctx)
     else:
@@ -90,15 +92,16 @@ def als_wc(ctx, conf, ncpus, espresso, onestep):
 @cli.command("full")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
-@click.option('-e', '--espresso', is_flag = True, help = f"Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
+@click.option('-e', '--espresso', is_flag = True, help = "Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.option('--onestep', is_flag = True, default = False, help = "Enable one-step approximation flow")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def full(ctx, conf, ncpus, espresso, onestep):
+def full(ctx, conf, ncpus, espresso, onestep, verbose):
     """
     Performs full approximation, i.e, both precision scaling on features and approximate logic synthesis on boolean functions
     """
     flow = "full-onestep" if onestep else "full-twosteps"
-    set_global_options(ctx, conf, ncpus, espresso, flow)
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, espresso, flow)
     if onestep:
         full_one_step(ctx)
     else:
@@ -108,13 +111,14 @@ def full(ctx, conf, ncpus, espresso, onestep):
 @cli.command("pruning")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
-@click.option('-e', '--espresso', is_flag = True, help = f"Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
-@click.option('-t', '--train', is_flag = True, help = f"Use training data")
-@click.option('-t', '--maxloss', type = float, default = None, help = f"Use training data")
-@click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = f"Override output directory configuration")
+@click.option('-e', '--espresso', is_flag = True, help = "Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
+@click.option('-t', '--train', is_flag = True, help = "Use training data")
+@click.option('-t', '--maxloss', type = float, default = None, help = "Use training data")
+@click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def assertions_pruning(ctx, conf, ncpus, espresso, train, maxloss, output):
-    set_global_options(ctx, conf, ncpus, espresso, "pruning")
+def assertions_pruning(ctx, conf, ncpus, espresso, train, maxloss, output, verbose):
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, espresso, "pruning")
     pruning_flow(ctx, train, maxloss, output)
     store_flow(ctx)
     
@@ -123,48 +127,52 @@ def assertions_pruning(ctx, conf, ncpus, espresso, train, maxloss, output):
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-e', '--espresso', is_flag = True, help = "Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.option('-k', '--luts', type = int, default = 6, help = "Number of inputs for look-up tables")
-@click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = f"Override output directory configuration")
+@click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def generate_hdl(ctx, conf, ncpus, espresso, luts, output):
+def generate_hdl(ctx, conf, ncpus, espresso, luts, output, verbose):
     """
     Generates HDL implementation
     """
-    set_global_options(ctx, conf, ncpus, espresso)
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, espresso)
     hdl_generation(ctx, luts, output)
     
 @cli.command("debug")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
-@click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = f"Override output directory configuration")
+@click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def debug_model(ctx, conf, ncpus, output):
+def debug_model(ctx, conf, ncpus, output, verbose):
     """
     Tests the pyALS-RF model against the scikit one.
     """
-    set_global_options(ctx, conf, ncpus, False)
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False)
     debug_with_scikit(ctx, output)
 
 @cli.command("hdl-debug")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
-@click.option('-i', '--index', type = int, help = f"Index of the test data to dump")
-@click.option('-a', '--axflow', type = click.Choice(["none", "pruning", "ps", "als", "full"]), help = f"Approximation flow")
-@click.option('-r', '--results', type = click.Path(dir_okay=True), default = None, help = f"Overriden output directory")
-@click.option('-v', '--variant', type = int, default = None, help = f"Variant")
-@click.option('-o', '--output', type = click.Path(dir_okay=False), default = None, help = f"Output file")
+@click.option('-i', '--index', type = int, help = "Index of the test data to dump")
+@click.option('-a', '--axflow', type = click.Choice(["none", "pruning", "ps", "als", "full"]), help = "Approximation flow")
+@click.option('-r', '--results', type = click.Path(dir_okay=True), default = None, help = "Overriden output directory")
+@click.option('-v', '--variant', type = int, default = None, help = "Variant")
+@click.option('-o', '--output', type = click.Path(dir_okay=False), default = None, help = "Output file")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def debug_hdl(ctx, conf, ncpus, index, axflow, results, variant, output):
+def debug_hdl(ctx, conf, ncpus, index, axflow, results, variant, output, verbose):
     """
     Dumps the output signals for HDL debugging purpose
     """
-    set_global_options(ctx, conf, ncpus, False)
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False)
     hdl_debug_flow(ctx, index, axflow, results, variant, output)
     
 @cli.command("dump")
-@click.option('-d', '--dumpfile', type = click.Path(dir_okay=False), default = None, help = f"dump file")
-@click.option('-p', '--pmml', type = click.Path(dir_okay=False), default = None, help = f"PMML file")
+@click.option('-d', '--dumpfile', type = click.Path(dir_okay=False), default = None, help = "dump file")
+@click.option('-p', '--pmml', type = click.Path(dir_okay=False), default = None, help = "PMML file")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def debug_hdl(ctx, dumpfile, pmml):
+def debug_hdl(ctx, dumpfile, pmml, verbose):
     """
     Dumps the model
     """

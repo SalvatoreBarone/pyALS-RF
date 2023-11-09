@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import numpy as np
+import numpy as np, logging
 from anytree import PreOrderIter
 from pyeda.inter import *
 from .DecisionBox import *
@@ -153,6 +153,7 @@ class DecisionTree:
                     return k, m, mask
                 
     def parse(self, root_node, use_espresso):
+        logger = logging.getLogger("pyALS-RF")
         db_aliases = {}
         leaves_name = []
         self.leaves = []
@@ -172,34 +173,34 @@ class DecisionTree:
                     if condition not in db_aliases:
                         db_aliases[condition] = []
                     db_aliases[condition].append(node)
-                    print(f"Tree {self.name}: found split node {node.name} evaluating feature \"{node.feature} {node.operator} {node.threshold_value}\"")
+                    logger.debug(f"Tree {self.name}: found split node {node.name} evaluating feature \"{node.feature} {node.operator} {node.threshold_value}\"")
                 except Exception:
                     print(f"\"{node.feature}\": Feature not found! Recognized model features: {self.model_features}")
                     exit()
             elif not any(node.children):
                 self.leaves.append({"name": node.name, "class": node.score, "boolean_net": f"({str(node.boolean_expression)})"})
                 leaves_name.append(node.name)
-                print(f"Tree {self.name}: found leaf node {node.name} resulting in class \"{node.score}\" with condition when \"{str(node.boolean_expression)}\"")
+                logger.debug(f"Tree {self.name}: found leaf node {node.name} resulting in class \"{node.score}\" with condition when \"{str(node.boolean_expression)}\"")
         for l in self.leaves:
             for n in leaves_name:
                 assert f"{n} " not in l["boolean_net"], f"Leaf name found in boolean expression! {n} found in {l}"
         for condition, aliases in db_aliases.items():
             try:
                 #! db instantiation is here!
-                print(f"Instantiating {aliases[0].name} DB in DT {self.name} evaluating feature \"{aliases[0].feature} {aliases[0].operator} {aliases[0].threshold_value}\"")
+                logger.debug(f"Instantiating {aliases[0].name} DB in DT {self.name} evaluating feature \"{aliases[0].feature} {aliases[0].operator} {aliases[0].threshold_value}\"")
                 feature = next(item for item in self.model_features if item["name"] == aliases[0].feature)
                 self.decision_boxes.append({
                     "name" : aliases[0].name,
                     "box"  : DecisionBox(aliases[0].name, aliases[0].feature, feature["type"], aliases[0].operator, aliases[0].threshold_value)})
                 for n in aliases[1:]:
-                    print(f"\tMerging {n.name} to {aliases[0].name} in DT {self.name}.")
+                    logger.debug(f"\tMerging {n.name} to {aliases[0].name} in DT {self.name}.")
                     # #! every time a db is merged, any assertion function involving it has to be amended, replacing the name of the merged db with the retained one
                     for l in range(len(self.leaves)):
                         if f"{n.name} " in self.leaves[l]["boolean_net"] or f"{n.name})" in self.leaves[l]["boolean_net"] :
-                            print(f"\t\tReplacing {n.name} with {aliases[0].name} at node {self.leaves[l]['name']}")
-                            print(f"\t\tOld: {self.leaves[l]['boolean_net']}")
+                            logger.debug(f"\t\tReplacing {n.name} with {aliases[0].name} at node {self.leaves[l]['name']}")
+                            logger.debug(f"\t\tOld: {self.leaves[l]['boolean_net']}")
                             new_assertion = self.leaves[l]["boolean_net"].replace(f"{n.name} ", f"{aliases[0].name} ").replace(f"{n.name})", f"{aliases[0].name})")
-                            print(f"\t\tNew: {new_assertion}")
+                            logger.debug(f"\t\tNew: {new_assertion}")
                             assert f"{n.name} " not in new_assertion, f"Merge failed. {n.name} found in {new_assertion}"
                             assert f"{n.name})" not in new_assertion, f"Merge failed. {n.name} found in {new_assertion}"
                             assert f"{aliases[0].name}" in new_assertion, f"Merge failed. {aliases[0].name} not found in {new_assertion}"
@@ -211,7 +212,7 @@ class DecisionTree:
                     print(e)
                     exit()            
         assert len(db_aliases) == len(self.decision_boxes), f"Error during DBs instantiation"
-        print(f"\n{len(self.decision_boxes)} DBs instantiated.")
+        logger.debug(f"\n{len(self.decision_boxes)} DBs instantiated.")
         for l in self.leaves:
             for n in leaves_name:
                 assert f"{n} " not in l["boolean_net"], f"Leaf name found in assertion function! {n} found in {l}"
