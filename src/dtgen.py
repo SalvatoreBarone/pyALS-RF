@@ -218,10 +218,11 @@ def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, 
         if (np.argmax(outcome_1) != np.argmax(rho_1)) and (draw_1 != draw_scikit):
             mismatches.append((', '.join(str(s) for s in score_1), draw_1, ', '.join(str(s) for s in outcome_1), np.argmax(outcome_1), ', '.join(f'{q:.2f}' for q in rho_1[0]), np.argmax(rho_1), y))
 
-    logger.info(tabulate(mismatches, headers=["Score", "Draw", "Outcome", "argmax", "Scikit Rho", "argmax", "Label"]))
-    logger.info(f"{len(mismatches)} mismatches")
-    logger.info(f"Accuracy of the pyALS model: {acc_pyals / len(y_test)}")
-    logger.info(f"Accuracy of the scikit-learn model: {acc_scikit / len(y_test)}")
+    if mismatches:
+        logger.info(f'Mismatches in models:\n{tabulate(mismatches, headers=["Score", "Draw", "Outcome", "argmax", "Scikit Rho", "argmax", "Label"])}')
+        logger.info(f"{len(mismatches)} mismatches")
+    logger.info(f"Accuracy of the pyALS model: {acc_pyals / len(y_test) * 100}%")
+    logger.info(f"Accuracy of the scikit-learn model: {acc_scikit / len(y_test)*100}%")
 
 def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter):
     logger = logging.getLogger("pyALS-RF")
@@ -243,8 +244,9 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
         else:
             rf_random = GridSearchCV(estimator = estimator, param_grid = search_grid, cv = 3, verbose = 1, n_jobs = -1)
         rf_random.fit(x_train, y_train)
+        logger.info(f'Best parameters:\n{tabulate([ [k, v] for k, v in rf_random.best_params_.items()])}')
         data = [ [i, estimator.tree_.node_count, estimator.tree_.max_depth ] for i, estimator in enumerate(rf_random.best_estimator_.estimators_) ]
-        logger.info(tabulate(data, headers=["#", "#nodes", "depth"]))
+        logger.info(f'DTs Stats.:\n{tabulate(data, headers=["tree", "#nodes", "depth"])}\n')
         save_model(outputdir, config, rf_random.best_estimator_, rf_random.best_params_, x_train, y_train, x_test, y_test)
         
 def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap):
@@ -259,7 +261,7 @@ def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, crit
         model = RandomForestClassifierMV(n_estimators = predictors, max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha, bootstrap = not disable_bootstrap, n_jobs = -1, verbose = 1).fit(x_train, y_train)
         #model = RandomForestClassifier(n_estimators = predictors, max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha, bootstrap = not disable_bootstrap, n_jobs = -1, verbose = 1).fit(x_train, y_train)
         data = [ [i, estimator.tree_.node_count, estimator.tree_.max_depth ] for i, estimator in enumerate(model.estimators_) ]
-        logger.info(tabulate(data, headers=["#", "#nodes", "depth"]))
+        logger.info(f'DTs Stats.:\n{tabulate(data, headers=["Tree", "#nodes", "depth"])}')
     #Todo Store training parameters on file (in place of None)
     save_model(outputdir, config, model, None, x_train, y_train, x_test, y_test)    
     
