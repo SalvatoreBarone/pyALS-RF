@@ -32,7 +32,7 @@ class LutMapper:
         to_be_ored = []
         
         for m in minterms:
-            inputs = m.strip("()").replace("not ", "not_").split(" and ")
+            inputs = m.strip("()").replace("not ", "not_").replace("&", "and").split(" and ")
             inputs.sort()
             stack.append(inputs)
             
