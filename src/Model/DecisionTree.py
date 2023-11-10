@@ -16,6 +16,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import numpy as np, logging
 from anytree import PreOrderIter
+from tabulate import tabulate
 from pyeda.inter import *
 from .DecisionBox import *
 from pyalslib import YosysHelper, ALSGraph, ALSCatalog, negate
@@ -130,7 +131,7 @@ class DecisionTree:
             print("\t\t",  b["box"].get_name(), "(", b["box"].get_feature(), " " , b["box"].get_c_operator(), " ", b["box"].get_threshold(), "), nab ", b["box"].get_nab())
         print("\tAssertions:")
         for a in self.boolean_networks:
-            print("\t\t", a["class"], " = ", a["boolean_net"])
+            print("\t\t", a["class"], " = ", a["sop"])
 
     def get_boxes_output(self, attributes):
         return {box["box"].name if self.als_conf is None else "\\" + box["box"].name() : box["box"].compare(attributes[self.attrbutes_name.index(box["box"].feature_name)]) for box in self.decision_boxes}
@@ -138,7 +139,7 @@ class DecisionTree:
     def visit(self, attributes, use_pruned = False):
         boxes_output = self.get_boxes_output(attributes)
         if self.als_conf is None:
-            return ([eval(a["boolean_net"], boxes_output) for a in self.pruned_boolean_nets ] if use_pruned else [eval(a["boolean_net"], boxes_output) for a in self.boolean_networks ])
+            return ([eval(a["sop"], boxes_output) for a in self.pruned_boolean_nets ] if use_pruned else [eval(a["sop"], boxes_output) for a in self.boolean_networks ])
         exit()
         lut_io_info = {}
         output = self.assertions_graph.evaluate(boxes_output, lut_io_info, self.current_als_configuration)[0]
@@ -146,7 +147,7 @@ class DecisionTree:
 
     def get_assertion_activation(self, attributes):
         boxes_output = self.get_boxes_output(attributes)
-        prediction_as_one_hot = np.array([eval(a["boolean_net"], boxes_output) for a in self.boolean_networks ], dtype=int)
+        prediction_as_one_hot = np.array([eval(a["sop"], boxes_output) for a in self.boolean_networks ], dtype=int)
         for class_name, assertions in self.class_assertions.items():
             for minterm in assertions:
                 if eval(minterm, boxes_output):
@@ -158,7 +159,7 @@ class DecisionTree:
         leaves_name = []
         self.leaves = []
         self.decision_boxes = []
-        
+        nl = '\n'
         for node in PreOrderIter(root_node):
             if any(node.children):
                 try:
@@ -178,12 +179,12 @@ class DecisionTree:
                     print(f"\"{node.feature}\": Feature not found! Recognized model features: {self.model_features}")
                     exit()
             elif not any(node.children):
-                self.leaves.append({"name": node.name, "class": node.score, "boolean_net": f"({str(node.boolean_expression)})"})
+                self.leaves.append({"name": node.name, "class": node.score, "sop": f"({str(node.boolean_expression)})"})
                 leaves_name.append(node.name)
                 logger.debug(f"Tree {self.name}: found leaf node {node.name} resulting in class \"{node.score}\" with condition when \"{str(node.boolean_expression)}\"")
         for l in self.leaves:
             for n in leaves_name:
-                assert f"{n} " not in l["boolean_net"], f"Leaf name found in boolean expression! {n} found in {l}"
+                assert f"{n} " not in l["sop"], f"Leaf name found in boolean expression! {n} found in {l}"
         for condition, aliases in db_aliases.items():
             try:
                 #! db instantiation is here!
@@ -196,18 +197,18 @@ class DecisionTree:
                     logger.debug(f"\tMerging {n.name} to {aliases[0].name} in DT {self.name}.")
                     # #! every time a db is merged, any assertion function involving it has to be amended, replacing the name of the merged db with the retained one
                     for l in range(len(self.leaves)):
-                        if f"{n.name} " in self.leaves[l]["boolean_net"] or f"{n.name})" in self.leaves[l]["boolean_net"] :
+                        if f"{n.name} " in self.leaves[l]["sop"] or f"{n.name})" in self.leaves[l]["sop"] :
                             logger.debug(f"\t\tReplacing {n.name} with {aliases[0].name} at node {self.leaves[l]['name']}")
-                            logger.debug(f"\t\tOld: {self.leaves[l]['boolean_net']}")
-                            new_assertion = self.leaves[l]["boolean_net"].replace(f"{n.name} ", f"{aliases[0].name} ").replace(f"{n.name})", f"{aliases[0].name})")
+                            logger.debug(f"\t\tOld: {self.leaves[l]['sop']}")
+                            new_assertion = self.leaves[l]["sop"].replace(f"{n.name} ", f"{aliases[0].name} ").replace(f"{n.name})", f"{aliases[0].name})")
                             logger.debug(f"\t\tNew: {new_assertion}")
                             assert f"{n.name} " not in new_assertion, f"Merge failed. {n.name} found in {new_assertion}"
                             assert f"{n.name})" not in new_assertion, f"Merge failed. {n.name} found in {new_assertion}"
                             assert f"{aliases[0].name}" in new_assertion, f"Merge failed. {aliases[0].name} not found in {new_assertion}"
-                            self.leaves[l]['boolean_net'] = new_assertion
-                            assert f"{n.name} " not in self.leaves[l]['boolean_net'], f"Merge failed. {n.name} found in {self.leaves[l]['boolean_net']}"
-                            assert f"{n.name})" not in self.leaves[l]['boolean_net'], f"Merge failed. {n.name} found in {self.leaves[l]['boolean_net']}"
-                            assert f"{aliases[0].name}" in self.leaves[l]['boolean_net'], f"Merge failed. {aliases[0].name} not found in {self.leaves[l]['boolean_net']}"
+                            self.leaves[l]['sop'] = new_assertion
+                            assert f"{n.name} " not in self.leaves[l]['sop'], f"Merge failed. {n.name} found in {self.leaves[l]['sop']}"
+                            assert f"{n.name})" not in self.leaves[l]['sop'], f"Merge failed. {n.name} found in {self.leaves[l]['sop']}"
+                            assert f"{aliases[0].name}" in self.leaves[l]['sop'], f"Merge failed. {aliases[0].name} not found in {self.leaves[l]['sop']}"
             except Exception as e:
                     print(e)
                     exit()            
@@ -215,52 +216,48 @@ class DecisionTree:
         logger.info(f"Tree {self.name}: {len(self.decision_boxes)} DBs instantiated.")
         for l in self.leaves:
             for n in leaves_name:
-                assert f"{n} " not in l["boolean_net"], f"Leaf name found in assertion function! {n} found in {l}"
+                assert f"{n} " not in l["sop"], f"Leaf name found in assertion function! {n} found in {l}"
         self.boolean_networks = [ self.get_boolean_net(c, use_espresso) for c in self.model_classes ]
+        logger.debug(f'Tree {self.name} Boolean network:\n{tabulate([[bn["class"], f"{nl}".join(bn["minterms"]), bn["sop"].replace(" or ", f" or{nl}"), bn["hdl_expression"].replace(" or ", f" or{nl}")] for bn in self.boolean_networks], headers=["class", "minterms", "SoP", "HDL"], tablefmt="grid")}')
         for l in self.boolean_networks:
             for n in leaves_name:
-                assert f"{n} " not in l["boolean_net"], f"Leaf name found in boolean expression for class {l['class']}! {n} found in {l['boolean_net']}"
-        self.class_assertions = { c : [item["boolean_net"].replace("~", "not ").replace("|", "or").replace("&", "and") for item in self.leaves if item["class"] == c] for c in self.model_classes}
+                assert f"{n} " not in l["sop"], f"Leaf name found in boolean expression for class {l['class']}! {n} found in {l['sop']}"
+        self.class_assertions = { c : [item["sop"] for item in self.leaves if item["class"] == c] for c in self.model_classes}
+        logger.debug(f'Tree {self.name} class assertions:\n{tabulate([[k, f"{nl}".join(v), ] for k, v in self.class_assertions.items()], headers=["class", "minterms"], tablefmt="grid")}')
         
     def define_boolean_expression(self, minterms, use_espresso):
         logger = logging.getLogger("pyALS-RF")
         if not minterms:
-            boolean_net = 'False'
+            sop = 'False'
             hdl_expression = '\'0\''
         elif len(minterms) == 1:
-            boolean_net = minterms[0]
-            hdl_expression = f"func_and{minterms[0].replace('~', 'not ').replace(' & ', ', ').replace(' and ', ', ')}"
-        else:
-            if use_espresso:
+            sop = hdl_expression = minterms[0]
+        elif use_espresso:
                 logger.info("Using espresso heuristic logic minimizer")
-                hdl_expression = str(espresso_exprs(expr(" | ".join(minterms)))[0]).replace("~", "not ").replace("Or","func_or").replace("And","func_and")
-            else:
-                and_gates = [f"func_and{m.replace('~', 'not ').replace(' & ', ', ').replace(' and ', ', ')}" for m in minterms]
-                hdl_expression = f"func_or({', '.join(and_gates)})"
-            boolean_net = " or ".join(minterms).replace("~", "not ").replace("&", "and")
-        return boolean_net,hdl_expression
+                minimized_expression = str(espresso_exprs(expr(" | ".join( m.replace("not ", " ~").replace("and", "&") for m in minterms)))[0]).replace("Or(","").replace("~", "not ").replace("))", ")")
+                minterms = [m.replace("And(", "(").replace(",", " and") for m in minimized_expression.split(", And")]
+                sop = hdl_expression = " or ".join(minterms)
+        else:
+            sop = hdl_expression = " or ".join(minterms)
+        return minterms, sop, hdl_expression
     
     def get_boolean_net(self, class_name : str, use_espresso : bool):
-        minterms = [item["boolean_net"] for item in self.leaves if item["class"] == class_name]
-        boolean_net, hdl_expression = self.define_boolean_expression(minterms, use_espresso)
-        return {"class" : class_name, "minterms" : minterms, "boolean_net" : boolean_net, "hdl_expression" : hdl_expression}
+        minterms = [item["sop"] for item in self.leaves if item["class"] == class_name]
+        minterms, sop, hdl_expression = self.define_boolean_expression(minterms, use_espresso)
+        return {"class" : class_name, "minterms" : minterms, "sop" : sop, "hdl_expression" : hdl_expression}
 
     def set_pruning(self, pruning, use_espresso : bool):
         logger = logging.getLogger("pyALS-RF")
+        nl = '\n'
         self.pruned_boolean_nets = []
         logger.debug(f"Setting pruning configuration for {self.name}")
         for class_name, assertions in self.class_assertions.items():
             pruned = [assertion for class_label, tree_name, assertion, _ in pruning if tree_name == self.name and class_label == class_name ]            
             kept_assertions = [ assertion for assertion in assertions if assertion not in pruned ]
-            boolean_net, hdl_expression = self.define_boolean_expression(kept_assertions, use_espresso)
-            self.pruned_boolean_nets.append({"class" : class_name, "minterms" : [k.replace("and", "&") for k in kept_assertions], "boolean_net" : boolean_net, "hdl_expression" : hdl_expression})
-            # logger.debug(f"\tClass: {class_name}")
-            # logger.debug(f"\tMinterms:")
-            # for m in kept_assertions:
-            #     logger.debug(f"\t\t{m}")
-            # logger.debug(f"Boolean Network: {boolean_net}")
-            # logger.debug(f"HDL statement: {hdl_expression}")
-            
+            kept_assertions, sop, hdl_expression = self.define_boolean_expression(kept_assertions, use_espresso)
+            self.pruned_boolean_nets.append({"class" : class_name, "minterms" : [k.replace("and", "&") for k in kept_assertions], "sop" : sop, "hdl_expression" : hdl_expression})
+        logger.debug(f'Tree {self.name} pruning configuration:\n{tabulate([[bn["class"], f"{nl}".join(bn["minterms"]), bn["sop"].replace(" or ", f" or{nl}"), bn["hdl_expression"].replace(" or ", f" or{nl}")] for bn in self.pruned_boolean_nets], headers=["class", "minterms", "SoP", "HDL"], tablefmt="grid")}')    
+
     def get_assertions_cost(self):
         return sum(len(minterm.split(" & ")) for network in self.boolean_networks for minterm in network["minterms"])
     

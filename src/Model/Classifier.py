@@ -332,7 +332,7 @@ class Classifier:
         for child in children:
             boolean_expression = parent_tree_node.boolean_expression
             if boolean_expression:
-                boolean_expression += " & "
+                boolean_expression += " and "
             predicate = None
             if compound_predicate := child.find("pmml:CompoundPredicate", self.__namespaces):
                 predicate = next(item for item in compound_predicate.findall("pmml:SimplePredicate", self.__namespaces) if item.attrib["operator"] != "isMissing")
@@ -348,7 +348,7 @@ class Classifier:
                     parent_tree_node.threshold_value = threshold_value
                     boolean_expression += parent_tree_node.name
                 else:
-                    boolean_expression += f"~{parent_tree_node.name}"
+                    boolean_expression += f"not {parent_tree_node.name}"
             if child.find("pmml:Node", self.__namespaces) is not None:
                 new_tree_node = Node(f"Node_{child.attrib['id']}" if "id" in child.attrib else f"Node_{id}", parent = parent_tree_node, feature = "", operator = "", threshold_value = "", boolean_expression = boolean_expression)
                 self.get_tree_nodes_from_pmml_recursively(child, new_tree_node, id + 1)
@@ -382,8 +382,8 @@ class Classifier:
                 current_node.threshold_value =threshold[current_node_id]
                 boolean_expression = current_node.boolean_expression
                 if len(boolean_expression) > 0:
-                    boolean_expression += " & "
-                child_l = Node(f"Node_{children_left[current_node_id]}", parent = current_node, feature = "", operator = "", threshold_value = "", boolean_expression = f"{boolean_expression}~{current_node.name}")
+                    boolean_expression += " and "
+                child_l = Node(f"Node_{children_left[current_node_id]}", parent = current_node, feature = "", operator = "", threshold_value = "", boolean_expression = f"{boolean_expression}not {current_node.name}")
                 stack.append((children_left[current_node_id], depth + 1, child_l))
                 child_r = Node(f"Node_{children_right[current_node_id]}", parent = current_node, feature = "", operator = "", threshold_value = "", boolean_expression = f"{boolean_expression}{current_node.name}")
                 stack.append((children_right[current_node_id], depth + 1, child_r))
