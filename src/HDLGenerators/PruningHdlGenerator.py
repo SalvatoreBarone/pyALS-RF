@@ -71,7 +71,7 @@ class PruningHdlGenerator(HDLGenerator):
         feature_names = set(b["box"].feature_name for b in boxes )
         features = [ f for f in self.classifier.model_features if f['name'] in feature_names ]
         if len(features) != len(tree.model_features):
-            logger.info(f"Tree {tree.name} is using {len(features)} out of {len(tree.model_features)} features.\n\tHereafter, thei names\n\t{[f['name'] for f in features]}")
+            logger.info(f"Tree {tree.name} is using {len(features)} out of {len(tree.model_features)} features.\n\tHereafter, their names\n\t{[f['name'] for f in features]}")
         file_name = f"{destination}/decision_tree_{tree.name}.vhd"
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
