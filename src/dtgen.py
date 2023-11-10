@@ -29,8 +29,6 @@ from tabulate import tabulate
 from .ConfigParsers.DtGenConfigParser import DtGenConfigParser
 from .scikit.RandonForestClassifierMV import RandomForestClassifierMV
 from .Model.Classifier import *
-from .logger import get_logger_instance
-    
 
 def read_dataset_from_csv(csv_file, delimiter, skip_header, outcome_col):
     attributes = []
@@ -256,9 +254,9 @@ def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, crit
     config = DtGenConfigParser(configfile)
     x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
     if clf == "dt":
-       model = DecisionTreeClassifier(max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha).fit(x_train, y_train)
-       logger.info(f"Node count: {model.tree_.node_count()}")
-       logger.info(f"Depth: {model.tree_.max_dept}")
+        model = DecisionTreeClassifier(max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha).fit(x_train, y_train)
+        logger.info(f"Node count: {model.tree_.node_count()}")
+        logger.info(f"Depth: {model.tree_.max_dept}")
     elif clf == "rf":
         model = RandomForestClassifierMV(n_estimators = predictors, max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha, bootstrap = not disable_bootstrap, n_jobs = -1, verbose = 0).fit(x_train, y_train)
         #model = RandomForestClassifier(n_estimators = predictors, max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha, bootstrap = not disable_bootstrap, n_jobs = -1, verbose = 1).fit(x_train, y_train)

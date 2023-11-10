@@ -14,18 +14,18 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import os, pyamosa, json5
+import os, pyamosa, json5, logging
 from pyalslib import YosysHelper, check_for_file
 from distutils.dir_util import mkpath
 from .ConfigParsers.PsConfigParser import *
 from .Model.Classifier import *
-from .logger import get_logger_instance
+from .logger import configure_logger
 
 def set_global_options(ctx, confifile, logger_name, verbosity, ncpus, use_espresso, flow = None):
     #assert "flow" not in ctx.obj, f"Approximation flow already set ({ctx.obj['flow']}). You issued more than one approximation command. Bailing out."
     if "logger" not in ctx.obj:
         ctx.obj["logger"] = logger_name
-        get_logger_instance(logger_name, verbosity)
+        configure_logger(logger_name, verbosity)
     ctx.obj["flow"] = flow
     if "configfile" not in ctx.obj:
         ctx.obj["configfile"] = confifile
@@ -36,7 +36,9 @@ def set_global_options(ctx, confifile, logger_name, verbosity, ncpus, use_espres
 
 def create_yshelper(ctx):
     if "yshelper" not in ctx.obj:
-        print("Creating yshelper")
+        assert "logger" in ctx.obj, "Logger not set"
+        logger = logging.getLogger(ctx.obj["logger"])
+        logger.info("Creating yshelper")
         ctx.obj["yshelper"] = YosysHelper()
         ctx.obj["yshelper"].load_ghdl()
         
@@ -52,7 +54,9 @@ def load_configuration_ps(ctx):
         assert isinstance(ctx.obj["configuration"], PSConfigParser), "Unsuitable configuration file"
         
 def load_flow(ctx):
-    print(f"Loading approximation flow from {ctx.obj['configuration'].outdir}/.flow.json5")
+    assert "logger" in ctx.obj, "Logger not set"
+    logger = logging.getLogger(ctx.obj["logger"])
+    logger.info(f"Loading approximation flow from {ctx.obj['configuration'].outdir}/.flow.json5")
     assert "configuration" in ctx.obj, "No configuration. Bailing out."
     ctx.obj["flow"] = json5.load(open(f"{ctx.obj['configuration'].outdir}/.flow.json5"))
     

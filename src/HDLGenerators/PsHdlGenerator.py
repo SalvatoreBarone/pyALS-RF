@@ -62,7 +62,6 @@ class PsHdlGenerator(HDLGenerator):
                 
     def generate_ax_tb(self, dest, features, env, **kwargs):    
         n_vectors, test_vectors, expected_outputs = self.generate_exact_test_vectors()
-       
         tb_classifier_template = env.get_template(self.vhdl_tb_classifier_template_file)
         tb_classifier = tb_classifier_template.render(
             features=features,

@@ -22,13 +22,14 @@ from .AxCT.LosslessHedgeTrimming import LosslessHedgeTrimming
 from .AxCT.LossyHedgeTrimming import LossyHedgeTrimming
 
 def pruning_flow(ctx : dict, use_training_data : bool, max_loss_perc : float, output : str):
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("Runing the pruning flow.")
     load_configuration_ps(ctx)
     if output is not None:
         ctx.obj['configuration'].outdir = output
         mkpath(ctx.obj["configuration"].outdir)
     
     create_classifier(ctx)
-    logger = logging.getLogger("pyALS-RF")
     
     if use_training_data:
         assert ctx.obj["configuration"].error_conf.training_dataset is not None, "You must provide a csv for the training dataset to use this command"

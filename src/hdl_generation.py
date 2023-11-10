@@ -27,18 +27,19 @@ from .HDLGenerators.TwoStepsFullHdlGenerator import TwoStepsFullHdlGenerator
 from .ctx_factory import load_configuration_ps, create_classifier, create_yshelper, load_flow
 
 def hdl_generation(ctx, luts, output):
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("Runing the HDL generation flow.")
     load_configuration_ps(ctx)
     if output is not None:
         ctx.obj['configuration'].outdir = output
         mkpath(ctx.obj["configuration"].outdir)
     create_classifier(ctx)
     create_yshelper(ctx)
-    logger = logging.getLogger("pyALS-RF")
     
     if ctx.obj["flow"] is None:
         load_flow(ctx)
     
-    logging.info("Generating the approximate implementation...")
+    logger.info("Generating the approximate implementation...")
     if ctx.obj["flow"] == "pruning":
         pruned_assertions_json = f"{ctx.obj['configuration'].outdir}/pruned_assertions.json5"
         if "pruned_assertions" not in ctx.obj:

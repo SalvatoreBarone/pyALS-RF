@@ -40,7 +40,7 @@ class CustomFormatter(logging.Formatter):
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
 
-def get_logger_instance(name : str, verbosity : Union[int,str]):
+def configure_logger(name : str, verbosity : Union[int,str]):
     # Create a custom logger
     logger = logging.getLogger(name)
     verbosity_map = {
@@ -55,7 +55,7 @@ def get_logger_instance(name : str, verbosity : Union[int,str]):
         "ERROR": logging.ERROR,
         "CRITICAL": logging.CRITICAL,
     }
-
+    assert not logger.handlers
     # Create handlers
     c_handler = logging.StreamHandler()
     f_handler = logging.FileHandler(f'{name}.log')
