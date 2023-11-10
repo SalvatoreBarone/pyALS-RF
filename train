@@ -18,7 +18,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import click, sys, os, json5, numpy as np
 from src.dtgen import dtgen, training_with_parameter_tuning, save_dataset_to_csv
 from src.git_updater import git_updater
-from src.logger import get_logger_instance
+from src.logger import configure_logger
 from typing import Union
 
 @click.group()
@@ -39,7 +39,7 @@ def synthetic_dataset(outputdir, n_samples : int, n_features : int, n_classes : 
     OUTPUTDIR the output directory
     
     """
-    get_logger_instance("pyALS-RF", verbose)
+    configure_logger("pyALS-RF", verbose)
     from sklearn.datasets import make_classification
     from distutils.dir_util import mkpath
     if weights is not None:
@@ -85,7 +85,7 @@ def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntre
     
     OUTPUTDIR is the path of the output directory.
     """
-    get_logger_instance("pyALS-RF", verbose)
+    configure_logger("pyALS-RF", verbose)
     training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, crossvalidate)
     
 @click.command("dtgen")
@@ -118,7 +118,7 @@ def learning(clf : str, dataset : str, configfile : str, outputdir : str, fracti
     
     OUTPUTDIR is the path of the output directory.
     """
-    get_logger_instance("pyALS-RF", verbose)
+    configure_logger("pyALS-RF", verbose)
     dtgen(clf, dataset, configfile, outputdir, fraction, depth, ntrees, criterion, min_samples_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap, crossvalidate)
 
 cli.add_command(synthetic_dataset)
