@@ -126,7 +126,7 @@ def assertions_pruning(ctx, conf, ncpus, espresso, train, maxloss, output, verbo
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-e', '--espresso', is_flag = True, help = "Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
-@click.option('-k', '--luts', type = int, default = 6, help = "Number of inputs for look-up tables")
+@click.option('-l', '--luts', type = int, default = None, help = "Number of inputs for look-up tables. If specified, it enables the embedded LUT-mapper exploiting AMD/Xilinx LUT primitives.")
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
@@ -177,7 +177,7 @@ def debug_hdl(ctx, dumpfile, pmml, verbose):
     Dumps the model
     """
     print_model(dumpfile, pmml)
-     
+
 cli.add_command(bitwidth)
 cli.add_command(als)
 cli.add_command(als_wc)

@@ -226,8 +226,8 @@ class HDLGenerator:
         mapper = LutMapper(lut_tech)
         trivial_classes = []
         nontrivial_classes = []
-        for c, bn in zip(self.classifier.classes_name, tree.pruned_boolean_nets):
-            if bn["minterms"]:
+        for c, bn in zip(self.classifier.classes_name, tree.boolean_networks):
+            if bn["minterms"] and lut_tech is not None:
                 nontrivial_classes.append({"class" : c, "luts": mapper.map(bn["minterms"], c)})
             else:
                 trivial_classes.append({"class" : c, "expression" : bn["hdl_expression"]})

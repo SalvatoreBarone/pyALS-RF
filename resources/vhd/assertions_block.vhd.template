@@ -28,7 +28,6 @@ entity assertions_block_{{tree_name}} is
     {% for c in classes -%}class_{{c}} : out std_logic{{";" if not loop.last else ");"}}
     {% endfor %}
 end assertions_block_{{tree_name}};
-
 architecture dataflow of assertions_block_{{tree_name}} is
   component LUT6 is
     generic (INIT : std_logic_vector(63 downto 0)); -- Specify LUT Contents
@@ -73,7 +72,6 @@ begin
   {% endfor %}
   {% for f in trivial_classes -%}class_{{f['class']}} <= {{f['expression']}};
   {% endfor %}
-
   {% for f in nontrivial_classes -%}
     {% for l in f['luts'] -%}
     {{l['inst']}} : {{l['type']}}
@@ -85,5 +83,4 @@ begin
         {% endfor %});
     {% endfor %}
   {% endfor %}
-
 end dataflow;
