@@ -196,7 +196,7 @@ class HDLGenerator:
             used_db_names.update(set(a['hdl_expression'].replace('not ', '').replace(' and ', ' '). replace('or', '').replace(')', '').replace('(', '').split(" ")))
         used_db = [ b for b in tree.decision_boxes if b["name"] in used_db_names ]
         if len(used_db) != len(tree.decision_boxes):
-            logger.info(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to optimization, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources.\nHereafter the DBs:\n{[ b['name'] for b in used_db]}")
+            logger.info(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to optimization, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources.\n\tHereafter the DBs:\n\t{[ b['name'] for b in used_db]}")
         return used_db
 
     def implement_decision_boxes(self, tree : DecisionTree, boxes : list,  destination : str):
@@ -204,7 +204,7 @@ class HDLGenerator:
         feature_names = set(b["box"].feature_name for b in boxes )
         features = [ f for f in self.classifier.model_features if f['name'] in feature_names ]
         if len(features) != len(tree.model_features):
-            logger.debug(f"Tree {tree.name} is using {len(features)} out of {len(tree.model_features)} features.\nHereafter, thei names\n{[f['name'] for f in features]}")
+            logger.debug(f"Tree {tree.name} is using {len(features)} out of {len(tree.model_features)} features.\n\tHereafter, thei names\n\t{[f['name'] for f in features]}")
         file_name = f"{destination}/decision_tree_{tree.name}.vhd"
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
