@@ -29,6 +29,7 @@ from tabulate import tabulate
 from .ConfigParsers.DtGenConfigParser import DtGenConfigParser
 from .scikit.RandonForestClassifierMV import RandomForestClassifierMV
 from .Model.Classifier import *
+from .plot import boxplot
 
 def read_dataset_from_csv(csv_file, delimiter, skip_header, outcome_col):
     attributes = []
@@ -151,6 +152,20 @@ def print_nodes(model):
             print_clf(estimator)
     elif isinstance(model, DecisionTreeClassifier):
         print_clf(model)
+
+
+
+def plot_redundancy(model,  x_test, y_test, outfile):
+    samples_error = { i: [] for i in range(model.n_classes_) }
+    for x, y in tqdm( zip(x_test, y_test), total=len(y_test), desc="Collecting redundancy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+        outcome =  model.predict_proba(np.array(x).reshape((1, -1)))[0]
+        for i in range(model.n_classes_):
+            if i != y:
+                samples_error[i].append(np.ceil( (outcome[y] - outcome[i]) / 2))
+    boxplot([ list(v) for v in samples_error.values()], "Classes", r"$E_{p_i}$", outfile, (model.n_classes_, 4), False)
+    
+
+            
         
 def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, y_test, cross_validate):
     logger = logging.getLogger("pyALS-RF")
@@ -183,9 +198,15 @@ def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, 
     # sklearn2pmml(pipeline, pmml_file, with_repr = True)
     model = joblib.load(dump_file) #! after calling the fake() method you have no choice but reloading the model from file...
     logger.info("Done PMML export!")
+    
+    logger.info("Computing redundancy...")
+    plot_redundancy(model,  x_test, y_test, f"{outputdir}/redundancy_boxplot.pdf")
+    logger.info("Done computing redundancy!")
+    
     if cross_validate:
-        
+        logger.info("Performing model crossvalidation...")
         models_crossvalidation(config, model, x_test, y_test, pmml_file, test_dataset_csv)
+        logger.info("Done model crossvalidation!")
 
 def models_crossvalidation(config, model, x_test, y_test, pmml_file, test_dataset_csv):
     logger = logging.getLogger("pyALS-RF")

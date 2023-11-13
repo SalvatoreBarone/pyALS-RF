@@ -41,14 +41,15 @@ def boxplot(data, xlabel, ylabel, outfile, figsize = (4,4), annotate = True, flo
             
             _, mean_y = mean.get_xydata()[0]
             plt.text(0.97 * box_left, mean_y, float_format % mean_y, horizontalalignment='right', verticalalignment='center', fontsize = fontsize)
-
+            
     #plt.box(False)
-    plt.tick_params(bottom = False)
-    plt.xticks([1], [""])
+    #plt.tick_params(bottom = False)
+    #plt.xticks([1], [""])
     #plt.xticks(rotation = 45)
-    #plt.xlabel(xlabel)
+    plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     ax = plt.gca()
     ax.spines[['right', 'top', 'bottom']].set_visible(False)
     plt.tight_layout()
     plt.savefig(outfile, bbox_inches='tight', pad_inches=0)
+    
