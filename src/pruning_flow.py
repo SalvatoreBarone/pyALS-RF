@@ -43,6 +43,7 @@ def pruning_flow(ctx : dict, use_training_data : bool, max_loss_perc : float, ou
         logger.debug(f"Test set: {len(ctx.obj['classifier'].x_test)} samples")
         
     trimmer = LosslessHedgeTrimming(ctx.obj["classifier"]) if max_loss_perc is None else LossyHedgeTrimming(ctx.obj["classifier"], False, max_loss_perc)
+    trimmer.redundancy_boxplot(f"{ctx.obj['configuration'].outdir}/redundancy_boxplot.pdf")
     trimmer.trim()
     trimmer.store(ctx.obj["configuration"].outdir)
 

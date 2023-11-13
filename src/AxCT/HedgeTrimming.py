@@ -17,6 +17,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import json5, logging
 from tabulate import tabulate
 from ..Model.Classifier import *
+from ..plot import boxplot
 class HedgeTrimming:
     def __init__(self, classifier : Classifier, use_training_data : bool = False) -> None:
         self.classifier = classifier
@@ -40,16 +41,11 @@ class HedgeTrimming:
                     self.pruning_table[activity["y"]][tree][path["assertion"]].append(sample_id)
                     logger.debug(f"Adding {sample_id} (which redundancy is {self.redundancy_table[sample_id]}) to the pruning table for class {activity['y']}, tree {tree}, assertion {path['assertion']}")
                     
-    def redundancy_histogram(self):
-        hist = {}
-        for r in self.redundancy_table.values():
-            if r not in hist:
-                hist[r] = 0
-            hist[r] += 1
-        for k in hist:
-            hist[k] = hist[k] * 100 / len(self.redundancy_table)
-        return hist
-    
+    def redundancy_boxplot(self, outfile):
+        nested_lists = [list(r) for r in self.redundancy_table.values() ]
+        merged_list = [element for sublist in nested_lists for element in sublist]
+        boxplot(merged_list, "", "Redundancy", outfile, False)
+                    
     def store(self, outputdir : str):
         #redundancy_json = f"{outputdir}/redundancy.json5"
         pruning_json = f"{outputdir}/pruning_table.json5"

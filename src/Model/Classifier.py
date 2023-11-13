@@ -261,6 +261,7 @@ class Classifier:
                 outcome["outcomes"][t.name] = {"assertion" : active_assertion, "cost": cost, "correct" : predicted_class == str(y)}
                 logger.debug(f"Predicted class: {predicted_class} (Predict OK: {predicted_class == str(y)}), mask: {prediction_as_one_hot}, active minterm: {active_assertion} (cost: {cost})")
             outcome["Ig"] = giniImpurity(softmax(outcome["rho"]))
+            # TODO questa formulazione di ridondanza, però, tiene conto solo della soglia sufficiente!
             outcome["redundancy"] = int(sum(i["correct"] for i in outcome["outcomes"].values()) - np.ceil(ntrees/2))
             outcome["rho"] = outcome["rho"].tolist()
             activity_by_sample.append(outcome) 

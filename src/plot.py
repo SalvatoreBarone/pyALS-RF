@@ -41,11 +41,10 @@ def boxplot(data, xlabel, ylabel, outfile, figsize = (4,4), annotate = True, flo
             
             _, mean_y = mean.get_xydata()[0]
             plt.text(0.97 * box_left, mean_y, float_format % mean_y, horizontalalignment='right', verticalalignment='center', fontsize = fontsize)
-            
-    #plt.box(False)
-    #plt.tick_params(bottom = False)
-    #plt.xticks([1], [""])
-    #plt.xticks(rotation = 45)
+    #test for nested list. If data is not a list of list, disable the ticks            
+    if not any(isinstance(sub, list) for sub in data):
+        plt.tick_params(bottom = False)
+        plt.xticks([1], [""])
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     ax = plt.gca()
