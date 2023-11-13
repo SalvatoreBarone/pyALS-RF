@@ -85,7 +85,15 @@ def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntre
     
     OUTPUTDIR is the path of the output directory.
     """
-    configure_logger("pyALS-RF", verbose)
+    logger = configure_logger("pyALS-RF", verbose)
+    logger.info("Performing learning with automatic hyperparamiter tuning"
+                f"\n\tclf: {clf}"
+                f"\n\ttuning: {tuning}"
+                f"\n\tdataset: {dataset}"
+                f"\n\tconfigfile: {configfile}"
+                f"\n\toutputdir: {outputdir}"
+                )
+    
     training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, crossvalidate)
     
 @click.command("dtgen")

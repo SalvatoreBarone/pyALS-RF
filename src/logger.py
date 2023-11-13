@@ -55,16 +55,18 @@ def configure_logger(name : str, verbosity : Union[int,str]):
         "ERROR": logging.ERROR,
         "CRITICAL": logging.CRITICAL,
     }
-    assert not logger.handlers
-    # Create handlers
-    c_handler = logging.StreamHandler()
-    f_handler = logging.FileHandler(f'{name}.log')
-    c_handler.setLevel(verbosity_map[verbosity])
-    f_handler.setLevel(verbosity_map[verbosity])
-    # Create formatters and add it to handlers
-    c_handler.setFormatter(CustomFormatter())
-    f_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s'))
-    # Add handlers to the logger
-    logger.addHandler(c_handler)
-    logger.addHandler(f_handler)
-    logger.setLevel(verbosity_map[verbosity])
+    if not logger.handlers:
+        # Create handlers
+        c_handler = logging.StreamHandler()
+        f_handler = logging.FileHandler(f'{name}.log')
+        c_handler.setLevel(verbosity_map[verbosity])
+        f_handler.setLevel(verbosity_map[verbosity])
+        # Create formatters and add it to handlers
+        c_handler.setFormatter(CustomFormatter())
+        f_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s'))
+        # Add handlers to the logger
+        logger.addHandler(c_handler)
+        logger.addHandler(f_handler)
+        # Set the verbolity
+        logger.setLevel(verbosity_map[verbosity])
+    return logger
