@@ -200,7 +200,7 @@ def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, 
     logger.info("Done PMML export!")
     
     logger.info("Computing redundancy...")
-    plot_redundancy(model,  x_test, y_test, f"{outputdir}/redundancy_boxplot.pdf")
+    plot_redundancy(model,  x_test, y_test, f"{outputdir}/error_boxplot.pdf")
     logger.info("Done computing redundancy!")
     
     if cross_validate:
