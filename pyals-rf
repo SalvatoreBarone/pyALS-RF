@@ -48,7 +48,7 @@ def bitwidth(ctx, conf, ncpus, espresso, mode, alpha, beta, gamma, verbose):
     Performs precision-scaling approximation
     """
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, espresso, "ps")
-    logger = logging.getLogger("pyALS-RF", verbose)
+    logger = logging.getLogger("pyALS-RF")
     logger.info("Performing precision scaling approximation flow"
                 f"\n\tconf: {conf}"
                 f"\n\tuse espresso: {espresso}"
@@ -128,7 +128,7 @@ def full(ctx, conf, ncpus, espresso, onestep, verbose):
 @click.pass_context
 def assertions_pruning(ctx, conf, ncpus, espresso, train, maxloss, output, verbose):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, espresso, "pruning")
-    logger = logging.getLogger("pyALS-RF", verbose)
+    logger = logging.getLogger("pyALS-RF")
     logger.info("Performing hedge trimming"
                 f"\n\tconf: {conf}"
                 f"\n\tuse espresso: {espresso}"
@@ -152,7 +152,7 @@ def generate_hdl(ctx, conf, ncpus, espresso, luts, output, verbose):
     Generates HDL implementation
     """
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, espresso)
-    logger = logging.getLogger("pyALS-RF", verbose)
+    logger = logging.getLogger("pyALS-RF")
     logger.info("Performing HDL generation"
                 f"\n\tconf: {conf}"
                 f"\n\tuse espresso: {espresso}"
