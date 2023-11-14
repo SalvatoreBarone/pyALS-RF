@@ -262,7 +262,11 @@ class Classifier:
                 logger.debug(f"Predicted class: {predicted_class} (Predict OK: {predicted_class == str(y)}), mask: {prediction_as_one_hot}, active minterm: {active_assertion} (cost: {cost})")
             outcome["Ig"] = giniImpurity(softmax(outcome["rho"]))
             # TODO questa formulazione di ridondanza, però, tiene conto solo della soglia sufficiente!
-            outcome["redundancy"] = int(sum(i["correct"] for i in outcome["outcomes"].values()) - np.ceil(ntrees/2))
+            # In realtà andrebbe calcolata rispetto alla seconda votazione più alta!
+            #! outcome["redundancy"] = int(sum(i["correct"] for i in outcome["outcomes"].values()) - np.ceil(ntrees/2))
+            r = np.sort(np.array(outcome["rho"], copy=True))[::-1]
+            outcome["redundancy"] = (r[0] - r[1] - 1) // 2 #! this definition guarantees no accuracy loss while redundancy is kept greater than zero
+            #input("Press Enter to continue...")
             outcome["rho"] = outcome["rho"].tolist()
             activity_by_sample.append(outcome) 
         return activity_by_sample    
