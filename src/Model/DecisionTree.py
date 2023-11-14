@@ -255,12 +255,20 @@ class DecisionTree:
             pruned = [assertion for class_label, tree_name, assertion, _ in pruning if tree_name == self.name and class_label == class_name ]            
             kept_assertions = [ assertion for assertion in assertions if assertion not in pruned ]
             kept_assertions, sop, hdl_expression = self.define_boolean_expression(kept_assertions, use_espresso)
-            self.pruned_boolean_nets.append({"class" : class_name, "minterms" : [k.replace("and", "&") for k in kept_assertions], "sop" : sop, "hdl_expression" : hdl_expression})
+            self.pruned_boolean_nets.append({"class" : class_name, "minterms" : kept_assertions, "sop" : sop, "hdl_expression" : hdl_expression})
         logger.debug(f'Tree {self.name} pruning configuration:\n{tabulate([[bn["class"], f"{nl}".join(bn["minterms"]), bn["sop"].replace(" or ", f" or{nl}"), bn["hdl_expression"].replace(" or ", f" or{nl}")] for bn in self.pruned_boolean_nets], headers=["class", "minterms", "SoP", "HDL"], tablefmt="grid")}')    
 
     def get_assertions_cost(self):
-        return sum(len(minterm.split(" & ")) for network in self.boolean_networks for minterm in network["minterms"])
-    
+        literal_cost = 0
+        for network in self.boolean_networks:
+            for minterm in network["minterms"]:
+                literal_cost += len(minterm.split(" and "))
+        return literal_cost
+        
     def get_pruned_assertions_cost(self):
-        return sum(len(minterm.split(" & ")) for network in self.pruned_boolean_nets for minterm in network["minterms"])
+        literal_cost = 0
+        for network in self.pruned_boolean_nets:
+            for minterm in network["minterms"]:
+                literal_cost += len(minterm.split(" and "))
+        return literal_cost
         
