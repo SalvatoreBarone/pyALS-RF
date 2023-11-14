@@ -27,9 +27,9 @@ class CustomFormatter(logging.Formatter):
     #format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
     debug_format = "%(name)s - (%(filename)s:%(lineno)d) - %(levelname)s: %(message)s"
     info_format = "%(name)s - %(asctime)s - %(levelname)s: %(message)s"
-    warn_format = "%(name)s - %(levelname)s: %(message)s (%(filename)s:%(lineno)d)"
-    error_format = "%(name)s - %(levelname)s: %(message)s (%(filename)s:%(lineno)d)"
-    critical_format = "%(name)s -%(levelname)s: %(message)s (%(filename)s:%(lineno)d)"
+    warn_format = "%(name)s - %(levelname)s: %(message)s"
+    error_format = "%(name)s - %(levelname)s: %(message)s"
+    critical_format = "%(name)s -%(levelname)s: %(message)s"
 
     FORMATS = {
         logging.DEBUG: grey + debug_format + reset,
