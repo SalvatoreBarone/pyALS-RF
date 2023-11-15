@@ -42,7 +42,7 @@ class HedgeTrimming:
                     logger.debug(f"Adding {sample_id} (which redundancy is {self.redundancy_table[sample_id]}) to the pruning table for class {activity['y']}, tree {tree}, assertion {path['assertion']}")
                     
     def redundancy_boxplot(self, outfile):
-        boxplot(list(self.redundancy_table.values()), "", "Redundancy", outfile, (4, 4), False)
+        boxplot(list(self.redundancy_table.values()), "", "Redundancy", outfile, figsize = (2, 4), annotate = False, integer_only= True)
                     
     def store(self, outputdir : str):
         #redundancy_json = f"{outputdir}/redundancy.json5"

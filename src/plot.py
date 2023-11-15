@@ -15,6 +15,7 @@ RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 def scatterplot(paretos, legend_markers, xlabel, ylabel, outfile, figsize = (4,4)):
     plt.figure(figsize = figsize)
@@ -26,7 +27,7 @@ def scatterplot(paretos, legend_markers, xlabel, ylabel, outfile, figsize = (4,4
     plt.tight_layout()
     plt.savefig(outfile, bbox_inches="tight", pad_inches=0)
     
-def boxplot(data, xlabel, ylabel, outfile, figsize = (4,4), annotate = True, float_format = "%.2f", fontsize = 14):
+def boxplot(data, xlabel, ylabel, outfile, figsize = (4,4), annotate = True, float_format = "%.2f", fontsize = 14, integer_only = False):
     plt.figure(figsize=figsize)
     bp_dict = plt.boxplot(data, showmeans=True)
     if annotate:
@@ -45,6 +46,8 @@ def boxplot(data, xlabel, ylabel, outfile, figsize = (4,4), annotate = True, flo
     if not any(isinstance(sub, list) for sub in data):
         plt.tick_params(bottom = False)
         plt.xticks([1], [""])
+    ax = plt.figure().gca()
+    ax.yaxis.get_major_locator().set_params(integer=integer_only)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     ax = plt.gca()
