@@ -21,8 +21,10 @@ from ..Model.Classifier import Classifier
 from .HedgeTrimming import HedgeTrimming
 
 class LosslessHedgeTrimming(HedgeTrimming):
-    def __init__(self, classifier: Classifier, use_training_data: bool = False) -> None:
+    # TODO: soglie di ridondanza come parametro e criterio di stop dell'algoritmo
+    def __init__(self, classifier: Classifier, use_training_data: bool = False, min_redundancy : int = 0) -> None:
         super().__init__(classifier, use_training_data)
+        self.min_redundancy = min_redundancy
         
     def compute_candidates(self):
         self.candidate_assertions = []
@@ -46,7 +48,7 @@ class LosslessHedgeTrimming(HedgeTrimming):
             #for class_label, tree_name, assertion, cost in tqdm(self.candidate_assertions, total=len(self.candidate_assertions), desc="Lossless hedge trimming...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
         for class_label, tree_name, assertion, cost in self.candidate_assertions:
             samples = self.pruning_table[class_label][tree_name][assertion]
-            approximable = all( self.redundancy_table[sample] > 0 for sample in samples )
+            approximable = all( self.redundancy_table[sample] > self.min_redundancy for sample in samples )
             if approximable:
                 candidate = (class_label, tree_name, assertion, cost) 
                 logger.debug(f"Adding {candidate} to the list of pruned assertions")

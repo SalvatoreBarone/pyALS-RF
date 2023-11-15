@@ -122,11 +122,12 @@ def full(ctx, conf, ncpus, espresso, onestep, verbose):
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-e', '--espresso', is_flag = True, help = "Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.option('-t', '--train', is_flag = True, help = "Use training data")
+@click.option('-r', '--minredundancy', type = int, default = 0, help = "Minimum redundancy to be kept")
 @click.option('-m', '--maxloss', type = float, default = None, help = "Maximum allowed accuracy loss")
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def assertions_pruning(ctx, conf, ncpus, espresso, train, maxloss, output, verbose):
+def assertions_pruning(ctx, conf, ncpus, espresso, train, minredundancy, maxloss, output, verbose):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, espresso, "pruning")
     logger = logging.getLogger("pyALS-RF")
     logger.info("Performing hedge trimming"
@@ -136,7 +137,7 @@ def assertions_pruning(ctx, conf, ncpus, espresso, train, maxloss, output, verbo
                 f"\n\tmaxloss: {maxloss}"
                 f"\n\toutput dir: {output}"
                 )
-    pruning_flow(ctx, train, maxloss, output)
+    pruning_flow(ctx, train, minredundancy, maxloss, output)
     store_flow(ctx)
     
 @cli.command("genhdl")
