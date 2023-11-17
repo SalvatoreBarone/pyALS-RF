@@ -16,6 +16,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import json5, logging
 from distutils.dir_util import mkpath
+from .HDLGenerators.HDLGenerator import HDLGenerator
 from .HDLGenerators.PruningHdlGenerator import PruningHdlGenerator
 from .HDLGenerators.PsHdlGenerator import PsHdlGenerator
 from .HDLGenerators.SingleStepAlsHdlGenerator import SingleStepAlsHdlGenerator
@@ -38,15 +39,19 @@ def hdl_generation(ctx, luts, output):
     
     if ctx.obj["flow"] is None:
         load_flow(ctx)
+        
+    logger.info("Generating reference (non-approximate) implementation...")
+    hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+    hdl_generator.generate_exact_implementation(enable_espresso =  ctx.obj['configuration'].outdir)
     
     logger.info("Generating the approximate implementation...")
     if ctx.obj["flow"] == "pruning":
-        pruned_assertions_json = f"{ctx.obj['configuration'].outdir}/pruned_assertions.json5"
-        if "pruned_assertions" not in ctx.obj:
-            logger.debug(f"Reading pruning configuration from {pruned_assertions_json}")
-            ctx.obj['pruned_assertions'] = json5.load(open(pruned_assertions_json))
+        pruning_configuration_json = f"{ctx.obj['configuration'].outdir}/pruning_configuration.json5"
+        if "pruning_configuration" not in ctx.obj:
+            logger.debug(f"Reading pruning configuration from {pruning_configuration_json}")
+            ctx.obj['pruning_configuration'] = json5.load(open(pruning_configuration_json))
         hdl_generator = PruningHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
-        hdl_generator.generate_axhdl(pruned_assertions = ctx.obj['pruned_assertions'], enable_espresso = ctx.obj['espresso'])
+        hdl_generator.generate_axhdl(pruning_configuration = ctx.obj['pruning_configuration'], enable_espresso = ctx.obj['espresso'])
     elif ctx.obj["flow"] == "ps":
         hdl_generator = PsHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
     elif ctx.obj["flow"] == "als-onestep":
@@ -65,6 +70,4 @@ def hdl_generation(ctx, luts, output):
         print(f"{ctx.obj['flow']}: unrecognized approximation flow. Bailing out.")
         exit()
     
-    logger.info("Generating reference (non-approximate) implementation...")
-    hdl_generator.generate_exact_implementation(enable_espresso =  ctx.obj['configuration'].outdir)
     logger.info("All done!")

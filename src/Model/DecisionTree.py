@@ -31,7 +31,6 @@ class DecisionTree:
         self.decision_boxes = []
         self.leaves = []
         self.boolean_networks = []
-        self.pruned_boolean_nets = []
         self.class_assertions = {}
         self.als_conf = None
         self.yosys_helper = None
@@ -42,24 +41,6 @@ class DecisionTree:
         self.exact_box_output = None
         if root_node:
             self.parse(root_node, use_espresso)
-
-    def __deepcopy__(self, memo = None):
-        tree = DecisionTree()
-        tree.name = copy.deepcopy(self.name)
-        tree.model_features = copy.deepcopy(self.model_features)
-        tree.model_classes = copy.deepcopy(self.model_classes)
-        tree.decision_boxes = copy.deepcopy(self.decision_boxes)
-        tree.boolean_networks = copy.deepcopy(self.boolean_networks)
-        tree.class_assertions = copy.deepcopy(self.class_assertions)
-        tree.pruned_boolean_nets = copy.deepcopy(self.pruned_boolean_nets)
-        
-        tree.als_conf = copy.deepcopy(self.als_conf)
-        tree.assertions_graph = copy.deepcopy(self.assertions_graph)
-        tree.catalog = copy.deepcopy(self.catalog)
-        tree.assertions_catalog_entries = copy.deepcopy(self.assertions_catalog_entries)
-        tree.current_als_configuration = copy.deepcopy(self.current_als_configuration)
-        tree.exact_box_output = copy.deepcopy(self.exact_box_output)
-        return tree
     
     def brace4ALS(self, als_conf):
         if als_conf is None:
@@ -136,22 +117,14 @@ class DecisionTree:
     def get_boxes_output(self, attributes):
         return {box["box"].name if self.als_conf is None else "\\" + box["box"].name() : box["box"].compare(attributes[self.attrbutes_name.index(box["box"].feature_name)]) for box in self.decision_boxes}
     
-    def visit(self, attributes, use_pruned = False):
+    def visit(self, attributes):
         boxes_output = self.get_boxes_output(attributes)
         if self.als_conf is None:
-            return ([eval(a["sop"], boxes_output) for a in self.pruned_boolean_nets ] if use_pruned else [eval(a["sop"], boxes_output) for a in self.boolean_networks ])
+            return [ int(eval(a["sop"], boxes_output)) for a in self.boolean_networks ]
         exit()
         lut_io_info = {}
         output = self.assertions_graph.evaluate(boxes_output, lut_io_info, self.current_als_configuration)[0]
         return [ o[f"\\{c}"] for c in self.model_classes ]
-
-    def get_assertion_activation(self, attributes):
-        boxes_output = self.get_boxes_output(attributes)
-        prediction_as_one_hot = np.array([eval(a["sop"], boxes_output) for a in self.boolean_networks ], dtype=int)
-        for class_name, assertions in self.class_assertions.items():
-            for minterm in assertions:
-                if eval(minterm, boxes_output):
-                    return class_name, minterm, prediction_as_one_hot
                 
     def parse(self, root_node, use_espresso):
         logger = logging.getLogger("pyALS-RF")
@@ -246,29 +219,6 @@ class DecisionTree:
         minterms, sop, hdl_expression = self.define_boolean_expression(minterms, use_espresso)
         return {"class" : class_name, "minterms" : minterms, "sop" : sop, "hdl_expression" : hdl_expression}
 
-    def set_pruning(self, pruning, use_espresso : bool):
-        logger = logging.getLogger("pyALS-RF")
-        nl = '\n'
-        self.pruned_boolean_nets = []
-        logger.debug(f"Setting pruning configuration for {self.name}")
-        for class_name, assertions in self.class_assertions.items():
-            pruned = [assertion for class_label, tree_name, assertion, _ in pruning if tree_name == self.name and class_label == class_name ]            
-            kept_assertions = [ assertion for assertion in assertions if assertion not in pruned ]
-            kept_assertions, sop, hdl_expression = self.define_boolean_expression(kept_assertions, use_espresso)
-            self.pruned_boolean_nets.append({"class" : class_name, "minterms" : kept_assertions, "sop" : sop, "hdl_expression" : hdl_expression})
-        logger.debug(f'Tree {self.name} pruning configuration:\n{tabulate([[bn["class"], f"{nl}".join(bn["minterms"]), bn["sop"].replace(" or ", f" or{nl}"), bn["hdl_expression"].replace(" or ", f" or{nl}")] for bn in self.pruned_boolean_nets], headers=["class", "minterms", "SoP", "HDL"], tablefmt="grid")}')    
-
-    def get_assertions_cost(self):
-        literal_cost = 0
-        for network in self.boolean_networks:
-            for minterm in network["minterms"]:
-                literal_cost += len(minterm.split(" and "))
-        return literal_cost
-        
-    def get_pruned_assertions_cost(self):
-        literal_cost = 0
-        for network in self.pruned_boolean_nets:
-            for minterm in network["minterms"]:
-                literal_cost += len(minterm.split(" and "))
-        return literal_cost
+    
+    
         

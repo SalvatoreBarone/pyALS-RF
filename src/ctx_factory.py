@@ -72,9 +72,6 @@ def create_classifier(ctx):
         ctx.obj["classifier"] = Classifier(ctx.obj["ncpus"], ctx.obj["espresso"])
         ctx.obj["classifier"].parse(ctx.obj["configuration"].model_source, ctx.obj["configuration"].error_conf.dataset_description)
         ctx.obj["classifier"].read_test_set(ctx.obj["configuration"].error_conf.test_dataset)
-        ctx.obj["classifier"].enable_mt()
-        ctx.obj["classifier"].reset_nabs_configuration()
-        ctx.obj["classifier"].reset_assertion_configuration()
         
 def create_alsgraph(ctx):
     pass

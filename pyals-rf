@@ -121,23 +121,24 @@ def full(ctx, conf, ncpus, espresso, onestep, verbose):
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-e', '--espresso', is_flag = True, help = "Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
-@click.option('-t', '--train', is_flag = True, help = "Use training data")
+@click.option('-f', '--fraction', type = float, default = 0.5, help = "Fraction of the test set to be used as pruning set")
 @click.option('-r', '--minredundancy', type = int, default = 0, help = "Minimum redundancy to be kept")
-@click.option('-m', '--maxloss', type = float, default = None, help = "Maximum allowed accuracy loss")
+@click.option('-m', '--maxloss', type = float, default = 5.0, help = "Maximum allowed accuracy loss")
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def assertions_pruning(ctx, conf, ncpus, espresso, train, minredundancy, maxloss, output, verbose):
+def assertions_pruning(ctx, conf, ncpus, espresso, fraction, minredundancy, maxloss, output, verbose):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, espresso, "pruning")
     logger = logging.getLogger("pyALS-RF")
     logger.info("Performing hedge trimming"
                 f"\n\tconf: {conf}"
                 f"\n\tuse espresso: {espresso}"
-                f"\n\tuse training: {train}"
-                f"\n\tmaxloss: {maxloss}"
+                f"\n\tpruning fraction: {fraction}"
+                f"\n\tmin. redundancy: {minredundancy}"
+                f"\n\tmax. loss: {maxloss}"
                 f"\n\toutput dir: {output}"
                 )
-    pruning_flow(ctx, train, minredundancy, maxloss, output)
+    pruning_flow(ctx, fraction, minredundancy, maxloss, output)
     store_flow(ctx)
     
 @cli.command("genhdl")

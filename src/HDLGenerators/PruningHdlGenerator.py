@@ -23,6 +23,7 @@ from .HDLGenerator import HDLGenerator
 from .LutMapper import LutMapper
 from ..Model.Classifier import Classifier
 from ..Model.DecisionTree import DecisionTree
+from ..AxCT.HedgeTrimming import HedgeTrimming
 
 class PruningHdlGenerator(HDLGenerator):
     def __init__(self, classifier : Classifier, yshelper : YosysHelper, destination : str):
@@ -40,12 +41,12 @@ class PruningHdlGenerator(HDLGenerator):
         trees_name = [t.name for t in self.classifier.trees]
         env = Environment(loader = FileSystemLoader(self.source_dir))
         trees_inputs = {}
-        self.classifier.set_pruning(kwargs['pruned_assertions'])
-        self.generate_ax_tb(f"{dest}/tb", features, env)
+        HedgeTrimming.set_pruning_conf(self.classifier, kwargs['pruning_configuration'])
+        self.generate_exact_tb(f"{dest}/tb", features, env) # once the pruning configuration is set, you can use exact generator functions!
         for tree in self.classifier.trees:
-            boxes = self.get_pruned_dbs(tree)
-            inputs = self.implement_pruned_decision_boxes(tree, boxes, f"{dest}/src")
-            self.implement_pruned_assertions(tree, boxes, f"{dest}/src")
+            boxes = self.get_dbs(tree)
+            inputs = self.implement_decision_boxes(tree, boxes, f"{dest}/src")
+            self.implement_assertions(tree, boxes, f"{dest}/src")
             trees_inputs[tree.name] = inputs
             
         self.generate_rejection_module(f"{dest}/src", env)
@@ -53,84 +54,3 @@ class PruningHdlGenerator(HDLGenerator):
         self.generate_classifier(f"{dest}/src", features, trees_inputs, env)
         self.generate_tcl(dest, trees_name, env)
         self.generate_cmakelists(dest, trees_name, env)
-        
-            
-    def get_pruned_dbs(self, tree: DecisionTree):
-        logger = logging.getLogger("pyALS-RF")
-        used_db_names = set()
-        for a in tree.pruned_boolean_nets:
-            used_db_names.update(set(a['hdl_expression'].replace('not ', '').replace(' and ', ' '). replace('or', '').replace(')', '').replace('(', '').split(" ")))
-        used_db = [ b for b in tree.decision_boxes if b["name"] in used_db_names ]
-        if len(used_db) != len(tree.decision_boxes):
-            logger.info(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to pruning, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources.\n\tHereafter the DBs:\n\t{[ b['name'] for b in used_db]}")
-            
-        return used_db
-            
-    def implement_pruned_decision_boxes(self, tree : DecisionTree, boxes : list, destination):
-        logger = logging.getLogger("pyALS-RF")
-        feature_names = set(b["box"].feature_name for b in boxes )
-        features = [ f for f in self.classifier.model_features if f['name'] in feature_names ]
-        if len(features) != len(tree.model_features):
-            logger.info(f"Tree {tree.name} is using {len(features)} out of {len(tree.model_features)} features.\n\tHereafter, thei names\n\t{[f['name'] for f in features]}")
-        file_name = f"{destination}/decision_tree_{tree.name}.vhd"
-        file_loader = FileSystemLoader(self.source_dir)
-        env = Environment(loader=file_loader)
-        template = env.get_template(self.vhdl_decision_tree_source_template)
-        output = template.render(
-            tree_name = tree.name,
-            features  = features,
-            classes = self.classifier.classes_name,
-            boxes = [b["box"].get_struct() for b in boxes])
-        with open(file_name, "w") as out_file:
-            out_file.write(output)
-        return features
-            
-    def implement_pruned_assertions(self, tree : DecisionTree, boxes : list, destination : str, lut_tech : int = 6):
-        module_name = f"assertions_block_{tree.name}"
-        file_name = f"{destination}/assertions_block_{tree.name}.vhd"
-        mapper = LutMapper(lut_tech)
-        trivial_classes = []
-        nontrivial_classes = []
-        for c, bn in zip(self.classifier.classes_name, tree.pruned_boolean_nets):
-            if bn["minterms"] and lut_tech is not None:
-                nontrivial_classes.append({"class" : c, "luts": mapper.map(bn["minterms"], c)})
-            else:
-                trivial_classes.append({"class" : c, "expression" : bn["hdl_expression"]})
-        file_loader = FileSystemLoader(self.source_dir)
-        env = Environment(loader=file_loader)
-        template = env.get_template(self.vhdl_assertions_source_template)
-        box_list = [b["name"] for b in boxes]
-        output = template.render(
-            tree_name = tree.name,
-            classes = self.classifier.classes_name,
-            boxes = box_list,
-            trivial_classes = trivial_classes,
-            nontrivial_classes = nontrivial_classes)
-        with open(file_name, "w") as out_file:
-            out_file.write(output)
-        return file_name, module_name
-    
-    def generate_ax_test_vectors(self, **kwargs):    
-        test_vectors = { f["name"] : [] for f in self.classifier.model_features }
-        expected_outputs = { **{ c : [] for c in self.classifier.classes_name},  **{ "draw" : []} }
-        for x in self.classifier.x_test:
-            for k, v in zip(self.classifier.model_features, x):
-                test_vectors[k["name"]].append(double_to_bin(v))
-            output, draw = self.classifier.predict(x, True)
-            expected_outputs["draw"].append(int(draw))
-            for c, v in zip(self.classifier.classes_name, output):
-                expected_outputs[c].append(v)
-        return len(self.classifier.y_test), test_vectors, expected_outputs
-    
-    def generate_ax_tb(self, dest, features, env, **kwargs):    
-        n_vectors, test_vectors, expected_outputs = self.generate_ax_test_vectors()
-        tb_classifier_template = env.get_template(self.vhdl_tb_classifier_template_file)
-        tb_classifier = tb_classifier_template.render(
-            features=features,
-            classes=self.classifier.classes_name,
-            n_vectors = n_vectors,
-            latency = min(2, HDLGenerator.roundUp(np.log2(len(self.classifier.trees)), 2)) + min(2, HDLGenerator.roundUp(np.log2(len(self.classifier.model_classes)), 2)) + 3,
-            test_vectors = test_vectors,
-            expected_outputs = expected_outputs)
-        with open(f"{dest}/tb_classifier.vhd", "w") as out_file:
-            out_file.write(tb_classifier)
