@@ -18,7 +18,7 @@ import numpy as np
 from distutils.dir_util import mkpath
 from tqdm import tqdm
 from .Classifier import *
-from .plot import boxplot
+from ..plot import boxplot
 
 def softmax(x):
     e_x = np.exp(np.array(x, dtype = np.float64))

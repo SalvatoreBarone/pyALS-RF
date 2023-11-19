@@ -147,10 +147,13 @@ class HDLGenerator:
     def generate_exact_test_vectors(self):
         test_vectors = { f["name"] : [] for f in self.classifier.model_features }
         expected_outputs = { **{ c : [] for c in self.classifier.classes_name},  **{ "draw" : []} }
-        for x in self.classifier.x_test:
+        predictions = self.classifier.predict(self.classifier.x_test)
+        for x, output in zip(self.classifier.x_test, predictions):
             for k, v in zip(self.classifier.model_features, x):
                 test_vectors[k["name"]].append(double_to_bin(v))
-            output, draw = self.classifier.predict(x)
+            draw, max = Classifier.check_draw(output)
+            if max != 0:
+                output = output // max
             expected_outputs["draw"].append(int(draw))
             for c, v in zip(self.classifier.classes_name, output):
                 expected_outputs[c].append(v)
@@ -196,7 +199,8 @@ class HDLGenerator:
             used_db_names.update(set(a['hdl_expression'].replace('not ', '').replace(' and ', ' '). replace('or', '').replace(')', '').replace('(', '').split(" ")))
         used_db = [ b for b in tree.decision_boxes if b["name"] in used_db_names ]
         if len(used_db) != len(tree.decision_boxes):
-            logger.info(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to optimization, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources.\n\tHereafter the DBs:\n\t{[ b['name'] for b in used_db]}")
+            logger.info(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to optimization, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources.")
+            logger.debug(f"Hereafter the DBs: {[ b['name'] for b in used_db]}")
         return used_db
 
     def implement_decision_boxes(self, tree : DecisionTree, boxes : list,  destination : str):
@@ -204,7 +208,8 @@ class HDLGenerator:
         feature_names = set(b["box"].feature_name for b in boxes )
         features = [ f for f in self.classifier.model_features if f['name'] in feature_names ]
         if len(features) != len(tree.model_features):
-            logger.debug(f"Tree {tree.name} is using {len(features)} out of {len(tree.model_features)} features.\n\tHereafter, their names\n\t{[f['name'] for f in features]}")
+            logger.info(f"Tree {tree.name} is using {len(features)} out of {len(tree.model_features)} features.")
+            logger.debug(f"Hereafter, their names: {[f['name'] for f in features]}")
         file_name = f"{destination}/decision_tree_{tree.name}.vhd"
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)

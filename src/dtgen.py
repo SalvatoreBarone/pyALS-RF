@@ -29,6 +29,7 @@ from tabulate import tabulate
 from .ConfigParsers.DtGenConfigParser import DtGenConfigParser
 from .scikit.RandonForestClassifierMV import RandomForestClassifierMV
 from .Model.Classifier import *
+from .plot import boxplot
 
 def read_dataset_from_csv(csv_file, delimiter, skip_header, outcome_col):
     attributes = []
@@ -143,7 +144,6 @@ def print_clf(clf : DecisionTreeClassifier):
                     value=values[i],
                 )
             )
-        
 
 def print_nodes(model):
     if isinstance(model, (RandomForestClassifier, RandomForestClassifierMV)):
@@ -153,8 +153,17 @@ def print_nodes(model):
         print_clf(model)
         
 def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, y_test, cross_validate):
+    acc = 0
+    samples_error = { i: [] for i in range(model.n_classes_) }
+    for x, y in tqdm( zip(x_test, y_test), total=len(y_test), desc="Computing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+        outcome =  model.predict_proba(np.array(x).reshape((1, -1)))[0]
+        if  np.argmax(outcome) == y:
+            acc += 1
+        for i in range(model.n_classes_):
+            if i != y:
+                samples_error[i].append(np.ceil( (outcome[y] - outcome[i]) / 2))
+    
     logger = logging.getLogger("pyALS-RF")
-    acc = sum( model.predict(np.array(x).reshape((1, -1))) == y for x, y in tqdm( zip(x_test, y_test), total=len(y_test), desc="Computing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False, ))[0]
     logger.info(f"Classification accuracy: {acc}/{len(y_test)}*100={acc / len(y_test) * 100}")
     mkpath(outputdir)
     dump_file = f"{outputdir}/classifier.joblib"
@@ -162,6 +171,7 @@ def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, 
     params_file = f"{outputdir}/best_parameters.json5"
     training_set_csv = f"{outputdir}/training_set.csv"
     test_dataset_csv = f"{outputdir}/test_set.csv"
+    error_boxplot = f"{outputdir}/error_boxplot.pdf"
 
     logger.info(f"Saving training parameters to {params_file}")
     with open(params_file, "w") as f:
@@ -183,9 +193,15 @@ def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, 
     # sklearn2pmml(pipeline, pmml_file, with_repr = True)
     model = joblib.load(dump_file) #! after calling the fake() method you have no choice but reloading the model from file...
     logger.info("Done PMML export!")
+    
+    logger.info(f"Plotting prediction error to {error_boxplot}")
+    boxplot([ list(v) for v in samples_error.values()], "Classes", r"$E_{p_i}$", error_boxplot, (model.n_classes_, 4), False)
+    logger.info("Done plotting prediction error!")
+    
     if cross_validate:
-        
+        logger.info("Performing model cross-validation...")
         models_crossvalidation(config, model, x_test, y_test, pmml_file, test_dataset_csv)
+        logger.info("Done model cross-validation!")
 
 def models_crossvalidation(config, model, x_test, y_test, pmml_file, test_dataset_csv):
     logger = logging.getLogger("pyALS-RF")

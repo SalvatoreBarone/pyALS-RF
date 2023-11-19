@@ -18,10 +18,13 @@ import logging
 from distutils.dir_util import mkpath
 from .ctx_factory import load_configuration_ps, create_classifier
 from .ConfigParsers.PsConfigParser import *
-from .AxCT.LosslessHedgeTrimming import LosslessHedgeTrimming
-from .AxCT.LossyHedgeTrimming import LossyHedgeTrimming
+from .AxCT.HedgeTrimming import HedgeTrimming
+from .AxCT.ResiliencyBasedHedgeTrimming import ResiliencyBasedHedgeTrimming
+from .AxCT.LossBasedHedgeTrimming import LossBasedHedgeTrimming
 
-def pruning_flow(ctx : dict, use_training_data : bool, max_loss_perc : float, output : str):
+
+
+def pruning_flow(ctx : dict, fraction : float, minredundancy : int, maxloss : float, output : str):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the pruning flow.")
     load_configuration_ps(ctx)
@@ -30,30 +33,11 @@ def pruning_flow(ctx : dict, use_training_data : bool, max_loss_perc : float, ou
         mkpath(ctx.obj["configuration"].outdir)
     
     create_classifier(ctx)
-    
-    if use_training_data:
-        assert ctx.obj["configuration"].error_conf.training_dataset is not None, "You must provide a csv for the training dataset to use this command"
-        logger.debug("Reading the traininig data set")
-        ctx.obj["classifier"].read_training_set(ctx.obj["configuration"].error_conf.training_dataset)
-        logger.debug(f"Read {len(ctx.obj['classifier'].x_train)} samples")
-    else:
-        logger.debug("Splitting the dataset to perform pruning")
-        ctx.obj["classifier"].split_test_dataset()
-        logger.debug(f"Pruning set: {len(ctx.obj['classifier'].x_val)} samples")
-        logger.debug(f"Test set: {len(ctx.obj['classifier'].x_test)} samples")
-        
-    trimmer = LosslessHedgeTrimming(ctx.obj["classifier"]) if max_loss_perc is None else LossyHedgeTrimming(ctx.obj["classifier"], False, max_loss_perc)
+       
+    trimmer = LossBasedHedgeTrimming(ctx.obj["classifier"], fraction, maxloss, minredundancy, ctx.obj["ncpus"]) if minredundancy == 0 else ResiliencyBasedHedgeTrimming(ctx.obj["classifier"], fraction, maxloss, minredundancy, ctx.obj["ncpus"])
     trimmer.trim()
-    trimmer.store(ctx.obj["configuration"].outdir)
-
-    original = ctx.obj['classifier'].get_assertions_cost()
-    after_pruning = ctx.obj['classifier'].get_pruned_assertions_cost()
-    logger.info(f"Baseline accuracy: {trimmer.baseline_accuracy} %")
-    logger.info(f"Accuracy: {trimmer.accuracy}.")
-    logger.info(f"Loss: {trimmer.loss}")
-    logger.info(f"Original cost (#literals): {original}") 
-    logger.info(f"Prunable assertions: {len(trimmer.candidate_assertions)}")
-    logger.info(f"Pruned assertiond {len(trimmer.pruned_assertions)}  ({len(trimmer.pruned_assertions) / len(trimmer.candidate_assertions) * 100}%)")
-    logger.info(f"Pruned cost (#literals): {after_pruning} ({(1 - after_pruning / original) * 100})")
-    trimmer.compare()
+    trimmer.store_pruning_conf(f"{ctx.obj['configuration'].outdir}/pruning_configuration.json5")
+    trimmer.redundancy_boxplot(f"{ctx.obj['configuration'].outdir}/redundancy_boxplot.pdf")
+    
+    
     

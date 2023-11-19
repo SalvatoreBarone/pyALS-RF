@@ -16,6 +16,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import numpy as np, pandas as pd, random, json5, joblib, logging
 from xml.etree import ElementTree
+from numpy import ndarray
 from anytree import Node, RenderTree, AsciiStyle
 from multiprocessing import cpu_count, Pool
 from tqdm import tqdm
@@ -37,23 +38,7 @@ class Classifier:
         self.classes_name = []
         self.ncpus = min(ncpus, cpu_count()) if ncpus is not None else cpu_count()
         self.use_espresso = use_espresso
-        self.args = None
-        self.p_tree = None
-        self.pool = None
         self.als_conf = None
-
-    def __deepcopy__(self, memo=None):
-        classifier = Classifier(self.als_conf)
-        classifier.trees = copy.deepcopy(self.trees)
-        classifier.model_features = copy.deepcopy(self.model_features)
-        classifier.model_classes = copy.deepcopy(self.model_classes)
-        classifier.classes_name = copy.deepcopy(self.classes_name)
-        classifier.ncpus = self.ncpus
-        classifier.p_tree = None
-        classifier.args = None
-        classifier.pool = None
-        classifier.als_conf = None
-        return classifier
     
     @staticmethod
     def get_xmlns_uri(elem):
@@ -68,6 +53,10 @@ class Classifier:
             self.pmml_parser(model_source, dataset_description)
         elif model_source.endswith(".joblib"):
             self.joblib_parser(model_source, dataset_description)
+        self.ncpus = min(self.ncpus, len(self.trees))
+        self.p_tree = list_partitioning(self.trees, self.ncpus)
+        self.args = [[t, None] for t in self.p_tree]
+        self.pool = Pool(self.ncpus)
 
     def pmml_parser(self, pmml_file_name, dataset_description = None):
         logger = logging.getLogger("pyALS-RF")
@@ -98,7 +87,7 @@ class Classifier:
             tree = self.get_tree_model_from_pmml("0", tree_model_root)
             self.trees.append(tree)
         logger.debug(f"Done parsing {pmml_file_name}")
-        self.ncpus = min(self.ncpus, len(self.trees))
+        
 
     def joblib_parser(self, joblib_file_name, dataset_description):
         logger = logging.getLogger("pyALS-RF")
@@ -121,7 +110,6 @@ class Classifier:
             root_node = self.get_tree_model_from_joblib(model)
             self.trees.append(DecisionTree(f"tree_0", root_node, self.model_features, self.model_classes, self.use_espresso))
         logger.info(f"Done parsing {joblib_file_name}")
-        self.ncpus = min(self.ncpus, len(self.trees))
 
     def dump(self):
         print("Features:")
@@ -141,27 +129,10 @@ class Classifier:
         f_names = [ f["name"] for f in self.model_features]
         name_matches = [ a == f for a, f in zip(attribute_name, f_names) ]
         assert all(name_matches), f"Feature mismatch at index {name_matches.index(False)}: {attribute_name[name_matches.index(False)]} != {f_names[name_matches.index(False)]}"
-        self.x_test = self.dataframe.loc[:, self.dataframe.columns != "Outcome"].values.tolist()
-        self.y_test = sum(self.dataframe.loc[:, self.dataframe.columns == "Outcome"].values.tolist(), [])
-        self.x_val = self.x_test
-        self.y_val = self.y_test
-        
-    def read_training_set(self, dataset_csv):
-        self.dataframe = pd.read_csv(dataset_csv, sep = ";")
-        attribute_name = list(self.dataframe.keys())[:-1]
-        assert len(attribute_name) == len(self.model_features), f"Mismatch in features vectors. Read {len(attribute_name)} features, buth PMML says it must be {len(self.model_features)}!"
-        f_names = [ f["name"] for f in self.model_features]
-        assert attribute_name == f_names, f"{attribute_name} != {f_names}"
-        self.x_train = self.dataframe.loc[:, self.dataframe.columns != "Outcome"].values.tolist()
-        self.y_train = sum(self.dataframe.loc[:, self.dataframe.columns == "Outcome"].values.tolist(), [])
-        
-    def split_test_dataset(self):
-        validation_set = random.choices(range(len(self.x_test)), k = len(self.x_test) // 2)
-        self.x_val = [ self.x_test[i] for i in range(len(self.x_test)) if i in validation_set ]
-        self.y_val = [ self.y_test[i] for i in range(len(self.y_test)) if i in validation_set ]
-        self.x_test = [ self.x_test[i] for i in range(len(self.x_test)) if i not in validation_set ]
-        self.y_test = [ self.y_test[i] for i in range(len(self.y_test)) if i not in validation_set ]
-        self.args = [[t, self.x_test, False] for t in self.p_tree] if self.p_tree is not None else None
+        self.x_test = self.dataframe.loc[:, self.dataframe.columns != "Outcome"].values
+        self.y_test = self.dataframe.loc[:, self.dataframe.columns == "Outcome"].values
+        for arg in self.args:
+            arg[1] = self.x_test
     
     def brace4ALS(self, als_conf):
         if self.als_conf is None:
@@ -224,88 +195,39 @@ class Classifier:
     def get_struct(self):
         return [tree.get_struct() for tree in self.trees]
 
-    def enable_mt(self):
-        self.p_tree = list_partitioning(self.trees, self.ncpus)
-        self.args = [[t, self.x_test, False] for t in self.p_tree]
-        self.pool = Pool(self.ncpus)
-
-    def evaluate_test_dataset(self, use_pruning = False):
-        logger = logging.getLogger("pyALS-RF")
-        if self.args is None:
-            logger.warn("Multi-threading is disabled. To enable it, call the enable_mt() member of the Classifier class")
-            accuracy = 0
-            for x, y in tqdm(zip(self.x_test, self.y_test), total=len(self.y_test), desc="Computing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
-                outcome, draw = self.predict(x, use_pruning)
-                if not draw and np.argmax(outcome) == y:
-                    accuracy += 1
-            return accuracy / len(self.y_test) * 100
-        
-        for a in self.args:
-            a[2] = use_pruning
-        outcomes = self.pool.starmap(Classifier.compute_score, self.args)
-        return sum(np.argmax(score := [sum(s) for s in zip(*scores)]) == y and not self.check_draw(score)[0] for scores, y in zip(zip(*outcomes), self.y_test)) / len(self.y_test) * 100
+    # def get_score(self, x):
+    #     outcomes = [ t.visit(x) for t in self.trees ]
+    #     return [sum(s) for s in zip(*outcomes)]
     
-    def get_assertion_activation(self, use_training_data):
-        logger = logging.getLogger("pyALS-RF")
-        samples = self.x_train if use_training_data else self.x_val
-        labels = self.y_train if use_training_data else self.y_val
-        activity_by_sample = []
-        nclasses = len(self.model_classes)
-        ntrees = len(self.trees)
-        for x, y in tqdm( zip(samples, labels), total=len(labels), desc="Computing resiliency...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
-            outcome = {"x" : x, "y": str(y), "redundancy" : 0, "rho": np.zeros((nclasses,), dtype=int), "Ig" : 0, "outcomes" : {}}
-            for t in self.trees:
-                predicted_class, active_assertion, prediction_as_one_hot = t.get_assertion_activation(x)
-                cost = len(active_assertion.split("and"))
-                outcome["rho"] += prediction_as_one_hot
-                outcome["outcomes"][t.name] = {"assertion" : active_assertion, "cost": cost, "correct" : predicted_class == str(y)}
-                logger.debug(f"Predicted class: {predicted_class} (Predict OK: {predicted_class == str(y)}), mask: {prediction_as_one_hot}, active minterm: {active_assertion} (cost: {cost})")
-            outcome["Ig"] = giniImpurity(softmax(outcome["rho"]))
-            outcome["redundancy"] = int(sum(i["correct"] for i in outcome["outcomes"].values()) - np.ceil(ntrees/2))
-            outcome["rho"] = outcome["rho"].tolist()
-            activity_by_sample.append(outcome) 
-        return activity_by_sample    
-    
-    def set_pruning(self, pruning):
-        for t in self.trees:
-            t.set_pruning(pruning, self.use_espresso)
-            
-    def get_assertions_cost(self):
-        return sum( t.get_assertions_cost() for t in self.trees )
-    
-    def get_pruned_assertions_cost(self):
-        return sum( t.get_pruned_assertions_cost() for t in self.trees )
-
     @staticmethod
-    def compute_score(trees, x_test, pruning):
-        scores = []
-        for x in x_test:
-            outcomes = [ t.visit(x, pruning) for t in trees ]
-            scores.append([sum(s) for s in zip(*outcomes)])
-        return scores
-
-    def get_score(self, x, use_pruning = False):
-        outcomes = [ t.visit(x, use_pruning) for t in self.trees ]
-        return [sum(s) for s in zip(*outcomes)]
+    def check_draw(scores):
+        r = np.sort(np.array(scores, copy=True))[::-1]
+        return r[0] == r[1], r[0]
     
-    def check_draw(self, scores):
-        m = np.max(scores)
-        return (m <= (len(self.trees) // len(self.model_classes))) or np.sum(s == m for s in scores) > 1, m
+    @staticmethod
+    def compute_score(trees : list[DecisionTree], x_test : ndarray):
+        assert len(np.shape(x_test)) == 2
+        return np.array( [ np.sum( [t.visit(x) for t in trees ], axis = 0) for x in x_test ] )
     
-    def predict(self, x, use_pruning=False):
-        score = self.get_score(x, use_pruning)
-        draw, max_score = self.check_draw(score)
-        return [int(s == max_score) for s in score] , draw
+    def predict(self, x_test : ndarray):
+        if len(np.shape(x_test)) == 1:
+            np.reshape(x_test, np.shape(x_test)[0])
+        args = [[t, x_test] for t in self.p_tree]
+        return np.sum(self.pool.starmap(Classifier.compute_score, self.args), axis = 0)
     
-    def predict_dump(self, index: int, outfile: str, use_pruning=False):
-        score = self.get_score(self.x_test[index], use_pruning)
-        draw, max_score = self.check_draw(score)
+    def evaluate_test_dataset(self):
+        outcomes = np.sum(self.pool.starmap(Classifier.compute_score, self.args), axis = 0)
+        return np.sum(np.argmax(o) == y and not Classifier.check_draw(o)[0] for o, y in zip(outcomes, self.y_test)) / len(self.y_test) * 100
+    
+    def predict_dump(self, index: int, outfile: str):
+        score = self.predict(self.x_test[index])
+        draw, max_score = Classifier.check_draw(score)
         outcome = [int(s == max_score) for s in score]
         data = {
             "score": score,
             "draw": int(draw),
             "outcome": dict(zip(self.classes_name, outcome)),
-            "trees": {t.name: {"outcome": {k: int(v) for k, v in zip(self.classes_name, t.visit(self.x_test[index], use_pruning))}} for t in self.trees}}
+            "trees": {t.name: {"outcome": {k: int(v) for k, v in zip(self.classes_name, t.visit(self.x_test[index]))}} for t in self.trees}}
         with open(outfile, "w") as f:
             json5.dump(data, f, indent=2)
     

@@ -21,7 +21,7 @@ from multiprocessing import cpu_count
 from .ConfigParsers.PsConfigParser import *
 from .Optimization.PsMop import *
 from .Model.rank_based import softmax, dist_gini
-from .Model.plot import scatterplot, boxplot
+from .plot import scatterplot, boxplot
 
 def ps_flow(configfile, mode, alpha, beta, gamma, ncpus):
     configuration = PSConfigParser(configfile)
