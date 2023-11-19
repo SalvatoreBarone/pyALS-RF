@@ -48,7 +48,7 @@ def hdl_generation(ctx, luts, output):
     if ctx.obj["flow"] == "pruning":
         pruning_configuration_json = f"{ctx.obj['configuration'].outdir}/pruning_configuration.json5"
         if "pruning_configuration" not in ctx.obj:
-            logger.debug(f"Reading pruning configuration from {pruning_configuration_json}")
+            logger.info(f"Reading pruning configuration from {pruning_configuration_json}")
             ctx.obj['pruning_configuration'] = json5.load(open(pruning_configuration_json))
         hdl_generator = PruningHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
         hdl_generator.generate_axhdl(pruning_configuration = ctx.obj['pruning_configuration'], enable_espresso = ctx.obj['espresso'])

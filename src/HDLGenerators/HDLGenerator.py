@@ -224,18 +224,21 @@ class HDLGenerator:
         return features
         
 
-    def implement_assertions(self, tree : DecisionTree, boxes: list, destination : str, lut_tech : int = 6):        
+    def implement_assertions(self, tree : DecisionTree, boxes: list, destination : str, lut_tech : int = 6):  
+        logger = logging.getLogger("pyALS-RF")      
         module_name = f"assertions_block_{tree.name}"
         file_name = f"{destination}/assertions_block_{tree.name}.vhd"
-        
         mapper = LutMapper(lut_tech)
         trivial_classes = []
         nontrivial_classes = []
         for c, bn in zip(self.classifier.classes_name, tree.boolean_networks):
             if bn["minterms"] and lut_tech is not None:
-                nontrivial_classes.append({"class" : c, "luts": mapper.map(bn["minterms"], c)})
+                luts = mapper.map(bn["minterms"], c)
+                nontrivial_classes.append({"class" : c, "luts": luts})
+                logger.info(f"Tree {tree.name}, class {c} is using {len(luts)} LUTs")
             else:
                 trivial_classes.append({"class" : c, "expression" : bn["hdl_expression"]})
+                logger.info(f"Tree {tree.name}, class {c} is trivially implemented as using {bn['hdl_expression']}")
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         template = env.get_template(self.vhdl_assertions_source_template)

@@ -38,6 +38,7 @@ def pruning_flow(ctx : dict, fraction : float, minredundancy : int, maxloss : fl
     trimmer.trim()
     trimmer.store_pruning_conf(f"{ctx.obj['configuration'].outdir}/pruning_configuration.json5")
     trimmer.redundancy_boxplot(f"{ctx.obj['configuration'].outdir}/redundancy_boxplot.pdf")
+    trimmer.restore_bns()
     
     
     
