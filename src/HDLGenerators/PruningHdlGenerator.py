@@ -46,7 +46,7 @@ class PruningHdlGenerator(HDLGenerator):
         for tree in self.classifier.trees:
             boxes = self.get_dbs(tree)
             inputs = self.implement_decision_boxes(tree, boxes, f"{dest}/src")
-            self.implement_assertions(tree, boxes, f"{dest}/src")
+            self.implement_assertions(tree, boxes, f"{dest}/src", kwargs['lut_tech'])
             trees_inputs[tree.name] = inputs
             
         self.generate_rejection_module(f"{dest}/src", env)

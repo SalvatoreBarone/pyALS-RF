@@ -58,7 +58,7 @@ class PsHdlGenerator(HDLGenerator):
             self.generate_ax_tb(f"{dest}/tb/", features, env)
             for tree in self.classifier.trees:
                 self.implement_decision_boxes(tree, f"{dest}/src")
-                self.implement_assertions(tree, f"{dest}/src")
+                self.implement_assertions(tree, f"{dest}/src", kwargs['lut_tech'])
                 
     def generate_ax_tb(self, dest, features, env, **kwargs):    
         n_vectors, test_vectors, expected_outputs = self.generate_exact_test_vectors()

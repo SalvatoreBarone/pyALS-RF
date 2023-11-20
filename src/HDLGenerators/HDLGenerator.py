@@ -81,7 +81,7 @@ class HDLGenerator:
         for tree in self.classifier.trees:
             boxes = self.get_dbs(tree)
             inputs = self.implement_decision_boxes(tree, boxes, f"{dest}/src")
-            self.implement_assertions(tree, boxes, f"{dest}/src")
+            self.implement_assertions(tree, boxes, f"{dest}/src", kwargs['lut_tech'])
             trees_inputs[tree.name] = inputs
         
         self.generate_classifier(f"{dest}/src", features, trees_inputs, env)
@@ -254,7 +254,7 @@ class HDLGenerator:
         self.destination = "/tmp/pyals-rf/"
         mkpath(self.destination)
         mkpath(f"{self.destination}/vhd")
-        file_name, module_name = self.implement_assertions(tree, self.destination)
+        file_name, module_name = self.implement_assertions(tree, self.destination, luts_tech = int(luts_tech))
         self.yshelper.load_ghdl()
         self.yshelper.reset()
         self.yshelper.ghdl_read_and_elaborate([tree.bnf_vhd, file_name], module_name)
