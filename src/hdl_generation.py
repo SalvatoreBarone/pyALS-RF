@@ -53,8 +53,6 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
             logger.info(f"Reading pruning configuration from {pruning_configuration_json}")
             ctx.obj['pruning_configuration'] = json5.load(open(pruning_configuration_json))
         hdl_generator = PruningHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
-        ax_luts, ax_ffs = hdl_generator.get_resource_usage()
-        logger.info(f"Expected LUT savings: {(1 - ax_luts / exact_luts) * 100}%\n\tExpected FFs savings: {(1 - ax_ffs / exact_ffs) * 100}%")
     elif ctx.obj["flow"] == "ps":
         hdl_generator = PsHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
     elif ctx.obj["flow"] == "als-onestep":
@@ -74,4 +72,6 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
         exit()
     
     hdl_generator.generate_axhdl(pruning_configuration = ctx.obj['pruning_configuration'], enable_espresso = ctx.obj['espresso'], lut_tech = lut_tech)
+    ax_luts, ax_ffs = hdl_generator.get_resource_usage()
+    logger.info(f"Expected LUT savings: {(1 - ax_luts / exact_luts) * 100}%\n\tExpected FFs savings: {(1 - ax_ffs / exact_ffs) * 100}%")
     logger.info("All done!")
