@@ -40,10 +40,10 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
     if ctx.obj["flow"] is None:
         load_flow(ctx)
         
+    hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+    exact_luts, exact_ffs = hdl_generator.get_resource_usage()
     if not skip_exact:
         logger.info("Generating reference (non-approximate) implementation...")
-        hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
-        hdl_generator.get_resource_usage()
         hdl_generator.generate_exact_implementation(enable_espresso =  ctx.obj['configuration'].outdir, lut_tech = lut_tech)
     
     logger.info("Generating the approximate implementation...")
@@ -53,7 +53,8 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
             logger.info(f"Reading pruning configuration from {pruning_configuration_json}")
             ctx.obj['pruning_configuration'] = json5.load(open(pruning_configuration_json))
         hdl_generator = PruningHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
-        hdl_generator.get_resource_usage()
+        ax_luts, ax_ffs = hdl_generator.get_resource_usage()
+        logger.info(f"Expected LUT savings: {(1 - ax_luts / exact_luts) * 100}%\n\tExpected FFs savings: {(1 - ax_ffs / exact_ffs) * 100}%")
     elif ctx.obj["flow"] == "ps":
         hdl_generator = PsHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
     elif ctx.obj["flow"] == "als-onestep":
