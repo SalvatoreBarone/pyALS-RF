@@ -56,10 +56,6 @@ class HedgeTrimming:
         outcomes = np.sum(self.pool.starmap(Classifier.compute_score, self.args_evaluate_validation), axis = 0)
         return np.sum(np.argmax(o) == y and not self.classifier.check_draw(o)[0] for o, y in zip(outcomes, self.y_validation)) / len(self.y_validation) * 100
     
-    @staticmethod
-    def sample_to_str(x):
-        return ';'.join(str(i) for i in x.tolist())
-    
     def evaluate_redundancy(self):
         logger = logging.getLogger("pyALS-RF")
         self.initial_redundancy = [] # keeps the initial redundancy of each sample (it's easier to sort a list of tuples)
@@ -126,6 +122,11 @@ class HedgeTrimming:
             
     def get_cost(self):
         return sum( HedgeTrimming.get_bns_cost(t) for t in self.classifier.trees )
+    
+        
+    @staticmethod
+    def sample_to_str(x):
+        return ';'.join(str(i) for i in x.tolist())
     
     @staticmethod
     def get_cost_criterion(criterion : str):
