@@ -155,13 +155,13 @@ def print_nodes(model):
 def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, y_test, cross_validate):
     acc = 0
     samples_error = { i: [] for i in range(model.n_classes_) }
-    for x, y in tqdm( zip(x_test, y_test), total=len(y_test), desc="Computing accuracy...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
-        outcome =  model.predict_proba(np.array(x).reshape((1, -1)))[0]
-        if  np.argmax(outcome) == y:
+    predictions = model.predict_proba(np.array(x_test))
+    for y, p in tqdm( zip(y_test, predictions), total=len(y_test), desc="Computing error...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+        if  np.argmax(p) == y:
             acc += 1
         for i in range(model.n_classes_):
             if i != y:
-                samples_error[i].append(np.ceil( (outcome[y] - outcome[i]) / 2))
+                samples_error[i].append(np.ceil( (p[y] - p[i]) / 2))
     
     logger = logging.getLogger("pyALS-RF")
     logger.info(f"Classification accuracy: {acc}/{len(y_test)}*100={acc / len(y_test) * 100}")
@@ -246,10 +246,10 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
     x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
     search_grid = { 'max_features': [None, 'log2', 'sqrt'],
                     'criterion' : ["gini", "entropy", "log_loss"],
-                    'max_depth': [int(x) for x in np.linspace(6, 100, 2)],
-                    'min_samples_split': [int(x) for x in np.linspace(10, 100, 1)],
-                    'min_samples_leaf': [int(x) for x in np.linspace(10, 100, 1)],
-                    'ccp_alpha' : np.arange(0.01, 0.5, 0.02),
+                    'max_depth': [int(x) for x in np.linspace(7, 100, 2)],
+                    'min_samples_split': [int(x) for x in np.linspace(3, 100, 1)],
+                    'min_samples_leaf': [int(x) for x in np.linspace(3, 100, 1)],
+                    'ccp_alpha' : np.arange(0.001, 0.2, 0.002),
                     'bootstrap': [True, False]}
     estimator = RandomForestClassifierMV(n_estimators = ntrees)
     if clf == "dt":
