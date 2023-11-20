@@ -43,6 +43,7 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
     if not skip_exact:
         logger.info("Generating reference (non-approximate) implementation...")
         hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+        hdl_generator.get_resource_usage()
         hdl_generator.generate_exact_implementation(enable_espresso =  ctx.obj['configuration'].outdir, lut_tech = lut_tech)
     
     logger.info("Generating the approximate implementation...")
@@ -52,6 +53,7 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
             logger.info(f"Reading pruning configuration from {pruning_configuration_json}")
             ctx.obj['pruning_configuration'] = json5.load(open(pruning_configuration_json))
         hdl_generator = PruningHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+        hdl_generator.get_resource_usage()
     elif ctx.obj["flow"] == "ps":
         hdl_generator = PsHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
     elif ctx.obj["flow"] == "als-onestep":

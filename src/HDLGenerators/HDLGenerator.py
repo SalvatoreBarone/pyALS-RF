@@ -25,6 +25,8 @@ from ..Model.Classifier import Classifier
 from ..Model.DecisionTree import DecisionTree
 
 class HDLGenerator:
+    lut_x_db = 77
+    ffs_x_db = 128
     resource_dir = "/resources/"
     # VHDL sources
     vhdl_bnf_source = "vhd/bnf.vhd"
@@ -199,9 +201,23 @@ class HDLGenerator:
             used_db_names.update(set(a['hdl_expression'].replace('not ', '').replace(' and ', ' '). replace('or', '').replace(')', '').replace('(', '').split(" ")))
         used_db = [ b for b in tree.decision_boxes if b["name"] in used_db_names ]
         if len(used_db) != len(tree.decision_boxes):
-            logger.info(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to optimization, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources.")
+            logger.debug(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to optimization, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources.")
             logger.debug(f"Hereafter the DBs: {[ b['name'] for b in used_db]}")
         return used_db
+    
+    def get_resource_usage(self):
+        logger = logging.getLogger("pyALS-RF")
+        mapper = LutMapper()
+        nDBs = sum(len(self.get_dbs(tree)) for tree in self.classifier.trees)
+        nLuts = self.lut_x_db * nDBs
+        nFFs = self.lut_x_db * nDBs
+        for tree in self.classifier.trees:
+            for c, bn in zip(self.classifier.classes_name, tree.boolean_networks):
+                if bn["minterms"]:
+                    nLuts += len(mapper.map(bn["minterms"], c))
+        logger.info(f"Implementations expected requirements (voting excluded):\n\t- LUTs: {nLuts}\n\t- FFs: {nFFs}")
+        return nLuts, nFFs
+    
 
     def implement_decision_boxes(self, tree : DecisionTree, boxes : list,  destination : str):
         logger = logging.getLogger("pyALS-RF")
