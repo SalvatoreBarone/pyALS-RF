@@ -146,10 +146,11 @@ def assertions_pruning(ctx, conf, ncpus, espresso, fraction, minredundancy, maxl
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-e', '--espresso', is_flag = True, help = "Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.option('-l', '--luts', type = int, default = None, help = "Number of inputs for look-up tables. If specified, it enables the embedded LUT-mapper exploiting AMD/Xilinx LUT primitives.")
+@click.option('-s', '--skip_exact', is_flag = True, help = "Skip generating the exact (non approximate) implementation")
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def generate_hdl(ctx, conf, ncpus, espresso, luts, output, verbose):
+def generate_hdl(ctx, conf, ncpus, espresso, luts, skip_exact, output, verbose):
     """
     Generates HDL implementation
     """
@@ -159,9 +160,10 @@ def generate_hdl(ctx, conf, ncpus, espresso, luts, output, verbose):
                 f"\n\tconf: {conf}"
                 f"\n\tuse espresso: {espresso}"
                 f"\n\tLUT tech: {luts}"
+                f"\n\tskip non-approximate: {skip_exact}"
                 f"\n\output dir: {output}"
                 )
-    hdl_generation(ctx, luts, output)
+    hdl_generation(ctx, luts, skip_exact, output)
     
 @cli.command("debug")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")

@@ -27,7 +27,7 @@ from .HDLGenerators.TwoStepsAlsWcHdlGenerator import TwoStepsAlsWcHdlGenerator
 from .HDLGenerators.TwoStepsFullHdlGenerator import TwoStepsFullHdlGenerator
 from .ctx_factory import load_configuration_ps, create_classifier, create_yshelper, load_flow
 
-def hdl_generation(ctx, luts, output):
+def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the HDL generation flow.")
     load_configuration_ps(ctx)
@@ -40,9 +40,10 @@ def hdl_generation(ctx, luts, output):
     if ctx.obj["flow"] is None:
         load_flow(ctx)
         
-    logger.info("Generating reference (non-approximate) implementation...")
-    hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
-    hdl_generator.generate_exact_implementation(enable_espresso =  ctx.obj['configuration'].outdir)
+    if not skip_exact:
+        logger.info("Generating reference (non-approximate) implementation...")
+        hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+        hdl_generator.generate_exact_implementation(enable_espresso =  ctx.obj['configuration'].outdir, lut_tech = lut_tech)
     
     logger.info("Generating the approximate implementation...")
     if ctx.obj["flow"] == "pruning":
@@ -51,7 +52,6 @@ def hdl_generation(ctx, luts, output):
             logger.debug(f"Reading pruning configuration from {pruning_configuration_json}")
             ctx.obj['pruning_configuration'] = json5.load(open(pruning_configuration_json))
         hdl_generator = PruningHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
-        hdl_generator.generate_axhdl(pruning_configuration = ctx.obj['pruning_configuration'], enable_espresso = ctx.obj['espresso'])
     elif ctx.obj["flow"] == "ps":
         hdl_generator = PsHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
     elif ctx.obj["flow"] == "als-onestep":
@@ -70,4 +70,5 @@ def hdl_generation(ctx, luts, output):
         print(f"{ctx.obj['flow']}: unrecognized approximation flow. Bailing out.")
         exit()
     
+    hdl_generator.generate_axhdl(pruning_configuration = ctx.obj['pruning_configuration'], enable_espresso = ctx.obj['espresso'], lut_tech = lut_tech)
     logger.info("All done!")
