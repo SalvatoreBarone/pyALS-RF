@@ -26,6 +26,11 @@ from enum import Enum
 
 class HedgeTrimming:
     
+    class CostCriterion:
+        depth = 1,      # higher the depth higher the cost
+        activity = 2,  # lower the frequency of activation higher the cost
+        combined = 3    # both the previous, combined; thus, leaves with the same costs in terms of depth but with lower frequency of activations cost more!
+        
     def __init__(self, classifier : Classifier, pruning_set_fraction : float = 0.5, max_loss : float = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count()):
         self.classifier = classifier
         self.pruning_set_fraction = pruning_set_fraction
@@ -95,13 +100,18 @@ class HedgeTrimming:
         self.accuracy_pruning_set = self.accuracy_pruning_set * 100 / len(self.y_pruning)     
         logger.info(f"Accuracy (on the pruning set): {self.accuracy_pruning_set}%")
         
-    def sort_leaves_by_cost(self):
+    def sort_leaves_by_cost(self, cost_criterion : CostCriterion):
         logger = logging.getLogger("pyALS-RF")
         # compute the cost of each leaf first, based on depth and activations
         for leaf, info in self.leaves_info.items():
             literals = len(leaf[2].split("and"))
             activations = len(info["samples"])
-            info["cost"] = literals / activations # leaves with the same costs in terms of literals but with less activity cost more!
+            if cost_criterion == HedgeTrimming.CostCriterion.depth:
+                info["cost"] = literals
+            elif cost_criterion == HedgeTrimming.CostCriterion.activity:
+                info["cost"] = 1 / activations
+            elif cost_criterion == HedgeTrimming.CostCriterion.combined:
+                info["cost"] = literals / activations # leaves with the same costs in terms of literals but with less activity cost more!
             logger.debug(f"Cost of {leaf} is {literals}/{activations}={info['cost']}")
         # now, for each of the activing sample, sort the list of leaves based on their cost
         for info in self.samples_info.values():
@@ -116,6 +126,10 @@ class HedgeTrimming:
             
     def get_cost(self):
         return sum( HedgeTrimming.get_bns_cost(t) for t in self.classifier.trees )
+    
+    @staticmethod
+    def get_cost_criterion(criterion : str):
+        return { "depth" : HedgeTrimming.CostCriterion.depth, "activity" : HedgeTrimming.CostCriterion.activity, "combined" : HedgeTrimming.CostCriterion.combined}[criterion]
     
     @staticmethod
     def tree_visit_with_leaf(tree : DecisionTree, attributes):
@@ -168,7 +182,7 @@ class HedgeTrimming:
         if data:
             print(tabulate(data, headers = ["Sample", "Class", "O.out", "O.draw", "P.out", "P.draw"], showindex="always"))
             
-    def trim(self):
+    def trim(self, cost_criterion : CostCriterion):
         logger = logging.getLogger("pyALS-RF")
         logger.info(f"Test set: {len(self.classifier.x_test)} samples")
         logger.info(f"Pruning set fraction: {self.pruning_set_fraction}")
@@ -188,5 +202,5 @@ class HedgeTrimming:
         logger.info("Performing Boolean networks backup")
         self.backup_bns()
         self.evaluate_redundancy()
-        self.sort_leaves_by_cost()
+        self.sort_leaves_by_cost(cost_criterion)
         self.pruning_configuration = []

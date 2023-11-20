@@ -24,8 +24,8 @@ class ResiliencyBasedHedgeTrimming(HedgeTrimming):
     def __init__(self, classifier : Classifier, pruning_set_fraction : float = 0.5, max_loss : float = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count()):
         super().__init__(classifier, pruning_set_fraction, max_loss, min_resiliency, ncpus)
     
-    def trim(self):
-        super().trim()
+    def trim(self, cost_criterion : HedgeTrimming.CostCriterion):
+        super().trim(cost_criterion)
         logger = logging.getLogger("pyALS-RF")
         self.pruning_configuration = []
         for x, _ in self.initial_redundancy:

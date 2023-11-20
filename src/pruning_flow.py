@@ -24,7 +24,7 @@ from .AxCT.LossBasedHedgeTrimming import LossBasedHedgeTrimming
 
 
 
-def pruning_flow(ctx : dict, fraction : float, minredundancy : int, maxloss : float, output : str):
+def pruning_flow(ctx : dict, fraction : float, cost_criterion: str, minredundancy : int, maxloss : float, output : str):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the pruning flow.")
     load_configuration_ps(ctx)
@@ -35,7 +35,7 @@ def pruning_flow(ctx : dict, fraction : float, minredundancy : int, maxloss : fl
     create_classifier(ctx)
        
     trimmer = LossBasedHedgeTrimming(ctx.obj["classifier"], fraction, maxloss, minredundancy, ctx.obj["ncpus"]) if minredundancy == 0 else ResiliencyBasedHedgeTrimming(ctx.obj["classifier"], fraction, maxloss, minredundancy, ctx.obj["ncpus"])
-    trimmer.trim()
+    trimmer.trim(HedgeTrimming.get_cost_criterion(cost_criterion))
     trimmer.store_pruning_conf(f"{ctx.obj['configuration'].outdir}/pruning_configuration.json5")
     trimmer.redundancy_boxplot(f"{ctx.obj['configuration'].outdir}/redundancy_boxplot.pdf")
     
