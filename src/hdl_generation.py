@@ -49,7 +49,7 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
     if ctx.obj["flow"] == "pruning":
         pruning_configuration_json = f"{ctx.obj['configuration'].outdir}/pruning_configuration.json5"
         if "pruning_configuration" not in ctx.obj:
-            logger.debug(f"Reading pruning configuration from {pruning_configuration_json}")
+            logger.info(f"Reading pruning configuration from {pruning_configuration_json}")
             ctx.obj['pruning_configuration'] = json5.load(open(pruning_configuration_json))
         hdl_generator = PruningHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
     elif ctx.obj["flow"] == "ps":

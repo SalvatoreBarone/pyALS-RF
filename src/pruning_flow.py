@@ -38,6 +38,7 @@ def pruning_flow(ctx : dict, fraction : float, cost_criterion: str, minredundanc
     trimmer.trim(HedgeTrimming.get_cost_criterion(cost_criterion))
     trimmer.store_pruning_conf(f"{ctx.obj['configuration'].outdir}/pruning_configuration.json5")
     trimmer.redundancy_boxplot(f"{ctx.obj['configuration'].outdir}/redundancy_boxplot.pdf")
+    trimmer.restore_bns()
     
     
     

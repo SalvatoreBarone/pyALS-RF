@@ -54,3 +54,4 @@ class PruningHdlGenerator(HDLGenerator):
         self.generate_classifier(f"{dest}/src", features, trees_inputs, env)
         self.generate_tcl(dest, trees_name, env)
         self.generate_cmakelists(dest, trees_name, env)
+

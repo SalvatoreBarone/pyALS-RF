@@ -157,13 +157,17 @@ class HedgeTrimming:
     def set_pruning(tree : DecisionTree, pruning_configuration, use_espresso : bool = False):
         logger = logging.getLogger("pyALS-RF")
         nl = '\n'
-        tree.boolean_networks = []
+        #tree.boolean_networks = []
         logger.debug(f"Setting pruning configuration for {tree.name}")
-        for class_name, assertions in tree.class_assertions.items():
-            pruned = [assertion for class_label, tree_name, assertion in pruning_configuration if tree_name == tree.name and class_label == class_name ]            
+        for bn, (class_name, assertions) in zip(tree.boolean_networks, tree.class_assertions.items()):
+            pruned = [assertion for class_label, tree_name, assertion in pruning_configuration if tree_name == tree.name and class_label == class_name ] 
             kept_assertions = [ assertion for assertion in assertions if assertion not in pruned ]
+            logger.debug(f"Pruning on tree {tree.name}, class {class_name}: {len(kept_assertions)} leaves kept out of {len(bn['minterms'])}")          
             kept_assertions, sop, hdl_expression = tree.define_boolean_expression(kept_assertions, use_espresso)
-            tree.boolean_networks.append({"class" : class_name, "minterms" : kept_assertions, "sop" : sop, "hdl_expression" : hdl_expression})
+            bn['minterms'] = kept_assertions
+            bn['sop'] = sop
+            bn['hdl_expression'] = hdl_expression
+            #tree.boolean_networks.append({"class" : class_name, "minterms" : kept_assertions, "sop" : sop, "hdl_expression" : hdl_expression})
         logger.debug(f'Tree {tree.name} pruning configuration:\n{tabulate([[bn["class"], f"{nl}".join(bn["minterms"]), bn["sop"].replace(" or ", f" or{nl}"), bn["hdl_expression"].replace(" or ", f" or{nl}")] for bn in tree.boolean_networks], headers=["class", "minterms", "SoP", "HDL"], tablefmt="grid")}')    
 
     @staticmethod

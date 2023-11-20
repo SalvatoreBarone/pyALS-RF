@@ -15,9 +15,8 @@ RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 class ErrorConfig:
-    def __init__(self, test_dataset, training_dataset, max_loss_perc, dataset_description):
+    def __init__(self, test_dataset, max_loss_perc, dataset_description):
         self.max_loss_perc = max_loss_perc
-        self.training_dataset = training_dataset
         self.test_dataset = test_dataset
         self.dataset_description = dataset_description
         

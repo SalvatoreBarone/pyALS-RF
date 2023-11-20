@@ -218,7 +218,4 @@ class DecisionTree:
         minterms = [item["sop"] for item in self.leaves if item["class"] == class_name]
         minterms, sop, hdl_expression = self.define_boolean_expression(minterms, use_espresso)
         return {"class" : class_name, "minterms" : minterms, "sop" : sop, "hdl_expression" : hdl_expression}
-
-    
-    
         
