@@ -72,10 +72,13 @@ docker run --rm -e DISPLAY=unix$DISPLAY -v /tmp/.X11-unix/:/tmp/.X11-unix -v ${c
 
 If, on the other hand, you really feel the need to install everything by hand, follow the guide below step by step. 
 I'm sure it will be very helpful.
+
 # Running pyALS-RF
+
 pyALS-rf provides several approximation flows, through a unified command line interface. You can select between the following commands:
 ```
   ps        Performs precision-scaling approximation
+  pruning   Performs the Hedge Trimming flow
   als       Performs ALS approximation
   full      Performs ps and als combined
 ```

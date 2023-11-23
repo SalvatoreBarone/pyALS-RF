@@ -78,26 +78,7 @@ def als(ctx, conf, ncpus, espresso, onestep, verbose):
     else:
         als_two_steps(ctx)
     store_flow(ctx)
-        
-@cli.command("als-wc")
-@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
-@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
-@click.option('-e', '--espresso', is_flag = True, help = "Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
-@click.option('--onestep', is_flag = True, default = False, help = "Enable one-step approximation flow")
-@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
-@click.pass_context
-def als_wc(ctx, conf, ncpus, espresso, onestep, verbose):
-    """
-    Performs ALS-WC approximation
-    """
-    flow = "wcals-onestep" if onestep else "wcals-twosteps"
-    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, espresso, flow)
-    if onestep:
-        als_wc_one_step(ctx)
-    else:
-        als_wc_two_steps(ctx)
-    store_flow(ctx)
-        
+                
 @cli.command("full")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
@@ -210,36 +191,25 @@ def debug_hdl(ctx, dumpfile, pmml, verbose):
     """
     print_model(dumpfile, pmml)
 
-cli.add_command(bitwidth)
-cli.add_command(als)
-cli.add_command(als_wc)
-cli.add_command(full)
-cli.add_command(assertions_pruning)
-cli.add_command(generate_hdl)
-cli.add_command(debug_model)
-cli.add_command(debug_hdl)
-    
-@click.group()
-def other_commands():
-    pass
-
-@click.command("eval")
-@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-@click.argument('axapproach', type=click.Choice(["ps", "als", "full"]))
-@click.option('--axmode', type = click.Choice(["whole", "split"]))
-@click.option('--nabs', type = str, required = True)
-def eval(configfile, axapproach, axmode, nabs):
-    if axapproach == "ps":
-        ps_eval(configfile, nabs)
+@cli.command("eval")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
+@click.option('-a', '--approach', type=click.Choice(["ps", "als", "full"]))
+@click.option('-m', '--mode', type = click.Choice(["whole", "split"]))
+@click.option('-n', '--nabs', type = str, required = True)
+@click.pass_context
+def eval(ctx, conf, approach, mode, nabs):
+    if approach == "ps":
+        ps_eval(conf, nabs)
     else:
         print("Not supported yet")
         exit()
         
-@other_commands.command("distance")
+@cli.command("distance")
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
 @click.argument('axapproach', type=click.Choice(["ps", "als", "full"]))
 @click.option('--pareto', type = click.Path(exists=True, dir_okay=False), default = None)
 @click.option('--axmode', type = click.Choice(["whole", "split"]))
+@click.pass_context
 def distance(configfile, axapproach, pareto, axmode):
     if axapproach == "ps":
         ps_distance(configfile, pareto)
@@ -247,7 +217,7 @@ def distance(configfile, axapproach, pareto, axmode):
         print("Not supported yet")
         exit()
 
-@other_commands.command("compare")
+@cli.command("compare")
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
 @click.argument('axapproach', type=click.Choice(["ps", "als", "full"]))
 @click.argument('outdir', type=click.Path(exists=True, dir_okay=True))
@@ -258,6 +228,7 @@ def distance(configfile, axapproach, pareto, axmode):
 @click.option('--gamma', type=float, default = 2)
 @click.option('--maxloss', type=float, default = 5)
 @click.option('--neval', type = int, default = None)
+@click.pass_context
 def compare(configfile, axapproach, outdir, pareto, axmode, alpha, beta, gamma, maxloss, neval):
     if axapproach == "ps":
         ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval)
@@ -265,23 +236,28 @@ def compare(configfile, axapproach, outdir, pareto, axmode, alpha, beta, gamma, 
         print("Not supported yet")
         exit()
 
-@other_commands.command("distgini")
+@cli.command("distgini")
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
 @click.argument('outdir', type=click.Path(exists=True, dir_okay=True))
+@click.pass_context
 def compgini(configfile, outdir):
     compute_gini_dist(configfile, outdir)
     
-
-other_commands.add_command(eval)
-other_commands.add_command(distance)
-other_commands.add_command(compare)
-other_commands.add_command(compgini)
-
+cli.add_command(bitwidth)
+cli.add_command(als)
+cli.add_command(full)
+cli.add_command(assertions_pruning)
+cli.add_command(generate_hdl)
+cli.add_command(debug_model)
+cli.add_command(debug_hdl)
+cli.add_command(eval)
+cli.add_command(distance)
+cli.add_command(compare)
+cli.add_command(compgini)
 
 if __name__ == '__main__':
     if git_updater(os.path.dirname(os.path.realpath(__file__))):
         os.execv(sys.argv[0], sys.argv)
     else:
-        #cli(obj={})
         cli()
 
