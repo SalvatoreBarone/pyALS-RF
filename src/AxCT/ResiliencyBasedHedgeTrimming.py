@@ -43,14 +43,19 @@ class ResiliencyBasedHedgeTrimming(HedgeTrimming):
                         self.loss = self.baseline_accuracy - self.accuracy
                         logger.debug(f"Resulting loss: {self.loss}")
                         logger.debug(f"Adding {leaf_id} to the list of pruned assertions. Current loss is {self.loss}% (max. {self.max_loss}%)")
-                        for x in samples:
-                            self.samples_info[HedgeTrimming.sample_to_str(x)]["r"] -= 1
-                            logger.debug(f"\tDecreasing resiliency for sample {x}. Residual redundancy: {self.samples_info[HedgeTrimming.sample_to_str(x)]['r']}. Cost now is {self.get_cost()}.")
                         actual_redundancy -= 1
+                        self.update_redundancy(samples)
                         if actual_redundancy < self.min_resiliency:
                             break
         final_cost = self.get_cost()
         logger.info(f"Pruned {len(self.pruning_configuration)} leaves")
         logger.info(f"Accuracy loss: {self.loss}")
         logger.info(f"Final cost: {final_cost}. Expected saving is {(1 - final_cost / self.original_cost) * 100}%")
+
+    def update_redundancy(self, samples):
+        logger = logging.getLogger("pyALS-RF")
+        for x in samples:
+            self.samples_info[HedgeTrimming.sample_to_str(x)]["r"] -= 1
+            #TODO: self.initial_redundancy has to be updated as well, then re-sorted
+            logger.debug(f"\tDecreasing resiliency for sample {x}. Residual redundancy: {self.samples_info[HedgeTrimming.sample_to_str(x)]['r']}. Cost now is {self.get_cost()}.")
         

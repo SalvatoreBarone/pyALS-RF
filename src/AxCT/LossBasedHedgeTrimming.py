@@ -45,6 +45,7 @@ class LossBasedHedgeTrimming(HedgeTrimming):
                         self.loss = loss
                         self.pruning_configuration.append(leaf_id)
                         logger.debug(f"Adding {leaf_id} to the list of pruned assertions. Current loss is {self.loss}% (max. {self.max_loss}%). Cost now is {self.get_cost()}.")            
+                        # TODO: the redundancy of affected samples shuld be update in self.initial_redundancy, and it sould be re-sorted
         final_cost = self.get_cost()
         logger.info(f"Pruned {len(self.pruning_configuration)} leaves")
         logger.info(f"Accuracy loss: {self.loss}")
