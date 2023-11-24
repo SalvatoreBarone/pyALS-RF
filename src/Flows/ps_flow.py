@@ -18,9 +18,9 @@ import logging, os, pyamosa, time, numpy as np, matplotlib.pyplot as plt, matplo
 from pyalslib import check_for_file
 from distutils.dir_util import mkpath
 from multiprocessing import cpu_count
-from ..ctx_factory import load_configuration_ps, create_classifier, create_problem, create_optimizer, improve
+from ..ctx_factory import load_configuration_ps, create_classifier, create_problem, create_optimizer, can_improve
 from ..ConfigParsers.PsConfigParser import *
-from ..Optimization.PsMop import *
+from .PS.PsMop import *
 from ..Model.rank_based import softmax, dist_gini
 from ..plot import scatterplot, boxplot
 
@@ -32,32 +32,33 @@ def ps_flow(ctx : dict, mode : str, alpha : float, beta : float, gamma : float, 
         ctx.obj['configuration'].outdir = output
         mkpath(ctx.obj["configuration"].outdir)
     create_classifier(ctx)
-    create_problem(ctx, mode = mode, alpha = alpha, beta = beta)
+    create_problem(ctx, mode = mode, alpha = alpha, beta = beta, gamma = gamma)
     create_optimizer(ctx)
-    improve(ctx)
+    can_improve(ctx)
     
-    print("Termination criterion:")
+    logger.info("Termination criterion:")
     ctx.obj["configuration"].termination_criterion.info()
     init_t = time.time()
-    ctx.obj["optimizer"].run(ctx.obj["problem"], termination_criterion = ctx.obj['configuration'].termination_criterion, improve = improve)
-    ctx.obj["optimizer"].archive_to_json(f"{ctx.obj['configuration'].outdir}/final_archive.json")
+    ctx.obj["optimizer"].run(ctx.obj["problem"], termination_criterion = ctx.obj['configuration'].termination_criterion, improve = ctx.obj["improve"])
     dt = time.time() - init_t
-    print(f"AMOSA heuristic completed in {dt} seconds")
+    logger.info(f"AMOSA heuristic completed!")
     hours = int(ctx.obj["optimizer"].duration / 3600)
     minutes = int((ctx.obj["optimizer"].duration - hours * 3600) / 60)
-    print(f"Took {hours} hours, {minutes} minutes")
-    print(f"Cache hits: {ctx.obj['problem'].cache_hits} over {ctx.obj['problem'].total_calls} evaluations.")
-    print(f"{len(ctx.obj['problem'].cache)} cache entries collected")
+    logger.info(f"Took {hours} hours, {minutes} minutes")
+    logger.info(f"Cache hits: {ctx.obj['problem'].cache_hits} over {ctx.obj['problem'].total_calls} evaluations.")
+    logger.info(f"{len(ctx.obj['problem'].cache)} cache entries collected")
     if mode == "rank":
-        print(f"Average samples: {np.mean(ctx.obj['problem'].sample_count)} (Total #of samples: {len(ctx.obj['classifier'].y_test)})")
+        logger.info(f"Average samples: {np.mean(ctx.obj['problem'].sample_count)} (Total #of samples: {len(ctx.obj['classifier'].y_test)})")
         #! the accuracy is re-computed using the whole data set, and the archive overwritten
         ctx.obj["optimizer"].archive = ctx.obj['problem'].archived_actual_accuracy(ctx.obj['problem'].archive)
-        ctx.obj["optimizer"].archive_to_json(f"{ctx.obj['configuration'].outdir}/final_archive.json")
-    ctx.obj["optimizer"].archive_to_csv(ctx.obj['problem'], f"{ctx.obj['configuration'].outdir}/report.csv")
-    ctx.obj["optimizer"].plot_pareto(ctx.obj['problem'], f"{ctx.obj['configuration'].outdir}/pareto_front.pdf")
-    print(f"All done! Take a look at the {ctx.obj['configuration'].outdir} directory.")
+    
+    ctx.obj["optimizer"].archive.write_json(f"{ctx.obj['configuration'].outdir}/final_archive.json")
+    ctx.obj["optimizer"].archive.plot_front(ctx.obj['problem'].num_of_objectives, f"{ctx.obj['configuration'].outdir}/pareto_front.pdf")
+    ctx.obj["pareto_front"] = ctx.obj["optimizer"].archive
+    logger.info(f"All done! Take a look at the {ctx.obj['configuration'].outdir} directory.")
 
 def ps_eval(configfile, nabs):
+    logger = logging.getLogger("pyALS-RF")
     configuration = PSConfigParser(configfile)
     check_for_file(configuration.model_source)
     check_for_file(configuration.error_conf.test_dataset)
@@ -71,13 +72,15 @@ def ps_eval(configfile, nabs):
     classifier.enable_mt()
     classifier.reset_nabs_configuration()
     problem = PsMop(classifier, configuration.error_conf.max_loss_perc, cpu_count())
-    print(f"Computing the accuracy for {nabs}")
+    logger.info(f"Computing the accuracy for {nabs}")
     classifier.set_nabs({f["name"]: n for f, n in zip(classifier.model_features, nabs[:len(classifier.model_features)])})
     ax_acc = classifier.evaluate_test_dataset()
     acc_loss = problem.baseline_accuracy - ax_acc
-    print(f"Ax accuracy: {ax_acc}, loss: {acc_loss}. #bits: {classifier.get_total_retained()}")
+    logger.info(f"Ax accuracy: {ax_acc}, loss: {acc_loss}. #bits: {classifier.get_total_retained()}")
 
 def ps_distance(configfile, pareto = None):
+    logger = logging.getLogger("pyALS-RF")
+    
     def plot(outdir, data, samples, label):
         plt.figure(figsize=[8,4])
         y = [ ax[samples] for ax in data ]
@@ -103,10 +106,10 @@ def ps_distance(configfile, pareto = None):
 
     problem = PsMop(classifier, configuration.error_conf.max_loss_perc, cpu_count())
     optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
-    print("Reading the Pareto front.")
+    logger.info("Reading the Pareto front.")
     optimizer.read_final_archive_from_json(problem, archive_json)
 
-    print(f"{len(optimizer.archive)} solutions read from {archive_json}")
+    logger.info(f"{len(optimizer.archive)} solutions read from {archive_json}")
 
     classifier.reset_nabs_configuration()
     rhos = [ softmax(classifier.predict_mt(x)) for x in tqdm(classifier.x_test, desc="Evaluating rho ...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave = False) ]
@@ -124,10 +127,10 @@ def ps_distance(configfile, pareto = None):
     plot(configuration.outdir, data_to_plot, "mae_p_pp_T", r"$\frac{1}{M}\sum_{i=0}^{M-1} |\rho_i - \rho'_i|,\; \tau \in T$")
     plot(configuration.outdir, data_to_plot, "rhotheta_rhoptheta", r"$ \rho_{\theta^*} - \rho'_{\theta^*},\; \tau \in T$")
     classifier.pool.close()
-    print(f"All done! Take a look at the {configuration.outdir} directory.")
+    logger.info(f"All done! Take a look at the {configuration.outdir} directory.")
     
 def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
-            
+    logger = logging.getLogger("pyALS-RF")
     configuration = PSConfigParser(configfile)
     check_for_file(configuration.model_source)
     check_for_file(configuration.error_conf.test_dataset)
@@ -136,7 +139,6 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
     classifier = Classifier(cpu_count())
     classifier.pmml_parser(configuration.model_source)
     classifier.read_test_set(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
-    classifier.enable_mt()
     problem = PsMop(classifier, configuration.error_conf.max_loss_perc, cpu_count())
     problem.load_cache(f"{configuration.outdir}/.cache")
     archive_json = f"{configuration.outdir}/final_archive.json" if pareto is None else pareto
@@ -146,7 +148,7 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
     classifier.reset_assertion_configuration()
     C, M = datasetRanking(classifier)
     baseline_accuracy = len(C) / (len(C) + len(M)) * 100
-    print(f"Baseline accuracy: {baseline_accuracy} %")
+    logger.info(f"Baseline accuracy: {baseline_accuracy} %")
     
     legend_markers = [
          mlines.Line2D([],[], color='crimson', marker='d', linestyle='None', label='Reference'),
@@ -162,9 +164,9 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
     
         problem = PsMop(classifier, configuration.error_conf.max_loss_perc, cpu_count())
         optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
-        print("Reading the Pareto front.")
+        logger.info("Reading the Pareto front.")
         optimizer.read_final_archive_from_json(problem, archive_json)
-        print(f"{len(optimizer.archive)} solutions read from {archive_json}")
+        logger.info(f"{len(optimizer.archive)} solutions read from {archive_json}")
         classifier.reset_nabs_configuration()
         
         for ax in  tqdm(optimizer.archive, desc="Analysing ACSs...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave = False):
@@ -182,7 +184,7 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
     boxplot(estimation_error, "", "", f"{outdir}/estimation_error.pdf", annotate = True, figsize = (3, 4))
     boxplot(evaluated_samples, "", "", f"{outdir}/evaluated_samples.pdf", annotate = True, figsize = (3, 4), float_format = "%.0f")
     classifier.pool.close()
-    print(f"All done! Take a look at the {outdir} directory.")
+    logger.info(f"All done! Take a look at the {outdir} directory.")
 
 def compute_gini_dist(configfile, outdir):
     configuration = PSConfigParser(configfile)
@@ -191,7 +193,6 @@ def compute_gini_dist(configfile, outdir):
     classifier = Classifier(cpu_count())
     classifier.pmml_parser(configuration.model_source)
     classifier.read_test_set(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
-    classifier.enable_mt()
     classifier.reset_nabs_configuration()
     classifier.reset_assertion_configuration()
     dist_gini(classifier, outdir)

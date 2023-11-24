@@ -56,7 +56,7 @@ class DecisionTree:
         return 64 * len(self.decision_boxes)
 
     def get_total_nabs(self):
-        return sum(box["box"].get_nab() for box in self.decision_boxes)
+        return sum(box["box"].nab for box in self.decision_boxes)
 
     def get_total_retained(self):
         return 64 * len(self.decision_boxes) - self.get_total_nabs()
@@ -205,6 +205,7 @@ class DecisionTree:
             hdl_expression = '\'0\''
         elif len(minterms) == 1:
             sop = hdl_expression = minterms[0]
+            minterms = []
         elif use_espresso:
                 logger.info("Using espresso heuristic logic minimizer")
                 minimized_expression = str(espresso_exprs(expr(" | ".join( m.replace("not ", " ~").replace("and", "&") for m in minterms)))[0]).replace("Or(","").replace("~", "not ").replace("))", ")")

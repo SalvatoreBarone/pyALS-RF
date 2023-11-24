@@ -20,7 +20,7 @@ from distutils.dir_util import mkpath
 from .logger import configure_logger
 from .ConfigParsers.PsConfigParser import *
 from .Model.Classifier import *
-from .Optimization.PsMop import *
+from .Flows.PS.PsMop import *
 
 def set_global_options(ctx, confifile, logger_name, verbosity, ncpus, use_espresso, flow = None):
     #assert "flow" not in ctx.obj, f"Approximation flow already set ({ctx.obj['flow']}). You issued more than one approximation command. Bailing out."
@@ -116,13 +116,13 @@ def create_optimizer(ctx):
         tso = ctx.obj["configuration"].transfer_strategy_objectives
         tsv = ctx.obj["configuration"].transfer_strategy_variables
         if grp is None:
-            ctx.obj["optimizer"] = pyamosa.Optimizer(ctx.obj["configuration"].amosa_conf)
+            ctx.obj["optimizer"] = pyamosa.Optimizer(ctx.obj["configuration"].optimizer_conf)
         elif grp in ["DRG", "drg", "random"]:
             print("Using dynamic random grouping")
-            ctx.obj["optimizer"] = pyamosa.DynamicRandomGroupingOptimizer(ctx.obj["configuration"].amosa_conf)
+            ctx.obj["optimizer"] = pyamosa.DynamicRandomGroupingOptimizer(ctx.obj["configuration"].optimizer_conf)
         elif grp in ["dvg", "DVG", "dvg2", "DVG2", "differential"]:
             print(f"Using differential grouping with TSO {tso} and TSV {tsv}")
-            variable_decomposition_cache = f"{ctx.obj['configuration'].output_dir}/dvg2_{tso}_{tsv}.json5"
+            variable_decomposition_cache = f"{ctx.obj['configuration'].outdir}/dvg2_{tso}_{tsv}.json5"
             grouper = pyamosa.DifferentialVariableGrouping2(ctx.obj["problem"])
             if os.path.exists(variable_decomposition_cache):
                 grouper.load(variable_decomposition_cache)
@@ -130,9 +130,10 @@ def create_optimizer(ctx):
                 grouper.run(ctx.obj["configuration"].tso_selector[tso], ctx.obj["configuration"].tsv_selector[tsv])
                 grouper.store(variable_decomposition_cache)
             ctx.obj["optimizer"] = pyamosa.GenericGroupingOptimizer(ctx.obj["configuration"], grouper)
-        ctx.obj["final_archive_json"] = f"{ctx.obj['configuration'].output_dir}/final_archive.json"
+        ctx.obj["final_archive_json"] = f"{ctx.obj['configuration'].outdir}/final_archive.json"
         
-def improve(ctx):
-    if "improve" not in ctx.obj and os.path.exists(ctx.obj["final_archive_json"]):
+def can_improve(ctx):
+    ctx.obj["improve"] = None
+    if os.path.exists(ctx.obj["final_archive_json"]):
         print("Using results from previous runs as a starting point.")
         ctx.obj["improve"] = ctx.obj["final_archive_json"]

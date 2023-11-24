@@ -14,26 +14,27 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import numpy as np, pyamosa
-from ..Model.Classifier import *
-from ..Model.rank_based import datasetRanking, estimateLoss, softmax, giniImpurity
+import logging, numpy as np, pyamosa
+from ...Model.Classifier import *
+from ...Model.rank_based import datasetRanking, estimateLoss
 
 class PsMop(pyamosa.Problem):
-    def __init__(self, classifier, max_loss, ncpus):
+    def __init__(self, classifier : Classifier, max_loss : float, ncpus : int):
         self.classifier = classifier
         self.max_loss = max_loss
         self.ncpus = ncpus
         self.classifier.reset_nabs_configuration()
         self.classifier.reset_assertion_configuration()
+        logger = logging.getLogger("pyALS-RF")
         
-        print("Computing the baseline accuracy...")
+        logger.info("Computing the baseline accuracy...")
         self.baseline_accuracy = self.classifier.evaluate_test_dataset()
-        print(f"Baseline accuracy: {self.baseline_accuracy} %")
+        logger.info(f"Baseline accuracy: {self.baseline_accuracy} %")
         self.baseline_bits = self.classifier.get_total_retained()
-        print(f"Baseline retained bits: {self.baseline_bits}")
+        logger.info(f"Baseline retained bits: {self.baseline_bits}")
         n_vars = len(self.classifier.model_features)
         ub = [53] * n_vars
-        print(f"#vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
+        logger.info(f"#vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
         pyamosa.Problem.__init__(self, n_vars, [pyamosa.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
 
     def set_matter_configuration(self, x):
@@ -48,7 +49,7 @@ class PsMop(pyamosa.Problem):
         out["g"] = [acc_loss - self.max_loss]
         
 class RankBasedPsMop(pyamosa.Problem):
-    def __init__(self, classifier, max_loss, alpha, beta, gamma, ncpus):
+    def __init__(self, classifier : Classifier, max_loss : float, alpha : float, beta : float, gamma : float, ncpus : int):
         self.classifier = classifier
         self.max_loss = max_loss
         self.alpha = alpha
@@ -57,14 +58,17 @@ class RankBasedPsMop(pyamosa.Problem):
         self.ncpus = ncpus
         self.classifier.reset_nabs_configuration()
         self.classifier.reset_assertion_configuration()
+        logger = logging.getLogger("pyALS-RF")
+        logger.info("Computing the dataset ranking")
         self.C, self.M = datasetRanking(self.classifier)
         self.sample_count = []
+        logger.info("Computing the baseline accuracy...")
         self.baseline_accuracy = len(self.C) / (len(self.C) + len(self.M)) * 100
-        print(f"Baseline accuracy: {self.baseline_accuracy} %")
-        print(f"Baseline retained bits: {self.classifier.get_total_retained()}")
+        logger.info(f"Baseline accuracy: {self.baseline_accuracy} %")
+        logger.info(f"Baseline retained bits: {self.classifier.get_total_retained()}")
         n_vars = len(self.classifier.model_features)
         ub = [53] * n_vars
-        print(f"#vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
+        logger.info(f"#vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
         pyamosa.Problem.__init__(self, n_vars, [pyamosa.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
         
     def set_matter_configuration(self, x):

@@ -23,7 +23,7 @@ from .HDLGenerator import HDLGenerator
 from ..Model.Classifier import Classifier
 from ..Flows.GREP.GREP import GREP
 
-class PruningHdlGenerator(HDLGenerator):
+class GREPHdlGenerator(HDLGenerator):
     def __init__(self, classifier : Classifier, yshelper : YosysHelper, destination : str):
         super().__init__(classifier, yshelper, destination)
         

@@ -38,7 +38,7 @@ class PsHdlGenerator(HDLGenerator):
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         
-        for i, conf in enumerate(kwargs['configurations']):
+        for i, conf in enumerate(kwargs['pareto_set']):
             features = [{"name": f["name"], "nab": n} for f, n in zip(self.classifier.model_features, conf)]
             
             dest = f"{self.destination}/ax/variant_{i:05d}"
@@ -49,17 +49,20 @@ class PsHdlGenerator(HDLGenerator):
             
             nabs = {f["name"]: n for f, n in zip(self.classifier.model_features, conf)}
             self.classifier.set_nabs(nabs)
-            
-            self.generate_tcl(dest, trees_name, env)
-            self.generate_cmakelists(dest, trees_name, env)
+            trees_inputs = {}
+            for tree in self.classifier.trees:
+                boxes = self.get_dbs(tree)
+                inputs = self.implement_decision_boxes(tree, boxes, f"{dest}/src")
+                self.implement_assertions(tree, boxes, f"{dest}/src", kwargs['lut_tech'])
+                trees_inputs[tree.name] = inputs
+                
             self.generate_rejection_module(f"{dest}/src", env)
             self.generate_majority_voter(f"{dest}/src", env)
-            self.generate_classifier(f"{dest}/src", features, trees_name, env)
+            self.generate_classifier(f"{dest}/src", features, trees_inputs, env)
             self.generate_ax_tb(f"{dest}/tb/", features, env)
-            for tree in self.classifier.trees:
-                self.implement_decision_boxes(tree, f"{dest}/src")
-                self.implement_assertions(tree, f"{dest}/src", kwargs['lut_tech'])
-                
+            self.generate_tcl(dest, trees_name, env)
+            self.generate_cmakelists(dest, trees_name, env)
+            
     def generate_ax_tb(self, dest, features, env, **kwargs):    
         n_vectors, test_vectors, expected_outputs = self.generate_exact_test_vectors()
         tb_classifier_template = env.get_template(self.vhdl_tb_classifier_template_file)

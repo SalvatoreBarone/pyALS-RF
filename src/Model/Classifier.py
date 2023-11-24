@@ -39,6 +39,9 @@ class Classifier:
         self.ncpus = min(ncpus, cpu_count()) if ncpus is not None else cpu_count()
         self.use_espresso = use_espresso
         self.als_conf = None
+        
+    def __del__(self):
+        self.pool.close()
     
     @staticmethod
     def get_xmlns_uri(elem):
@@ -217,7 +220,7 @@ class Classifier:
     
     def evaluate_test_dataset(self):
         outcomes = np.sum(self.pool.starmap(Classifier.compute_score, self.args), axis = 0)
-        return np.sum(np.argmax(o) == y and not Classifier.check_draw(o)[0] for o, y in zip(outcomes, self.y_test)) / len(self.y_test) * 100
+        return np.sum(tuple( np.argmax(o) == y[0] and not Classifier.check_draw(o)[0] for o, y in zip(outcomes, self.y_test))) / len(self.y_test) * 100
     
     def predict_dump(self, index: int, outfile: str):
         score = self.predict(self.x_test[index])

@@ -57,7 +57,11 @@ class PSConfigParser(ConfigParser):
                 hill_climb_checkpoint_file = f"{self.outdir}/.hill_climb_checkpoint.json",
                 minimize_checkpoint_file = f"{self.outdir}/.annealing_checkpoint.json",
                 cache_dir = f"{self.outdir}/.cache")
-
+        
+        self.variable_grouping_strategy = search_subfield_in_config(optimizer_conf, "amosa", "grouping", False, None)
+        self.transfer_strategy_objectives = search_subfield_in_config(optimizer_conf, "amosa", "tso", False, "all")
+        self.transfer_strategy_variables =  search_subfield_in_config(optimizer_conf, "amosa", "tsv", False, "any")
+        
         optimizer_min_temperature = search_field_in_config(optimizer_conf, "final_temperature", True, 1e-7)
         optimizer_stop_phy_window = search_field_in_config(optimizer_conf, "early_termination", False, 20)
         optimizer_max_duration = search_field_in_config(optimizer_conf, "max_duration", False, None)

@@ -16,8 +16,9 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import json5, logging
 from distutils.dir_util import mkpath
+from pyamosa.Pareto import Pareto
 from .HDLGenerators.HDLGenerator import HDLGenerator
-from .HDLGenerators.PruningHdlGenerator import PruningHdlGenerator
+from .HDLGenerators.GREPHdlGenerator import GREPHdlGenerator
 from .HDLGenerators.PsHdlGenerator import PsHdlGenerator
 from .HDLGenerators.SingleStepAlsHdlGenerator import SingleStepAlsHdlGenerator
 from .HDLGenerators.SingleStepAlsWcHdlGenerator import SingleStepAlsWcHdlGenerator
@@ -25,7 +26,7 @@ from .HDLGenerators.SingleStepFullHdlGenerator import SingleStepFullHdlGenerator
 from .HDLGenerators.TwoStepsAlsHdlGenerator import TwoStepsAlsHdlGenerator
 from .HDLGenerators.TwoStepsAlsWcHdlGenerator import TwoStepsAlsWcHdlGenerator
 from .HDLGenerators.TwoStepsFullHdlGenerator import TwoStepsFullHdlGenerator
-from .ctx_factory import load_configuration_ps, create_classifier, create_yshelper, load_flow
+from .ctx_factory import load_configuration_ps, create_classifier, create_yshelper, load_flow, create_problem, create_optimizer
 
 def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
     logger = logging.getLogger("pyALS-RF")
@@ -44,6 +45,7 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
     exact_luts, exact_ffs = hdl_generator.get_resource_usage()
     if not skip_exact:
         logger.info("Generating reference (non-approximate) implementation...")
+        logger.debug(f"Lut Tech: {lut_tech}")
         hdl_generator.generate_exact_implementation(enable_espresso =  ctx.obj['configuration'].outdir, lut_tech = lut_tech)
     
     logger.info("Generating the approximate implementation...")
@@ -52,9 +54,21 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
         if "pruning_configuration" not in ctx.obj:
             logger.info(f"Reading pruning configuration from {pruning_configuration_json}")
             ctx.obj['pruning_configuration'] = json5.load(open(pruning_configuration_json))
-        hdl_generator = PruningHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+        hdl_generator = GREPHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+        hdl_generator.generate_axhdl(pruning_configuration = ctx.obj['pruning_configuration'], enable_espresso = ctx.obj['espresso'], lut_tech = lut_tech)
+        ax_luts, ax_ffs = hdl_generator.get_resource_usage()
+        logger.info(f"Expected LUT savings: {(1 - ax_luts / exact_luts) * 100}%\n\tExpected FFs savings: {(1 - ax_ffs / exact_ffs) * 100}%")
     elif ctx.obj["flow"] == "ps":
+        if "pareto_front" not in ctx.obj:
+            create_problem(ctx, mode = "full")
+            create_optimizer(ctx)
+            pareto_front_json = f"{ctx.obj['configuration'].outdir}/final_archive.json"
+            print(f"Reading pareto front from {pareto_front_json}.")
+            ctx.obj["optimizer"].archive = Pareto()
+            ctx.obj["optimizer"].archive.read_json(ctx.obj["problem"].types, pareto_front_json)
+            ctx.obj["pareto_front"] = ctx.obj["optimizer"].archive
         hdl_generator = PsHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+        hdl_generator.generate_axhdl(pareto_set = ctx.obj['pareto_front'].get_set(), enable_espresso = ctx.obj['espresso'], lut_tech = lut_tech)
     elif ctx.obj["flow"] == "als-onestep":
         hdl_generator = SingleStepAlsHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
     elif ctx.obj["flow"] == "als-twosteps":
@@ -71,7 +85,5 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
         print(f"{ctx.obj['flow']}: unrecognized approximation flow. Bailing out.")
         exit()
     
-    hdl_generator.generate_axhdl(pruning_configuration = ctx.obj['pruning_configuration'], enable_espresso = ctx.obj['espresso'], lut_tech = lut_tech)
-    ax_luts, ax_ffs = hdl_generator.get_resource_usage()
-    logger.info(f"Expected LUT savings: {(1 - ax_luts / exact_luts) * 100}%\n\tExpected FFs savings: {(1 - ax_ffs / exact_ffs) * 100}%")
+    
     logger.info("All done!")
