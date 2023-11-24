@@ -17,9 +17,10 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import os, pyamosa, json5, logging
 from pyalslib import YosysHelper, check_for_file
 from distutils.dir_util import mkpath
+from .logger import configure_logger
 from .ConfigParsers.PsConfigParser import *
 from .Model.Classifier import *
-from .logger import configure_logger
+from .Optimization.PsMop import *
 
 def set_global_options(ctx, confifile, logger_name, verbosity, ncpus, use_espresso, flow = None):
     #assert "flow" not in ctx.obj, f"Approximation flow already set ({ctx.obj['flow']}). You issued more than one approximation command. Bailing out."
@@ -96,8 +97,13 @@ def create_catalog(ctx):
     #     ctx.obj["catalog"] = ALSCatalog(ctx.obj["configuration"].als_conf.lut_cache, ctx.obj["configuration"].als_conf.solver).generate_catalog(ctx.obj["luts_set"], ctx.obj["configuration"].als_conf.timeout, ctx.obj['ncpus'])
     #     print("Done!")
               
-def create_problem(ctx):
-    pass
+def create_problem(ctx, **kwargs):
+    assert "flow" in ctx.obj, "Unspecified approximation flow. Bailing out."
+    assert "classifier" in ctx.obj, "Unspecified classifier model. Bailing out."
+    if "problem" not in ctx.obj:
+        if ctx.obj["flow"] == "ps":
+            ctx.obj["problem"] = PsMop(ctx.obj["classifier"], ctx.obj["configuration"].error_conf.max_loss_perc, ctx.obj["ncpus"]) if kwargs['mode'] == "full" else RankBasedPsMop(ctx.obj["classifier"], ctx.obj["configuration"].error_conf.max_loss_perc, kwargs['alpha'], kwargs['beta'], kwargs['gamma'], ctx.obj["ncpus"])
+    
     # assert "configuration" in ctx.obj, "You must read the JSON configuration file to run this command(s)"
     # assert "graph" in ctx.obj, "You must create a ALSGraph object first"
     # if "problem" not in ctx.obj:

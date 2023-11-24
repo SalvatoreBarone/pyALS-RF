@@ -18,14 +18,13 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import click, os, sys, logging
 from multiprocessing import cpu_count
 from src.ctx_factory import set_global_options, store_flow
-from src.ps_flow import ps_flow, ps_eval, ps_distance, ps_compare, compute_gini_dist
-from src.als_flow import als_one_step, als_two_steps
-from src.als_wc_flow import als_wc_one_step, als_wc_two_steps
-from src.combined_flow import full_one_step, full_two_steps
+from src.Flows.ps_flow import ps_flow, ps_eval, ps_distance, ps_compare, compute_gini_dist
+from src.Flows.grep_flow import grep_flow, redundancy_plot
+from src.Flows.als_flow import als_one_step, als_two_steps
+from src.Flows.combined_flow import full_one_step, full_two_steps
+from src.Flows.debug_flow import hdl_debug_flow, debug_with_scikit, print_model
 from src.ConfigParsers.DtGenConfigParser import *
-from src.pruning_flow import pruning_flow, redundancy_plot
 from src.hdl_generation import hdl_generation
-from src.debug_flow import hdl_debug_flow, debug_with_scikit, print_model
 from src.git_updater import git_updater
 
 @click.group(chain=True)
@@ -43,7 +42,7 @@ def cli(ctx):
 @click.option('--gamma', type=float, default = 2)
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def bitwidth(ctx, conf, ncpus, espresso, mode, alpha, beta, gamma, verbose):
+def bitwidth(ctx, conf, ncpus, espresso, mode, alpha, beta, gamma, output, verbose):
     """
     Performs precision-scaling approximation
     """
@@ -57,7 +56,7 @@ def bitwidth(ctx, conf, ncpus, espresso, mode, alpha, beta, gamma, verbose):
                 f"\n\tbeta: {beta}"
                 f"\n\tgamma: {gamma}"
                 )
-    ps_flow(conf, mode, alpha, beta, gamma, ncpus)
+    ps_flow(ctx, conf, mode, alpha, beta, gamma, output)
     store_flow(ctx)
     
 @cli.command("als")
@@ -65,9 +64,10 @@ def bitwidth(ctx, conf, ncpus, espresso, mode, alpha, beta, gamma, verbose):
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-e', '--espresso', is_flag = True, help = "Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.option('--onestep', is_flag = True, default = False, help = "Enable one-step approximation flow")
+@click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def als(ctx, conf, ncpus, espresso, onestep, verbose):
+def als(ctx, conf, ncpus, espresso, onestep, output, verbose):
     """
     Performs the standard ALS approximation flow
     """
@@ -98,19 +98,22 @@ def full(ctx, conf, ncpus, espresso, onestep, verbose):
         full_two_steps(ctx)
     store_flow(ctx)
         
-@cli.command("pruning")
+@cli.command("grep")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-e', '--espresso', is_flag = True, help = "Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
 @click.option('-f', '--fraction', type = float, default = 0.5, help = "Fraction of the test set to be used as pruning set")
-@click.option('-a', '--approach', type = click.Choice(["loss", "redundancy"]), help = "Pruning approach (loss-based or redundancy-based).")
+@click.option('-a', '--approach', required = True, type = click.Choice(["loss", "redundancy"]), help = "Pruning approach (loss-based or redundancy-based).")
 @click.option('-x', '--cost', type = click.Choice(["depth", "activity", "combined"]) , default = "combined", help = "Fraction of the test set to be used as pruning set")
 @click.option('-r', '--minredundancy', type = int, default = 0, help = "Minimum redundancy to be kept")
 @click.option('-m', '--maxloss', type = float, default = 5.0, help = "Maximum allowed accuracy loss")
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def hedge_trimming(ctx, conf, ncpus, espresso, fraction, approach, cost, minredundancy, maxloss, output, verbose):
+def grep(ctx, conf, ncpus, espresso, fraction, approach, cost, minredundancy, maxloss, output, verbose):
+    """
+    Performs the Global Redundancy Reduction for Enseble Pruning approximation approach.
+    """
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, espresso, "pruning")
     logger = logging.getLogger("pyALS-RF")
     logger.info("Performing hedge trimming"
@@ -123,7 +126,7 @@ def hedge_trimming(ctx, conf, ncpus, espresso, fraction, approach, cost, minredu
                 f"\n\tmax. loss: {maxloss}"
                 f"\n\toutput dir: {output}"
                 )
-    pruning_flow(ctx, fraction, approach, cost, minredundancy, maxloss, output)
+    grep_flow(ctx, fraction, approach, cost, minredundancy, maxloss, output)
     store_flow(ctx)
     
 @cli.command("reduplot")
@@ -134,7 +137,7 @@ def hedge_trimming(ctx, conf, ncpus, espresso, fraction, approach, cost, minredu
 @click.pass_context
 def reduplot(ctx, conf, ncpus, output, verbose):
     """
-    Plot redundancy of classification
+    Plots the redundancy of a classfier
     """
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False)
     logger = logging.getLogger("pyALS-RF")
@@ -155,7 +158,7 @@ def reduplot(ctx, conf, ncpus, output, verbose):
 @click.pass_context
 def generate_hdl(ctx, conf, ncpus, espresso, luts, skip_exact, output, verbose):
     """
-    Generates HDL implementation
+    Generates HDL implementations for a given classifier, including its approximate variants, if any.
     """
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, espresso)
     logger = logging.getLogger("pyALS-RF")
@@ -264,7 +267,7 @@ def compgini(configfile, outdir):
 cli.add_command(bitwidth)
 cli.add_command(als)
 cli.add_command(full)
-cli.add_command(assertions_pruning)
+cli.add_command(grep)
 cli.add_command(generate_hdl)
 cli.add_command(debug_model)
 cli.add_command(debug_hdl)

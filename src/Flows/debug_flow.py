@@ -16,10 +16,10 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import joblib, logging
 from tabulate import tabulate
-from .ConfigParsers.PsConfigParser import *
-from .Model.Classifier import *
-from .ctx_factory import load_configuration_ps, create_classifier, create_yshelper
-from .dtgen import print_nodes
+from ..ConfigParsers.PsConfigParser import *
+from ..Model.Classifier import *
+from ..ctx_factory import load_configuration_ps, create_classifier, create_yshelper
+from ..dtgen import print_nodes
 
 def debug_with_scikit(ctx, output):
     load_configuration_ps(ctx)

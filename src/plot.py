@@ -52,7 +52,6 @@ def boxplot(data, xlabel, ylabel, outfile, figsize = (4,4), annotate = True, flo
         plt.xticks([1], [""])
     if integer_only:
         y = np.array(data)
-        print(np.min(y), np.ceil(np.max(y))+1)
         yint = range(int(np.min(y)), int(np.ceil(np.max(y))+1))
         plt.yticks(yint)
     plt.tight_layout()

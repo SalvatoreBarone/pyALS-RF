@@ -17,16 +17,16 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import logging, joblib, numpy as np
 from distutils.dir_util import mkpath
 from tqdm import tqdm
-from .ctx_factory import load_configuration_ps, create_classifier
-from .ConfigParsers.PsConfigParser import *
-from .AxCT.HedgeTrimming import HedgeTrimming
-from .AxCT.ResiliencyBasedHedgeTrimming import ResiliencyBasedHedgeTrimming
-from .AxCT.LossBasedHedgeTrimming import LossBasedHedgeTrimming
-from .Model.Classifier import Classifier
-from .plot import boxplot
+from ..ctx_factory import load_configuration_ps, create_classifier
+from ..ConfigParsers.PsConfigParser import *
+from .GREP.GREP import GREP
+from .GREP.ResiliencyBasedGREP import ResiliencyBasedGREP
+from .GREP.LossBasedGREP import LossBasedGREP
+from ..Model.Classifier import Classifier
+from ..plot import boxplot
 
 
-def pruning_flow(ctx : dict, fraction : float, approach: str, cost_criterion: str, minredundancy : int, maxloss : float, output : str):
+def grep_flow(ctx : dict, fraction : float, approach: str, cost_criterion: str, minredundancy : int, maxloss : float, output : str):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the pruning flow.")
     load_configuration_ps(ctx)
@@ -36,8 +36,8 @@ def pruning_flow(ctx : dict, fraction : float, approach: str, cost_criterion: st
     
     create_classifier(ctx)
        
-    trimmer = LossBasedHedgeTrimming(ctx.obj["classifier"], fraction, maxloss, minredundancy, ctx.obj["ncpus"]) if approach == "loss" else ResiliencyBasedHedgeTrimming(ctx.obj["classifier"], fraction, maxloss, minredundancy, ctx.obj["ncpus"])
-    trimmer.trim(HedgeTrimming.get_cost_criterion(cost_criterion))
+    trimmer = LossBasedGREP(ctx.obj["classifier"], fraction, maxloss, minredundancy, ctx.obj["ncpus"]) if approach == "loss" else ResiliencyBasedGREP(ctx.obj["classifier"], fraction, maxloss, minredundancy, ctx.obj["ncpus"])
+    trimmer.trim(GREP.get_cost_criterion(cost_criterion))
     trimmer.store_pruning_conf(f"{ctx.obj['configuration'].outdir}/pruning_configuration.json5")
     trimmer.redundancy_boxplot(f"{ctx.obj['configuration'].outdir}/redundancy_boxplot.pdf")
     trimmer.restore_bns()

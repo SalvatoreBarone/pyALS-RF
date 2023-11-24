@@ -19,12 +19,12 @@ from multiprocessing import cpu_count
 from tabulate import tabulate
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
-from ..Model.Classifier import *
-from ..Model.DecisionTree import *
-from ..plot import boxplot
+from ...Model.Classifier import *
+from ...Model.DecisionTree import *
+from ...plot import boxplot
 from enum import Enum
 
-class HedgeTrimming:
+class GREP:
     
     class CostCriterion:
         depth = 1,      # higher the depth higher the cost
@@ -59,12 +59,12 @@ class HedgeTrimming:
     def evaluate_redundancy(self):
         logger = logging.getLogger("pyALS-RF")
         self.initial_redundancy = [] # keeps the initial redundancy of each sample (it's easier to sort a list of tuples)
-        self.samples_info = { HedgeTrimming.sample_to_str(x) : { "r": 0, "leaves" : []} for x in self.x_pruning} # for each sample, keeps its residual redundancy and the list of prunable minterm
+        self.samples_info = { GREP.sample_to_str(x) : { "r": 0, "leaves" : []} for x in self.x_pruning} # for each sample, keeps its residual redundancy and the list of prunable minterm
         self.leaves_info = {} # for each leaf, of each tree, keeps the list of sample belonging to that leaf
         self.accuracy_pruning_set = 0
         # compute the tree visit for each of the sample
         logger.info("Computing the pruning capabilities")
-        tree_visiting_outcomes = self.pool.starmap(HedgeTrimming.compute_redundancy, self.args_evaluate_pruning) 
+        tree_visiting_outcomes = self.pool.starmap(GREP.compute_redundancy, self.args_evaluate_pruning) 
         logger.info("Done")
         # then, for each sample
         for x, y, (visiting_outcomes) in tqdm(zip(self.x_pruning, self.y_pruning, zip(*tree_visiting_outcomes)), total=len(self.y_pruning), desc="Computing redundancy", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
@@ -78,15 +78,15 @@ class HedgeTrimming:
                 self.accuracy_pruning_set += 1
                  # in this case compute the number of prunable leaves
                 r = np.sort(np.array(score, copy=True))[::-1]
-                self.samples_info[HedgeTrimming.sample_to_str(x)]["r"] = (r[0] - r[1] - 1) // 2
-                logger.debug(f"Initial redundancy: {self.samples_info[HedgeTrimming.sample_to_str(x)]['r']}")
-                self.initial_redundancy.append((x, self.samples_info[HedgeTrimming.sample_to_str(x)]["r"]))
+                self.samples_info[GREP.sample_to_str(x)]["r"] = (r[0] - r[1] - 1) // 2
+                logger.debug(f"Initial redundancy: {self.samples_info[GREP.sample_to_str(x)]['r']}")
+                self.initial_redundancy.append((x, self.samples_info[GREP.sample_to_str(x)]["r"]))
                 # among all leaves resulting from trees visiting, the leaves that can be pruned are those resulting in correct classification
-                self.samples_info[HedgeTrimming.sample_to_str(x)]["leaves"] = [ i[:3] for i in visiting_outcomes if np.argmax(i[3]) == y ]
-                logger.debug(f"Candidate leaves: {self.samples_info[HedgeTrimming.sample_to_str(x)]['leaves']}")
+                self.samples_info[GREP.sample_to_str(x)]["leaves"] = [ i[:3] for i in visiting_outcomes if np.argmax(i[3]) == y ]
+                logger.debug(f"Candidate leaves: {self.samples_info[GREP.sample_to_str(x)]['leaves']}")
                 # for each of the leaves resulting in correct classification, the list of samples resulting in that leaf is updated
                 # in order to have the complete list of samples activating each leaf in the forest
-                for leaf in self.samples_info[HedgeTrimming.sample_to_str(x)]["leaves"]: #*note that leaf is actually a tuple (tree name, leaf)
+                for leaf in self.samples_info[GREP.sample_to_str(x)]["leaves"]: #*note that leaf is actually a tuple (tree name, leaf)
                     if leaf not in self.leaves_info:
                         self.leaves_info[leaf] = {"cost" : 0.0, "samples" : []}
                     self.leaves_info[leaf]["samples"].append(x)
@@ -102,11 +102,11 @@ class HedgeTrimming:
         for leaf, info in self.leaves_info.items():
             literals = len(leaf[2].split("and"))
             activations = len(info["samples"])
-            if cost_criterion == HedgeTrimming.CostCriterion.depth:
+            if cost_criterion == GREP.CostCriterion.depth:
                 info["cost"] = literals
-            elif cost_criterion == HedgeTrimming.CostCriterion.activity:
+            elif cost_criterion == GREP.CostCriterion.activity:
                 info["cost"] = 1 / activations
-            elif cost_criterion == HedgeTrimming.CostCriterion.combined:
+            elif cost_criterion == GREP.CostCriterion.combined:
                 info["cost"] = literals / activations # leaves with the same costs in terms of literals but with less activity cost more!
             logger.debug(f"Cost of {leaf} is {literals}/{activations}={info['cost']}")
         # now, for each of the activing sample, sort the list of leaves based on their cost
@@ -121,7 +121,7 @@ class HedgeTrimming:
         boxplot([ i[1] for i in self.initial_redundancy ], "", "Redundancy", outfile, figsize = (2, 4), annotate = False, integer_only= True)
             
     def get_cost(self):
-        return sum( HedgeTrimming.get_bns_cost(t) for t in self.classifier.trees )
+        return sum( GREP.get_bns_cost(t) for t in self.classifier.trees )
     
         
     @staticmethod
@@ -130,7 +130,7 @@ class HedgeTrimming:
     
     @staticmethod
     def get_cost_criterion(criterion : str):
-        return { "depth" : HedgeTrimming.CostCriterion.depth, "activity" : HedgeTrimming.CostCriterion.activity, "combined" : HedgeTrimming.CostCriterion.combined}[criterion]
+        return { "depth" : GREP.CostCriterion.depth, "activity" : GREP.CostCriterion.activity, "combined" : GREP.CostCriterion.combined}[criterion]
     
     @staticmethod
     def tree_visit_with_leaf(tree : DecisionTree, attributes):
@@ -152,7 +152,7 @@ class HedgeTrimming:
     @staticmethod
     def set_pruning_conf(classifier : Classifier, pruning_conf):
         for t in classifier.trees:
-            HedgeTrimming.set_pruning(t, pruning_conf)
+            GREP.set_pruning(t, pruning_conf)
     
     @staticmethod
     def set_pruning(tree : DecisionTree, pruning_configuration, use_espresso : bool = False):
@@ -173,13 +173,13 @@ class HedgeTrimming:
 
     @staticmethod
     def compute_redundancy(trees, dataset):
-        return [[ HedgeTrimming.tree_visit_with_leaf(t, x) for t in trees ] for x in dataset ]
+        return [[ GREP.tree_visit_with_leaf(t, x) for t in trees ] for x in dataset ]
     
     def compare(self):
         data = []
         self.restore_bns()
         exact_outcome = np.sum(self.pool.starmap(Classifier.compute_score, self.args_evaluate_validation), axis = 0)
-        HedgeTrimming.set_pruning_conf(self.classifier, self.pruning_configuration)
+        GREP.set_pruning_conf(self.classifier, self.pruning_configuration)
         pruned_outcome = np.sum(self.pool.starmap(Classifier.compute_score, self.args_evaluate_validation), axis = 0)
         for eo, po, x, y in zip(exact_outcome, pruned_outcome, self.x_validation, self.y_validation):
             if np.argmax(eo) != np.argmax(po) or Classifier.check_draw(eo) != Classifier.check_draw(po):

@@ -14,31 +14,31 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import json5, logging, copy
+import logging
 from multiprocessing import cpu_count
 from tqdm import tqdm
-from ..Model.Classifier import Classifier
-from .HedgeTrimming import HedgeTrimming
+from ...Model.Classifier import Classifier
+from .GREP import GREP
 
-class ResiliencyBasedHedgeTrimming(HedgeTrimming):
+class ResiliencyBasedGREP(GREP):
     def __init__(self, classifier : Classifier, pruning_set_fraction : float = 0.5, max_loss : float = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count()):
         super().__init__(classifier, pruning_set_fraction, max_loss, min_resiliency, ncpus)
     
-    def trim(self, cost_criterion : HedgeTrimming.CostCriterion):
+    def trim(self, cost_criterion : GREP.CostCriterion):
         super().trim(cost_criterion)
         logger = logging.getLogger("pyALS-RF")
         self.pruning_configuration = []
         for x, _ in tqdm(self.initial_redundancy, total = len(self.initial_redundancy), desc="Redundancy-based hedge trimming...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
-            actual_redundancy = self.samples_info[HedgeTrimming.sample_to_str(x)]["r"]
-            active_leaves = self.samples_info[HedgeTrimming.sample_to_str(x)]["leaves"]
+            actual_redundancy = self.samples_info[GREP.sample_to_str(x)]["r"]
+            active_leaves = self.samples_info[GREP.sample_to_str(x)]["leaves"]
             if actual_redundancy > self.min_resiliency:
-                for tree_name, class_name, leaf in tqdm(active_leaves, total = len(self.initial_redundancy), desc="Evaluating leaves...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+                for tree_name, class_name, leaf in tqdm(active_leaves, total = len(active_leaves), desc="Evaluating leaves...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
                     leaf_id = (class_name, tree_name, leaf)
                     samples = self.leaves_info[(tree_name, class_name, leaf)]["samples"]
-                    residual_redundancy = [ self.samples_info[HedgeTrimming.sample_to_str(x)]["r"] for x in samples ]
+                    residual_redundancy = [ self.samples_info[GREP.sample_to_str(x)]["r"] for x in samples ]
                     if leaf_id not in self.pruning_configuration and all( r > (self.min_resiliency + 1) for r in residual_redundancy ):
                         self.pruning_configuration.append(leaf_id)
-                        HedgeTrimming.set_pruning_conf(self.classifier, self.pruning_configuration)
+                        GREP.set_pruning_conf(self.classifier, self.pruning_configuration)
                         self.accuracy = self.evaluate_accuracy()
                         self.loss = self.baseline_accuracy - self.accuracy
                         logger.debug(f"Resulting loss: {self.loss}")
@@ -55,7 +55,7 @@ class ResiliencyBasedHedgeTrimming(HedgeTrimming):
     def update_redundancy(self, samples):
         logger = logging.getLogger("pyALS-RF")
         for x in samples:
-            self.samples_info[HedgeTrimming.sample_to_str(x)]["r"] -= 1
+            self.samples_info[GREP.sample_to_str(x)]["r"] -= 1
             #TODO: self.initial_redundancy has to be updated as well, then re-sorted
-            logger.debug(f"\tDecreasing resiliency for sample {x}. Residual redundancy: {self.samples_info[HedgeTrimming.sample_to_str(x)]['r']}. Cost now is {self.get_cost()}.")
+            logger.debug(f"\tDecreasing resiliency for sample {x}. Residual redundancy: {self.samples_info[GREP.sample_to_str(x)]['r']}. Cost now is {self.get_cost()}.")
         

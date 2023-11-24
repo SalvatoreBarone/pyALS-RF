@@ -17,13 +17,11 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import os, numpy as np, logging
 from distutils.dir_util import mkpath
 
-from pyalslib import YosysHelper, double_to_bin
+from pyalslib import YosysHelper
 from jinja2 import Environment, FileSystemLoader
 from .HDLGenerator import HDLGenerator
-from .LutMapper import LutMapper
 from ..Model.Classifier import Classifier
-from ..Model.DecisionTree import DecisionTree
-from ..AxCT.HedgeTrimming import HedgeTrimming
+from ..Flows.GREP.GREP import GREP
 
 class PruningHdlGenerator(HDLGenerator):
     def __init__(self, classifier : Classifier, yshelper : YosysHelper, destination : str):
@@ -41,7 +39,7 @@ class PruningHdlGenerator(HDLGenerator):
         trees_name = [t.name for t in self.classifier.trees]
         env = Environment(loader = FileSystemLoader(self.source_dir))
         trees_inputs = {}
-        HedgeTrimming.set_pruning_conf(self.classifier, kwargs['pruning_configuration'])
+        GREP.set_pruning_conf(self.classifier, kwargs['pruning_configuration'])
         self.generate_exact_tb(f"{dest}/tb", features, env) # once the pruning configuration is set, you can use exact generator functions!
         for tree in self.classifier.trees:
             boxes = self.get_dbs(tree)

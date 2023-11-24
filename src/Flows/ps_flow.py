@@ -14,52 +14,48 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import os, pyamosa, time, numpy as np, matplotlib.pyplot as plt, matplotlib.lines as mlines
+import logging, os, pyamosa, time, numpy as np, matplotlib.pyplot as plt, matplotlib.lines as mlines
 from pyalslib import check_for_file
 from distutils.dir_util import mkpath
 from multiprocessing import cpu_count
-from .ConfigParsers.PsConfigParser import *
-from .Optimization.PsMop import *
-from .Model.rank_based import softmax, dist_gini
-from .plot import scatterplot, boxplot
+from ..ctx_factory import load_configuration_ps, create_classifier, create_problem, create_optimizer, improve
+from ..ConfigParsers.PsConfigParser import *
+from ..Optimization.PsMop import *
+from ..Model.rank_based import softmax, dist_gini
+from ..plot import scatterplot, boxplot
 
-def ps_flow(configfile, mode, alpha, beta, gamma, ncpus):
-    configuration = PSConfigParser(configfile)
-    check_for_file(configuration.model_source)
-    check_for_file(configuration.error_conf.test_dataset)
-    if configuration.outdir != ".":
-        mkpath(configuration.outdir)
-    classifier = Classifier(ncpus)
-    classifier.pmml_parser(configuration.model_source)
-    classifier.read_test_set(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
-    classifier.enable_mt()
-    problem = PsMop(classifier, configuration.error_conf.max_loss_perc, ncpus) if mode == "full" else RankBasedPsMop(classifier, configuration.error_conf.max_loss_perc, alpha, beta, gamma, ncpus)
-    optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
-    improve = None
-    if os.path.exists(f"{configuration.outdir}/final_archive.json"):
-        print("Using results from previous runs as a starting point.")
-        improve = f"{configuration.outdir}/final_archive.json"
+def ps_flow(ctx : dict, mode : str, alpha : float, beta : float, gamma : float, output : str):
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("Runing the pruning flow.")
+    load_configuration_ps(ctx)
+    if output is not None:
+        ctx.obj['configuration'].outdir = output
+        mkpath(ctx.obj["configuration"].outdir)
+    create_classifier(ctx)
+    create_problem(ctx, mode = mode, alpha = alpha, beta = beta)
+    create_optimizer(ctx)
+    improve(ctx)
+    
     print("Termination criterion:")
-    configuration.termination_criterion.info()
+    ctx.obj["configuration"].termination_criterion.info()
     init_t = time.time()
-    optimizer.run(problem, termination_criterion = configuration.termination_criterion, improve = improve)
-    optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
+    ctx.obj["optimizer"].run(ctx.obj["problem"], termination_criterion = ctx.obj['configuration'].termination_criterion, improve = improve)
+    ctx.obj["optimizer"].archive_to_json(f"{ctx.obj['configuration'].outdir}/final_archive.json")
     dt = time.time() - init_t
     print(f"AMOSA heuristic completed in {dt} seconds")
-    hours = int(optimizer.duration / 3600)
-    minutes = int((optimizer.duration - hours * 3600) / 60)
+    hours = int(ctx.obj["optimizer"].duration / 3600)
+    minutes = int((ctx.obj["optimizer"].duration - hours * 3600) / 60)
     print(f"Took {hours} hours, {minutes} minutes")
-    print(f"Cache hits: {problem.cache_hits} over {problem.total_calls} evaluations.")
-    print(f"{len(problem.cache)} cache entries collected")
+    print(f"Cache hits: {ctx.obj['problem'].cache_hits} over {ctx.obj['problem'].total_calls} evaluations.")
+    print(f"{len(ctx.obj['problem'].cache)} cache entries collected")
     if mode == "rank":
-        print(f"Average samples: {np.mean(problem.sample_count)} (Total #of samples: {len(classifier.y_test)})")
-        optimizer.archive = problem.archived_actual_accuracy(optimizer.archive)
-        optimizer.archive_to_json(f"{configuration.outdir}/final_archive.json")
-    
-    optimizer.archive_to_csv(problem, f"{configuration.outdir}/report.csv")
-    optimizer.plot_pareto(problem, f"{configuration.outdir}/pareto_front.pdf")
-    classifier.pool.close()
-    print(f"All done! Take a look at the {configuration.outdir} directory.")
+        print(f"Average samples: {np.mean(ctx.obj['problem'].sample_count)} (Total #of samples: {len(ctx.obj['classifier'].y_test)})")
+        #! the accuracy is re-computed using the whole data set, and the archive overwritten
+        ctx.obj["optimizer"].archive = ctx.obj['problem'].archived_actual_accuracy(ctx.obj['problem'].archive)
+        ctx.obj["optimizer"].archive_to_json(f"{ctx.obj['configuration'].outdir}/final_archive.json")
+    ctx.obj["optimizer"].archive_to_csv(ctx.obj['problem'], f"{ctx.obj['configuration'].outdir}/report.csv")
+    ctx.obj["optimizer"].plot_pareto(ctx.obj['problem'], f"{ctx.obj['configuration'].outdir}/pareto_front.pdf")
+    print(f"All done! Take a look at the {ctx.obj['configuration'].outdir} directory.")
 
 def ps_eval(configfile, nabs):
     configuration = PSConfigParser(configfile)
