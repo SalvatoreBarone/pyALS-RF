@@ -168,7 +168,7 @@ def generate_hdl(ctx, conf, ncpus, espresso, luts, skip_exact, output, verbose):
                 f"\n\tuse espresso: {espresso}"
                 f"\n\tLUT tech: {luts}"
                 f"\n\tskip non-approximate: {skip_exact}"
-                f"\n\output dir: {output}"
+                f"\n\toutput dir: {output}"
                 )
     hdl_generation(ctx, luts, skip_exact, output)
     
