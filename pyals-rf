@@ -26,6 +26,7 @@ from src.Flows.debug_flow import hdl_debug_flow, debug_with_scikit, print_model
 from src.ConfigParsers.DtGenConfigParser import *
 from src.hdl_generation import hdl_generation
 from src.git_updater import git_updater
+from src.Flows.lcor_flow import leaves_correlation_flow
 
 @click.group(chain=True)
 @click.pass_context
@@ -129,6 +130,23 @@ def grep(ctx, conf, ncpus, espresso, fraction, approach, cost, minredundancy, ma
                 )
     grep_flow(ctx, fraction, approach, cost, minredundancy, maxloss, output)
     store_flow(ctx)
+    
+    
+@cli.command("lcor")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
+@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
+@click.pass_context
+def lcor(ctx, conf, ncpus, output, verbose):
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False)
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("Computing the leaves-correlation"
+                f"\n\tconf: {conf}"
+                f"\n\toutput dir: {output}"
+                )
+    leaves_correlation_flow(ctx, output)
+
     
 @cli.command("reduplot")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
