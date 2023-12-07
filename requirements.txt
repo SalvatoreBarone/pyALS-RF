@@ -38,3 +38,4 @@ tdqm
 threadpoolctl
 tomli
 z3-solver
+tabulate
