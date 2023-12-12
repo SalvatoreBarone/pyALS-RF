@@ -209,18 +209,19 @@ class HDLGenerator:
         logger = logging.getLogger("pyALS-RF")
         mapper = LutMapper()
         nDBs = sum(len(self.get_dbs(tree)) for tree in self.classifier.trees)
-        nLuts = self.lut_x_db * nDBs
-        nFFs = self.lut_x_db * nDBs
+        nLuts_dbs = self.lut_x_db * nDBs
+        nFFs_dbs = self.lut_x_db * nDBs
+        nLUTs_bns = 0
+        
         for tree in self.classifier.trees:
             logger.debug(f"Mapping tree {tree.name}")
             for c, bn in zip(self.classifier.classes_name, tree.boolean_networks):
                 if bn["minterms"]:
                     logger.debug(f"\tProcessing {bn['minterms']} for class {c}")
-                    nLuts += len(mapper.map(bn["minterms"], c))
+                    nLUTs_bns += len(mapper.map(bn["minterms"], c))
                 else:
                     logger.debug(f"\tClass {c} is trivially implemented as using {bn['hdl_expression']}")
-        logger.info(f"Implementations expected requirements (voting excluded):\n\t- LUTs: {nLuts}\n\t- FFs: {nFFs}")
-        return nLuts, nFFs
+        return nLuts_dbs, nLUTs_bns, nFFs_dbs
     
 
     def implement_decision_boxes(self, tree : DecisionTree, boxes : list,  destination : str):

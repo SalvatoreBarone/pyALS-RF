@@ -42,7 +42,11 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
         load_flow(ctx)
         
     hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
-    exact_luts, exact_ffs = hdl_generator.get_resource_usage()
+    exact_luts_dbs, exact_luts_bns, exact_ffs_dbs = hdl_generator.get_resource_usage()
+    logger.info("Exact implementations expected requirements (voting excluded):"
+                f"\n\t- LUTs for decision boxes (exact): {exact_luts_dbs}"
+                f"\n\t- FFs for decision boxes (exact): {exact_ffs_dbs}"
+                f"\n\t- LUTs for Boolean Networks (exact): {exact_luts_bns}")
     if not skip_exact:
         logger.info("Generating reference (non-approximate) implementation...")
         logger.debug(f"Lut Tech: {lut_tech}")
@@ -56,8 +60,14 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
             ctx.obj['pruning_configuration'] = json5.load(open(pruning_configuration_json))
         hdl_generator = GREPHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
         hdl_generator.generate_axhdl(pruning_configuration = ctx.obj['pruning_configuration'], enable_espresso = ctx.obj['espresso'], lut_tech = lut_tech)
-        ax_luts, ax_ffs = hdl_generator.get_resource_usage()
-        logger.info(f"Expected LUT savings: {(1 - ax_luts / exact_luts) * 100}%\n\tExpected FFs savings: {(1 - ax_ffs / exact_ffs) * 100}%")
+        ax_luts_dbs, ax_luts_bns, ax_ffs_dbs = hdl_generator.get_resource_usage()
+        logger.info("Approximate implementations expected requirements (voting excluded):"
+                    f"\n\t- LUTs for decision boxes (approx.): {ax_luts_dbs}"
+                    f"\n\t- FFs for decision boxes (approx.): {ax_ffs_dbs}"
+                    f"\n\t- LUTs for Boolean Networks (approx.): {ax_luts_bns}")
+        logger.info(f"Expected LUT savings for BNs: {(1 - ax_luts_bns / exact_luts_bns) * 100}%"
+                    f"\n\tExpected LUT savings for DBs: {(1 - ax_luts_dbs / exact_luts_dbs) * 100}%"
+                    f"\n\tExpected FFs savings for DBs: {(1 - ax_ffs_dbs / exact_ffs_dbs) * 100}%")
     elif ctx.obj["flow"] == "ps":
         if "pareto_front" not in ctx.obj:
             create_problem(ctx, mode = "full")
