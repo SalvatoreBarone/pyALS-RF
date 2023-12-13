@@ -108,7 +108,7 @@ def compute_leaves_correlation(samples_per_leaves_dict):
 # Algorithm(classifier, sample_per_leaf,corr_per_leaf,T',max_loss):
 # 
 # score_per_leaf = compute_score(corr_per_leaf, classifier)
-# base_accuracy = ComputeAccuracy(classifier,T')
+# base_accuracy =  (classifier,T') -> già la tengo
 # actual_accuracy = base_accuracy 
 # scores_idx = 0
 # while base_accuracy - actual_accuracy > max_loss and scores_idx < len(score_per_leaf) :
@@ -140,4 +140,9 @@ def leaves_correlation_flow(ctx, output):
             print(f"\t{tree}")
             for leaf, samples in tree_data.items():
                 print(f"\t\t{leaf}: {len(samples)}")
-                
+    corr_per_leaf = compute_leaves_correlation(samples_per_leaves_dict)
+    for leaf,leaf_data in corr_per_leaf.items():
+        print(f'**** Leaf {leaf} is correlated with : \n')
+        for leaf_data,corr_value in leaf_data.items():
+           print(f'Leaf: {leaf}  Corr Value: {corr_value}  ')
+        print(f"\n")
