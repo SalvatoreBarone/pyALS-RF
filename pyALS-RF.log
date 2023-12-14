@@ -1,0 +1,745 @@
+2023-12-14 16:08:01,081 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: None
+	output dir: None
+2023-12-14 16:08:01,081 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:14:32,256 - pyALS-RF - INFO: Performing precision scaling approximation flow
+	conf: None
+	use espresso: False
+	evaluation mode: full
+	alpha: 0.07
+	beta: 0.5
+	gamma: 2.0
+2023-12-14 16:14:32,256 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:16:48,165 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: None
+	output dir: None
+2023-12-14 16:16:48,165 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:24:45,477 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:24:45,484 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:24:45,535 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:24:45,539 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:24:45,543 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:24:45,547 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:24:45,551 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 16:27:19,081 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:27:19,082 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:27:19,112 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:27:19,116 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:27:19,120 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:27:19,124 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:27:19,127 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 16:27:40,128 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:27:40,128 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:27:40,159 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:27:40,164 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:27:40,167 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:27:40,171 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:27:40,175 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 16:29:36,627 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:29:36,627 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:29:36,658 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:29:36,662 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:29:36,666 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:29:36,669 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:29:36,673 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 16:37:15,627 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:37:15,627 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:37:15,659 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:37:15,663 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:37:15,667 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:37:15,671 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:37:15,675 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 16:37:34,266 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:37:34,266 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:37:34,295 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:37:34,299 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:37:34,302 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:37:34,306 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:37:34,310 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 16:39:32,786 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:39:32,786 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:39:32,815 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:39:32,819 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:39:32,823 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:39:32,827 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:39:32,830 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 16:39:57,730 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:39:57,730 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:39:57,762 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:39:57,766 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:39:57,770 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:39:57,774 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:39:57,778 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 16:45:20,668 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:45:20,668 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:45:20,700 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:45:20,704 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:45:20,708 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:45:20,711 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:45:20,715 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 16:45:53,760 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:45:53,760 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:45:53,793 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:45:53,797 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:45:53,801 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:45:53,805 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:45:53,809 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 16:46:22,881 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:46:22,882 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:46:22,912 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:46:22,916 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:46:22,919 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:46:22,923 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:46:22,928 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 16:46:35,033 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:46:35,033 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:46:35,064 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:46:35,068 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:46:35,072 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:46:35,076 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:46:35,079 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 16:47:42,396 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:47:42,397 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:47:42,426 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:47:42,430 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:47:42,434 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:47:42,438 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:47:42,442 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 16:48:23,536 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:48:23,537 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:48:23,568 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:48:23,573 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:48:23,577 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:48:23,580 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:48:23,584 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 16:49:54,111 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:49:54,111 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:49:54,143 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:49:54,146 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:49:54,150 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:49:54,154 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:49:54,158 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 16:50:54,511 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 16:50:54,511 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 16:50:54,543 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 16:50:54,547 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 16:50:54,550 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 16:50:54,554 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 16:50:54,558 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:24:13,190 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:24:13,190 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:24:13,222 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:24:13,226 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:24:13,230 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:24:13,234 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:24:13,238 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:25:24,427 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:25:24,428 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:25:24,460 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:25:24,464 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:25:24,469 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:25:24,474 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:25:24,477 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:26:19,962 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:26:19,962 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:26:19,993 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:26:19,997 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:26:20,001 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:26:20,005 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:26:20,009 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:26:48,619 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:26:48,619 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:26:48,650 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:26:48,655 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:26:48,659 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:26:48,663 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:26:48,667 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:27:27,191 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:27:27,191 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:27:27,220 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:27:27,224 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:27:27,228 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:27:27,232 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:27:27,237 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:29:04,374 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:29:04,374 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:29:04,405 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:29:04,410 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:29:04,414 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:29:04,417 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:29:04,421 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:30:11,156 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:30:11,156 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:30:11,187 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:30:11,191 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:30:11,194 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:30:11,199 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:30:11,202 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:30:20,864 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:30:20,865 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:30:20,895 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:30:20,899 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:30:20,903 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:30:20,907 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:30:20,911 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:30:54,652 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:30:54,652 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:30:54,682 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:30:54,686 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:30:54,690 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:30:54,693 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:30:54,697 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:32:04,337 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:32:04,337 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:32:04,368 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:32:04,372 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:32:04,375 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:32:04,379 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:32:04,384 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:32:27,966 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:32:27,966 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:32:27,997 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:32:28,002 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:32:28,006 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:32:28,010 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:32:28,013 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:32:37,236 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:32:37,236 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:32:37,268 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:32:37,272 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:32:37,276 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:32:37,279 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:32:37,284 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:37:54,221 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:37:54,221 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:37:54,253 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:37:54,257 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:37:54,261 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:37:54,265 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:37:54,269 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:38:34,204 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:38:34,205 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:38:34,235 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:38:34,240 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:38:34,243 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:38:34,247 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:38:34,251 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:38:49,058 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:38:49,058 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:38:49,090 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:38:49,094 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:38:49,098 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:38:49,102 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:38:49,106 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:39:06,300 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:39:06,301 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:39:06,334 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:39:06,338 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:39:06,342 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:39:06,346 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:39:06,349 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:40:18,293 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:40:18,293 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:40:18,324 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:40:18,328 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:40:18,332 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:40:18,336 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:40:18,340 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:42:08,845 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:42:08,846 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:42:08,875 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:42:08,879 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:42:08,883 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:42:08,887 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:42:08,891 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:42:53,482 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:42:53,482 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:42:53,514 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:42:53,518 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:42:53,521 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:42:53,525 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:42:53,529 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:43:13,194 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:43:13,194 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:43:13,225 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:43:13,230 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:43:13,234 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:43:13,237 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:43:13,241 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:43:38,040 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:43:38,040 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:43:38,071 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:43:38,075 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:43:38,079 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:43:38,083 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:43:38,087 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:43:50,505 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:43:50,505 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:43:50,537 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:43:50,541 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:43:50,545 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:43:50,549 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:43:50,552 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:44:14,806 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:44:14,807 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:44:14,838 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:44:14,843 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:44:14,847 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:44:14,850 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:44:14,855 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:47:06,763 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:47:06,763 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:47:06,794 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:47:06,797 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:47:06,802 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:47:06,806 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:47:06,810 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:48:14,392 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:48:14,392 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:48:14,423 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:48:14,427 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:48:14,432 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:48:14,435 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:48:14,439 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:48:52,675 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:48:52,675 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:48:52,706 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:48:52,710 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:48:52,713 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:48:52,717 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:48:52,721 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:50:22,822 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:50:22,822 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:50:22,854 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:50:22,858 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:50:22,862 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:50:22,866 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:50:22,870 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:51:28,822 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:51:28,822 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:51:28,854 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:51:28,859 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:51:28,862 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:51:28,866 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:51:28,870 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:52:19,766 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:52:19,766 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:52:19,798 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:52:19,802 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:52:19,806 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:52:19,810 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:52:19,813 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:53:09,793 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:53:09,794 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:53:09,824 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:53:09,828 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:53:09,831 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:53:09,835 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:53:09,839 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:53:54,598 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:53:54,598 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:53:54,631 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:53:54,635 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:53:54,638 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:53:54,642 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:53:54,646 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:56:33,075 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:56:33,075 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:56:33,105 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:56:33,109 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:56:33,112 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:56:33,117 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:56:33,121 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 17:57:07,778 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 17:57:07,778 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 17:57:07,808 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 17:57:07,813 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 17:57:07,817 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 17:57:07,821 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 17:57:07,824 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 18:03:13,360 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 18:03:13,361 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 18:03:13,390 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 18:03:13,394 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 18:03:13,398 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 18:03:13,402 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 18:03:13,405 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 18:03:56,802 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 18:03:56,803 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 18:03:56,832 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 18:03:56,837 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 18:03:56,840 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 18:03:56,845 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 18:03:56,848 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 18:06:27,757 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 18:06:27,757 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 18:06:27,787 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 18:06:27,792 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 18:06:27,795 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 18:06:27,800 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 18:06:27,804 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 18:06:47,466 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 18:06:47,466 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 18:06:47,496 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 18:06:47,500 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 18:06:47,503 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 18:06:47,507 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 18:06:47,511 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 18:07:11,500 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 18:07:11,501 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 18:07:11,532 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 18:07:11,536 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 18:07:11,540 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 18:07:11,544 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 18:07:11,548 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 18:07:43,956 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 18:07:43,957 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 18:07:43,988 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 18:07:43,992 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 18:07:43,996 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 18:07:44,000 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 18:07:44,004 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 18:08:44,274 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 18:08:44,274 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 18:08:44,306 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 18:08:44,310 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 18:08:44,313 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 18:08:44,317 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 18:08:44,321 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 18:09:32,726 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 18:09:32,726 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 18:09:32,757 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 18:09:32,762 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 18:09:32,765 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 18:09:32,769 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 18:09:32,773 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 18:10:06,002 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 18:10:06,002 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 18:10:06,034 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 18:10:06,038 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 18:10:06,042 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 18:10:06,046 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 18:10:06,049 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:10:39,122 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:10:39,122 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:10:39,155 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:10:39,159 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:10:39,163 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:10:39,167 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:10:39,171 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:12:08,086 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:12:08,086 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:12:08,117 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:12:08,122 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:12:08,125 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:12:08,129 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:12:08,132 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:13:07,511 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:13:07,511 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:13:07,542 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:13:07,546 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:13:07,550 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:13:07,554 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:13:07,557 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:14:40,528 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:14:40,529 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:14:40,561 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:14:40,565 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:14:40,569 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:14:40,573 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:14:40,576 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:15:07,315 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:15:07,316 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:15:07,347 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:15:07,351 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:15:07,355 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:15:07,359 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:15:07,363 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:15:50,209 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:15:50,209 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:15:50,241 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:15:50,245 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:15:50,248 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:15:50,252 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:15:50,256 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:16:07,245 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:16:07,246 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:16:07,275 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:16:07,279 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:16:07,283 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:16:07,287 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:16:07,292 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:16:20,703 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:16:20,704 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:16:20,736 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:16:20,740 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:16:20,744 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:16:20,748 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:16:20,752 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:16:36,470 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:16:36,471 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:16:36,500 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:16:36,504 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:16:36,508 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:16:36,512 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:16:36,516 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:17:15,293 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:17:15,293 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:17:15,325 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:17:15,329 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:17:15,333 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:17:15,337 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:17:15,341 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:17:36,146 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:17:36,146 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:17:36,177 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:17:36,180 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:17:36,184 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:17:36,188 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:17:36,192 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:21:32,473 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:21:32,474 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:21:32,503 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:21:32,507 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:21:32,510 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:21:32,514 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:21:32,517 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:23:21,112 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:23:21,113 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:23:21,143 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:23:21,147 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:23:21,151 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:23:21,156 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:23:21,160 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:24:20,087 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:24:20,087 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:24:20,119 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:24:20,123 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:24:20,126 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:24:20,130 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:24:20,134 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:26:30,449 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:26:30,449 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:26:30,480 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:26:30,485 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:26:30,489 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:26:30,493 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:26:30,496 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:27:52,197 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:27:52,197 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:27:52,228 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:27:52,232 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:27:52,235 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:27:52,239 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:27:52,243 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:28:12,333 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:28:12,333 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:28:12,363 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:28:12,367 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:28:12,371 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:28:12,374 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:28:12,378 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:30:32,898 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:30:32,898 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:30:32,928 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:30:32,932 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:30:32,936 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:30:32,939 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:30:32,943 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:30:53,255 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:30:53,256 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:30:53,286 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:30:53,290 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:30:53,294 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:30:53,297 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:30:53,302 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:32:07,610 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:32:07,611 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:32:07,642 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:32:07,646 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:32:07,649 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:32:07,654 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:32:07,657 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:38:42,278 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:38:42,279 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:38:42,308 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:38:42,313 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:38:42,317 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:38:42,323 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:38:42,327 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:39:31,819 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:39:31,819 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:39:31,850 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:39:31,855 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:39:31,859 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:39:31,862 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:39:31,867 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.
+2023-12-14 19:39:48,780 - pyALS-RF - INFO: Computing the leaves-correlation
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None
+2023-12-14 19:39:48,780 - pyALS-RF - INFO: Runing the pruning flow.
+2023-12-14 19:39:48,811 - pyALS-RF - INFO: Tree 0: 50 DBs instantiated.
+2023-12-14 19:39:48,816 - pyALS-RF - INFO: Tree 1: 58 DBs instantiated.
+2023-12-14 19:39:48,819 - pyALS-RF - INFO: Tree 2: 54 DBs instantiated.
+2023-12-14 19:39:48,823 - pyALS-RF - INFO: Tree 3: 62 DBs instantiated.
+2023-12-14 19:39:48,827 - pyALS-RF - INFO: Tree 4: 45 DBs instantiated.

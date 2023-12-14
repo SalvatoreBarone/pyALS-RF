@@ -1,1 +1,1 @@
-./pyals-rf ps example/statlog_segment/rf5/config_ps.json --mode rank;
+./pyals-rf ps -c example/statlog_segment/rf5/config_ps.json --mode rank;
