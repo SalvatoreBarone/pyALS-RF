@@ -11,7 +11,7 @@ FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 more details.
 
 You should have received a copy of the GNU General Public License along with
-RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
+pyALS-RF; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 
@@ -22,7 +22,7 @@ from tqdm import tqdm
 from ..ctx_factory import load_configuration_ps, create_classifier
 from ..ConfigParsers.PsConfigParser import *
 from ..Model.Classifier import Classifier
-
+from .LCOR.lcor import LCOR
 
 # def compute_leaves_correlation(classifier : Classifier):
 #     for cls in classifier.model_classes:
@@ -240,28 +240,20 @@ def leaves_correlation_flow(ctx, output):
     if output is not None:
         ctx.obj['configuration'].outdir = output
         mkpath(ctx.obj["configuration"].outdir)
-    
     create_classifier(ctx)
-    samples_per_leaves_dict = samples_per_leaves(ctx.obj["classifier"])
-    # for c, class_data in samples_per_leaves_dict.items():
-    #     print(c)
-    #     for tree, tree_data in class_data.items():
-    #         print(f"\t{tree}")
-    #         for leaf, samples in tree_data.items():
-    #             print(f"\t\t{leaf}: {len(samples)}")
     
-    corr_per_leaf,corr_per_leaf_cleaned = compute_leaves_correlation(samples_per_leaves_dict)
-    scores = compute_leaves_score(corr_per_leaf)
+    # samples_per_leaves_dict = samples_per_leaves(ctx.obj["classifier"])
+    # corr_per_leaf,corr_per_leaf_cleaned = compute_leaves_correlation(samples_per_leaves_dict)
+    # scores = compute_leaves_score(corr_per_leaf)
+    
     # print("********* Value not cleaned")
     # for k,v in scores.items():
     #     if v > 0:
     #         print(f'Leaf:({k[0]},{k[1]}) score: {v}')
-    print("********* VAlue cleaned")
-    scores2 = compute_leaves_score(corr_per_leaf_cleaned)
-    for k,v in scores2.items():
-        print(f'Leaf:({k[0]},{k[1]}) score: {v}')
-    # for leaf,leaf_data in corr_per_leaf.items():
-    #     print(f'**** Leaf {leaf} is correlated with : \n')
-    #     for leaf_data,corr_value in leaf_data.items():
-    #        print(f'Leaf: {leaf}  Corr Value: {corr_value}  ')
-    #     print(f"\n")
+    
+    # print("********* VAlue cleaned")
+    # scores2 = compute_leaves_score(corr_per_leaf_cleaned)
+    # for k,v in scores2.items():
+    #     print(f'Leaf:({k[0]},{k[1]}) score: {v}')
+    lcor = LCOR (ctx.obj["classifier"], 0.5, 5,0,4)
+    lcor.init_leaves_scores()
