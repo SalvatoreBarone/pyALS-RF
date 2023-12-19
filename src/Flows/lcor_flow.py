@@ -256,4 +256,5 @@ def leaves_correlation_flow(ctx, output):
     # for k,v in scores2.items():
     #     print(f'Leaf:({k[0]},{k[1]}) score: {v}')
     lcor = LCOR (ctx.obj["classifier"], 0.5, 5,0,4)
-    lcor.init_leaves_scores()
+    #lcor.init_leaves_scores()
+    lcor.trim()

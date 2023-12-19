@@ -89,16 +89,16 @@ class LCOR(GREP):
                         # else:
                         #     corr_per_leaf[(tree_B,leaf_B)].update({(tree_A,leaf_A) : Q_stat})
 
-                        if Q_stat > 0:
-                            if (tree_A,leaf_A) not in corr_per_leaf_cleaned:
-                                corr_per_leaf_cleaned[(tree_A,leaf_A)] = {(tree_B,leaf_B) : Q_stat}
+                        if Q_stat > 0 :
+                            if (cls,tree_A,leaf_A) not in corr_per_leaf_cleaned:
+                                corr_per_leaf_cleaned[(cls,tree_A,leaf_A)] = {(cls,tree_B,leaf_B) : Q_stat}
                             else:
-                                corr_per_leaf_cleaned[(tree_A,leaf_A)].update({(tree_B,leaf_B) : Q_stat})
+                                corr_per_leaf_cleaned[(cls,tree_A,leaf_A)].update({(cls,tree_B,leaf_B) : Q_stat})
                             # Compute the dual in order to remove the leaf with a greater number of literals.
-                            if (tree_B,leaf_B) not in corr_per_leaf_cleaned:
-                                corr_per_leaf_cleaned[(tree_B,leaf_B)] = {(tree_A,leaf_A) : Q_stat}
+                            if (cls,tree_B,leaf_B) not in corr_per_leaf_cleaned:
+                                corr_per_leaf_cleaned[(cls,tree_B,leaf_B)] = {(cls,tree_A,leaf_A) : Q_stat}
                             else:
-                                corr_per_leaf_cleaned[(tree_B,leaf_B)].update({(tree_A,leaf_A) : Q_stat})
+                                corr_per_leaf_cleaned[(cls,tree_B,leaf_B)].update({(cls,tree_A,leaf_A) : Q_stat})
             
         #print(f'conc {conc} disc {disc} total number of samples {len(samples_set)}')
         return corr_per_leaf_cleaned
@@ -108,12 +108,14 @@ class LCOR(GREP):
     def compute_leaves_score(corr_per_leaf):
         scores = {}
         for leafA in corr_per_leaf:
+            #if leafA not in self.pruning_conf:
             scores[leafA] = 0
         for leafA,correlated in corr_per_leaf.items():
+            #if leafA not in self.pruning_conf:
             num_and = 0
             for leaves,Q_val in correlated.items():
                 scores[leafA] += Q_val
-            splitted = leafA[1].split()
+            splitted = leafA[2].split()
             for and_w in splitted:
                 if and_w == "and":
                     num_and += 1
@@ -125,8 +127,66 @@ class LCOR(GREP):
     def init_leaves_scores(self):
         samples_per_leaf_dict = LCOR.samples_per_leaves(self.classifier)
         self.corr_per_leaf = LCOR.compute_leaves_correlation(samples_per_leaf_dict)
-        self.leaf_scores = LCOR.compute_leaves_score(self.corr_per_leaf)
+        scores = LCOR.compute_leaves_score(self.corr_per_leaf)
+        # Sort scores
+        self.leaf_scores = sorted(scores.items(), key=lambda x: x[1],reverse = True)
         print("********* Scores: ")
-        for k,v in self.leaf_scores.items():
-            print(f'Leaf:({k[0]},{k[1]}) score: {v}')
+        for k in self.leaf_scores:
+            print(f'Class {k[0][0]} Tree:{k[0][1]} Leaf:{k[0][2]}')
+            print(f'Score: {k[1]}')
+        # self.trim(GREP.CostCriterion.depth)
+        # acc = self.evaluate_accuracy()
+        # print(f' The accuracy is {acc}')
     
+
+    # Algorithm(classifier, sample_per_leaf,corr_per_leaf,T',max_loss):
+    # 
+    # score_per_leaf = compute_score(corr_per_leaf, classifier)
+    # base_accuracy =  (classifier,T') -> già la tengo
+    # actual_accuracy = base_accuracy 
+    # scores_idx = 0
+    # while base_accuracy - actual_accuracy > max_loss and scores_idx < len(score_per_leaf) :
+    #   best_score = score_per_leaf[0]
+    #   helper_classifier = prune(best_score, classifier)
+    #   actual_score = ComputeAccuracy(classifier,T')
+    #   if base_accuracy - actual_accuracy >= max_loss:
+    #       classifier = helper_classifier
+    #       Update_Correlation(corr_per_leaf)
+    #       Update_Scores(score_per_leaf)
+    #       scores_idx = 0 
+    #   else 
+    #       scores_idx ++
+    # Problemi: indice scores_idx -> aggiornamento delle correlazioni mi porta a dover ricalcolare gli score, indice va resettato?
+    def trim(self):
+        super().trim(GREP.CostCriterion.depth) # cost_criterion is useless.
+        self.init_leaves_scores() # compute the scores, ordering them.
+        self.baseline_accuracy = self.evaluate_accuracy() # set the base accuracy.
+        scores_idx = 0
+        pruned_leaves = 0
+        while self.loss < self.max_loss and len(self.leaf_scores) > scores_idx:
+            tentative = copy.deepcopy(self.pruning_configuration) # save the pruning conf.
+            leaf_id = self.leaf_scores[scores_idx][0]
+            # print(f'{self.leaf_scores[scores_idx][0]}')
+            # exit()
+    
+            tentative.append(leaf_id)  # append the element with the best value.
+            GREP.set_pruning_conf(self.classifier, tentative) # Set the pruning configuration
+            self.accuracy = self.evaluate_accuracy() # Evaluate the accuracy
+            loss = self.baseline_accuracy - self.accuracy # compute the loss
+            if loss <= self.max_loss:
+                self.loss = loss
+                self.real_accuracy = self.accuracy
+                self.pruning_configuration.append(leaf_id)
+                pruned_leaves += 1
+                print("Taken leaf to cut")
+                print(f'Actual acc {self.accuracy} Base {self.baseline_accuracy}')
+                print(f'Idx {scores_idx} Max LEN {len(self.leaf_scores)}')
+                print(f'Actual loss {self.loss}')
+                scores_idx += 1 # TODO :set to 0 after  the update
+            else :
+                scores_idx += 1
+                print("Retrying")
+                print(f'Actual acc {self.accuracy} Base {self.baseline_accuracy}')
+                print(f'Idx {scores_idx} Max LEN {len(self.leaf_scores)}')
+        print(f' N.ro pruned leaves {pruned_leaves} Loss {self.loss} idx {scores_idx}')
+        print(f' Accuracy {self.real_accuracy} Base Accuracy{self.baseline_accuracy}')
