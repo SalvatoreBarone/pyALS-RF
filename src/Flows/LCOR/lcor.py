@@ -32,10 +32,10 @@ class LCOR(GREP):
     # Compute the number of samples in each leaf
     # The func returns a data structure indexed by [leaf_class,tree,leaf].
     # Each element [i,j,z] contains (test_input,value) that falls into the leaf z.
-    @staticmethod
-    def samples_per_leaves(classifier : Classifier):
+    def samples_per_leaves(self,classifier : Classifier):
         samples_per_leaf_dict = { c : {t.name : {  l["sop"] : set() for l in t.leaves if l["class"] == c } for t in classifier.trees } for c in classifier.model_classes} 
-        for x, y in  tqdm(zip(classifier.x_test, classifier.y_test), total=len(classifier.x_test), desc="Computing dataset partitions", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+        #for x, y in  tqdm(zip(classifier.x_test, classifier.y_test), total=len(classifier.x_test), desc="Computing dataset partitions", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+        for x, y in  tqdm(zip(self.x_pruning, self.y_pruning), total=len(self.x_pruning), desc="Computing samples per leaf", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
             for tree in classifier.trees:
                 boxes_output = tree.get_boxes_output(x) # Get decision boxes
                 for class_name, assertions in tree.class_assertions.items():
@@ -125,7 +125,7 @@ class LCOR(GREP):
         return scores
 
     def init_leaves_scores(self):
-        samples_per_leaf_dict = LCOR.samples_per_leaves(self.classifier)
+        samples_per_leaf_dict = self.samples_per_leaves(self.classifier)
         self.corr_per_leaf = LCOR.compute_leaves_correlation(samples_per_leaf_dict)
         scores = LCOR.compute_leaves_score(self.corr_per_leaf)
         # Sort scores
@@ -159,7 +159,7 @@ class LCOR(GREP):
     # Problemi: indice scores_idx -> aggiornamento delle correlazioni mi porta a dover ricalcolare gli score, indice va resettato?
     def trim(self):
         super().trim(GREP.CostCriterion.depth) # cost_criterion is useless.
-        self.init_leaves_scores() # compute the scores, ordering them.
+        self.init_leaves_scores() # compute the scores, ordering them, it must be executed after splitting the DS.
         self.baseline_accuracy = self.evaluate_accuracy() # set the base accuracy.
         scores_idx = 0
         pruned_leaves = 0
