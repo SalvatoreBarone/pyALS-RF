@@ -256,5 +256,10 @@ def leaves_correlation_flow(ctx, output):
     # for k,v in scores2.items():
     #     print(f'Leaf:({k[0]},{k[1]}) score: {v}')
     lcor = LCOR (ctx.obj["classifier"], 0.5, 5,0,4)
-    #lcor.init_leaves_scores()
+    # *** Useful for testing the score function after an update to the pruning set
+    # pruning_configuration = []
+    # pruning_configuration.append(('1','4','(Node_0)'))
+    # pruning_configuration.append(('6','3','(Node_0)'))
+    # lcor.append_pruning_conf(pruning_configuration)
+    # *** 
     lcor.trim()
