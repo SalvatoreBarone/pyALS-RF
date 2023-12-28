@@ -64,7 +64,6 @@ class LCOR(GREP):
                     if len(samples_per_leaf_dict[cls][tree_A][leaf_A]) > 0 and len(samples_per_leaf_dict[cls][tree_B][leaf_B]) > 0 :
                         # The set here is the set of (x,y) present in at least leaf_A or leaf_B without repetition.
                         for xy in samples_per_leaf_dict[cls][tree_A][leaf_A] | samples_per_leaf_dict[cls][tree_B][leaf_B]:   
-                            y = xy[1]
                             if xy in samples_per_leaf_dict[cls][tree_A][leaf_A] and xy in samples_per_leaf_dict[cls][tree_B][leaf_B]:
                                 # Case 1: x,y is in both leaves 
                                 conc += 1
@@ -89,10 +88,13 @@ class LCOR(GREP):
                         # else:
                         #     corr_per_leaf[(tree_B,leaf_B)].update({(tree_A,leaf_A) : Q_stat})
 
-                        if Q_stat > 0 :
-                            if (cls,tree_A,leaf_A) not in corr_per_leaf_cleaned:
+                        # Consider the statistic only in case it is positively correlated.
+                        # Since we're discarding the "accuracy" of a leaf, Q is positive when two leaves are
+                        # taking the same decisions, thus one of them could be eliminated.
+                        if Q_stat > 0 : 
+                            if (cls,tree_A,leaf_A) not in corr_per_leaf_cleaned: # In case the leaf entry was not present in the map
                                 corr_per_leaf_cleaned[(cls,tree_A,leaf_A)] = {(cls,tree_B,leaf_B) : Q_stat}
-                            else:
+                            else:   # Otherwise insert the new statistic.
                                 corr_per_leaf_cleaned[(cls,tree_A,leaf_A)].update({(cls,tree_B,leaf_B) : Q_stat})
                             # Compute the dual in order to remove the leaf with a greater number of literals.
                             if (cls,tree_B,leaf_B) not in corr_per_leaf_cleaned:
@@ -107,6 +109,8 @@ class LCOR(GREP):
     def compute_leaves_score(self,corr_per_leaf):
         scores = {}
         for leafA in corr_per_leaf:
+            # Initialize the vector of scores only for the leaves that
+            # are not already pruned.
             if leafA not in self.pruning_configuration:
                 scores[leafA] = 0
         # for leafA,correlated in corr_per_leaf.items():
@@ -127,6 +131,7 @@ class LCOR(GREP):
             for leafB in scores.keys():
                 if leafB in corr_per_leaf[leafA]: # leafB != leafA, should also check this but for construction it leafA is not in the correlated list of leafA
                     scores[leafA] += corr_per_leaf[leafA][leafB]
+            # After summing the correlations of leafA multiply by the number of and of leafA
             splitted = leafA[2].split()
             for and_w in splitted:
                 if and_w == "and":
@@ -134,11 +139,13 @@ class LCOR(GREP):
             #print(f'Name {leafA[1]} num {num_and}')
             scores[leafA] = scores[leafA] * num_and # multiply by the number of literals.
         return scores
-
+    
+    # Initialize the scores
     def init_leaves_scores(self):
         samples_per_leaf_dict = self.samples_per_leaves(self.classifier)
         self.corr_per_leaf = LCOR.compute_leaves_correlation(samples_per_leaf_dict)
         scores = self.compute_leaves_score(self.corr_per_leaf)
+        # self.leaf_scores is a list of tuples (leaf={tree,class,leaf}, score) sorted by score
         self.leaf_scores = sorted(scores.items(), key=lambda x: x[1],reverse = True) # Sort scores
         print("********* Scores: ")
         for k in self.leaf_scores:
@@ -164,31 +171,30 @@ class LCOR(GREP):
     #       scores_idx = 0 
     #   else 
     #       scores_idx ++
-    # Problemi: indice scores_idx -> aggiornamento delle correlazioni mi porta a dover ricalcolare gli score, indice va resettato?
     def trim(self):
         super().trim(GREP.CostCriterion.depth) # cost_criterion is useless.
         self.init_leaves_scores() # compute the scores, ordering them, it must be executed after splitting the DS.
-        self.baseline_accuracy = self.evaluate_accuracy() # set the base accuracy.
-        scores_idx = 0
-        pruned_leaves = 0
+        #self.baseline_accuracy = self.evaluate_accuracy() # set the base accuracy, should be already done by trim.
+        scores_idx = 0      # Index used for the scores list
+        pruned_leaves = 0   # Number of pruned leaves
         while self.loss < self.max_loss and len(self.leaf_scores) > scores_idx:
             tentative = copy.deepcopy(self.pruning_configuration) # save the pruning conf.
-            leaf_id = self.leaf_scores[scores_idx][0]   
+            leaf_id = self.leaf_scores[scores_idx][0] # Save the leaf id to try.  
             tentative.append(leaf_id)  # append the element with the best value.
             GREP.set_pruning_conf(self.classifier, tentative) # Set the pruning configuration
             self.accuracy = self.evaluate_accuracy() # Evaluate the accuracy
             loss = self.baseline_accuracy - self.accuracy # compute the loss
-            if loss <= self.max_loss:
-                self.loss = loss
-                self.real_accuracy = self.accuracy
-                self.pruning_configuration.append(leaf_id)
-                pruned_leaves += 1
-                print("Taken leaf to cut")
+            if loss <= self.max_loss:   # If the loss is acceptable
+                self.loss = loss        # Update the loss 
+                self.real_accuracy = self.accuracy  # Save the real accuracy
+                self.pruning_configuration.append(leaf_id) # Insert the leaf into the pruning configuration
+                pruned_leaves += 1  # Increase the number of pruned leaves
+                print("Taken leaf to cut")  
                 print(f'Actual acc {self.accuracy} Base {self.baseline_accuracy}')
                 print(f'Idx {scores_idx} Max LEN {len(self.leaf_scores)}')
                 print(f'Actual loss {self.loss}')
-                scores_idx = 0 # TODO :set to 0 after  the update
-                scores = self.compute_leaves_score(self.corr_per_leaf)
+                scores_idx = 0 # Reset the score index
+                scores = self.compute_leaves_score(self.corr_per_leaf) # Just need to recompute the scores and sort them.
                 self.leaf_scores = sorted(scores.items(), key=lambda x: x[1],reverse = True) # Sort scores
             else :
                 scores_idx += 1
