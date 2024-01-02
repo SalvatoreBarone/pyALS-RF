@@ -76,7 +76,7 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
         elapsed = time.time_ns()
         accuracy = ctx.obj["classifier"].evaluate_test_dataset()
         elapsed = time.time_ns() - elapsed
-        logger.info(f"Accuracy: {accuracy}%\Ax. classifier took {elapsed} ns")
+        logger.info(f"Accuracy: {accuracy}%\nAx. classifier took {elapsed} ns")
     
         
     elif ctx.obj["flow"] == "ps":
