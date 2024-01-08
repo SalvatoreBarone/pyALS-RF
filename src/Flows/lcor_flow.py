@@ -24,7 +24,7 @@ from ..ConfigParsers.PsConfigParser import *
 from ..Model.Classifier import Classifier
 from .LCOR.lcor import LCOR
 
-def leaves_correlation_flow(ctx, output):
+def leaves_correlation_flow(ctx, output, fraction, max_loss, ncpus):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the pruning flow.")
     load_configuration_ps(ctx)
@@ -32,7 +32,7 @@ def leaves_correlation_flow(ctx, output):
         ctx.obj['configuration'].outdir = output
         mkpath(ctx.obj["configuration"].outdir)
     create_classifier(ctx)
-    lcor = LCOR (ctx.obj["classifier"], 0.5,5,0,4)
+    lcor = LCOR (ctx.obj["classifier"], fraction,max_loss,0,ncpus)
     # *** Useful for testing the score function after an update to the pruning set
     # pruning_configuration = []
     # pruning_configuration.append(('1','4','(Node_0)'))
@@ -40,3 +40,4 @@ def leaves_correlation_flow(ctx, output):
     # lcor.append_pruning_conf(pruning_configuration)
     # *** 
     lcor.trim()
+    lcor.store_pruning_conf(f"{ctx.obj['configuration'].outdir}/pruning_configuration.json5")
