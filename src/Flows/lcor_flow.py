@@ -32,7 +32,7 @@ def leaves_correlation_flow(ctx, output):
         ctx.obj['configuration'].outdir = output
         mkpath(ctx.obj["configuration"].outdir)
     create_classifier(ctx)
-    lcor = LCOR (ctx.obj["classifier"], 0.5, 15,0,4)
+    lcor = LCOR (ctx.obj["classifier"], 0.5,5,0,4)
     # *** Useful for testing the score function after an update to the pruning set
     # pruning_configuration = []
     # pruning_configuration.append(('1','4','(Node_0)'))

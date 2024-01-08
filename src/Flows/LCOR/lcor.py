@@ -177,6 +177,8 @@ class LCOR(GREP):
         #self.baseline_accuracy = self.evaluate_accuracy() # set the base accuracy, should be already done by trim.
         scores_idx = 0      # Index used for the scores list
         pruned_leaves = 0   # Number of pruned leaves
+        final_acc = 0
+        nro_candidates = len(self.leaf_scores)
         while self.loss < self.max_loss and len(self.leaf_scores) > scores_idx:
             tentative = copy.deepcopy(self.pruning_configuration) # save the pruning conf.
             leaf_id = self.leaf_scores[scores_idx][0] # Save the leaf id to try.  
@@ -186,10 +188,9 @@ class LCOR(GREP):
             loss = self.baseline_accuracy - self.accuracy # compute the loss
             if loss <= self.max_loss:   # If the loss is acceptable
                 self.loss = loss        # Update the loss 
-                self.real_accuracy = self.accuracy  # Save the real accuracy
+                final_acc = self.accuracy  # Save the real accuracy
                 self.pruning_configuration.append(leaf_id) # Insert the leaf into the pruning configuration
                 pruned_leaves += 1  # Increase the number of pruned leaves
-                print("Taken leaf to cut")  
                 print(f'Actual acc {self.accuracy} Base {self.baseline_accuracy}')
                 print(f'Idx {scores_idx} Max LEN {len(self.leaf_scores)}')
                 print(f'Actual loss {self.loss}')
@@ -198,12 +199,13 @@ class LCOR(GREP):
                 self.leaf_scores = sorted(scores.items(), key=lambda x: x[1],reverse = True) # Sort scores
             else :
                 scores_idx += 1
-                print("Retrying")
-                print(f'Actual acc {self.accuracy} Base {self.baseline_accuracy}')
-                print(f'Idx {scores_idx} Max LEN {len(self.leaf_scores)}')
-        print(f' N.ro pruned leaves {pruned_leaves} Loss {self.loss} idx {scores_idx} remaining leaves {len(self.leaf_scores)}')
-        print(f' Accuracy {self.real_accuracy} Base Accuracy{self.baseline_accuracy}')
-    
+                # print("Retrying")
+                # print(f'Actual acc {self.accuracy} Base {self.baseline_accuracy}')
+                # print(f'Idx {scores_idx} Max LEN {len(self.leaf_scores)}')
+        print(f' N.ro candidates {nro_candidates}  N.ro pruned leaves {pruned_leaves}')
+        print(f' Loss {self.loss} idx {scores_idx} remaining leaves {len(self.leaf_scores)}')
+        print(f' Accuracy {final_acc} Base Accuracy{self.baseline_accuracy}')
+        print(f' Max loss {self.max_loss}')
     # This function is useful for testing the score update function when the pruning set is changed. 
     # def append_pruning_conf(self,p_conf):
     #     super().trim(GREP.CostCriterion.depth) # cost_criterion is useless.
