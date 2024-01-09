@@ -21,20 +21,28 @@ from tqdm import tqdm
 from ...Model.Classifier import Classifier
 from ...Model.DecisionTree import *
 from ..GREP.GREP import GREP
-
+import time
+import csv 
 class LCOR(GREP):
     
-    def __init__(self, classifier : Classifier, pruning_set_fraction : float = 0.5, max_loss : float = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count()):
+    def __init__(
+                    self, classifier : Classifier,
+                    pruning_set_fraction : float = 0.5,
+                    max_loss : float = 5.0, 
+                    min_resiliency : int = 0, 
+                    ncpus : int = cpu_count()
+                ):
         super().__init__(classifier, pruning_set_fraction, max_loss, min_resiliency, ncpus)
         self.leaf_scores = {}
         self.corr_per_leaf = {}
 
-    # Compute the number of samples in each leaf
-    # The func returns a data structure indexed by [leaf_class,tree,leaf].
-    # Each element [i,j,z] contains (test_input,value) that falls into the leaf z.
+    """     
+    Compute the number of samples in each leaf
+    The func returns a data structure indexed by [leaf_class,tree,leaf].
+    Each element [i,j,z] contains (test_input,value) that falls into the leaf z. 
+    """
     def samples_per_leaves(self,classifier : Classifier):
         samples_per_leaf_dict = { c : {t.name : {  l["sop"] : set() for l in t.leaves if l["class"] == c } for t in classifier.trees } for c in classifier.model_classes} 
-        #for x, y in  tqdm(zip(classifier.x_test, classifier.y_test), total=len(classifier.x_test), desc="Computing dataset partitions", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
         for x, y in  tqdm(zip(self.x_pruning, self.y_pruning), total=len(self.x_pruning), desc="Computing samples per leaf", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
             for tree in classifier.trees:
                 boxes_output = tree.get_boxes_output(x) # Get decision boxes
@@ -44,9 +52,11 @@ class LCOR(GREP):
                             samples_per_leaf_dict[class_name][tree.name][leaf].add((tuple(frozenset(x)),y[0]))
         return samples_per_leaf_dict
 
-    # Compute the correlation between each couple of leaves.
-    # returns a structure indexed by [(tree_A,leaf_A),(tree_B,leaf_B)] such that:
-    # DS[(tree_A,leaf_A),(tree_B,leaf_B)] =  correlation(leaf_a,leaf_b)
+    """ 
+    Compute the correlation between each couple of leaves.
+    returns a structure indexed by [(tree_A,leaf_A),(tree_B,leaf_B)] such that:
+    DS[(tree_A,leaf_A),(tree_B,leaf_B)] =  correlation(leaf_a,leaf_b) 
+    """
     @staticmethod
     def compute_leaves_correlation(samples_per_leaf_dict):
         #corr_per_leaf = {}
@@ -73,24 +83,12 @@ class LCOR(GREP):
                             elif xy in samples_per_leaf_dict[cls][tree_A][leaf_A] and xy not in samples_per_leaf_dict[cls][tree_B][leaf_B]:
                                 #  Case 3: x,y is in leafB but not in leafA
                                 disc += 1   
-                        # print(f'TreeA {tree_A} leafA {leaf_A} treeB {tree_B} leafB {leaf_B}')
-                        # print(f'Conc {conc} disc {disc}') 
                         Q_stat = (conc  -  disc) / (conc + disc)
-
-                        # # print(f'Qstat {Q_stat}')
-                        # if (tree_A,leaf_A) not in corr_per_leaf:
-                        #     corr_per_leaf[(tree_A,leaf_A)] = {(tree_B,leaf_B) : Q_stat}
-                        # else:
-                        #     corr_per_leaf[(tree_A,leaf_A)].update({(tree_B,leaf_B) : Q_stat})
-                        # # Compute the dual in order to remove the leaf with a greater number of literals.
-                        # if (tree_B,leaf_B) not in corr_per_leaf:
-                        #     corr_per_leaf[(tree_B,leaf_B)] = {(tree_A,leaf_A) : Q_stat}
-                        # else:
-                        #     corr_per_leaf[(tree_B,leaf_B)].update({(tree_A,leaf_A) : Q_stat})
-
-                        # Consider the statistic only in case it is positively correlated.
-                        # Since we're discarding the "accuracy" of a leaf, Q is positive when two leaves are
-                        # taking the same decisions, thus one of them could be eliminated.
+                        """ 
+                        Consider the statistic only in case it is positively correlated.
+                        Since we're discarding the "accuracy" of a leaf, Q is positive when two leaves are
+                        taking the same decisions, thus one of them could be eliminated.
+                        """
                         if Q_stat > 0 : 
                             if (cls,tree_A,leaf_A) not in corr_per_leaf_cleaned: # In case the leaf entry was not present in the map
                                 corr_per_leaf_cleaned[(cls,tree_A,leaf_A)] = {(cls,tree_B,leaf_B) : Q_stat}
@@ -100,9 +98,7 @@ class LCOR(GREP):
                             if (cls,tree_B,leaf_B) not in corr_per_leaf_cleaned:
                                 corr_per_leaf_cleaned[(cls,tree_B,leaf_B)] = {(cls,tree_A,leaf_A) : Q_stat}
                             else:
-                                corr_per_leaf_cleaned[(cls,tree_B,leaf_B)].update({(cls,tree_A,leaf_A) : Q_stat})
-            
-        #print(f'conc {conc} disc {disc} total number of samples {len(samples_set)}')
+                                corr_per_leaf_cleaned[(cls,tree_B,leaf_B)].update({(cls,tree_A,leaf_A) : Q_stat})            
         return corr_per_leaf_cleaned
                     
     # Compute the score for each leaf multiplying the sum(Q_stat(A,B))* Num literals.
@@ -113,30 +109,17 @@ class LCOR(GREP):
             # are not already pruned.
             if leafA not in self.pruning_configuration:
                 scores[leafA] = 0
-        # for leafA,correlated in corr_per_leaf.items():
-        #     #if leafA not in self.pruning_conf:
-        #     num_and = 0
-        #     for leaves,Q_val in correlated.items():
-        #         scores[leafA] += Q_val
-        #     splitted = leafA[2].split()
-        #     for and_w in splitted:
-        #         if and_w == "and":
-        #             num_and += 1
-        #     #print(f'Name {leafA[1]} num {num_and}')
-        #     scores[leafA] = scores[leafA] * num_and # multiply by the number of literals.
-        
         for leafA in scores.keys():
-            #if leafA not in self.pruning_conf:
             num_and = 0
             for leafB in scores.keys():
-                if leafB in corr_per_leaf[leafA]: # leafB != leafA, should also check this but for construction it leafA is not in the correlated list of leafA
+                # leafB != leafA, should also check this but for construction it leafA is not in the correlated list of leafA
+                if leafB in corr_per_leaf[leafA]: 
                     scores[leafA] += corr_per_leaf[leafA][leafB]
             # After summing the correlations of leafA multiply by the number of and of leafA
             splitted = leafA[2].split()
             for and_w in splitted:
                 if and_w == "and":
                     num_and += 1
-            #print(f'Name {leafA[1]} num {num_and}')
             scores[leafA] = scores[leafA] * num_and # multiply by the number of literals.
         return scores
     
@@ -147,38 +130,35 @@ class LCOR(GREP):
         scores = self.compute_leaves_score(self.corr_per_leaf)
         # self.leaf_scores is a list of tuples (leaf={tree,class,leaf}, score) sorted by score
         self.leaf_scores = sorted(scores.items(), key=lambda x: x[1],reverse = True) # Sort scores
-        print("********* Scores: ")
-        for k in self.leaf_scores:
-            print(f'Class {k[0][0]} Tree:{k[0][1]} Leaf:{k[0][2]}')
-            # print(f'C_type:{type(k[0][0])} Tree_type {type(k[0][1])} Leaf_type {type(k[0][2])}')
-            print(f'Score: {k[1]}')
-    
 
-    # Algorithm(classifier, sample_per_leaf,corr_per_leaf,T',max_loss):
-    # 
-    # score_per_leaf = compute_score(corr_per_leaf, classifier)
-    # base_accuracy =  (classifier,T') -> già la tengo
-    # actual_accuracy = base_accuracy 
-    # scores_idx = 0
-    # while base_accuracy - actual_accuracy > max_loss and scores_idx < len(score_per_leaf) :
-    #   best_score = score_per_leaf[0]
-    #   helper_classifier = prune(best_score, classifier)
-    #   actual_score = ComputeAccuracy(classifier,T')
-    #   if base_accuracy - actual_accuracy >= max_loss:
-    #       classifier = helper_classifier
-    #       Update_Correlation(corr_per_leaf)
-    #       Update_Scores(score_per_leaf)
-    #       scores_idx = 0 
-    #   else 
-    #       scores_idx ++
-    def trim(self):
+    """     
+    Algorithm(classifier, sample_per_leaf,corr_per_leaf,T',max_loss):
+    
+    score_per_leaf = compute_score(corr_per_leaf, classifier)
+    base_accuracy =  (classifier,T') -> già la tengo
+    actual_accuracy = base_accuracy 
+    scores_idx = 0
+    while base_accuracy - actual_accuracy > max_loss and scores_idx < len(score_per_leaf) :
+      best_score = score_per_leaf[0]
+      helper_classifier = prune(best_score, classifier)
+      actual_score = ComputeAccuracy(classifier,T')
+      if base_accuracy - actual_accuracy >= max_loss:
+          classifier = helper_classifier
+          Update_Correlation(corr_per_leaf)
+          Update_Scores(score_per_leaf)
+          scores_idx = 0 
+      else 
+          scores_idx ++ 
+    """
+    def trim(self, report, report_path):
+        logger = logging.getLogger("pyALS-RF")
         super().trim(GREP.CostCriterion.depth) # cost_criterion is useless.
         self.init_leaves_scores() # compute the scores, ordering them, it must be executed after splitting the DS.
-        #self.baseline_accuracy = self.evaluate_accuracy() # set the base accuracy, should be already done by trim.
         scores_idx = 0      # Index used for the scores list
         pruned_leaves = 0   # Number of pruned leaves
         final_acc = 0
         nro_candidates = len(self.leaf_scores)
+        comp_time = time.time()
         while self.loss < self.max_loss and len(self.leaf_scores) > scores_idx:
             tentative = copy.deepcopy(self.pruning_configuration) # save the pruning conf.
             leaf_id = self.leaf_scores[scores_idx][0] # Save the leaf id to try.  
@@ -191,23 +171,33 @@ class LCOR(GREP):
                 final_acc = self.accuracy  # Save the real accuracy
                 self.pruning_configuration.append(leaf_id) # Insert the leaf into the pruning configuration
                 pruned_leaves += 1  # Increase the number of pruned leaves
-                print(f'Actual acc {self.accuracy} Base {self.baseline_accuracy}')
-                print(f'Idx {scores_idx} Max LEN {len(self.leaf_scores)}')
-                print(f'Actual loss {self.loss}')
+                logger.info(f'Actual acc {self.accuracy} Base {self.baseline_accuracy}')
+                logger.info(f'Idx {scores_idx} Max LEN {len(self.leaf_scores)}')
+                logger.info(f'Actual loss {self.loss}')
                 scores_idx = 0 # Reset the score index
                 scores = self.compute_leaves_score(self.corr_per_leaf) # Just need to recompute the scores and sort them.
                 self.leaf_scores = sorted(scores.items(), key=lambda x: x[1],reverse = True) # Sort scores
             else :
                 scores_idx += 1
-                # print("Retrying")
-                # print(f'Actual acc {self.accuracy} Base {self.baseline_accuracy}')
-                # print(f'Idx {scores_idx} Max LEN {len(self.leaf_scores)}')
-        print(f' N.ro candidates {nro_candidates}  N.ro pruned leaves {pruned_leaves}')
-        print(f' Loss {self.loss} idx {scores_idx} remaining leaves {len(self.leaf_scores)}')
-        print(f' Accuracy {final_acc} Base Accuracy{self.baseline_accuracy}')
-        print(f' Max loss {self.max_loss}')
-    # This function is useful for testing the score update function when the pruning set is changed. 
-    # def append_pruning_conf(self,p_conf):
-    #     super().trim(GREP.CostCriterion.depth) # cost_criterion is useless.
-    #     for conf in p_conf:
-    #         self.pruning_configuration.append(conf)
+        comp_time = time.time() - comp_time
+        logger.info(f' N.ro candidates {nro_candidates}  N.ro pruned leaves {pruned_leaves}')
+        logger.info(f' Scores idx {scores_idx} Scores remainings leaves {len(self.leaf_scores)}')
+        logger.info(f' Pruned Accuracy {final_acc} Base Accuracy{self.baseline_accuracy}')
+        logger.info(f' Max loss {self.max_loss} Pruned Loss {self.loss} ')
+        logger.info(f' Computational time {comp_time} [s]')
+        # Save the report 
+        if report :
+            csv_header = [ "N.ro candidates"," N.ro pruned leaves",
+                            "Scores Idx", "Scores remainings elems",
+                            "Pruned Accuracy", "Base Accuracy",
+                            "Max Loss", "Pruned Loss",
+                            "Computational Time"]
+            csv_body = [ nro_candidates, pruned_leaves,
+                         scores_idx, len(self.leaf_scores),
+                         final_acc[0],self.baseline_accuracy[0],
+                         self.max_loss, self.loss[0],
+                         comp_time]
+            with open(report_path, 'w') as f:
+                writer = csv.writer(f)
+                writer.writerow(csv_header)
+                writer.writerow(csv_body)
