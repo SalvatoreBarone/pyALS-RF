@@ -142,7 +142,7 @@ def grep(ctx, conf, ncpus, espresso, fraction, approach, cost, minredundancy, ma
 @click.option('-r', '--report', type = bool, default = True , help = "Enables the generation of a CSV file containing the report")
 @click.pass_context
 def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss, report):
-    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False)
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False,"pruning")
     logger = logging.getLogger("pyALS-RF")
     logger.info("Leaves correlation pruning flow"
                 f"\n\tconf: {conf}"
@@ -152,7 +152,7 @@ def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss, report):
                 f"\n\tMax Loss: {maxloss}"
                 f"\n\tFraction of Dataset {fraction}")
     leaves_correlation_flow(ctx, output, fraction, maxloss, ncpus, report)
-
+    store_flow(ctx)
     
 @cli.command("reduplot")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")

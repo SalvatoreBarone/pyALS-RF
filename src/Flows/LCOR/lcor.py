@@ -159,7 +159,8 @@ class LCOR(GREP):
         final_acc = 0
         nro_candidates = len(self.leaf_scores)
         comp_time = time.time()
-        while self.loss < self.max_loss and len(self.leaf_scores) > scores_idx:
+        
+        while self.loss <= self.max_loss and len(self.leaf_scores) > scores_idx:
             tentative = copy.deepcopy(self.pruning_configuration) # save the pruning conf.
             leaf_id = self.leaf_scores[scores_idx][0] # Save the leaf id to try.  
             tentative.append(leaf_id)  # append the element with the best value.
