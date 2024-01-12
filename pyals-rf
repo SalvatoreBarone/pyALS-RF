@@ -138,10 +138,13 @@ def grep(ctx, conf, ncpus, espresso, fraction, approach, cost, minredundancy, ma
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.option('-f', '--fraction', type = float, default = 0.5, help = "Fraction of the test set to be used as pruning set")
-@click.option('-m', '--maxloss', type = float, default = 5.0, help = "Maximum allowed accuracy loss")
+@click.option('-l', '--maxloss_lb', type = float, default = 5.0, help = "Lower bound of the maximum accuracy loss")
+@click.option('-u', '--maxloss_ub', type = float, default = 0.0, help = "Upper bound of the maximum accuracy loss")
+@click.option('-s', '--loss_step', type = float, default = 0.5, help = "Step used for accuracy loss iteration from LB to UB")
 @click.option('-r', '--report', type = bool, default = True , help = "Enables the generation of a CSV file containing the report")
 @click.pass_context
-def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss, report):
+def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss_lb, maxloss_ub,loss_step, report):
+    assert maxloss_ub == 0.0 or maxloss_ub >= maxloss_lb 
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False,"pruning")
     logger = logging.getLogger("pyALS-RF")
     logger.info("Leaves correlation pruning flow"
@@ -149,9 +152,13 @@ def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss, report):
                 f"\n\toutput dir: {output}"
                 )
     logger.info(f"Starting with Nro CPU: {ncpus}"
-                f"\n\tMax Loss: {maxloss}"
-                f"\n\tFraction of Dataset {fraction}")
-    leaves_correlation_flow(ctx, output, fraction, maxloss, ncpus, report)
+                f"\n\t  Max Loss LB: {maxloss_lb}"
+                f"\n\t  Max Loss UB: {maxloss_ub}"
+                f"\n\t  Loss step: {loss_step}"
+                f"\n\t  Fraction of Dataset {fraction}")
+    if maxloss_ub == 0.0: # if no step is provided.
+        maxloss_ub = maxloss_lb
+    leaves_correlation_flow(ctx, output, fraction, maxloss_lb, maxloss_ub,loss_step, ncpus, report)
     store_flow(ctx)
     
 @cli.command("reduplot")
@@ -180,8 +187,9 @@ def reduplot(ctx, conf, ncpus, output, verbose):
 @click.option('-s', '--skip_exact', is_flag = True, help = "Skip generating the exact (non approximate) implementation")
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
+@click.option('-r', '--report', type = bool, default = True , help = "Enables the generation of a CSV file containing the report")
 @click.pass_context
-def generate_hdl(ctx, conf, ncpus, espresso, luts, skip_exact, output, verbose):
+def generate_hdl(ctx, conf, ncpus, espresso, luts, skip_exact, output, verbose, report):
     """
     Generates HDL implementations for a given classifier, including its approximate variants, if any.
     """

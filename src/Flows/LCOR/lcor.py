@@ -130,7 +130,10 @@ class LCOR(GREP):
         scores = self.compute_leaves_score(self.corr_per_leaf)
         # self.leaf_scores is a list of tuples (leaf={tree,class,leaf}, score) sorted by score
         self.leaf_scores = sorted(scores.items(), key=lambda x: x[1],reverse = True) # Sort scores
-
+    
+    # Predispose the  trim operation by initializing internal values.
+    def predispose_trim(self):
+        super().trim(GREP.CostCriterion.depth) # cost_criterion is useless.
     """     
     Algorithm(classifier, sample_per_leaf,corr_per_leaf,T',max_loss):
     
@@ -149,17 +152,15 @@ class LCOR(GREP):
           scores_idx = 0 
       else 
           scores_idx ++ 
-    """
+    """        
     def trim(self, report, report_path):
         logger = logging.getLogger("pyALS-RF")
-        super().trim(GREP.CostCriterion.depth) # cost_criterion is useless.
         self.init_leaves_scores() # compute the scores, ordering them, it must be executed after splitting the DS.
         scores_idx = 0      # Index used for the scores list
         pruned_leaves = 0   # Number of pruned leaves
         final_acc = 0
         nro_candidates = len(self.leaf_scores)
         comp_time = time.time()
-        
         while self.loss <= self.max_loss and len(self.leaf_scores) > scores_idx:
             tentative = copy.deepcopy(self.pruning_configuration) # save the pruning conf.
             leaf_id = self.leaf_scores[scores_idx][0] # Save the leaf id to try.  
