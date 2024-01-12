@@ -159,7 +159,7 @@ def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss_lb, maxloss_ub,los
     if maxloss_ub == 0.0: # if no step is provided.
         maxloss_ub = maxloss_lb
     leaves_correlation_flow(ctx, output, fraction, maxloss_lb, maxloss_ub,loss_step, ncpus, report)
-    store_flow(ctx)
+    #store_flow(ctx)
     
 @cli.command("reduplot")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")

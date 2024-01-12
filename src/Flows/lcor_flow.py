@@ -19,7 +19,7 @@ import logging, joblib, numpy as np
 from distutils.dir_util import mkpath
 from itertools import combinations, product
 from tqdm import tqdm
-from ..ctx_factory import load_configuration_ps, create_classifier
+from ..ctx_factory import load_configuration_ps, create_classifier, store_flow
 from ..ConfigParsers.PsConfigParser import *
 from ..Model.Classifier import Classifier
 from .LCOR.lcor import LCOR
@@ -29,6 +29,7 @@ def leaves_correlation_flow(ctx, output, fraction, maxloss_lb, maxloss_ub, loss_
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the pruning flow.")
     load_configuration_ps(ctx)
+    assert "configuration" in ctx.obj, "No configuration. Bailing out."
     if output is not None:
         ctx.obj['configuration'].outdir = output
         mkpath(ctx.obj["configuration"].outdir)
@@ -47,17 +48,15 @@ def leaves_correlation_flow(ctx, output, fraction, maxloss_lb, maxloss_ub, loss_
         lcor.max_loss = actual_loss # reset the loss
         report_path = ctx.obj['configuration'].outdir + "/lcor_" + str(actual_loss) + "/lcor_report.csv"
         pruning_path = ctx.obj['configuration'].outdir + "/lcor_" + str(actual_loss) + "/pruning_configuration.json5"
-        if not os.path.exists(report_path): # create the experiments path
+        flow_store_path = ctx.obj['configuration'].outdir + "/lcor_" + str(actual_loss) + "/.flow.json5"
+        if not os.path.exists(ctx.obj['configuration'].outdir + "/lcor_" + str(actual_loss)): # create the experiments path
             os.makedirs(ctx.obj['configuration'].outdir + "/lcor_" + str(actual_loss))
         lcor.trim(report,f"{report_path}") # trim
         lcor.store_pruning_conf(pruning_path) # store the report
         lcor.restore_bns()
         lcor.pruning_configuration = []
         actual_loss += loss_step
-    # *** 
-    # print(report_path)
-    # print(type(f"{ctx.obj['configuration'].outdir}/lcor_report.csv"))
-    # #lcor.trim(report,f"{ctx.obj['configuration'].outdir}/lcor_report.csv")
-    # lcor.store_pruning_conf(f"{ctx.obj['configuration'].outdir}/pruning_configuration.json5")
-
+        #store_flow(ctx)
+        with open(f"{flow_store_path}", "w") as f:
+            json5.dump(ctx.obj["flow"], f, indent=2)
     
