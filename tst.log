@@ -1,0 +1,301 @@
+[38;20mpyALS-RF - INFO: Leaves correlation pruning flow
+	conf: example/statlog_segment/rf5/config_ps.json
+	output dir: None[0m
+[38;20mpyALS-RF - INFO: Starting with Nro CPU: 24
+	  Max Loss LB: 0.0
+	  Max Loss UB: 5.0
+	  Loss step: 0.5
+	  Fraction of Dataset 0.5[0m
+[38;20mpyALS-RF - INFO: Runing the pruning flow.[0m
+[38;20mpyALS-RF - INFO: Tree 0: 50 DBs instantiated.[0m
+[38;20mpyALS-RF - INFO: Tree 1: 58 DBs instantiated.[0m
+[38;20mpyALS-RF - INFO: Tree 2: 54 DBs instantiated.[0m
+[38;20mpyALS-RF - INFO: Tree 3: 62 DBs instantiated.[0m
+[38;20mpyALS-RF - INFO: Tree 4: 45 DBs instantiated.[0m
+Checking for updates...
+Cmd('git') failed due to: exit code(128)
+  cmdline: git fetch -v --progress -- origin
+  stderr: 'fatal: detected dubious ownership in repository at '/home/user/dbg/pyALS-RF''
+[38;20mpyALS-RF - INFO: Test set: 231 samples[0m
+[38;20mpyALS-RF - INFO: Pruning set fraction: 0.5[0m
+[38;20mpyALS-RF - INFO: Pruning set: 115 samples[0m
+[38;20mpyALS-RF - INFO: Validation set: 116 samples[0m
+[38;20mpyALS-RF - INFO: Baseline accuracy (on validation set) : [98.27586207]%[0m
+[38;20mpyALS-RF - INFO: Original cost: 2671[0m
+[38;20mpyALS-RF - INFO: Performing Boolean networks backup[0m
+[38;20mpyALS-RF - INFO: Computing the pruning capabilities[0m
+[38;20mpyALS-RF - INFO: Done[0m
+<class 'str'>
+Computing redundancy             0% |                                        | 0/115 [00:00<?, ?it/s]Computing redundancy            78% |███████████████████████████████▎        | 90/115 [00:00<00:00, 892.47it/s]                                                                                                               [38;20mpyALS-RF - INFO: Found 78 candidate leaves[0m
+[38;20mpyALS-RF - INFO: Accuracy (on the pruning set): 96.52173913043478%[0m
+Computing samples per leaf       0% |                                        | 0/115 [00:00<?, ?it/s]Computing samples per leaf      14% |█████▌                                  | 16/115 [00:00<00:00, 157.50it/s]Computing samples per leaf      29% |███████████▍                            | 33/115 [00:00<00:00, 160.32it/s]Computing samples per leaf      43% |█████████████████▍                      | 50/115 [00:00<00:00, 159.07it/s]Computing samples per leaf      58% |███████████████████████▎                | 67/115 [00:00<00:00, 160.66it/s]Computing samples per leaf      73% |█████████████████████████████▏          | 84/115 [00:00<00:00, 160.03it/s]Computing samples per leaf      88% |███████████████████████████████████▏    | 101/115 [00:00<00:00, 161.20it/s]                                                                                                                [38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 0 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 1 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 2 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 3 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 5 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 6 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 7 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 8 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 9 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 10 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 12 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 13 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 14 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 15 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 16 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 17 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 18 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 19 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 22 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 23 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 24 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 25 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 26 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 27 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 28 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 29 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 30 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 31 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 32 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 33 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 34 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 35 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 36 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 38 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 39 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 40 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 41 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 42 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 44 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 45 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 47 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 48 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 49 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 50 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 51 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 52 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 54 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 55 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 56 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 57 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 58 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 61 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 62 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 64 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO: Actual acc [99.13793103] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 65 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [-0.86206897][0m
+[38;20mpyALS-RF - INFO: Actual acc [99.13793103] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 67 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [-0.86206897][0m
+[38;20mpyALS-RF - INFO: Actual acc [99.13793103] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 68 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [-0.86206897][0m
+[38;20mpyALS-RF - INFO: Actual acc [99.13793103] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 69 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [-0.86206897][0m
+[38;20mpyALS-RF - INFO: Actual acc [99.13793103] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 70 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [-0.86206897][0m
+[38;20mpyALS-RF - INFO: Actual acc [99.13793103] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 71 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [-0.86206897][0m
+[38;20mpyALS-RF - INFO: Actual acc [99.13793103] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 72 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [-0.86206897][0m
+[38;20mpyALS-RF - INFO: Actual acc [99.13793103] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 73 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [-0.86206897][0m
+[38;20mpyALS-RF - INFO: Actual acc [99.13793103] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 74 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [-0.86206897][0m
+[38;20mpyALS-RF - INFO: Actual acc [99.13793103] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 75 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [-0.86206897][0m
+[38;20mpyALS-RF - INFO: Actual acc [99.13793103] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 76 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [-0.86206897][0m
+[38;20mpyALS-RF - INFO: Actual acc [99.13793103] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 77 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [-0.86206897][0m
+[38;20mpyALS-RF - INFO: Actual acc [99.13793103] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 78 Max LEN 81[0m
+[38;20mpyALS-RF - INFO: Actual loss [-0.86206897][0m
+[38;20mpyALS-RF - INFO:  N.ro candidates 81  N.ro pruned leaves 67[0m
+[38;20mpyALS-RF - INFO:  Scores idx 81 Scores remainings leaves 81[0m
+[38;20mpyALS-RF - INFO:  Pruned Accuracy [99.13793103] Base Accuracy[98.27586207][0m
+[38;20mpyALS-RF - INFO:  Max loss 0.0 Pruned Loss [-0.86206897] [0m
+[38;20mpyALS-RF - INFO:  Computational time 10.647831201553345 [s][0m
+[38;20mpyALS-RF - INFO: Actual acc [98.27586207] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 1 Max LEN 14[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.][0m
+[38;20mpyALS-RF - INFO:  N.ro candidates 14  N.ro pruned leaves 68[0m
+[38;20mpyALS-RF - INFO:  Scores idx 14 Scores remainings leaves 14[0m
+[38;20mpyALS-RF - INFO:  Pruned Accuracy [98.27586207] Base Accuracy[98.27586207][0m
+[38;20mpyALS-RF - INFO:  Max loss 0.5 Pruned Loss [0.] [0m
+[38;20mpyALS-RF - INFO:  Computational time 1.8929188251495361 [s][0m
+[38;20mpyALS-RF - INFO: Actual acc [97.4137931] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 6 Max LEN 13[0m
+[38;20mpyALS-RF - INFO: Actual loss [0.86206897][0m
+[38;20mpyALS-RF - INFO:  N.ro candidates 13  N.ro pruned leaves 69[0m
+[38;20mpyALS-RF - INFO:  Scores idx 13 Scores remainings leaves 13[0m
+[38;20mpyALS-RF - INFO:  Pruned Accuracy [97.4137931] Base Accuracy[98.27586207][0m
+[38;20mpyALS-RF - INFO:  Max loss 1.0 Pruned Loss [0.86206897] [0m
+[38;20mpyALS-RF - INFO:  Computational time 1.8130204677581787 [s][0m
+[38;20mpyALS-RF - INFO:  N.ro candidates 12  N.ro pruned leaves 69[0m
+[38;20mpyALS-RF - INFO:  Scores idx 12 Scores remainings leaves 12[0m
+[38;20mpyALS-RF - INFO:  Pruned Accuracy 0 Base Accuracy[98.27586207][0m
+[38;20mpyALS-RF - INFO:  Max loss 1.5 Pruned Loss [0.86206897] [0m
+[38;20mpyALS-RF - INFO:  Computational time 1.652031421661377 [s][0m
+[38;20mpyALS-RF - INFO: Actual acc [96.55172414] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 1 Max LEN 12[0m
+[38;20mpyALS-RF - INFO: Actual loss [1.72413793][0m
+[38;20mpyALS-RF - INFO:  N.ro candidates 12  N.ro pruned leaves 70[0m
+[38;20mpyALS-RF - INFO:  Scores idx 12 Scores remainings leaves 12[0m
+[38;20mpyALS-RF - INFO:  Pruned Accuracy [96.55172414] Base Accuracy[98.27586207][0m
+[38;20mpyALS-RF - INFO:  Max loss 2.0 Pruned Loss [1.72413793] [0m
+[38;20mpyALS-RF - INFO:  Computational time 1.6179006099700928 [s][0m
+[38;20mpyALS-RF - INFO:  N.ro candidates 11  N.ro pruned leaves 70[0m
+[38;20mpyALS-RF - INFO:  Scores idx 11 Scores remainings leaves 11[0m
+[38;20mpyALS-RF - INFO:  Pruned Accuracy 0 Base Accuracy[98.27586207][0m
+[38;20mpyALS-RF - INFO:  Max loss 2.5 Pruned Loss [1.72413793] [0m
+[38;20mpyALS-RF - INFO:  Computational time 0.9827055931091309 [s][0m
+[38;20mpyALS-RF - INFO: Actual acc [95.68965517] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 6 Max LEN 11[0m
+[38;20mpyALS-RF - INFO: Actual loss [2.5862069][0m
+[38;20mpyALS-RF - INFO:  N.ro candidates 11  N.ro pruned leaves 71[0m
+[38;20mpyALS-RF - INFO:  Scores idx 11 Scores remainings leaves 11[0m
+[38;20mpyALS-RF - INFO:  Pruned Accuracy [95.68965517] Base Accuracy[98.27586207][0m
+[38;20mpyALS-RF - INFO:  Max loss 3.0 Pruned Loss [2.5862069] [0m
+[38;20mpyALS-RF - INFO:  Computational time 1.5055468082427979 [s][0m
+[38;20mpyALS-RF - INFO: Actual acc [94.82758621] Base [98.27586207][0m
+[38;20mpyALS-RF - INFO: Idx 7 Max LEN 10[0m
+[38;20mpyALS-RF - INFO: Actual loss [3.44827586][0m
+[38;20mpyALS-RF - INFO:  N.ro candidates 10  N.ro pruned leaves 72[0m
+[38;20mpyALS-RF - INFO:  Scores idx 10 Scores remainings leaves 10[0m
+[38;20mpyALS-RF - INFO:  Pruned Accuracy [94.82758621] Base Accuracy[98.27586207][0m
+[38;20mpyALS-RF - INFO:  Max loss 3.5 Pruned Loss [3.44827586] [0m
+[38;20mpyALS-RF - INFO:  Computational time 1.2564046382904053 [s][0m
+[38;20mpyALS-RF - INFO:  N.ro candidates 9  N.ro pruned leaves 72[0m
+[38;20mpyALS-RF - INFO:  Scores idx 9 Scores remainings leaves 9[0m
+[38;20mpyALS-RF - INFO:  Pruned Accuracy 0 Base Accuracy[98.27586207][0m
+[38;20mpyALS-RF - INFO:  Max loss 4.0 Pruned Loss [3.44827586] [0m
+[38;20mpyALS-RF - INFO:  Computational time 1.1978025436401367 [s][0m
+[38;20mpyALS-RF - INFO:  N.ro candidates 9  N.ro pruned leaves 72[0m
+[38;20mpyALS-RF - INFO:  Scores idx 9 Scores remainings leaves 9[0m
+[38;20mpyALS-RF - INFO:  Pruned Accuracy 0 Base Accuracy[98.27586207][0m
+[38;20mpyALS-RF - INFO:  Max loss 4.5 Pruned Loss [3.44827586] [0m
+[38;20mpyALS-RF - INFO:  Computational time 1.156209945678711 [s][0m
+[38;20mpyALS-RF - INFO:  N.ro candidates 9  N.ro pruned leaves 72[0m
+[38;20mpyALS-RF - INFO:  Scores idx 9 Scores remainings leaves 9[0m
+[38;20mpyALS-RF - INFO:  Pruned Accuracy 0 Base Accuracy[98.27586207][0m
+[38;20mpyALS-RF - INFO:  Max loss 5.0 Pruned Loss [3.44827586] [0m
+[38;20mpyALS-RF - INFO:  Computational time 1.3331422805786133 [s][0m

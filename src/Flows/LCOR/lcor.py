@@ -23,6 +23,9 @@ from ...Model.DecisionTree import *
 from ..GREP.GREP import GREP
 import time
 import csv 
+import os
+import json5
+
 class LCOR(GREP):
     
     def __init__(
@@ -30,11 +33,16 @@ class LCOR(GREP):
                     pruning_set_fraction : float = 0.5,
                     max_loss : float = 5.0, 
                     min_resiliency : int = 0, 
-                    ncpus : int = cpu_count()
+                    ncpus : int = cpu_count(),
+                    out_path : str = "./",
+                    flow : str = "pruning"
                 ):
         super().__init__(classifier, pruning_set_fraction, max_loss, min_resiliency, ncpus)
         self.leaf_scores = {}
         self.corr_per_leaf = {}
+        self.tabu_leaves = []
+        self.out_path = out_path
+        self.flow = flow
 
     """     
     Compute the number of samples in each leaf
@@ -111,9 +119,9 @@ class LCOR(GREP):
                 scores[leafA] = 0
         for leafA in scores.keys():
             num_and = 0
-            for leafB in scores.keys():
+            for leafB in corr_per_leaf[leafA]:
                 # leafB != leafA, should also check this but for construction it leafA is not in the correlated list of leafA
-                if leafB in corr_per_leaf[leafA]: 
+                if leafB not in self.pruning_configuration: 
                     scores[leafA] += corr_per_leaf[leafA][leafB]
             # After summing the correlations of leafA multiply by the number of and of leafA
             splitted = leafA[2].split()
@@ -134,6 +142,7 @@ class LCOR(GREP):
     # Predispose the  trim operation by initializing internal values.
     def predispose_trim(self):
         super().trim(GREP.CostCriterion.depth) # cost_criterion is useless.
+
     """     
     Algorithm(classifier, sample_per_leaf,corr_per_leaf,T',max_loss):
     
@@ -155,7 +164,7 @@ class LCOR(GREP):
     """        
     def trim(self, report, report_path):
         logger = logging.getLogger("pyALS-RF")
-        self.init_leaves_scores() # compute the scores, ordering them, it must be executed after splitting the DS.
+        # self.init_leaves_scores() # compute the scores, ordering them, it must be executed after splitting the DS.
         scores_idx = 0      # Index used for the scores list
         pruned_leaves = 0   # Number of pruned leaves
         final_acc = 0
@@ -176,30 +185,60 @@ class LCOR(GREP):
                 logger.info(f'Actual acc {self.accuracy} Base {self.baseline_accuracy}')
                 logger.info(f'Idx {scores_idx} Max LEN {len(self.leaf_scores)}')
                 logger.info(f'Actual loss {self.loss}')
-                scores_idx = 0 # Reset the score index
-                scores = self.compute_leaves_score(self.corr_per_leaf) # Just need to recompute the scores and sort them.
-                self.leaf_scores = sorted(scores.items(), key=lambda x: x[1],reverse = True) # Sort scores
+                # scores_idx = 0 # Reset the score index
+                # scores = self.compute_leaves_score(self.corr_per_leaf) # Just need to recompute the scores and sort them.
+                # self.leaf_scores = sorted(scores.items(), key=lambda x: x[1],reverse = True) # Sort scores
             else :
-                scores_idx += 1
+                self.tabu_leaves.append(self.leaf_scores[scores_idx][0]) # Remove the leaf
+            scores_idx += 1
         comp_time = time.time() - comp_time
+        logger.info(f'Total N.ro Leaves {len(self.corr_per_leaf)} N.ro pruned leaves {len(self.pruning_configuration)}')
         logger.info(f' N.ro candidates {nro_candidates}  N.ro pruned leaves {pruned_leaves}')
-        logger.info(f' Scores idx {scores_idx} Scores remainings leaves {len(self.leaf_scores)}')
         logger.info(f' Pruned Accuracy {final_acc} Base Accuracy{self.baseline_accuracy}')
         logger.info(f' Max loss {self.max_loss} Pruned Loss {self.loss} ')
         logger.info(f' Computational time {comp_time} [s]')
+        
         # Save the report 
         if report :
-            csv_header = [ "N.ro candidates"," N.ro pruned leaves",
+            csv_header = [  "Total number of leaves" , "N.ro pruned leaves",
+                            "N.ro candidates Iteration"," N.ro pruned leaves Iteration",
                             "Scores Idx", "Scores remainings elems",
                             "Pruned Accuracy", "Base Accuracy",
                             "Max Loss", "Pruned Loss",
                             "Computational Time"]
-            csv_body = [ nro_candidates, pruned_leaves,
+            csv_body = [ len(self.corr_per_leaf),len(self.pruning_configuration),
+                         nro_candidates, pruned_leaves,
                          scores_idx, len(self.leaf_scores),
-                         final_acc[0],self.baseline_accuracy[0],
+                         final_acc, self.baseline_accuracy,
                          self.max_loss, self.loss[0],
                          comp_time]
             with open(report_path, 'w') as f:
                 writer = csv.writer(f)
                 writer.writerow(csv_header)
                 writer.writerow(csv_body)
+
+    # Iterare the pruning by curr
+    def trim_alternative(self, report, loss_lb, loss_ub, step):
+        self.predispose_trim()
+        # for each possible loss
+        self.init_leaves_scores()
+        for it_loss in np.arange(loss_lb, loss_ub + step, step):
+            # Generate all the paths
+            report_path = self.out_path + "/lcor_" + str(it_loss) + "/lcor_report.csv"
+            pruning_path =  self.out_path + "/lcor_" + str(it_loss) + "/pruning_configuration.json5"
+            flow_store_path = self.out_path + "/lcor_" + str(it_loss) + "/.flow.json5"
+            # Generate the out dir
+            if not os.path.exists(self.out_path + "/lcor_" + str(it_loss)): 
+                os.makedirs(self.out_path + "/lcor_" + str(it_loss))
+            # set the new maximum loss
+            self.max_loss = it_loss
+            # Trim with the actual accuracy
+            self.trim(report,report_path)
+            # Update the scores
+            scores = self.compute_leaves_score(self.corr_per_leaf) # Just need to recompute the scores and sort them. 
+            self.leaf_scores = sorted(scores.items(), key=lambda x: x[1],reverse = True) # Sort scores
+            # Save the pruning configuration
+            self.store_pruning_conf(pruning_path)
+            # Save the files
+            with open(f"{flow_store_path}", "w") as f:
+                json5.dump(self.flow, f, indent=2)
