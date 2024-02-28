@@ -262,8 +262,8 @@ def compare(configfile, axapproach, outdir, pareto, axmode, alpha, beta, gamma, 
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
 @click.pass_context
-def compgini(ctx, conf, outdir):
-    compute_gini_dist(conf, outdir)
+def compgini(ctx, conf, output):
+    compute_gini_dist(conf, output)
     
 cli.add_command(bitwidth)
 cli.add_command(als)
