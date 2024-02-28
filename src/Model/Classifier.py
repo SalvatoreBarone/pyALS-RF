@@ -40,8 +40,8 @@ class Classifier:
         self.use_espresso = use_espresso
         self.als_conf = None
         
-    def __del__(self):
-        self.pool.close()
+    # def __del__(self):
+    #    self.pool.close()
     
     @staticmethod
     def get_xmlns_uri(elem):

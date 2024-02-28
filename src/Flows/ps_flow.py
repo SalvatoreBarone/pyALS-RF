@@ -24,6 +24,7 @@ from .PS.PsMop import *
 from ..Model.rank_based import softmax, dist_gini
 from ..plot import scatterplot, boxplot
 
+
 def ps_flow(ctx : dict, mode : str, alpha : float, beta : float, gamma : float, output : str):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the pruning flow.")
@@ -186,13 +187,13 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
     classifier.pool.close()
     logger.info(f"All done! Take a look at the {outdir} directory.")
 
-def compute_gini_dist(configfile, outdir):
-    configuration = PSConfigParser(configfile)
-    check_for_file(configuration.model_source)
-    check_for_file(configuration.error_conf.test_dataset)
-    classifier = Classifier(cpu_count())
-    classifier.pmml_parser(configuration.model_source)
-    classifier.read_test_set(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
-    classifier.reset_nabs_configuration()
-    classifier.reset_assertion_configuration()
-    dist_gini(classifier, outdir)
+def compute_gini_dist(ctx, outdir):
+    load_configuration_ps(ctx)
+    if outdir is not None:
+        ctx.obj['configuration'].outdir = outdir
+        mkpath(ctx.obj["configuration"].outdir)
+    create_classifier(ctx)
+
+    ctx.obj["classifier"].reset_nabs_configuration()
+    ctx.obj["classifier"].reset_assertion_configuration()
+    dist_gini(ctx.obj["classifier"], outdir)
