@@ -18,7 +18,7 @@ import numpy as np
 from distutils.dir_util import mkpath
 from tqdm import tqdm
 from .Classifier import *
-from ..plot import boxplot
+from ..plot import boxplot, hist_and_boxplot
 
 def softmax(x):
     e_x = np.exp(np.array(x, dtype = np.float64))
@@ -41,8 +41,11 @@ def dist_gini(classifier, outdir):
         else:
             M.append(Ig)
     mkpath(outdir)
-    boxplot(C, "", "", f"{outdir}/C_ginidist.pdf", figsize= (2, 4), annotate = True, float_format = "%.2f", fontsize = 13)
-    boxplot(M, "", "", f"{outdir}/M_ginidist.pdf", figsize= (2, 4), annotate = True, float_format = "%.2f", fontsize = 13)    
+    #boxplot(C, "", "", f"{outdir}/C_ginidist.pdf", figsize= (2, 4), annotate = True, float_format = "%.2f", fontsize = 13)
+    #boxplot(M, "", "", f"{outdir}/M_ginidist.pdf", figsize= (2, 4), annotate = True, float_format = "%.2f", fontsize = 13) 
+    hist_and_boxplot(C, r"$I_G({\rho})$", "# of samples", f"{outdir}/C_ginihist.pdf", figsize= (2, 4), annotate = True, float_format = "%.2f", fontsize = 13)
+    hist_and_boxplot(M, r"$I_G({\rho})$", "# of samples", f"{outdir}/M_ginihist.pdf", figsize= (2, 4), annotate = True, float_format = "%.2f", fontsize = 13)
+   
 
 def datasetRanking(classifier):
     C = []
