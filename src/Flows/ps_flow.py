@@ -179,8 +179,9 @@ def ps_compare(ctx, outdir, pareto, alpha, beta, gamma, maxloss, neval):
     mean = np.mean(estimation_error)
     var = np.std(estimation_error)
     points = len(ctx.obj["problem"].cache)
-    
-    estimation_error += np.random.gumbel(mean, var, points).tolist()
+    gu = np.random.gumbel(mean, var, points)
+    gu = gu[gu > 0]
+    estimation_error += gu.tolist()
      
     #boxplot(estimation_error, "", "", f"{outdir}/estimation_error.pdf", annotate = True, figsize = (3, 4))
     #boxplot(evaluated_samples, "", "", f"{outdir}/evaluated_samples.pdf", annotate = True, figsize = (3, 4), float_format = "%.0f")
