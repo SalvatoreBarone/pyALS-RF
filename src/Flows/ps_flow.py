@@ -142,14 +142,17 @@ def ps_compare(ctx, outdir, pareto, alpha, beta, gamma, maxloss, neval):
     ctx.obj["classifier"].reset_assertion_configuration()
       
     
+    create_problem(ctx, mode = "full", alpha = alpha, beta = beta, gamma = gamma)
+    print(f"Carico la cache {ctx.obj['configuration'].outdir}/.cache")
+    ctx.obj['problem'].load_cache(f"{ctx.obj['configuration'].outdir}/.cache")
+    print(f"Caricate {len(ctx.obj['problem'].cache)} entries dalla cache")
+    create_optimizer(ctx)
+    can_improve(ctx)
+    
     C, M = datasetRanking(ctx.obj["classifier"])
     n_vars = len(ctx.obj["classifier"].model_features)
     baseline_accuracy = len(C) / (len(C) + len(M)) * 100
     logger.info(f"Baseline accuracy: {baseline_accuracy} %")
-    
-    create_problem(ctx, mode = "full", alpha = alpha, beta = beta, gamma = gamma)
-    create_optimizer(ctx)
-    can_improve(ctx)
     
     
     legend_markers = [
@@ -161,7 +164,6 @@ def ps_compare(ctx, outdir, pareto, alpha, beta, gamma, maxloss, neval):
     estimation_error = []
     evaluated_samples = [maxMiss] * len(ctx.obj['problem'].cache)
     ctx.obj["classifier"].reset_nabs_configuration()
-    
     ctx.obj["optimizer"].archive = pyamosa.Pareto()
     ctx.obj["optimizer"].archive.read_json(ctx.obj["problem"], ctx.obj["final_archive_json"])
     pareto_set = ctx.obj["optimizer"].archive.get_set()
@@ -169,25 +171,19 @@ def ps_compare(ctx, outdir, pareto, alpha, beta, gamma, maxloss, neval):
     for xx, yy in  tqdm(zip(pareto_set, pareto_front), total = len(pareto_set), desc="Analysing ACSs...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave = False):
         nabs = {f["name"]: n for f, n in zip(ctx.obj["classifier"].model_features, xx[:len(ctx.obj["classifier"].model_features)])}
         ctx.obj["classifier"].set_nabs(nabs)
-        
         estloss, nsamples = estimateLoss(baseline_accuracy, 2 * maxloss, alpha, beta, gamma, ctx.obj["classifier"], C, M)
         estimation_error.append(np.abs(yy[0] - estloss))
         evaluated_samples.append(nsamples)
-            
-        #scatterplot([np.array(actual_pareto), np.array(estimated_pareto)], legend_markers, "Accuracy loss (%)", "Power consumption (mW)", f"{outdir}/actual_vs_est_pareto_comparison.pdf")
-    
     mean = np.mean(estimation_error)
     var = np.std(estimation_error)
     points = len(ctx.obj["problem"].cache)
     gu = np.random.gumbel(mean, var, points)
     gu = gu[gu > 0]
     estimation_error += gu.tolist()
-     
     #boxplot(estimation_error, "", "", f"{outdir}/estimation_error.pdf", annotate = True, figsize = (3, 4))
     #boxplot(evaluated_samples, "", "", f"{outdir}/evaluated_samples.pdf", annotate = True, figsize = (3, 4), float_format = "%.0f")
     hist(estimation_error, "", "", f"{outdir}/estimation_error.pdf", figsize = (3, 4))
     hist(evaluated_samples, "", "", f"{outdir}/evaluated_samples.pdf", figsize = (3, 4))
-    
     logger.info(f"All done! Take a look at the {outdir} directory.")
 
 def compute_gini_dist(ctx, outdir):
