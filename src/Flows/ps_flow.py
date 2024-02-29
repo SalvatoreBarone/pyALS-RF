@@ -172,7 +172,7 @@ def ps_compare(ctx, outdir, pareto, alpha, beta, gamma, maxloss, neval):
         nabs = {f["name"]: n for f, n in zip(ctx.obj["classifier"].model_features, xx[:len(ctx.obj["classifier"].model_features)])}
         ctx.obj["classifier"].set_nabs(nabs)
         estloss, nsamples = estimateLoss(baseline_accuracy, 2 * maxloss, alpha, beta, gamma, ctx.obj["classifier"], C, M)
-        estimation_error.append(np.abs(yy[0] - estloss))
+        estimation_error.append(yy[0] - estloss)
         evaluated_samples.append(nsamples)
     mean = np.mean(estimation_error)
     var = np.std(estimation_error)
