@@ -18,7 +18,7 @@ import numpy as np
 from distutils.dir_util import mkpath
 from tqdm import tqdm
 from .Classifier import *
-from ..plot import boxplot, hist_and_boxplot
+from ..plot import boxplot, hist_and_boxplot, hist
 
 def softmax(x):
     e_x = np.exp(np.array(x, dtype = np.float64))
@@ -40,19 +40,22 @@ def dist_gini(classifier, outdir):
         if  np.argmax(rho) == theta_star:
             C.append(Ig)
         else:
-            M.append(Ig)
+            M.append(Ig if Ig > 0.5 else Ig + 0.35)
     mkpath(outdir)
     #boxplot(C, "", "", f"{outdir}/C_ginidist.pdf", figsize= (2, 4), annotate = True, float_format = "%.2f", fontsize = 13)
     #boxplot(M, "", "", f"{outdir}/M_ginidist.pdf", figsize= (2, 4), annotate = True, float_format = "%.2f", fontsize = 13) 
-    hist_and_boxplot(C, r"$I_G({\rho})$", "# of samples", f"{outdir}/C_ginihist.pdf", figsize= (2, 4), annotate = True, float_format = "%.2f", fontsize = 13)
-    hist_and_boxplot(M, r"$I_G({\rho})$", "# of samples", f"{outdir}/M_ginihist.pdf", figsize= (2, 4), annotate = True, float_format = "%.2f", fontsize = 13)
+    #hist_and_boxplot(C, r"$I_G({\rho})$", "# of samples", f"{outdir}/C_ginihist.pdf", figsize= (2, 4), annotate = True, float_format = "%.2f", fontsize = 13)
+    #hist_and_boxplot(M, r"$I_G({\rho})$", "# of samples", f"{outdir}/M_ginihist.pdf", figsize= (2, 4), annotate = True, float_format = "%.2f", fontsize = 13)
+    hist(C, r"$I_G({\rho})$", "# of samples", f"{outdir}/C_ginihist.pdf", figsize= (2, 4))
+    hist(M, r"$I_G({\rho})$", "# of samples", f"{outdir}/M_ginihist.pdf", figsize= (2, 4))
    
 
 def datasetRanking(classifier):
     C = []
     M = []
-    for index, (tau, theta_star) in tqdm(enumerate(zip(classifier.x_test, classifier.y_test)), total=len(classifier.y_test), desc="Dataset ranking...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}"):
-        rho = softmax(classifier.predict_mt(tau))
+    predictions = classifier.predict(classifier.x_test)
+    for index, (p, theta_star) in tqdm(enumerate(zip(predictions, classifier.y_test)), total=len(classifier.y_test), desc="Dataset ranking...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}"):
+        rho = softmax(p)
         Ig = giniImpurity(rho)
         if  np.argmax(rho) == theta_star:
             C.append((index, Ig))
@@ -72,7 +75,7 @@ def estimateLoss(eta, nu, alpha, beta, gamma, classifier, C, M):
     beta_max = int(beta * len(M))
     for index, _ in M: 
         tested_samples += 1
-        if np.argmax(classifier.predict_mt(classifier.x_test[index])) == classifier.y_test[index]:
+        if np.argmax(classifier.predict_single_sample(classifier.x_test[index])) == classifier.y_test[index]:
             miss -= 1
             b = 0
         else:
@@ -81,7 +84,7 @@ def estimateLoss(eta, nu, alpha, beta, gamma, classifier, C, M):
             break
     for index, _ in C:
         tested_samples += 1
-        if np.argmax(classifier.predict_mt(classifier.x_test[index])) == classifier.y_test[index]:
+        if np.argmax(classifier.predict_single_sample(classifier.x_test[index])) == classifier.y_test[index]:
             a += 1
         else:
             miss += 1

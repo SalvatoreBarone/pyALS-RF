@@ -240,20 +240,22 @@ def distance(configfile, axapproach, pareto, axmode):
         exit()
 
 @cli.command("compare")
-@click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
-@click.argument('axapproach', type=click.Choice(["ps", "als", "full"]))
-@click.argument('outdir', type=click.Path(exists=True, dir_okay=True))
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
+@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
+@click.option('--axapproach', type=click.Choice(["ps", "als", "full"]))
 @click.option('--pareto', type = click.Path(exists=True, dir_okay=False), default = None)
-@click.option('--axmode', type = click.Choice(["whole", "split"]))
 @click.option('--alpha', type=float, default = 0.07)
 @click.option('--beta', type=float, default = 0.5)
 @click.option('--gamma', type=float, default = 2)
 @click.option('--maxloss', type=float, default = 5)
 @click.option('--neval', type = int, default = None)
 @click.pass_context
-def compare(configfile, axapproach, outdir, pareto, axmode, alpha, beta, gamma, maxloss, neval):
+def compare(ctx, conf, ncpus, output, verbose, axapproach, pareto, alpha, beta, gamma, maxloss, neval):
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "ps")
     if axapproach == "ps":
-        ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval)
+        ps_compare(ctx, output, pareto, alpha, beta, gamma, maxloss, neval)
     else:
         print("Not supported yet")
         exit()

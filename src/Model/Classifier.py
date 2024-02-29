@@ -40,8 +40,8 @@ class Classifier:
         self.use_espresso = use_espresso
         self.als_conf = None
         
-    # def __del__(self):
-    #    self.pool.close()
+    def __del__(self):
+       self.pool.close()
     
     @staticmethod
     def get_xmlns_uri(elem):
@@ -211,6 +211,9 @@ class Classifier:
     def compute_score(trees : list[DecisionTree], x_test : ndarray):
         assert len(np.shape(x_test)) == 2
         return np.array( [ np.sum( [t.visit(x) for t in trees ], axis = 0) for x in x_test ] )
+    
+    def predict_single_sample(self, x):
+        return np.sum( [t.visit(x) for t in self.trees ], axis = 0)
     
     def predict(self, x_test : ndarray):
         if len(np.shape(x_test)) == 1:

@@ -96,3 +96,13 @@ def hist_and_boxplot(data, xlabel, ylabel, outfile, annotate = True, figsize = (
     # ax_hist.plot(xs,density(xs))
     
     plt.savefig(outfile, bbox_inches='tight', pad_inches=0)
+    
+
+def hist(data, xlabel, ylabel, outfile, figsize = (4,4)):
+    plt.figure(figsize=figsize)
+    plt.hist(data, bins=20)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    ax = plt.gca()
+    ax.spines[['right', 'top']].set_visible(False)
+    plt.savefig(outfile, bbox_inches='tight', pad_inches=0)

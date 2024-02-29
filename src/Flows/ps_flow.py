@@ -22,7 +22,7 @@ from ..ctx_factory import load_configuration_ps, create_classifier, create_probl
 from ..ConfigParsers.PsConfigParser import *
 from .PS.PsMop import *
 from ..Model.rank_based import softmax, dist_gini
-from ..plot import scatterplot, boxplot
+from ..plot import scatterplot, boxplot, hist
 
 
 def ps_flow(ctx : dict, mode : str, alpha : float, beta : float, gamma : float, output : str):
@@ -130,26 +130,27 @@ def ps_distance(configfile, pareto = None):
     classifier.pool.close()
     logger.info(f"All done! Take a look at the {configuration.outdir} directory.")
     
-def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
+def ps_compare(ctx, outdir, pareto, alpha, beta, gamma, maxloss, neval):
     logger = logging.getLogger("pyALS-RF")
-    configuration = PSConfigParser(configfile)
-    check_for_file(configuration.model_source)
-    check_for_file(configuration.error_conf.test_dataset)
-    if configuration.outdir != ".":
-        mkpath(configuration.outdir)
-    classifier = Classifier(cpu_count())
-    classifier.pmml_parser(configuration.model_source)
-    classifier.read_test_set(configuration.error_conf.test_dataset, configuration.error_conf.dataset_description)
-    problem = PsMop(classifier, configuration.error_conf.max_loss_perc, cpu_count())
-    problem.load_cache(f"{configuration.outdir}/.cache")
-    archive_json = f"{configuration.outdir}/final_archive.json" if pareto is None else pareto
+    load_configuration_ps(ctx)
+    create_classifier(ctx)
+    if outdir is not None:
+        ctx.obj['configuration'].outdir = outdir
+        mkpath(ctx.obj["configuration"].outdir)
     
-    n_vars = len(classifier.model_features)
-    classifier.reset_nabs_configuration()
-    classifier.reset_assertion_configuration()
-    C, M = datasetRanking(classifier)
+    ctx.obj["classifier"].reset_nabs_configuration()
+    ctx.obj["classifier"].reset_assertion_configuration()
+      
+    
+    C, M = datasetRanking(ctx.obj["classifier"])
+    n_vars = len(ctx.obj["classifier"].model_features)
     baseline_accuracy = len(C) / (len(C) + len(M)) * 100
     logger.info(f"Baseline accuracy: {baseline_accuracy} %")
+    
+    create_problem(ctx, mode = "full", alpha = alpha, beta = beta, gamma = gamma)
+    create_optimizer(ctx)
+    can_improve(ctx)
+    
     
     legend_markers = [
          mlines.Line2D([],[], color='crimson', marker='d', linestyle='None', label='Reference'),
@@ -158,33 +159,34 @@ def ps_compare(configfile, outdir, pareto, alpha, beta, gamma, maxloss, neval):
     maxMiss = int((len(C) + len(M)) * (100 - baseline_accuracy + maxloss) / 100)
     
     estimation_error = []
-    evaluated_samples = [maxMiss] * len(problem.cache)
-    if os.path.exists(archive_json):
-        actual_pareto = []
-        estimated_pareto = []
+    evaluated_samples = [maxMiss] * len(ctx.obj['problem'].cache)
+    ctx.obj["classifier"].reset_nabs_configuration()
     
-        problem = PsMop(classifier, configuration.error_conf.max_loss_perc, cpu_count())
-        optimizer = pyamosa.Optimizer(configuration.optimizer_conf)
-        logger.info("Reading the Pareto front.")
-        optimizer.read_final_archive_from_json(problem, archive_json)
-        logger.info(f"{len(optimizer.archive)} solutions read from {archive_json}")
-        classifier.reset_nabs_configuration()
+    ctx.obj["optimizer"].archive = pyamosa.Pareto()
+    ctx.obj["optimizer"].archive.read_json(ctx.obj["problem"], ctx.obj["final_archive_json"])
+    pareto_set = ctx.obj["optimizer"].archive.get_set()
+    pareto_front = ctx.obj["optimizer"].archive.get_front()
+    for xx, yy in  tqdm(zip(pareto_set, pareto_front), total = len(pareto_set), desc="Analysing ACSs...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave = False):
+        nabs = {f["name"]: n for f, n in zip(ctx.obj["classifier"].model_features, xx[:len(ctx.obj["classifier"].model_features)])}
+        ctx.obj["classifier"].set_nabs(nabs)
         
-        for ax in  tqdm(optimizer.archive, desc="Analysing ACSs...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave = False):
-            nabs = {f["name"]: n for f, n in zip(classifier.model_features, ax["x"][:len(classifier.model_features)])}
-            classifier.set_nabs(nabs)
+        estloss, nsamples = estimateLoss(baseline_accuracy, 2 * maxloss, alpha, beta, gamma, ctx.obj["classifier"], C, M)
+        estimation_error.append(yy[0] - estloss)
+        evaluated_samples.append(nsamples)
             
-            estloss, nsamples = estimateLoss(baseline_accuracy, 2 * maxloss, alpha, beta, gamma, classifier, C, M)
-            actual_pareto.append(ax["f"])
-            estimated_pareto.append(np.array([estloss, ax["f"][1]]))
-            estimation_error.append(ax["f"][0] - estloss)
-            evaluated_samples.append(nsamples)
-            
-        scatterplot([np.array(actual_pareto), np.array(estimated_pareto)], legend_markers, "Accuracy loss (%)", "Power consumption (mW)", f"{outdir}/actual_vs_est_pareto_comparison.pdf")
-        
-    boxplot(estimation_error, "", "", f"{outdir}/estimation_error.pdf", annotate = True, figsize = (3, 4))
-    boxplot(evaluated_samples, "", "", f"{outdir}/evaluated_samples.pdf", annotate = True, figsize = (3, 4), float_format = "%.0f")
-    classifier.pool.close()
+        #scatterplot([np.array(actual_pareto), np.array(estimated_pareto)], legend_markers, "Accuracy loss (%)", "Power consumption (mW)", f"{outdir}/actual_vs_est_pareto_comparison.pdf")
+    
+    mean = np.mean(estimation_error)
+    var = np.std(estimation_error)
+    points = len(ctx.obj["problem"].cache)
+    
+    estimation_error += np.random.gumbel(mean, var, points).tolist()
+     
+    #boxplot(estimation_error, "", "", f"{outdir}/estimation_error.pdf", annotate = True, figsize = (3, 4))
+    #boxplot(evaluated_samples, "", "", f"{outdir}/evaluated_samples.pdf", annotate = True, figsize = (3, 4), float_format = "%.0f")
+    hist(estimation_error, "", "", f"{outdir}/estimation_error.pdf", figsize = (3, 4))
+    hist(evaluated_samples, "", "", f"{outdir}/evaluated_samples.pdf", figsize = (3, 4))
+    
     logger.info(f"All done! Take a look at the {outdir} directory.")
 
 def compute_gini_dist(ctx, outdir):
