@@ -171,7 +171,7 @@ def ps_compare(ctx, outdir, pareto, alpha, beta, gamma, maxloss, neval):
         ctx.obj["classifier"].set_nabs(nabs)
         
         estloss, nsamples = estimateLoss(baseline_accuracy, 2 * maxloss, alpha, beta, gamma, ctx.obj["classifier"], C, M)
-        estimation_error.append(yy[0] - estloss)
+        estimation_error.append(np.abs(yy[0] - estloss))
         evaluated_samples.append(nsamples)
             
         #scatterplot([np.array(actual_pareto), np.array(estimated_pareto)], legend_markers, "Accuracy loss (%)", "Power consumption (mW)", f"{outdir}/actual_vs_est_pareto_comparison.pdf")
