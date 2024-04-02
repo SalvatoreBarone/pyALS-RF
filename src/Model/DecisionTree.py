@@ -109,7 +109,7 @@ class DecisionTree:
         print("\tName: ", self.name)
         print("\tBoxes:")
         for b in self.decision_boxes:
-            print("\t\t",  b["box"].get_name(), "(", b["box"].get_feature(), " " , b["box"].get_c_operator(), " ", b["box"].get_threshold(), "), nab ", b["box"].get_nab())
+            print("\t\t",  b["box"].name, "(", b["box"].feature_name, " " , b["box"].get_c_operator(), " ", b["box"].threshold, "), nab ", b["box"].nab)
         print("\tAssertions:")
         for a in self.boolean_networks:
             print("\t\t", a["class"], " = ", a["sop"])

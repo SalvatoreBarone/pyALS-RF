@@ -26,11 +26,13 @@ from .RegressorTree import *
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import export_graphviz, DecisionTreeClassifier
 #from ..scikit.RandonForestClassifierMV import RandomForestClassifierMV
+import xgboost as xgb
+import re
 
 class Regressor:
     __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_4'}
 
-    def __init__(self, ncpus = None, use_espresso = False):
+    def __init__(self, ncpus = None, use_espresso = False, learning_rate: float = None):
         self.trees = []
         self.model_features = []
         self.model_classes = []
@@ -39,7 +41,12 @@ class Regressor:
         self.use_espresso = use_espresso
         self.als_conf = None
         self.pool = Pool(self.ncpus)
-
+        self.learning_rate = learning_rate
+        # Multiplicative constant to mult to the combination of all tree outputs.
+        # For RF is equal to 1 / (number of trees) and for xgb is eq to 1
+        # The other costant in per_tree_weight that 
+        self.sum_weight = 0
+        
     def __del__(self):
         self.pool.close()
     
@@ -55,10 +62,29 @@ class Regressor:
         if model_source.endswith(".pmml"):
             self.pmml_parser(model_source, dataset_description)
         elif model_source.endswith(".joblib"):
-            assert 1 == 0, "invalid parser format"
+            if self.learning_rate == None:
+                print(self.learning_rate)
+                assert 1 == 0, "invalid parser format"
+            else:
+                self.booster_joblib_parser(model_source)
             # self.joblib_parser(model_source, dataset_description)
+        
+        # The weight of the first model is always 1.
         self.ncpus = min(self.ncpus, len(self.trees))
-        self.p_tree = list_partitioning(self.trees, self.ncpus)
+        # If the learning rate is none then the model is a rf and 
+        # the sum weight is 1/ num_tree 
+        # and the tree weight is 1.
+        if self.learning_rate == None:
+            self.sum_weight     = 1/len(self.trees)
+            # Generate a mapping among each tree and its weight
+            tree_weight_map     = [(self.trees[idx], 1) for idx in range(1,len(self.trees))]
+        # Otherwise it is an XGB model so the sum weight is 1 and the tree weight
+        # is equal to the learning rate.
+        else:
+            self.sum_weight = 1
+            # Generate a mapping among each tree and its weight
+            tree_weight_map     = [(self.trees[idx], self.learning_rate) for idx in range(1,len(self.trees))]
+        self.p_tree = list_partitioning(tree_weight_map, self.ncpus)
         self.args = [[t, None] for t in self.p_tree]
 
     def pmml_parser(self, pmml_file_name, dataset_description = None):
@@ -71,28 +97,22 @@ class Regressor:
         tree = ElementTree.parse(pmml_file_name)
         root = tree.getroot()
         self.__namespaces["pmml"] = Regressor.get_xmlns_uri(root)
-        print(f"Root {root} Tree {tree}")
         self.get_features_and_classes_from_pmml(root)
-        print(f"Root {root} Tree {tree}")
-        print(f"Model features {self.model_features} Classes {self.model_classes}")
-        
+
         if dataset_description is not None:
             self.classes_name = dataset_description.classes_name
         else:
             self.classes_name = self.model_classes
         segmentation = root.find("pmml:MiningModel/pmml:Segmentation", self.__namespaces)
-        print(f"Segmentation {segmentation}")
         # exit(1)
         if segmentation is not None:
             for tree_id, segment in enumerate(segmentation.findall("pmml:Segment", self.__namespaces)):
                 print(f"Tree Id {tree_id} Segment {segment}")
-
                 logger.debug(f"Parsing tree {tree_id}... ")
                 tree_model_root = segment.find("pmml:TreeModel", self.__namespaces).find("pmml:Node", self.__namespaces)
-                print(f"Tree Root {tree_model_root}")
-                print(tree_model_root)
                 tree = self.get_tree_model_from_pmml(str(tree_id), tree_model_root)
                 print(tree.dump())
+                exit(1)
                 # print(f"Tree {tree}")
                 self.trees.append(tree)
                 logger.debug(f"Done parsing tree {tree_id}")
@@ -224,8 +244,18 @@ class Regressor:
     def compute_score(trees : list[RegressorTree], x_test : ndarray):
         assert len(np.shape(x_test)) == 2
         # Return the sum of predictions of the assigned trees for each sample in x_test
-        return [np.sum(t.visit(x) for t in trees) for x in x_test ]
+        # Each prediction is multiplied by the weight of the specific tree, associated by the struct 
+        # p_trees
+        return [np.sum(t[1] *t[0].visit(x) for t in trees) for x in x_test ]
     
+    # The prediction is :
+    # sum_weight * (prediction_tree[0] * tree[0].weight + prediction_tree[1] * tree[1].weight + ..)
+    # If the model is a RF then:
+    # sum_weight = 1/num_trees
+    # weight[i] = 1
+    # If the model is XGB:
+    # sum_weight = 1
+    # weight[i] = learning_rate if i != 0 else 1
     def predict(self, x_test : ndarray):
         if len(np.shape(x_test)) == 1:
             np.reshape(x_test, np.shape(x_test)[0])
@@ -235,7 +265,7 @@ class Regressor:
         # If the trees are 8 and the cpu are 4 then evals contains (4,len(x_test)) 
         # Each row is composed by the sum of values per CPU, so the np.sums sum these predictions 
         # for each sample while the final division outputs the mean per sample.
-        return np.sum(self.pool.starmap(Regressor.compute_score, args), axis = 0) / len(self.trees)
+        return np.sum(self.pool.starmap(Regressor.compute_score, args), axis = 0) * self.sum_weight
         
     def evaluate_test_dataset(self):
         outcomes = np.sum(self.pool.starmap(Regressor.compute_score, self.args), axis = 0)
@@ -271,6 +301,7 @@ class Regressor:
         return RegressorTree(tree_name, tree, self.model_features, self.model_classes, self.use_espresso)
     
     def get_tree_nodes_from_pmml_recursively(self, element_tree_node, parent_tree_node, id=0):
+        print(f"Invoked for node {id}")
         children = element_tree_node.findall("pmml:Node", self.__namespaces)
         assert len(children) == 2, f"Only binary trees are supported. Aborting. {children}"
         for child in children:
@@ -299,21 +330,34 @@ class Regressor:
             else:
                 print(f"Expression: {boolean_expression}")
                 print(f"Score {child.attrib['score']}")
+                if "id" in child.attrib:
+                    print(f"ID in child, Continuing with node {child.attrib['id']}")
+                else :
+                    print(f"ID not in child, Continuing with node {id}")
+
                 Node(f"Node_{child.attrib['id']}" if "id" in child.attrib else f"Node_{id}", parent = parent_tree_node, score = child.attrib['score'], boolean_expression = boolean_expression)
                 
     # def get_tree_model_from_joblib(self, clf : DecisionTreeClassifier):
+    #     # Initializza il numero di nodi
     #     n_nodes = clf.tree_.node_count
+    #     # Prendi il figlio di sinistra.
     #     children_left = clf.tree_.children_left
+    #     # prendi il figlio di destra.
     #     children_right = clf.tree_.children_right
+    #     # Prendi la feature.
     #     feature = clf.tree_.feature
+    #     # Prendi la threshold.
     #     threshold = clf.tree_.threshold
+    #     # Prendi il valore dell'albero.
     #     values = clf.tree_.value
     #     node_depth = np.zeros(shape=n_nodes, dtype=np.int64)
     #     is_leaves = np.zeros(shape=n_nodes, dtype=bool)
-        
+    #     # Prendi il primo nodo ((fittizio)
     #     root_node = Node("Node_0", feature="", operator="", threshold_value="", boolean_expression="")
     #     stack = [(0, 0, root_node)]  # start with the root node id (0) and its depth (0)
+    #     # Finchè ci sono nodi sullo stack
     #     while len(stack) > 0:
+    #         # Prendi il nodo, il suo id, la sua profondità, e l'oggetto nodo.
     #         # `pop` ensures each node is only visited once
     #         current_node_id, depth, current_node = stack.pop()
     #         node_depth[current_node_id] = depth
@@ -338,3 +382,128 @@ class Regressor:
     #             is_leaves[current_node_id] = True
     #     return root_node
                 
+    def booster_joblib_parser(self, joblib_file_name):
+        print("Ciao")
+        xgb_regressor   = joblib.load(joblib_file_name)
+        booster = xgb_regressor.get_booster()
+
+        booster_dump    = xgb_regressor.get_booster().get_dump()
+        for i, tree in enumerate(booster_dump):
+            print(f"Albero {i+1}:\n{tree}\n")
+            tree_in_lines = [line.strip('\t') for line in tree.split('\n') if line.strip('\t')]
+            print(f"Albero {i+1}:\n{tree_in_lines}\n")
+            self.booster_tree_joblib_parser(tree_in_lines)
+            exit(1)
+
+    # Taken a line such as User '0:[f249<-0.642892063] yes=1,no=2,missing=1', this function returns 
+    # the integer before :, i.e. the node id.
+    @staticmethod
+    def booster_get_node_id(node_line):
+        match = re.search(r"(\d+):", node_line)
+        if match:
+            return int(match.group(1))  
+        else:
+            assert 1 == 0, "Invalid xgb string"
+    
+    # Given a line of a boosting tree returns true if the associated node is a leaf.
+    @staticmethod 
+    def booster_is_leaf(node_line):
+        return "leaf" in node_line
+    
+    # In the set of node lines in a node returns the index of a node having a specific id (req_id) 
+    @staticmethod
+    def booster_find_node(node_lines, req_id):
+        for index, line in enumerate(node_lines):
+            if Regressor.booster_get_node_id(line) == req_id:
+                return index
+            
+    # Parse a joblib xgboost tree using its dump.
+    def booster_tree_joblib_parser(self, nodes):
+        first_non_leaf  = nodes[0]
+        # The first id
+        base_start = 0
+        # The level used during the exploration
+        current_level   = 1
+        # The number of leaves in the precedent level.
+        leaves_precedent_level = 0
+        # The bitmask of leaves of the previous level.
+        leaves_bitmask = [(0,False)]
+        while base_start < len(nodes) - 1: # BS starts from 0, so, if the ub is 13 then base_start will reach 12
+            print(f"BS {base_start} leaves {len(nodes)}")
+            base_start, current_level, leaves_precedent_level, leaves_bitmask = Regressor.explore_level(nodes, current_level = current_level, base_start = base_start, leaves_precedent = leaves_precedent_level, leaves_mask = leaves_bitmask)
+        exit(1)
+
+    @staticmethod
+    def booster_extract_feature_thd(node_line):
+        # pattern = r'(.+)<(-?\d+\.\d+)'
+        pattern = r'\[(.+)<(-?\d+\.\d+)\]'
+        match = re.search(pattern, node_line)
+        if match:
+            feature = match.group(1)
+            thd = float(match.group(2))
+            return feature, thd 
+        else:
+            assert 1 == 0, " Error during parsing"
+    
+    @staticmethod
+    def booster_extract_score(leaf_line):
+        parts = leaf_line.split('=')
+        score = parts[1].strip()
+        return float(score)
+    
+    @staticmethod
+    def explore_level(nodes, current_level, base_start, leaves_precedent, leaves_mask):
+        # Each leaf of the precedent level do not produce two children, so, to the value of nodes
+        # the "non-produced" leaves must be subtracted
+        nodes_per_level = pow(2,current_level) - leaves_precedent*2
+        lines_in_level = {}
+        # Maximum number of while iterations
+        ub = base_start + nodes_per_level
+        # New mask for leaves node in this level
+        new_leaves_mask = []
+        # Counter of leaves in this level.
+        new_leaves_predecent = 0
+        # Available slots for children father association, 
+        # each children node is associated with the first available father e.g. the first node
+        # having 2 available slots.
+
+        father_slots = [2 if l[1] == False else 0 for l in leaves_mask]
+        # Identify all the nodes and all the leaves
+        while base_start < ub:
+            # First update the base start to the next node
+            base_start += 1
+            idx = Regressor.booster_find_node(node_lines = nodes, req_id = base_start)
+            # Save the line 
+            lines_in_level.update({Regressor.booster_get_node_id(nodes[idx]) : nodes[idx]})
+            # Now update the leaves mask
+            is_leaf = Regressor.booster_is_leaf(nodes[idx])
+            # Increase the counter of leaves
+            if is_leaf:
+                new_leaves_predecent += 1
+            # Generate the new mask.
+            new_leaves_mask.append((Regressor.booster_get_node_id(nodes[idx]) , is_leaf))
+        
+        print(lines_in_level)
+        # To make the association with a father node each leaf has a counter 
+        def get_father_node(f_slots, l_mask):
+            for idx in range(0,len(f_slots)):
+                if f_slots[idx] > 0:
+                    f_slots[idx] = f_slots[idx] - 1
+                    return "Node_" + str(l_mask[idx][0])
+
+        # Now extract the features
+        # The leaves in level are already ordered in new_leaves_mask, so the first 
+        # non-leaf in leaves_mask available is their father.
+        for n in new_leaves_mask:
+            father = get_father_node(father_slots, leaves_mask)
+            # If the new node is a leaf.
+            if n[1] == True:
+                score = Regressor.booster_extract_score(lines_in_level[n[0]])
+                print(f"Node {n[0]} is a leaf with score {score} with father {father}")
+            else:
+                feature, thd = Regressor.booster_extract_feature_thd(lines_in_level[n[0]])
+                print(f"Node {n[0]} is NOT a leaf with feature {feature} and Thd {thd} with father {father}")
+        # Return, the new base start, the next_leve, the total counter of leaves in this level
+        # and the leaves mask.
+        return base_start, current_level + 1, new_leaves_predecent, new_leaves_mask
+    

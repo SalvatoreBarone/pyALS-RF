@@ -24,22 +24,43 @@ if __name__ == "__main__":
     # # for pred, real in zip(s, outcomes):
     # #     print(f" Pred {pred} and real {real}")
 
-    # Test regressor
-    pmml_path = "../../shared/pmml_models/C-1.pmml"
+    #    Test regressor
+    # pmml_path = "../../shared/pmml_models/C-1.pmml"
+    # test_ds_pth = "../../shared/lags/C-1.csv"
+    # df = pd.read_csv(test_ds_pth, sep =",")
+    # outcomes = df["Outcome"].to_numpy()
+    # df.drop("Outcome", axis=1, inplace=True)
+    # test_ds = df.values
+    # regressor = Regressor(ncpus = 4, use_espresso=False)
+    # regressor.parse(model_source = pmml_path)
+    # out_values = []
+    # for x in test_ds:
+    #     trees_outs = []
+    #     for t in regressor.trees:
+    #         trees_outs.append(t.visit(x))
+    #     out_values.append(np.mean(np.array(trees_outs)))  
+    # assert len(outcomes) == len(out_values) 
+    # preds = regressor.predict(test_ds)
+    # for ind, o in enumerate(out_values):
+    #     print(f"idx {ind} Out {o} Out pred {preds[ind]}")
+
+    # # Test XGB
+    #pmml_path = "../../shared/NASA_PMML_XGB/C-1.pmml"
+    job_path = "../../shared/NASA_JOB/C-1.joblib"
     test_ds_pth = "../../shared/lags/C-1.csv"
     df = pd.read_csv(test_ds_pth, sep =",")
     outcomes = df["Outcome"].to_numpy()
     df.drop("Outcome", axis=1, inplace=True)
     test_ds = df.values
-    regressor = Regressor(ncpus = 4, use_espresso=False)
-    regressor.parse(model_source = pmml_path)
-    out_values = []
-    for x in test_ds:
-        trees_outs = []
-        for t in regressor.trees:
-            trees_outs.append(t.visit(x))
-        out_values.append(np.mean(np.array(trees_outs)))  
-    assert len(outcomes) == len(out_values) 
-    preds = regressor.predict(test_ds)
-    for ind, o in enumerate(out_values):
-        print(f"idx {ind} Out {o} Out pred {preds[ind]}")
+    regressor = Regressor(ncpus = 4, use_espresso=False, learning_rate=0.2)
+    regressor.parse(model_source = job_path)
+    # out_values = []
+    # for x in test_ds:
+    #     trees_outs = []
+    #     for t in regressor.trees:
+    #         trees_outs.append(t.visit(x))
+    #     out_values.append(np.mean(np.array(trees_outs)))  
+    # assert len(outcomes) == len(out_values) 
+    # preds = regressor.predict(test_ds)
+    # for ind, o in enumerate(out_values):
+    #     print(f"idx {ind} Out {o} Out pred {preds[ind]}")
