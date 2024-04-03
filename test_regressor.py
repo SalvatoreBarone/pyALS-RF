@@ -53,7 +53,8 @@ if __name__ == "__main__":
     df.drop("Outcome", axis=1, inplace=True)
     test_ds = df.values
     regressor = Regressor(ncpus = 4, use_espresso=False, learning_rate=0.2)
-    regressor.parse(model_source = job_path)
+    model_features = [{"name" : f"f{i}", "type":"double"}  for i in range(0,250)]
+    regressor.parse(model_source = job_path, dataset_description = model_features)
     # out_values = []
     # for x in test_ds:
     #     trees_outs = []

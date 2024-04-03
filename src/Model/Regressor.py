@@ -63,10 +63,11 @@ class Regressor:
             self.pmml_parser(model_source, dataset_description)
         elif model_source.endswith(".joblib"):
             if self.learning_rate == None:
-                print(self.learning_rate)
                 assert 1 == 0, "invalid parser format"
             else:
-                self.booster_joblib_parser(model_source)
+                # For xgboost classifier the dataset description can be used as model feature, a list
+                # with [{"name", "value"}]
+                self.booster_joblib_parser(model_source, dataset_description)
             # self.joblib_parser(model_source, dataset_description)
         
         # The weight of the first model is always 1.
@@ -112,8 +113,6 @@ class Regressor:
                 tree_model_root = segment.find("pmml:TreeModel", self.__namespaces).find("pmml:Node", self.__namespaces)
                 tree = self.get_tree_model_from_pmml(str(tree_id), tree_model_root)
                 print(tree.dump())
-                exit(1)
-                # print(f"Tree {tree}")
                 self.trees.append(tree)
                 logger.debug(f"Done parsing tree {tree_id}")
         else:
@@ -381,22 +380,33 @@ class Regressor:
     #             current_node.score = self.model_classes[np.argmax(values[current_node_id])]
     #             is_leaves[current_node_id] = True
     #     return root_node
-                
-    def booster_joblib_parser(self, joblib_file_name):
-        print("Ciao")
-        xgb_regressor   = joblib.load(joblib_file_name)
+    
+    # This function takes as input the joblib file of a xgb regressors
+    # and parses the model obtaining the pyALS-regressor        
+    def booster_joblib_parser(self, joblib_file_name, model_features):
+        # Load the model
+        xgb_regressor = joblib.load(joblib_file_name)
+        # Obtain the booster
         booster = xgb_regressor.get_booster()
-
-        booster_dump    = xgb_regressor.get_booster().get_dump()
+        # Obtain the booster and its "string-dump"
+        booster_dump = booster.get_dump()
+        # Obtain the model features
+        #self.model_features = [{"name" : f"f{i}", "type":"double"}  for i in range(0,250)]
+        self.model_features = model_features
+        # For each tree
         for i, tree in enumerate(booster_dump):
             print(f"Albero {i+1}:\n{tree}\n")
+            # Obtain a list of lines per tree
             tree_in_lines = [line.strip('\t') for line in tree.split('\n') if line.strip('\t')]
             print(f"Albero {i+1}:\n{tree_in_lines}\n")
-            self.booster_tree_joblib_parser(tree_in_lines)
-            exit(1)
-
+            # Get the tree from the joblib
+            root_node = self.booster_tree_joblib_parser(tree_in_lines)
+            tree = RegressorTree(name = f"Tree_{i}", root_node = root_node, features = self.model_features, classes = self.model_classes, use_espresso=self.use_espresso)
+            tree.dump()
+            self.trees.append(tree)
+        
     # Taken a line such as User '0:[f249<-0.642892063] yes=1,no=2,missing=1', this function returns 
-    # the integer before :, i.e. the node id.
+    # the integer before :, i.e. the node id, which is in this case 0.
     @staticmethod
     def booster_get_node_id(node_line):
         match = re.search(r"(\d+):", node_line)
@@ -406,11 +416,14 @@ class Regressor:
             assert 1 == 0, "Invalid xgb string"
     
     # Given a line of a boosting tree returns true if the associated node is a leaf.
+    # since the string of a leaf contains leaf={leaf_value} then the function simply
+    # searchs for string in the line
     @staticmethod 
     def booster_is_leaf(node_line):
         return "leaf" in node_line
     
-    # In the set of node lines in a node returns the index of a node having a specific id (req_id) 
+    # Each node in the tree is rappresented as a string ( the entire tree) is a list of string (node_lines).
+    # this function returns the index on the list where the node_id is equal to req_id
     @staticmethod
     def booster_find_node(node_lines, req_id):
         for index, line in enumerate(node_lines):
@@ -418,6 +431,10 @@ class Regressor:
                 return index
             
     # Parse a joblib xgboost tree using its dump.
+    # nodes is a list of string, where each string is a tree node.
+    # The function parses the tree by tree levels:
+    # while explored_nodes < len(nodes):
+    #   node = explore_node_by_level
     def booster_tree_joblib_parser(self, nodes):
         first_non_leaf  = nodes[0]
         # The first id
@@ -426,16 +443,29 @@ class Regressor:
         current_level   = 1
         # The number of leaves in the precedent level.
         leaves_precedent_level = 0
-        # The bitmask of leaves of the previous level.
-        leaves_bitmask = [(0,False)]
+        feature, thd = Regressor.booster_extract_feature_thd(nodes[0])
+        # Initialize the first node, operator is always lessThan.
+        tree = Node(f"Node_{0}", feature = feature, operator="lessThan", threshold_value=thd, boolean_expression="")
+        # The bitmask of leaves of the previous level
+        # the leaves bitmask contains : 
+        # The identifier of a node, True if the node is a leaf, the pointer to the node.
+        leaves_bitmask = [(0, False, tree)]
         while base_start < len(nodes) - 1: # BS starts from 0, so, if the ub is 13 then base_start will reach 12
             print(f"BS {base_start} leaves {len(nodes)}")
-            base_start, current_level, leaves_precedent_level, leaves_bitmask = Regressor.explore_level(nodes, current_level = current_level, base_start = base_start, leaves_precedent = leaves_precedent_level, leaves_mask = leaves_bitmask)
-        exit(1)
+            base_start, current_level, leaves_precedent_level, leaves_bitmask = Regressor.explore_level(nodes, 
+                                                                                                        current_level = current_level,
+                                                                                                        base_start = base_start, 
+                                                                                                        leaves_precedent = leaves_precedent_level, 
+                                                                                                        leaves_mask = leaves_bitmask)
+            
+        
+        # Return the pointer to the root node.
+        return tree
 
+    # Given the line of a node, which is not a leaf, extract the 
+    # feature and the thd.
     @staticmethod
     def booster_extract_feature_thd(node_line):
-        # pattern = r'(.+)<(-?\d+\.\d+)'
         pattern = r'\[(.+)<(-?\d+\.\d+)\]'
         match = re.search(pattern, node_line)
         if match:
@@ -445,17 +475,42 @@ class Regressor:
         else:
             assert 1 == 0, " Error during parsing"
     
+    # Given a leaf node, extract the value of the leaf that comes after
+    # the value leaf={leaf_score}.
     @staticmethod
     def booster_extract_score(leaf_line):
         parts = leaf_line.split('=')
         score = parts[1].strip()
         return float(score)
     
+    # Explore a specific level of the tree
+    # nodes:            list of strings each one rappresent a specific node.
+    # current_level:    level being explored.
+    # leaves_precedent: number of leaves in the precedent explored level.
+    # leaves mask:      Mask of leaves.
     @staticmethod
     def explore_level(nodes, current_level, base_start, leaves_precedent, leaves_mask):
-        # Each leaf of the precedent level do not produce two children, so, to the value of nodes
-        # the "non-produced" leaves must be subtracted
-        nodes_per_level = pow(2,current_level) - leaves_precedent*2
+
+        # To make the association with a father node each leaf has a counter 
+        def get_father_node(f_slots, l_mask):
+            for idx in range(0,len(f_slots)):
+                # The Node in the slot is the father and the leaf is a 
+                # left children
+                if f_slots[idx] == 2:
+                    f_slots[idx] = f_slots[idx] - 1
+                    return l_mask[idx][2], True
+                # Otherwise it is a right children
+                elif f_slots[idx] == 1:
+                    f_slots[idx] = f_slots[idx] - 1
+                    return l_mask[idx][2], False
+
+        # The number of nodes in a level can be seen as 2 * number of non leafs of previous level
+        nodes_per_level = 0
+        for idx in range(0,len(leaves_mask)):
+            if leaves_mask[idx][1] == False:
+                nodes_per_level += 1
+        nodes_per_level = 2 * nodes_per_level
+        # lines in level is the numebr of node lines in the specific regressor.
         lines_in_level = {}
         # Maximum number of while iterations
         ub = base_start + nodes_per_level
@@ -466,44 +521,50 @@ class Regressor:
         # Available slots for children father association, 
         # each children node is associated with the first available father e.g. the first node
         # having 2 available slots.
-
         father_slots = [2 if l[1] == False else 0 for l in leaves_mask]
         # Identify all the nodes and all the leaves
         while base_start < ub:
             # First update the base start to the next node
             base_start += 1
+            print(f"BS {base_start} UB {ub}")
+            # Identify the node 
             idx = Regressor.booster_find_node(node_lines = nodes, req_id = base_start)
             # Save the line 
             lines_in_level.update({Regressor.booster_get_node_id(nodes[idx]) : nodes[idx]})
-            # Now update the leaves mask
-            is_leaf = Regressor.booster_is_leaf(nodes[idx])
-            # Increase the counter of leaves
-            if is_leaf:
-                new_leaves_predecent += 1
-            # Generate the new mask.
-            new_leaves_mask.append((Regressor.booster_get_node_id(nodes[idx]) , is_leaf))
-        
-        print(lines_in_level)
-        # To make the association with a father node each leaf has a counter 
-        def get_father_node(f_slots, l_mask):
-            for idx in range(0,len(f_slots)):
-                if f_slots[idx] > 0:
-                    f_slots[idx] = f_slots[idx] - 1
-                    return "Node_" + str(l_mask[idx][0])
-
-        # Now extract the features
-        # The leaves in level are already ordered in new_leaves_mask, so the first 
-        # non-leaf in leaves_mask available is their father.
-        for n in new_leaves_mask:
-            father = get_father_node(father_slots, leaves_mask)
-            # If the new node is a leaf.
-            if n[1] == True:
-                score = Regressor.booster_extract_score(lines_in_level[n[0]])
-                print(f"Node {n[0]} is a leaf with score {score} with father {father}")
+            # Obtain the father node:
+            father_node, is_left = get_father_node(father_slots, leaves_mask) 
+            # Left is true in xgb
+            if is_left: 
+                if father_node.boolean_expression == "":
+                    boolean_expression = father_node.name
+                else:
+                    boolean_expression = father_node.boolean_expression + " and " + father_node.name
             else:
-                feature, thd = Regressor.booster_extract_feature_thd(lines_in_level[n[0]])
-                print(f"Node {n[0]} is NOT a leaf with feature {feature} and Thd {thd} with father {father}")
-        # Return, the new base start, the next_leve, the total counter of leaves in this level
-        # and the leaves mask.
+                if father_node.boolean_expression == "":
+                    boolean_expression = "not " + father_node.name
+                else:
+                    boolean_expression = father_node.boolean_expression + " and not " + father_node.name
+
+            # Now update the leaves mask
+            is_leaf = Regressor.booster_is_leaf(nodes[idx])    
+            if not is_leaf:
+                # Extract the feature and thd.
+                feature, thd = Regressor.booster_extract_feature_thd(nodes[idx])
+                # Generate the node.
+                tree = Node(f"Node_{Regressor.booster_get_node_id(nodes[idx])}", feature = feature, parent = father_node, operator = "lessThan", threshold_value = thd, boolean_expression=boolean_expression)
+                print(f"Node: {tree.name} Feature: {tree.feature} Thd: {tree.threshold_value} Boolean {tree.boolean_expression}")
+                # Generate the new mask.
+                new_leaves_mask.append((Regressor.booster_get_node_id(nodes[idx]) , is_leaf, tree))
+            else:                
+                # Increase the counter of leaves
+                new_leaves_predecent += 1
+                # Extract the score
+                score = Regressor.booster_extract_score(nodes[idx])
+                # Generate the node.
+                tree = Node(f"Node_{Regressor.booster_get_node_id(nodes[idx])}", feature = "", operator = "", parent = father_node, threshold_value = "", boolean_expression = boolean_expression, score = score)
+                print(f"Leaf: {tree.name} Score: {tree.score} Boolean {tree.boolean_expression}") 
+                # Generate the new mask.
+                new_leaves_mask.append((Regressor.booster_get_node_id(nodes[idx]) , is_leaf, tree))
+            
         return base_start, current_level + 1, new_leaves_predecent, new_leaves_mask
     
