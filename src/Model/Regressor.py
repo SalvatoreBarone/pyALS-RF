@@ -71,6 +71,7 @@ class Regressor:
             # self.joblib_parser(model_source, dataset_description)
         
         # The weight of the first model is always 1.
+        tree_weight_map = [(self.trees[0], 1)]
         self.ncpus = min(self.ncpus, len(self.trees))
         # If the learning rate is none then the model is a rf and 
         # the sum weight is 1/ num_tree 
@@ -85,7 +86,7 @@ class Regressor:
             self.sum_weight = 1
             # Generate a mapping among each tree and its weight
             tree_weight_map     = [(self.trees[idx], self.learning_rate) for idx in range(1,len(self.trees))]
-        self.p_tree = list_partitioning(tree_weight_map, self.ncpus)
+        self.p_tree = list_partitioning(self.trees, self.ncpus)
         self.args = [[t, None] for t in self.p_tree]
 
     def pmml_parser(self, pmml_file_name, dataset_description = None):
@@ -112,7 +113,7 @@ class Regressor:
                 logger.debug(f"Parsing tree {tree_id}... ")
                 tree_model_root = segment.find("pmml:TreeModel", self.__namespaces).find("pmml:Node", self.__namespaces)
                 tree = self.get_tree_model_from_pmml(str(tree_id), tree_model_root)
-                print(tree.dump())
+                #print(tree.dump())
                 self.trees.append(tree)
                 logger.debug(f"Done parsing tree {tree_id}")
         else:
@@ -240,12 +241,12 @@ class Regressor:
         return r[0] == r[1], r[0]
     
     @staticmethod
-    def compute_score(trees : list[RegressorTree], x_test : ndarray):
+    def compute_score(trees : list, x_test : ndarray):
         assert len(np.shape(x_test)) == 2
         # Return the sum of predictions of the assigned trees for each sample in x_test
         # Each prediction is multiplied by the weight of the specific tree, associated by the struct 
         # p_trees
-        return [np.sum(t[1] *t[0].visit(x) for t in trees) for x in x_test ]
+        return [np.sum([t.visit(x) for t in trees]) for x in x_test ]
     
     # The prediction is :
     # sum_weight * (prediction_tree[0] * tree[0].weight + prediction_tree[1] * tree[1].weight + ..)
@@ -265,7 +266,8 @@ class Regressor:
         # Each row is composed by the sum of values per CPU, so the np.sums sum these predictions 
         # for each sample while the final division outputs the mean per sample.
         return np.sum(self.pool.starmap(Regressor.compute_score, args), axis = 0) * self.sum_weight
-        
+
+
     def evaluate_test_dataset(self):
         outcomes = np.sum(self.pool.starmap(Regressor.compute_score, self.args), axis = 0)
         return np.sum(tuple( np.argmax(o) == y[0] and not Regressor.check_draw(o)[0] for o, y in zip(outcomes, self.y_test))) / len(self.y_test) * 100
@@ -394,6 +396,7 @@ class Regressor:
         #self.model_features = [{"name" : f"f{i}", "type":"double"}  for i in range(0,250)]
         self.model_features = model_features
         # For each tree
+        weight = 1 
         for i, tree in enumerate(booster_dump):
             print(f"Albero {i+1}:\n{tree}\n")
             # Obtain a list of lines per tree
@@ -401,9 +404,11 @@ class Regressor:
             print(f"Albero {i+1}:\n{tree_in_lines}\n")
             # Get the tree from the joblib
             root_node = self.booster_tree_joblib_parser(tree_in_lines)
-            tree = RegressorTree(name = f"Tree_{i}", root_node = root_node, features = self.model_features, classes = self.model_classes, use_espresso=self.use_espresso)
-            tree.dump()
+            tree = RegressorTree(name = f"Tree_{i}", root_node = root_node, features = self.model_features, classes = self.model_classes, use_espresso = self.use_espresso, weight = weight)
+            #tree.dump()
             self.trees.append(tree)
+            weight = self.learning_rate
+            #exit(1)
         
     # Taken a line such as User '0:[f249<-0.642892063] yes=1,no=2,missing=1', this function returns 
     # the integer before :, i.e. the node id, which is in this case 0.
