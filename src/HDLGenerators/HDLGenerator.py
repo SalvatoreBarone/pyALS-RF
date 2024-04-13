@@ -306,7 +306,7 @@ class HDLGenerator:
         mapper = LutMapper()
         nDBs = sum(len(HDLGenerator.get_dbs(tree)) for tree in classifier.trees)
         nLuts_dbs = HDLGenerator.lut_x_db * nDBs
-        nFFs_dbs = HDLGenerator.lut_x_db * nDBs
+        nFFs_dbs = HDLGenerator.ffs_x_db * nDBs
         nLUTs_bns = 0
         
         # for tree in classifier.trees:
