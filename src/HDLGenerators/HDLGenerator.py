@@ -222,8 +222,7 @@ class HDLGenerator:
                 else:
                     logger.debug(f"\tClass {c} is trivially implemented as using {bn['hdl_expression']}")
         return nLuts_dbs, nLUTs_bns, nFFs_dbs
-    
-
+       
     def implement_decision_boxes(self, tree : DecisionTree, boxes : list,  destination : str):
         logger = logging.getLogger("pyALS-RF")
         feature_names = set(b["box"].feature_name for b in boxes )
@@ -298,3 +297,47 @@ class HDLGenerator:
         if remainder == 0:
             return numToRound
         return numToRound + multiple - remainder
+
+    # METHODS used for testing regressors, to delete.   
+    # Used only for testing, to delete
+    @staticmethod
+    def get_resource_usage(classifier: Classifier):
+        logger = logging.getLogger("pyALS-RF")
+        mapper = LutMapper()
+        nDBs = sum(len(HDLGenerator.get_dbs(tree)) for tree in classifier.trees)
+        nLuts_dbs = HDLGenerator.lut_x_db * nDBs
+        nFFs_dbs = HDLGenerator.lut_x_db * nDBs
+        nLUTs_bns = 0
+        
+        # for tree in classifier.trees:
+        #     logger.debug(f"Mapping tree {tree.name}")
+        #     for c, bn in zip(classifier.classes_name, tree.boolean_networks):
+        #         if bn["minterms"]:
+        #             logger.debug(f"\tProcessing {bn['minterms']} for class {c}")
+        #             print(f"\tProcessing {bn['minterms']} for class {c}")
+        #             nLUTs_bns += len(mapper.map(bn["minterms"], c))
+        #         else:
+        #             print(f"\tClass {c} is trivially implemented as using {bn['hdl_expression']}")
+        #             logger.debug(f"\tClass {c} is trivially implemented as using {bn['hdl_expression']}")
+        for tree in classifier.trees:
+            for bn in tree.boolean_networks:
+                # if bn["minterms"]:
+                logger.debug(f"\tProcessing {bn['sop']} for class {bn['class']}")
+                nLUTs_bns += len(mapper.map(bn["sop"], bn['class']))
+                # else:
+                #     print(f"\tClass {bn['class']} is trivially implemented as using {bn['hdl_expression']}")
+                #     logger.debug(f"\tClass {bn['class']} is trivially implemented as using {bn['hdl_expression']}")
+        return nLuts_dbs, nLUTs_bns, nFFs_dbs
+    
+    @staticmethod
+    def get_dbs( tree: DecisionTree):
+        logger = logging.getLogger("pyALS-RF")
+        used_db_names = set()
+        for a in tree.boolean_networks:
+            used_db_names.update(set(a['hdl_expression'].replace('not ', '').replace(' and ', ' '). replace('or', '').replace(')', '').replace('(', '').split(" ")))
+        used_db = [ b for b in tree.decision_boxes if b["name"] in used_db_names ]
+        if len(used_db) != len(tree.decision_boxes):
+            logger.debug(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to optimization, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources.")
+            logger.debug(f"Hereafter the DBs: {[ b['name'] for b in used_db]}")
+        return used_db
+ 

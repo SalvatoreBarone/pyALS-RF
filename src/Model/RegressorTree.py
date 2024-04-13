@@ -41,7 +41,7 @@ class RegressorTree(DecisionTree):
         for node in PreOrderIter(root_node):
             # If the node is a leaf
             if not any(node.children):
-                # Obtain its class
+                # Obtain its class(regression value.)
                 self.model_classes.append(node.score)
 
     """ The visit function needs to be different in order to return the value of a class
