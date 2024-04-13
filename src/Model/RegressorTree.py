@@ -10,7 +10,7 @@ class RegressorTree(DecisionTree):
         For this reason this function firstly identify the classes by saving the score of each leaf and
         then continues with the parsing.
     """
-    def __init__(self, name = None, root_node = None, features = None, classes = None, use_espresso : bool = False, weight : int = 1):
+    def __init__(self, name = None, root_node = None, features = None, classes = None, use_espresso : bool = False):
         self.name = name
         self.model_features = features
         self.attrbutes_name = [f["name"] for f in self.model_features]
@@ -26,7 +26,6 @@ class RegressorTree(DecisionTree):
         self.assertions_catalog_entries = None
         self.current_als_configuration = []
         self.exact_box_output = None
-        self.weight = weight
         if root_node:
             self.regressor_parse_classes(root_node)
             self.parse(root_node, use_espresso)
@@ -55,7 +54,7 @@ class RegressorTree(DecisionTree):
             # check the parse function.
             for class_idx, a in enumerate(self.boolean_networks):
                 if eval(a["sop"], boxes_output):
-                    return float(self.model_classes[class_idx]) * self.weight
+                    return float(self.model_classes[class_idx]) 
         exit()
         lut_io_info = {}
         output = self.assertions_graph.evaluate(boxes_output, lut_io_info, self.current_als_configuration)[0]

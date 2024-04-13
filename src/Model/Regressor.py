@@ -41,12 +41,14 @@ class Regressor:
         self.use_espresso = use_espresso
         self.als_conf = None
         self.pool = Pool(self.ncpus)
-        self.learning_rate = learning_rate
-        # Multiplicative constant to mult to the combination of all tree outputs.
-        # For RF is equal to 1 / (number of trees) and for xgb is eq to 1
-        # The other costant in per_tree_weight that 
-        self.sum_weight = 0
-        
+        # In case the model is XGB then apply the base_score of xgb and save the learning rate
+        if learning_rate != None:
+            self.base_score = 0.5
+            self.learning_rate = learning_rate
+        # Otherwise apply the simple mean of predictions
+        else:
+            self.base_score = 0
+            self.learning_rate = 1
     def __del__(self):
         self.pool.close()
     
@@ -69,23 +71,6 @@ class Regressor:
                 # with [{"name", "value"}]
                 self.booster_joblib_parser(model_source, dataset_description)
             # self.joblib_parser(model_source, dataset_description)
-        
-        # The weight of the first model is always 1.
-        tree_weight_map = [(self.trees[0], 1)]
-        self.ncpus = min(self.ncpus, len(self.trees))
-        # If the learning rate is none then the model is a rf and 
-        # the sum weight is 1/ num_tree 
-        # and the tree weight is 1.
-        if self.learning_rate == None:
-            self.sum_weight     = 1/len(self.trees)
-            # Generate a mapping among each tree and its weight
-            tree_weight_map     = [(self.trees[idx], 1) for idx in range(1,len(self.trees))]
-        # Otherwise it is an XGB model so the sum weight is 1 and the tree weight
-        # is equal to the learning rate.
-        else:
-            self.sum_weight = 1
-            # Generate a mapping among each tree and its weight
-            tree_weight_map     = [(self.trees[idx], self.learning_rate) for idx in range(1,len(self.trees))]
         self.p_tree = list_partitioning(self.trees, self.ncpus)
         self.args = [[t, None] for t in self.p_tree]
 
@@ -248,25 +233,20 @@ class Regressor:
         # p_trees
         return [np.sum([t.visit(x) for t in trees]) for x in x_test ]
     
-    # The prediction is :
-    # sum_weight * (prediction_tree[0] * tree[0].weight + prediction_tree[1] * tree[1].weight + ..)
-    # If the model is a RF then:
-    # sum_weight = 1/num_trees
-    # weight[i] = 1
-    # If the model is XGB:
-    # sum_weight = 1
-    # weight[i] = learning_rate if i != 0 else 1
     def predict(self, x_test : ndarray):
         if len(np.shape(x_test)) == 1:
             np.reshape(x_test, np.shape(x_test)[0])
         # The args are the tree per cpu and the totality of samples.
         args = [[t, x_test] for t in self.p_tree]
-        # evals contains the sum of predictions for each tree in each cpu.
-        # If the trees are 8 and the cpu are 4 then evals contains (4,len(x_test)) 
-        # Each row is composed by the sum of values per CPU, so the np.sums sum these predictions 
-        # for each sample while the final division outputs the mean per sample.
-        return np.sum(self.pool.starmap(Regressor.compute_score, args), axis = 0) * self.sum_weight
-
+        tree_sum = np.sum(self.pool.starmap(Regressor.compute_score, args), axis = 0)
+        # If xgb, apply xgb ret formula
+        if self.base_score > 0:
+            # Learning rate is already considered in the leaves of trees.
+            return tree_sum  + self.base_score
+        # Otherwise, simply return the mean
+        else:
+            return tree_sum/len(self.trees)
+        
 
     def evaluate_test_dataset(self):
         outcomes = np.sum(self.pool.starmap(Regressor.compute_score, self.args), axis = 0)
@@ -396,20 +376,18 @@ class Regressor:
         #self.model_features = [{"name" : f"f{i}", "type":"double"}  for i in range(0,250)]
         self.model_features = model_features
         # For each tree
-        weight = 1 
         for i, tree in enumerate(booster_dump):
-            print(f"Albero {i+1}:\n{tree}\n")
+
             # Obtain a list of lines per tree
             tree_in_lines = [line.strip('\t') for line in tree.split('\n') if line.strip('\t')]
-            print(f"Albero {i+1}:\n{tree_in_lines}\n")
+            print(f"Tree {i}:\n{tree_in_lines}\n")
+            #exit(1)
             # Get the tree from the joblib
             root_node = self.booster_tree_joblib_parser(tree_in_lines)
-            tree = RegressorTree(name = f"Tree_{i}", root_node = root_node, features = self.model_features, classes = self.model_classes, use_espresso = self.use_espresso, weight = weight)
+            tree = RegressorTree(name = f"Tree_{i}", root_node = root_node, features = self.model_features, classes = self.model_classes, use_espresso = self.use_espresso)
             #tree.dump()
             self.trees.append(tree)
-            weight = self.learning_rate
             #exit(1)
-        
     # Taken a line such as User '0:[f249<-0.642892063] yes=1,no=2,missing=1', this function returns 
     # the integer before :, i.e. the node id, which is in this case 0.
     @staticmethod

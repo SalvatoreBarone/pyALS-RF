@@ -26,7 +26,7 @@ if __name__ == "__main__":
     # df = pd.read_csv(test_ds_pth, sep =";")
     # outcomes = df["Outcome"].to_numpy()
     # df.drop("Outcome", axis=1, inplace=True)
-    # test_ds = df.values
+    # test_ds = df.values-+
     # classifier = Classifier(ncpus = 1, use_espresso = False)
     # classifier.parse(model_source = pmml_path)
     # # print(f"Shape {np.shape(test_ds)} Len {len(np.shape(test_ds))}")
@@ -46,25 +46,24 @@ if __name__ == "__main__":
     test_ds_pth = "../../shared/lags/C-1.csv"
     rf_original_preds_pth = "../../shared/C-1-RF.txt"
     with open(rf_original_preds_pth, 'r') as file:
-            lines = file.read()
-            rf_original_preds = [float(line) for line in lines.split()]
+           lines = file.read()
+           rf_original_preds = [float(line) for line in lines.split()]
     df = pd.read_csv(test_ds_pth, sep =",")
     outcomes = df["Outcome"].to_numpy()
     df.drop("Outcome", axis=1, inplace=True)
     test_ds = df.values
     regressor = Regressor(ncpus = 4, use_espresso=False)
     regressor.parse(model_source = pmml_path)
-    out_values = []
-    for x in test_ds:
-        trees_outs = []
-        for t in regressor.trees:
-            trees_outs.append(t.visit(x))
-        out_values.append(np.mean(np.array(trees_outs)))  
-    # assert len(outcomes) == len(out_values) 
+    # out_values = []
+    # for x in test_ds:
+    #    trees_outs = []
+    #    for t in regressor.trees:
+    #        trees_outs.append(t.visit(x))
+    #    out_values.append(np.mean(np.array(trees_outs)))  
     rf_preds = regressor.predict(test_ds)
-    #for ind, o in enumerate(out_values):
+    # for ind, o in enumerate(out_values):
     #    print(f"idx {ind} Out {o} Out pred {rf_original_preds[ind]} pred predict {rf_preds[ind]}")
-    #exit(1)
+    # exit(1)
     # # Test XGB
     #pmml_path = "../../shared/NASA_PMML_XGB/C-1.pmml"
     job_path = "../../shared/c1_xgb.joblib"
@@ -81,7 +80,10 @@ if __name__ == "__main__":
     model_features = [{"name" : f"f{i}", "type":"double"}  for i in range(0,250)]
     regressor.parse(model_source = job_path, dataset_description = model_features)
     # Test the evaluation
-    xgb_preds = regressor.predict(test_ds)
-    for idx, (rf_p,xgb_p) in enumerate(zip(rf_preds, xgb_preds)):
-        print(f" Idx {idx} RF_P: {rf_p} RF_OR {rf_original_preds[idx]} XGB_P: {xgb_p} XGB_OR: {xgb_original_preds[idx]}")
-
+    xgb_preds = regressor.predict(test_ds)  
+    for idx, x in enumerate(test_ds):
+        p = 0
+        for tree_idx, t in enumerate(regressor.trees):
+            p += t.visit(x)
+        print(f" Pred {p + 0.5} Or {xgb_original_preds[idx]} Predicted by Fn :{xgb_preds[idx]} Predicted by RF {rf_preds[idx]}")
+        
