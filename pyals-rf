@@ -24,10 +24,11 @@ from src.Flows.als_flow import als_one_step, als_two_steps
 from src.Flows.combined_flow import full_one_step, full_two_steps
 from src.Flows.debug_flow import hdl_debug_flow, debug_with_scikit, print_model
 from src.ConfigParsers.DtGenConfigParser import *
-from src.hdl_generation import hdl_generation
+from src.hdl_generation import hdl_generation, regressor_exact_generation
 from src.git_updater import git_updater
 from src.Flows.lcor_flow import leaves_correlation_flow
-
+from src.Model.Regressor import Regressor
+from src.Model.Classifier import Classifier
 @click.group(chain=True)
 @click.pass_context
 def cli(ctx):
@@ -203,7 +204,46 @@ def generate_hdl(ctx, conf, ncpus, espresso, luts, skip_exact, output, verbose, 
                 f"\n\toutput dir: {output}"
                 )
     hdl_generation(ctx, luts, skip_exact, output)
+
+@cli.command("regrgenhdl")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
+@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-e', '--espresso', is_flag = True, help = "Enable the Espresso heuristic logic minimizer for implementing Boolean Networks")
+@click.option('-l', '--luts', type = int, default = None, help = "Number of inputs for look-up tables. If specified, it enables the embedded LUT-mapper exploiting AMD/Xilinx LUT primitives.")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
+@click.option('-i', '--input', type = str, default = None, help="Path to the PMML/Joblib model of the regressor")
+@click.pass_context
+def regr_generate_hdl(ctx, conf, ncpus, espresso, luts, verbose, input):
+    input = "../../shared/c1_xgb.joblib"
+    # input = "../../shared/rf_5.pmml"
+    assert input != None, "Insert a valid path for input model !"
+    """
+    Generates HDL implementations for a given classifier, including its approximate variants, if any.
+    """
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, espresso)
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("Performing HDL generation"
+                f"\n\tconf: {conf}"
+                f"\n\tuse espresso: {espresso}"
+                f"\n\tLUT tech: {luts}"
+                f"\n\tModel pth {input}"
+                )
+    print("Performing HDL generation"
+                f"\n\tconf: {conf}"
+                f"\n\tuse espresso: {espresso}"
+                f"\n\tLUT tech: {luts}"
+                f"\n\tModel pth {input}"
+                )
+    regressor = Regressor(ncpus = ncpus, use_espresso = espresso, learning_rate = 0.1)
+    model_features = [{"name" : f"f{i}", "type":"double"}  for i in range(0,250)]
+    regressor.parse(model_source = input, dataset_description = model_features)
+    regressor_exact_generation(ctx, luts, regressor)
     
+    # classifier = Classifier(ncpus = ncpus, use_espresso = espresso)
+    # classifier.parse(model_source = input)
+    # regressor_exact_generation(ctx, luts, classifier)
+
+
 @cli.command("debug")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())

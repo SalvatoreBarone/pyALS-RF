@@ -43,8 +43,11 @@ class HDLGenerator:
     vhdl_classifier_template_file = "vhd/classifier.vhd.template"
     vhdl_tb_classifier_template_file = "vhd/tb_classifier.vhd.template"
     bnf_vhd = "bnf.vhd"
-    vhdl_assertions_source_template = "vhd/assertions_block.vhd.template"
+    vhdl_assertions_source_template = "vhd/assertions_block.vhd.template" 
     vhdl_decision_tree_source_template = "vhd/decision_tree.vhd.template"
+    
+    vhdl_assertions_regressor_source_template = "vhd/assertions_block_regressor.vhd.template"
+    vhdl_regressor_tree_source_template = "vhd/regressor_tree.vhd.template"
     # sh files
     run_synth_file = "sh/run_synth.sh"
     run_sim_file = "sh/run_sim.sh"
@@ -223,7 +226,7 @@ class HDLGenerator:
                     logger.debug(f"\tClass {c} is trivially implemented as using {bn['hdl_expression']}")
         return nLuts_dbs, nLUTs_bns, nFFs_dbs
        
-    def implement_decision_boxes(self, tree : DecisionTree, boxes : list,  destination : str):
+    def implement_decision_boxes(self, tree : DecisionTree, boxes : list,  destination : str, regr: bool = False):
         logger = logging.getLogger("pyALS-RF")
         feature_names = set(b["box"].feature_name for b in boxes )
         features = [ f for f in self.classifier.model_features if f['name'] in feature_names ]
@@ -233,7 +236,10 @@ class HDLGenerator:
         file_name = f"{destination}/decision_tree_{tree.name}.vhd"
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
-        template = env.get_template(self.vhdl_decision_tree_source_template)
+        if regr:
+            template = env.get_template(self.vhdl_regressor_tree_source_template)
+        else:
+            template = env.get_template(self.vhdl_decision_tree_source_template)
         output = template.render(
             tree_name = tree.name,
             features  = features,
@@ -340,4 +346,65 @@ class HDLGenerator:
             logger.debug(f"Tree {tree.name} is using {len(used_db)} out of {len(tree.decision_boxes)} DBs due to optimization, saving {(1 - len(used_db) / len(tree.decision_boxes))*100}% of resources.")
             logger.debug(f"Hereafter the DBs: {[ b['name'] for b in used_db]}")
         return used_db
- 
+    
+    def regressor_generate_exact_implementation(self):
+
+        dest = f"{self.destination}/exact/"
+        mkpath(self.destination)
+        mkpath(dest)
+        mkpath(f"{dest}/src")
+        mkpath(f"{dest}/tb")
+        self.copyfiles(dest)
+        
+        features = [{"name": f["name"], "nab": 0} for f in self.classifier.model_features]
+        trees_name = [t.name for t in self.classifier.trees]
+        env = Environment(loader = FileSystemLoader(self.source_dir))
+        
+        trees_inputs = {}
+        #for tree in self.classifier.trees:
+            # boxes = self.get_dbs(tree)
+            # inputs = self.implement_decision_boxes(tree, boxes, f"{dest}/src")
+            # self.implement_assertions(tree, boxes, f"{dest}/src", 6)
+            # trees_inputs[tree.name] = inputs
+        boxes = self.get_dbs(self.classifier.trees[0])
+        inputs = self.implement_decision_boxes(self.classifier.trees[0], boxes, f"{dest}/src", True)
+        self.implement_assertions_regressor(self.classifier.trees[0], boxes, f"{dest}/src", 6)
+        #self.implement_assertions(self.classifier.trees[0], boxes, f"{dest}/src", 6)
+        trees_inputs[self.classifier.trees[0].name] = inputs
+    
+    def implement_assertions_regressor(self, tree : DecisionTree, boxes: list, destination : str, lut_tech : int = 6):  
+        logger = logging.getLogger("pyALS-RF")      
+        module_name = f"assertions_block_{tree.name}"
+        file_name = f"{destination}/assertions_block_{tree.name}.vhd"
+        trivial_classes = []
+        nontrivial_classes = []
+        # for c, bn in zip(self.classifier.classes_name, tree.boolean_networks):
+        #     if bn["minterms"] and lut_tech != None:
+        #         luts = LutMapper(lut_tech).map(bn["minterms"], c)
+        #         nontrivial_classes.append({"class" : c, "luts": luts})
+        #         logger.info(f"Tree {tree.name}, class {c} is using {len(luts)} LUTs")
+        #     else:
+        #         trivial_classes.append({"class" : c, "expression" : bn["hdl_expression"]})
+        #         logger.info(f"Tree {tree.name}, class {c} is implemented as using {bn['hdl_expression']}")
+        # 
+        for bn in tree.boolean_networks:
+            if bn["minterms"] and lut_tech != None:
+                luts = LutMapper(lut_tech).map(bn["sop"], bn['class'])
+                nontrivial_classes.append({"class" : bn['class'] , "luts": luts})
+            else:
+                trivial_classes.append({"class" : bn['class'], "expression" : bn["hdl_expression"]})
+                logger.info(f"Tree {tree.name}, class {bn['class']} is implemented as using {bn['hdl_expression']}")
+        file_loader = FileSystemLoader(self.source_dir)
+        env = Environment(loader=file_loader)
+        template = env.get_template(self.vhdl_assertions_regressor_source_template)
+        box_list = [b["name"] for b in boxes]
+        output = template.render(
+            tree_name = tree.name,
+            classes = self.classifier.classes_name,
+            boxes = box_list,
+            trivial_classes = trivial_classes,
+            nontrivial_classes = nontrivial_classes)
+        with open(file_name, "w") as out_file:
+            out_file.write(output)
+        return file_name, module_name
+    

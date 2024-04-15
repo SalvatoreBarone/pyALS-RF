@@ -22,14 +22,14 @@ from multiprocessing import cpu_count, Pool
 from tqdm import tqdm
 from pyalslib import list_partitioning
 from .RegressorTree import *
-
+from .Classifier import *
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import export_graphviz, DecisionTreeClassifier
 #from ..scikit.RandonForestClassifierMV import RandomForestClassifierMV
 import xgboost as xgb
 import re
 
-class Regressor:
+class Regressor(Classifier):
     __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_4'}
 
     def __init__(self, ncpus = None, use_espresso = False, learning_rate: float = None):

@@ -28,6 +28,8 @@ from .HDLGenerators.TwoStepsAlsWcHdlGenerator import TwoStepsAlsWcHdlGenerator
 from .HDLGenerators.TwoStepsFullHdlGenerator import TwoStepsFullHdlGenerator
 from .ctx_factory import load_configuration_ps, create_classifier, create_yshelper, load_flow, create_problem, create_optimizer
 
+from pyalslib import double_to_hex
+import struct
 def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the HDL generation flow.")
@@ -97,3 +99,41 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
     
     
     logger.info("All done!")
+
+
+def regressor_exact_generation(ctx, lut_tech, regressor):
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("Runing the HDL generation flow.")
+    # TO READD
+    #load_configuration_ps(ctx)
+
+    # if output is not None: # TO READD
+    #     ctx.obj['configuration'].outdir = output
+    #     mkpath(ctx.obj["configuration"].outdir)
+    # TO READD
+    # create_classifier(ctx)
+    # create_yshelper(ctx)
+    
+    # if ctx.obj["flow"] is None: # TO READD
+    #     load_flow(ctx)
+        
+    # hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+    exact_luts_dbs, exact_luts_bns, exact_ffs_dbs = HDLGenerator.get_resource_usage(regressor)
+    # dbs = HDLGenerator.get_dbs(regressor.trees[0])
+    # print(dbs[0]['box'].get_struct())
+    # print(dbs[0]['box'].threshold)
+    # # print(str(double_to_hex(dbs[0]['box'].threshold)))
+    # # print(str(double_to_hex(dbs[0]['box'].threshold))[2:])
+    # exit(1)
+    # exact_luts_dbs, exact_luts_bns, exact_ffs_dbs = hdl_generator.get_resource_usage()
+    logger.info("Exact implementations expected requirements (voting excluded):"
+                f"\n\t- LUTs for decision boxes (exact): {exact_luts_dbs}"
+                f"\n\t- FFs for decision boxes (exact): {exact_ffs_dbs}"
+                f"\n\t- LUTs for Boolean Networks (exact): {exact_luts_bns}")
+    gen = HDLGenerator(classifier = regressor, yshelper = None, destination = "./")
+    gen.regressor_generate_exact_implementation()
+    # regressor.trees[0].dump()
+    
+    # logger.info("Generating reference (non-approximate) implementation...")
+    # logger.debug(f"Lut Tech: {lut_tech}")
+    # hdl_generator.generate_exact_implementation(enable_espresso =  ctx.obj['configuration'].outdir, lut_tech = lut_tech)
