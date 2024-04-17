@@ -87,5 +87,14 @@ begin
     port map ({% for b in boxes -%}
       {{b['name']}} => {{b['name']}},
       {% endfor %}leaves => leaves);
+  
+  -- Memory block
+  out_val : memory_block_{{tree_name}}
+    port map (
+        leaves => leaves,
+        regression_value => regression_value,
+        clock => clock,
+        reset_n => reset_n    
+    );
 
 end structural;

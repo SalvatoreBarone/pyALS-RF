@@ -1,0 +1,33 @@
+
+library ieee;
+use ieee.std_logic_1164.all;
+
+-- The memory block, given the index specified in leaves, outputs the correct regression value.
+-- To set: memory_block_condition variable containint the list of leaves indexes ( in decreasing order, e.g. 7 downto 0, the first
+-- is then 7) and the respective leaf_outputs. 
+entity memory_block_{{tree_name}} is
+  port (
+    leaves : in std_logic_vector({{leaves_number}} - 1 downto 0);
+    regression_value : out std_logic_vector(63 downto 0);
+    clock : in std_logic;
+    reset_n : in std_logic    
+    );
+end memory_block_{{tree_name}};
+
+architecture Behavioural of memory_block_{{tree_name}} is
+begin
+    process(clock, reset_n)
+    begin
+        if reset_n = '0' then 
+            regression_value <= (others => '0');
+        elsif rising_edge(clock) then 
+            if leaves = "{{memory_block_condition[0]['leaf_active']}}" then
+                regression_value <= x"{{memory_block_condition[0]['leaf_output']}}";
+            {% for i in range(1,leaves_number) -%} elsif leaves = "{{memory_block_condition[i]['leaf_active']}}" then
+                regression_value <= x"{{memory_block_condition[i]['leaf_output']}}";
+            {% endfor %}else 
+                regression_value <= (others => '0');
+        end if;
+       end if;
+    end process;
+end Behavioural;
