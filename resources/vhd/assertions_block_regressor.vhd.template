@@ -21,14 +21,13 @@ use ieee.std_logic_1164.all;
 -- library work;
 -- use work.bnf.all;
 
-entity assertions_block_{{tree_name}} is
+entity assertions_block_regressor_{{tree_name}} is
   port (
     {% for b in boxes -%}{{b}} : in std_logic;
     {% endfor %}
-    regression_value : out std_logic;
-  );
-end assertions_block_{{tree_name}};
-architecture dataflow of assertions_block_{{tree_name}} is
+    leaves: out std_logic_vector ({{leaves_number}} - 1 downto 0) )
+end assertions_block_regressor_{{tree_name}};
+architecture dataflow of assertions_block_regressor_{{tree_name}} is
   component LUT6 is
     generic (INIT : std_logic_vector(63 downto 0)); -- Specify LUT Contents
     port (
@@ -72,6 +71,10 @@ begin
   {% endfor %}
   {% for f in trivial_classes -%}class_{{f['class']}} <= {{f['expression']}};
   {% endfor %}
+  -- Assign each leaf with its specific implementation.
+  {% for l in leaves_enumerate -%} leaves({{l['idx']}}) <= {{l['expression']}};
+  {% endfor %}
+  
   {% for f in nontrivial_classes -%}
     {% for l in f['luts'] -%}
     {{l['inst']}} : {{l['type']}}

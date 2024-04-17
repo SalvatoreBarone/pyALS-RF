@@ -21,7 +21,7 @@ use ieee.std_logic_1164.all;
 library work;
 use work.common_types.all;
 -- use work.bnf.all;
-entity decision_tree_{{tree_name}} is
+entity regression_tree_{{tree_name}} is
   generic (
     data_width      : natural;
     parallel_blocks : natural;
@@ -37,9 +37,9 @@ entity decision_tree_{{tree_name}} is
     reset_n : in std_logic;
     regression_value : out std_logic_vector(data_width-1 downto 0)
   );
-end decision_tree_{{tree_name}};
+end regression_tree_{{tree_name}};
 
-architecture structural of decision_tree_{{tree_name}} is
+architecture structural of regression_tree_{{tree_name}} is
   component decision_box is
     generic (
       data_width      : natural;
@@ -55,19 +55,21 @@ architecture structural of decision_tree_{{tree_name}} is
       result  : out std_logic);
   end component;
 
-  component assertions_block_{{tree_name}} is
-    port (
-      {% for b in boxes -%}{{b['name']}} : in std_logic;
-      {% endfor %}
-      {% for c in classes -%}class_{{c}} : out std_logic{{";" if not loop.last else ");"}}
-      {% endfor %}
+  component assertions_block_regressor_{{tree_name}} is
+  port (
+    {% for b in boxes -%}{{b}} : in std_logic;
+    {% endfor %}
+    leaves: out std_logic_vector ({{leaves_number}} - 1 downto 0) )
   end component;
 
+  -- Output signals of decision boxes.
   {% for b in boxes -%}signal {{b['name']}} : std_logic := '0';
   {% endfor %}
+  -- Threshold of decision boxes.
   {% for b in boxes -%}constant {{b['name']}}_thr : std_logic_vector(data_width-1 downto 0) := x"{{b['threshold_hex']}}";
   {% endfor %}
-
+  -- Leaves signals, used as input to the memory
+  signal leaves : std_logic_vector({{leaves_number}} - 1 downto 0) := (others => '0');
 begin
   {% for b in boxes -%}{{b['name']}}_inst : decision_box
     generic map(
@@ -83,10 +85,4 @@ begin
       data_2 => {{b['name']}}_thr(data_width-1 downto nab_{{b['feature']}}), 
       result => {{b['name']}});
   {% endfor %}
-  assertions : assertions_block_{{tree_name}}
-    port map ({% for b in boxes -%}
-      {{b['name']}} => {{b['name']}}, 
-      {% endfor %}{% for c in classes -%}
-      class_{{c}} => class_{{c}}{{", " if not loop.last}}
-      {% endfor %});
 end structural;

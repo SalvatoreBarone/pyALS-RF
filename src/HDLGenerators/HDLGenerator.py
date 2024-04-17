@@ -238,13 +238,20 @@ class HDLGenerator:
         env = Environment(loader=file_loader)
         if regr:
             template = env.get_template(self.vhdl_regressor_tree_source_template)
+            output = template.render(
+                tree_name = tree.name,
+                features  = features,
+                classes = self.classifier.classes_name,
+                boxes = [ b["box"].get_struct() for b in boxes ],
+                leaves_number = (len(tree.leaves)))
+            file_name = f"{destination}/regression_tree_{tree.name}.vhd"
         else:
             template = env.get_template(self.vhdl_decision_tree_source_template)
-        output = template.render(
-            tree_name = tree.name,
-            features  = features,
-            classes = self.classifier.classes_name,
-            boxes = [ b["box"].get_struct() for b in boxes ])
+            output = template.render(
+                tree_name = tree.name,
+                features  = features,
+                classes = self.classifier.classes_name,
+                boxes = [ b["box"].get_struct() for b in boxes ])
         with open(file_name, "w") as out_file:
             out_file.write(output)
         return features
@@ -368,9 +375,9 @@ class HDLGenerator:
             # trees_inputs[tree.name] = inputs
         boxes = self.get_dbs(self.classifier.trees[0])
         inputs = self.implement_decision_boxes(self.classifier.trees[0], boxes, f"{dest}/src", True)
-        self.implement_assertions_regressor(self.classifier.trees[0], boxes, f"{dest}/src", 6)
+        # self.implement_assertions_regressor(self.classifier.trees[0], boxes, f"{dest}/src", 6)
         #self.implement_assertions(self.classifier.trees[0], boxes, f"{dest}/src", 6)
-        trees_inputs[self.classifier.trees[0].name] = inputs
+        # trees_inputs[self.classifier.trees[0].name] = inputs
     
     def implement_assertions_regressor(self, tree : DecisionTree, boxes: list, destination : str, lut_tech : int = 6):  
         logger = logging.getLogger("pyALS-RF")      
@@ -378,15 +385,7 @@ class HDLGenerator:
         file_name = f"{destination}/assertions_block_{tree.name}.vhd"
         trivial_classes = []
         nontrivial_classes = []
-        # for c, bn in zip(self.classifier.classes_name, tree.boolean_networks):
-        #     if bn["minterms"] and lut_tech != None:
-        #         luts = LutMapper(lut_tech).map(bn["minterms"], c)
-        #         nontrivial_classes.append({"class" : c, "luts": luts})
-        #         logger.info(f"Tree {tree.name}, class {c} is using {len(luts)} LUTs")
-        #     else:
-        #         trivial_classes.append({"class" : c, "expression" : bn["hdl_expression"]})
-        #         logger.info(f"Tree {tree.name}, class {c} is implemented as using {bn['hdl_expression']}")
-        # 
+        
         for bn in tree.boolean_networks:
             if bn["minterms"] and lut_tech != None:
                 luts = LutMapper(lut_tech).map(bn["sop"], bn['class'])
@@ -402,6 +401,7 @@ class HDLGenerator:
             tree_name = tree.name,
             classes = self.classifier.classes_name,
             boxes = box_list,
+            leaves = len(tree.leaves)
             trivial_classes = trivial_classes,
             nontrivial_classes = nontrivial_classes)
         with open(file_name, "w") as out_file:

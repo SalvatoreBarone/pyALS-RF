@@ -43,6 +43,8 @@ class RegressorTree(DecisionTree):
             if not any(node.children):
                 # Obtain its class(regression value.)
                 self.model_classes.append(node.score)
+                # Append also to leaves
+                self.leaves.append(node.score)
 
     """ The visit function needs to be different in order to return the value of a class
         i.e. the regression value.
