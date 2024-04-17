@@ -33,9 +33,7 @@ entity regression_tree_{{tree_name}} is
     reset_n : in std_logic;
     {% for feature in features -%}
     {{feature['name']}} : in std_logic_vector(data_width-1 downto nab_{{feature['name']}});
-    {% endfor %}
-    reset_n : in std_logic;
-    regression_value : out std_logic_vector(data_width-1 downto 0)
+    {% endfor %}regression_value : out std_logic_vector(data_width-1 downto 0)
   );
 end regression_tree_{{tree_name}};
 
@@ -57,9 +55,9 @@ architecture structural of regression_tree_{{tree_name}} is
 
   component assertions_block_regressor_{{tree_name}} is
   port (
-    {% for b in boxes -%}{{b}} : in std_logic;
+    {% for b in boxes -%}{{b['name']}} : in std_logic;
     {% endfor %}
-    leaves: out std_logic_vector ({{leaves_number}} - 1 downto 0) )
+    leaves: out std_logic_vector ({{leaves_number}} - 1 downto 0) );
   end component;
 
   -- Output signals of decision boxes.
@@ -85,4 +83,9 @@ begin
       data_2 => {{b['name']}}_thr(data_width-1 downto nab_{{b['feature']}}), 
       result => {{b['name']}});
   {% endfor %}
+  assertions : assertions_block_regressor_{{tree_name}}
+    port map ({% for b in boxes -%}
+      {{b['name']}} => {{b['name']}},
+      {% endfor %}leaves => leaves);
+
 end structural;

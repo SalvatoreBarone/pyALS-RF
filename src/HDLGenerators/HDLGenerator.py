@@ -401,7 +401,7 @@ class HDLGenerator:
             tree_name = tree.name,
             classes = self.classifier.classes_name,
             boxes = box_list,
-            leaves = len(tree.leaves)
+            leaves = len(tree.leaves),
             trivial_classes = trivial_classes,
             nontrivial_classes = nontrivial_classes)
         with open(file_name, "w") as out_file:
