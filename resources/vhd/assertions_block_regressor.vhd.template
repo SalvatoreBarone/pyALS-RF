@@ -24,8 +24,7 @@ use ieee.std_logic_1164.all;
 entity assertions_block_regressor_{{tree_name}} is
   port (
     {% for b in boxes -%}{{b}} : in std_logic;
-    {% endfor %}
-    leaves: out std_logic_vector ({{leaves_number}} - 1 downto 0) )
+    {% endfor %}leaves: out std_logic_vector ({{leaves_number}} - 1 downto 0) );
 end assertions_block_regressor_{{tree_name}};
 architecture dataflow of assertions_block_regressor_{{tree_name}} is
   component LUT6 is

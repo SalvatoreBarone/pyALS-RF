@@ -375,24 +375,26 @@ class HDLGenerator:
             # trees_inputs[tree.name] = inputs
         boxes = self.get_dbs(self.classifier.trees[0])
         inputs = self.implement_decision_boxes(self.classifier.trees[0], boxes, f"{dest}/src", True)
-        # self.implement_assertions_regressor(self.classifier.trees[0], boxes, f"{dest}/src", 6)
+        self.implement_assertions_regressor(self.classifier.trees[0], boxes, f"{dest}/src", 6)
         #self.implement_assertions(self.classifier.trees[0], boxes, f"{dest}/src", 6)
         # trees_inputs[self.classifier.trees[0].name] = inputs
     
     def implement_assertions_regressor(self, tree : DecisionTree, boxes: list, destination : str, lut_tech : int = 6):  
         logger = logging.getLogger("pyALS-RF")      
-        module_name = f"assertions_block_{tree.name}"
-        file_name = f"{destination}/assertions_block_{tree.name}.vhd"
+        module_name = f"assertions_block_regressor_{tree.name}"
+        file_name = f"{destination}/assertions_block_regressor_{tree.name}.vhd"
         trivial_classes = []
         nontrivial_classes = []
-        
+        # print(type(tree.boolean_networks))
+        # for bn in tree.boolean_networks:
+        #     print(bn["class"])
+        #     print(type(bn["class"]))
+        # exit(1)
+        dict_leaves = []
+        counter = len(tree.boolean_networks) - 1
         for bn in tree.boolean_networks:
-            if bn["minterms"] and lut_tech != None:
-                luts = LutMapper(lut_tech).map(bn["sop"], bn['class'])
-                nontrivial_classes.append({"class" : bn['class'] , "luts": luts})
-            else:
-                trivial_classes.append({"class" : bn['class'], "expression" : bn["hdl_expression"]})
-                logger.info(f"Tree {tree.name}, class {bn['class']} is implemented as using {bn['hdl_expression']}")
+            dict_leaves.append({'idx' : counter, 'expression': bn["hdl_expression"]})
+            counter -= 1
         file_loader = FileSystemLoader(self.source_dir)
         env = Environment(loader=file_loader)
         template = env.get_template(self.vhdl_assertions_regressor_source_template)
@@ -401,10 +403,33 @@ class HDLGenerator:
             tree_name = tree.name,
             classes = self.classifier.classes_name,
             boxes = box_list,
-            leaves = len(tree.leaves),
-            trivial_classes = trivial_classes,
-            nontrivial_classes = nontrivial_classes)
+            leaves_number = len(tree.leaves),
+            leaves_enumerate = dict_leaves,
+            trivial_classes = [],
+            nontrivial_classes = [])
         with open(file_name, "w") as out_file:
             out_file.write(output)
         return file_name, module_name
+ 
+        # for bn in tree.boolean_networks:
+        #     if bn["minterms"] and lut_tech != None:
+        #         luts = LutMapper(lut_tech).map(bn["sop"], bn['class'])
+        #         nontrivial_classes.append({"class" : bn['class'] , "luts": luts})
+        #     else:
+        #         trivial_classes.append({"class" : bn['class'], "expression" : bn["hdl_expression"]})
+        #         logger.info(f"Tree {tree.name}, class {bn['class']} is implemented as using {bn['hdl_expression']}")
+        # file_loader = FileSystemLoader(self.source_dir)
+        # env = Environment(loader=file_loader)
+        # template = env.get_template(self.vhdl_assertions_regressor_source_template)
+        # box_list = [b["name"] for b in boxes]
+        # output = template.render(
+        #     tree_name = tree.name,
+        #     classes = self.classifier.classes_name,
+        #     boxes = box_list,
+        #     leaves = len(tree.leaves),
+        #     trivial_classes = trivial_classes,
+        #     nontrivial_classes = nontrivial_classes)
+        # with open(file_name, "w") as out_file:
+        #     out_file.write(output)
+        # return file_name, module_name
     
