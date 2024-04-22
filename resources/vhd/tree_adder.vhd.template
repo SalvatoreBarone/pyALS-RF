@@ -52,8 +52,8 @@ begin
     -- Intantiate tree_for_each_level
     {% for ld in level_descriptions -%}  
     {% for out in range(0,ld["num_outputs"]) -%}
-    adder_{{ld["level_id"]}}_{{out}}: adder generic map(
-        data_width => {{ld["data_width"]}}
+    adder_{{ld["level_id"]}}_{{out}}: fp_adder generic map(
+        data_width => data_width + {{ld["level_id"]}}
     )
     port map(
         clock    => clock,
