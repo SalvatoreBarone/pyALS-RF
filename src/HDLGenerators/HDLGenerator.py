@@ -18,11 +18,12 @@ import os, numpy as np, logging
 from distutils.dir_util import mkpath, copy_tree
 from distutils.file_util import copy_file
 from jinja2 import Environment, FileSystemLoader
-from pyalslib import YosysHelper, double_to_bin
+from pyalslib import YosysHelper, double_to_bin, double_to_hex
 from pathlib import Path
 from .LutMapper import LutMapper
 from ..Model.Classifier import Classifier
 from ..Model.DecisionTree import DecisionTree
+import math
 
 class HDLGenerator:
     lut_x_db = 77
@@ -47,7 +48,11 @@ class HDLGenerator:
     vhdl_decision_tree_source_template = "vhd/decision_tree.vhd.template"
     
     vhdl_assertions_regressor_source_template = "vhd/assertions_block_regressor.vhd.template"
+    vhdl_memory_block_regressor_source_template = "vhd/memory_block.vhd.template"
+
     vhdl_regressor_tree_source_template = "vhd/regressor_tree.vhd.template"
+    vhdl_template_tree_adder = "vhd/tree_adder.vhd.template"
+
     # sh files
     run_synth_file = "sh/run_synth.sh"
     run_sim_file = "sh/run_sim.sh"
@@ -362,7 +367,8 @@ class HDLGenerator:
         mkpath(f"{dest}/src")
         mkpath(f"{dest}/tb")
         self.copyfiles(dest)
-        
+        self.implement_tree_adder(5,4, f"{dest}/src")
+        exit(1)
         features = [{"name": f["name"], "nab": 0} for f in self.classifier.model_features]
         trees_name = [t.name for t in self.classifier.trees]
         env = Environment(loader = FileSystemLoader(self.source_dir))
@@ -376,6 +382,7 @@ class HDLGenerator:
         boxes = self.get_dbs(self.classifier.trees[0])
         inputs = self.implement_decision_boxes(self.classifier.trees[0], boxes, f"{dest}/src", True)
         self.implement_assertions_regressor(self.classifier.trees[0], boxes, f"{dest}/src", 6)
+        self.regressor_implement_memory_block(self.classifier.trees[0], f"{dest}/src")
         #self.implement_assertions(self.classifier.trees[0], boxes, f"{dest}/src", 6)
         # trees_inputs[self.classifier.trees[0].name] = inputs
     
@@ -433,3 +440,68 @@ class HDLGenerator:
         #     out_file.write(output)
         # return file_name, module_name
     
+    def regressor_implement_memory_block(self, tree : DecisionTree, destination : str):  
+        logger = logging.getLogger("pyALS-RF")      
+        module_name = f"memory_block_regressor_{tree.name}"
+        file_name = f"{destination}/memory_block_regressor_{tree.name}.vhd"
+        def generate_leaves_one_hot(N):
+            results = []
+            for i in range(N):
+                one_hot_string = ['0'] * N
+                one_hot_string[i] = '1'
+                results.append(''.join(one_hot_string))
+            return results
+        leaves_idx_one_hot = generate_leaves_one_hot(len(tree.boolean_networks))
+        leaves_conditions = []
+        for l,bn in zip(leaves_idx_one_hot, tree.boolean_networks):
+            leaves_conditions.append({'leaf_active' : l, 'leaf_output': double_to_hex(bn["class"])[2:]})
+                
+        file_loader = FileSystemLoader(self.source_dir)    
+        env = Environment(loader=file_loader)
+        template = env.get_template(self.vhdl_memory_block_regressor_source_template)
+
+        output = template.render(
+            tree_name = tree.name,
+            leaves_number = len(tree.leaves),
+            memory_block_condition = leaves_conditions)
+        with open(file_name, "w") as out_file:
+            out_file.write(output)
+        return file_name, module_name
+    
+    # Implement a tree structure for an adder.
+    def implement_tree_adder(self, num_inputs, data_width, destination):
+        n_levels = math.ceil(math.log2(num_inputs))
+        level_descriptions = []
+        inputs_per_level = num_inputs
+        outputs_per_level = math.ceil(inputs_per_level / 2)
+        #width_per_level = data_width
+        use_additive = inputs_per_level % 2 != 0
+        last_level_width = 0
+        for level in range(0,n_levels):
+            # Setup the number of adders per each level and 
+            # subsequently update the variables for the next level.
+            last_level_width = level + 1
+            level_description = {
+                "level_id"      : level,                # Level of tree adder
+                "num_inputs"    : inputs_per_level,     # Number of inputs to the level
+                "num_outputs"   : outputs_per_level,    # Number of outputs
+                "in_data_width" : level,                # Data width offset of inputs      
+                "out_data_width": last_level_width,     # Data width offset of outputs
+                "use_additive"  : use_additive,         # Flag used to add a signal
+                "is_last"       : level == n_levels - 1 # Check if it is the last level.
+            }              
+            use_additive = outputs_per_level % 2 != 0   # If not even then add a 0 pad signal.
+            inputs_per_level = outputs_per_level        # The number of inputs is equal to the number of outs of the previous level
+            outputs_per_level = math.ceil(inputs_per_level / 2)        
+            #data_width += 1
+            level_descriptions.append(level_description)
+            print(level_description)
+
+        file_loader = FileSystemLoader(self.source_dir)    
+        env = Environment(loader=file_loader)
+        tree_adder_template = env.get_template(self.vhdl_template_tree_adder)
+        out = tree_adder_template.render(level_descriptions = level_descriptions, out_width = last_level_width - 1)
+        file_name = f"{destination}/tree_adder.vhd"
+
+        with open(file_name, "w") as out_file:
+            out_file.write(out)

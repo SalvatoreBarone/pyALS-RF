@@ -1,0 +1,75 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+library work;
+use work.types_adder.all;
+use ieee.numeric_std.all; 
+
+entity tree_adder is
+generic(
+        data_width      : natural);
+port(
+    clock:      in std_logic;
+    reset_n:    in std_logic;
+    enable:     in std_logic;
+    {%for i in range(0,level_descriptions[0]["num_inputs"])%}input_{{i}} :     in std_logic_vector(data_width - 1 downto 0);
+    {%endfor%}
+    result:     out std_logic_vector(data_width + {{out_width}} downto 0) 
+);
+end tree_adder;
+
+architecture structural of tree_adder is
+
+    -- Declare the fixed point adder    
+    component fp_adder generic(
+        data_width      : natural);
+    port ( 
+        data_1  : in  std_logic_vector (data_width - 1 downto 0);
+        data_2  : in  std_logic_vector (data_width - 1 downto 0);
+        clock   : in std_logic;
+        reset_n : in std_logic;
+        enable  : in std_logic;
+        result  : out std_logic_vector (data_width - 1 downto 0);
+        overflow: out std_logic;
+        carry_in: in std_logic);
+    end component;
+
+    {% for ld in level_descriptions -%}  
+    {% for i in range(0,ld["num_inputs"]) -%}
+    signal input_{{ld["level_id"]}}_{{i}}: std_logic_vector( data_width - 1 + {{ld["in_data_width"]}} downto 0);
+    {% endfor %}    
+    {% if ld["use_additive"]-%}
+    signal input_{{ld["level_id"]}}_{{ld["num_inputs"]}}: std_logic_vector(data_width - 1 + {{ ld["in_data_width"]}} downto 0) := (others=>'0');
+    {% endif %}
+    {% for i in range(0,ld["num_outputs"]) -%}
+    signal output_{{ld["level_id"]}}_{{i}}: std_logic_vector( data_width - 1 + {{ ld["out_data_width"]}} downto 0);
+    {% endfor %}
+    {% endfor %}
+begin
+    -- Instantiate the first input signals
+    {% for i in range(0,level_descriptions[0]["num_inputs"]) -%}  
+    input_0_{{i}} <= input_{{i}};
+    {%endfor%}
+    -- Intantiate tree_for_each_level
+    {% for ld in level_descriptions -%}  
+    {% for out in range(0,ld["num_outputs"]) -%}
+    adder_{{ld["level_id"]}}_{{out}}: adder generic map(
+        data_width => {{ld["data_width"]}}
+    )
+    port map(
+        clock    => clock,
+        reset_n  => reset_n,
+        enable   => enable,
+        carry_in => '0',
+        data_1   => input_{{ld["level_id"]}}_{{out*2}},
+        data_2   => input_{{ld["level_id"]}}_{{out*2 + 1}},
+        result   => output_{{ld["level_id"]}}_{{out}}( data_width - 1 + {{ld["in_data_width"]}} downto 0),
+        overflow => output_{{ld["level_id"]}}_{{out}}( data_width + {{ ld["in_data_width"]}})
+    );
+    {% if ld["is_last"] == False%}
+    input_{{ld["level_id"] + 1}}_{{out}} <= output_{{ld["level_id"]}}_{{out}};
+    {%else%}
+    result <= output_{{ld["level_id"]}}_{{out}};
+    {%endif%}
+    {% endfor %}
+    {% endfor %}
+end structural;
