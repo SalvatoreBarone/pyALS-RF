@@ -52,6 +52,7 @@ class HDLGenerator:
 
     vhdl_regressor_tree_source_template = "vhd/regressor_tree.vhd.template"
     vhdl_template_tree_adder = "vhd/tree_adder.vhd.template"
+    vhdl_template_regressor_ensemble = "vhd/regressor_ensemble.vhd.template"
 
     # sh files
     run_synth_file = "sh/run_synth.sh"
@@ -367,22 +368,35 @@ class HDLGenerator:
         mkpath(f"{dest}/src")
         mkpath(f"{dest}/tb")
         self.copyfiles(dest)
-        self.implement_tree_adder(5,4, f"{dest}/src")
-        exit(1)
         features = [{"name": f["name"], "nab": 0} for f in self.classifier.model_features]
-        trees_name = [t.name for t in self.classifier.trees]
         env = Environment(loader = FileSystemLoader(self.source_dir))
+        tree_desc = []
+        for tree in self.classifier.trees:
+            boxes = self.get_dbs(tree)
+            inputs = self.implement_decision_boxes(tree, boxes, f"{dest}/src", True)
+            self.implement_assertions_regressor(tree, boxes, f"{dest}/src", 6)
+            self.regressor_implement_memory_block(tree, f"{dest}/src")
+            tree_desc.append({"features": inputs, "name": tree.name})
         
-        trees_inputs = {}
-        #for tree in self.classifier.trees:
-            # boxes = self.get_dbs(tree)
-            # inputs = self.implement_decision_boxes(tree, boxes, f"{dest}/src")
-            # self.implement_assertions(tree, boxes, f"{dest}/src", 6)
-            # trees_inputs[tree.name] = inputs
-        boxes = self.get_dbs(self.classifier.trees[0])
-        inputs = self.implement_decision_boxes(self.classifier.trees[0], boxes, f"{dest}/src", True)
-        self.implement_assertions_regressor(self.classifier.trees[0], boxes, f"{dest}/src", 6)
-        self.regressor_implement_memory_block(self.classifier.trees[0], f"{dest}/src")
+        adder_file_name = f"{dest}/src/regressor_ensemble.vhd"
+        adder_out_width = self.implement_tree_adder(num_inputs = len(self.classifier.trees), destination = adder_file_name)
+        file_name = f"{dest}/src/regressor_ensemble.vhd"
+        file_loader = FileSystemLoader(self.source_dir)
+        env = Environment(loader=file_loader)
+        template = env.get_template(self.vhdl_template_regressor_ensemble)
+        output = template.render(
+                features = features,
+                tree_description = tree_desc,
+                adder_out_width = adder_out_width
+            )
+        with open(file_name, "w") as out_file:
+            out_file.write(output)
+
+        #boxes = self.get_dbs(self.classifier.trees[0])
+        #inputs = self.implement_decision_boxes(self.classifier.trees[0], boxes, f"{dest}/src", True)
+        #self.implement_assertions_regressor(self.classifier.trees[0], boxes, f"{dest}/src", 6)
+        #self.regressor_implement_memory_block(self.classifier.trees[0], f"{dest}/src")
+        
         #self.implement_assertions(self.classifier.trees[0], boxes, f"{dest}/src", 6)
         # trees_inputs[self.classifier.trees[0].name] = inputs
     
@@ -417,28 +431,6 @@ class HDLGenerator:
         with open(file_name, "w") as out_file:
             out_file.write(output)
         return file_name, module_name
- 
-        # for bn in tree.boolean_networks:
-        #     if bn["minterms"] and lut_tech != None:
-        #         luts = LutMapper(lut_tech).map(bn["sop"], bn['class'])
-        #         nontrivial_classes.append({"class" : bn['class'] , "luts": luts})
-        #     else:
-        #         trivial_classes.append({"class" : bn['class'], "expression" : bn["hdl_expression"]})
-        #         logger.info(f"Tree {tree.name}, class {bn['class']} is implemented as using {bn['hdl_expression']}")
-        # file_loader = FileSystemLoader(self.source_dir)
-        # env = Environment(loader=file_loader)
-        # template = env.get_template(self.vhdl_assertions_regressor_source_template)
-        # box_list = [b["name"] for b in boxes]
-        # output = template.render(
-        #     tree_name = tree.name,
-        #     classes = self.classifier.classes_name,
-        #     boxes = box_list,
-        #     leaves = len(tree.leaves),
-        #     trivial_classes = trivial_classes,
-        #     nontrivial_classes = nontrivial_classes)
-        # with open(file_name, "w") as out_file:
-        #     out_file.write(output)
-        # return file_name, module_name
     
     def regressor_implement_memory_block(self, tree : DecisionTree, destination : str):  
         logger = logging.getLogger("pyALS-RF")      
@@ -469,7 +461,7 @@ class HDLGenerator:
         return file_name, module_name
     
     # Implement a tree structure for an adder.
-    def implement_tree_adder(self, num_inputs, data_width, destination):
+    def implement_tree_adder(self, num_inputs, destination):
         n_levels = math.ceil(math.log2(num_inputs))
         level_descriptions = []
         inputs_per_level = num_inputs
@@ -495,13 +487,15 @@ class HDLGenerator:
             outputs_per_level = math.ceil(inputs_per_level / 2)        
             #data_width += 1
             level_descriptions.append(level_description)
-            print(level_description)
+            #print(level_description)
 
         file_loader = FileSystemLoader(self.source_dir)    
         env = Environment(loader=file_loader)
         tree_adder_template = env.get_template(self.vhdl_template_tree_adder)
         out = tree_adder_template.render(level_descriptions = level_descriptions, out_width = last_level_width - 1)
-        file_name = f"{destination}/tree_adder.vhd"
+        #file_name = f"{destination}/tree_adder.vhd"
 
-        with open(file_name, "w") as out_file:
+        with open(destination, "w") as out_file:
             out_file.write(out)
+        # Return the out width
+        return last_level_width - 1

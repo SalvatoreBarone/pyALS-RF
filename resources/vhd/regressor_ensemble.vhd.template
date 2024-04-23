@@ -1,0 +1,82 @@
+
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity xgb_regressor is
+  generic (
+    data_width      : natural := 64;
+    parallel_blocks : natural := 8;
+  );
+  port(
+    clock: in std_logic;
+    reset_n : in std_logic;
+    enable : in std_logic;
+    {% for feature in features %}{{feature["name"]}} in: std_logic_vector(data_width - 1 downto 0);
+    {% endfor %} regression_value out: std_logic_vector(data_width + {{adder_out_width}} downto 0)
+  );
+end xgb_regressor;
+
+architecture structural of xgb_regressor
+{% for tree in tree_description %}
+-- Declaring component Tree {{tree["name"]}}
+component regression_tree_{{tree["name"]}} is
+  generic (
+    data_width      : natural;
+    parallel_blocks : natural;
+    {% for feature in tree["features"] -%}nab_{{feature['name']}} : natural{{";" if not loop.last else ");"}}
+    {% endfor %}
+  port (
+    clock   : in std_logic;
+    reset_n : in std_logic;
+    {% for feature in tree["features"] -%}{{feature['name']}} : in std_logic_vector(data_width-1 downto nab_{{feature['name']}});
+    {% endfor %}regression_value : out std_logic_vector(data_width-1 downto 0)
+  );
+end component;
+signal out_{{tree["name"]}} : std_logic_vector(data_width - 1 downto 0);
+{% endfor %}
+
+-- Declaring tree adder
+component tree_adder is
+generic(
+        data_width      : natural);
+port(
+    clock:      in std_logic;
+    reset_n:    in std_logic;
+    enable:     in std_logic;
+    {%for tree in tree_adder%} input_{{tree["name"]}} : in std_logic_vector(data_width - 1 downto 0);
+    {%endfor%}
+    result:     out std_logic_vector(data_width + {{adder_out_width}} downto 0) 
+);
+end component;
+
+begin
+
+{% for tree in tree_description %}
+-- Instantiate the tree {{tree["name"]}}
+tree_{{tree["name"]}} : regression_tree_{{tree["name"]}}
+  generic map (
+    data_width => data_width,
+    parallel_blocks => parallel_blocks,
+    {% for feature in tree["features"] -%}nab_{{feature['name']}} => 0{{"," if not loop.last else ")"}}
+    {% endfor %}
+  port map(
+    clock   => clock,
+    reset_n => reset_n,
+    {% for feature in tree["features"] -%}{{feature['name']}} => {{feature['name']}},
+    {% endfor %}regression_value => out_{{tree["name"]}}
+  );
+{% endfor %}
+-- Instantiate the adder
+
+adder: tree_adder is
+    generic map (
+            data_width => data_width)
+    port map(
+        clock   => clock,
+        reset_n => reset_n,
+        enable  => "1",
+        {%for tree in tree_description%}input_{{tree["name"]}} => out_{{tree["name"]}},
+        {%endfor%}
+        result => regression_value 
+    );
+end structural;
