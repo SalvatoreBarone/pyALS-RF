@@ -52,6 +52,7 @@ class HDLGenerator:
 
     vhdl_regressor_tree_source_template = "vhd/regressor_tree.vhd.template"
     vhdl_template_tree_adder = "vhd/tree_adder.vhd.template"
+    vhdl_simple_adder = "vhd/adder.vhd"
     vhdl_template_regressor_ensemble = "vhd/regressor_ensemble.vhd.template"
 
     # sh files
@@ -186,6 +187,8 @@ class HDLGenerator:
         copy_file(self.source_dir + self.vhdl_swapper_block_source, f"{ax_dest}/src")
         copy_file(self.source_dir + self.vhdl_simple_voter_source, f"{ax_dest}/src")
         copy_file(self.source_dir + self.vhdl_sorting_network_source, f"{ax_dest}/src")
+        copy_file(self.source_dir + self.vhdl_simple_adder, f"{ax_dest}/src")
+
         copy_file(self.source_dir + self.vhdl_debugfunc_source, f"{ax_dest}/tb")
         copy_file(self.source_dir + self.tcl_sim_file, ax_dest)
         copy_file(self.source_dir + self.constraint_file, ax_dest)

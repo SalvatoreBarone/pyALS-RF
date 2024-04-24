@@ -38,6 +38,7 @@ entity regression_tree_{{tree_name}} is
 end regression_tree_{{tree_name}};
 
 architecture structural of regression_tree_{{tree_name}} is
+  -- Declare the decision box component used to perform comparisons.
   component decision_box is
     generic (
       data_width      : natural;
@@ -52,14 +53,22 @@ architecture structural of regression_tree_{{tree_name}} is
       data_2  : in  std_logic_vector (data_width-1 downto 0);
       result  : out std_logic);
   end component;
-
+  -- Declare the assertion block component that determines the correct leaf output.
   component assertions_block_regressor_{{tree_name}} is
   port (
     {% for b in boxes -%}{{b['name']}} : in std_logic;
     {% endfor %}
     leaves: out std_logic_vector ({{leaves_number}} - 1 downto 0) );
   end component;
-
+  -- Declare the memory block component, this component
+  component memory_block_{{tree_name}} is 
+  port (
+        leaves : in std_logic_vector ({{leaves_number}} - 1 downto 0);
+        regression_value : out std_logic_vector(data_width - 1 downto 0);
+        clock : in std_logic;
+        reset_n : in std_logic 
+  );
+  end component;
   -- Output signals of decision boxes.
   {% for b in boxes -%}signal {{b['name']}} : std_logic := '0';
   {% endfor %}
