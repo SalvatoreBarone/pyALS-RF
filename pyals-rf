@@ -27,6 +27,7 @@ from src.ConfigParsers.DtGenConfigParser import *
 from src.hdl_generation import hdl_generation
 from src.git_updater import git_updater
 from src.Flows.lcor_flow import leaves_correlation_flow
+from src.Flows.tmr_flow import tmr_flow
 
 @click.group(chain=True)
 @click.pass_context
@@ -160,7 +161,30 @@ def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss_lb, maxloss_ub,los
         maxloss_ub = maxloss_lb
     leaves_correlation_flow(ctx, output, fraction, maxloss_lb, maxloss_ub,loss_step, ncpus, report)
     #store_flow(ctx)
-    
+
+@cli.command("tmr")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
+@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
+@click.option('-f', '--fraction', type = float, default = 0.5, help = "Fraction of the test set to be used as pruning set")
+@click.option('-r', '--report', type = bool, default = True , help = "Enables the generation of a CSV file containing the report")
+@click.pass_context
+def tmr(ctx, conf, ncpus, output, verbose, fraction, report):
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False,"pruning")
+    logger = logging.getLogger("pyALS-RF")
+    tmr_flow(ctx, output, fraction, ncpus, report)
+    # logger.info("Leaves correlation pruning flow"
+    #             f"\n\tconf: {conf}"
+    #             f"\n\toutput dir: {output}"
+    #             )
+    # logger.info(f"Starting with Nro CPU: {ncpus}"
+    #             f"\n\t  Max Loss LB: {maxloss_lb}"
+    #             f"\n\t  Max Loss UB: {maxloss_ub}"
+    #             f"\n\t  Loss step: {loss_step}"
+    #             f"\n\t  Fraction of Dataset {fraction}")
+    # #store_flow(ctx)
+
 @cli.command("reduplot")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
@@ -301,6 +325,8 @@ cli.add_command(bitwidth)
 cli.add_command(als)
 cli.add_command(full)
 cli.add_command(grep)
+cli.add_command(tmr)
+cli.add_command(lcor)
 cli.add_command(generate_hdl)
 cli.add_command(debug_model)
 cli.add_command(debug_hdl)
