@@ -26,23 +26,13 @@ import csv
 import os
 import json5
 
+# Get the accuracy of a single decision tree on class c ( x_set contains only c samples).
 def tree_accuracy( tree, x_set, c ):
     correctly = 0
     for x in x_set:
         if np.argmax(tree.visit(x)) == c: 
             correctly += 1
     return 100 * correctly / len(x_set)
-
-# def evaluate_single_ensemble(trees_for_class, correct_class):
-#     # Evaluate the number of correct classification over the selected trees
-#     for tree in trees_for_class:
-#         if np.argmax(self.classifier.trees[tree].visit(x_val)) == correct_class: 
-#                     local_counter += 1
-#             # If there are at least two trees then the classification is correct.
-#             if local_counter >= 2:
-#                 # Check draw conditions 
-                
-#                 correctly_classified_no_draw += 1
 
 class TMR(GREP):
     
@@ -54,7 +44,12 @@ class TMR(GREP):
                     flow : str = "pruning"
                 ):
         super().__init__(classifier, pruning_set_fraction, max_loss = 5.0, min_resiliency = 0, ncpus = ncpus)
-        self.out_path = out_path
+        self.out_path = os.path.join(out_path, "tmr") 
+        logger = logging.getLogger("pyALS-RF")
+        logger.info(f"Out Path  {self.out_path}")
+        if os.path.exists(self.out_path) == False:
+            logger.info("Generating output path")
+            os.makedirs(self.out_path)
         self.flow = flow
         self.pool = Pool(self.ncpus)
         self.pruning_configuration = []
@@ -66,12 +61,21 @@ class TMR(GREP):
 
     # Approximate the function.
     def approx(self, report = True):
+        # Initialize the logger 
+        logger = logging.getLogger("pyALS-RF")
+        # Initialize the output paths 
+        report_path = os.path.join(self.out_path, "lcor_report.csv")
+        pruning_path =  os.path.join(self.out_path, "pruning_configuration.json5")
+        flow_store_path = os.path.join(self.out_path, ".flow.json5")
+
         # Split the dataset for the evaluation
         self.split_test_dataset(self.pruning_set_fraction)
         # Get the tree indexes for classes.
         self.trees_for_classes = {}
+        comp_time = time.time()
         # For each class, take the tree with the minimum number of classifications
         for c in self.classifier.model_classes:
+            logger.debug(f"[TMR] Isolating pruning samples for class {c}")
             # Get the pruning set samples associated to the specific class. 
             pruning_set_classes_x = [ ]
             for x,y in zip(self.x_pruning, self.y_pruning): 
@@ -80,6 +84,7 @@ class TMR(GREP):
                     pruning_set_classes_x.append(x)
             # Find the accuracy of each single tree for the specific class.
             #acc = tree_accuracy(self.classifier.trees[0], pruning_set_classes_x, int(c)) 
+            logger.debug(f"[TMR] Finding best trees for class {c}")
             accvec_args = [(t, pruning_set_classes_x, int(c)) for t in self.classifier.trees]        
             acc_vec = self.pool.starmap(tree_accuracy, accvec_args)
             # Get the best 3 different trees
@@ -87,6 +92,7 @@ class TMR(GREP):
             idx_couples_sorted = sorted(idx_couples, key=lambda x: x[1], reverse=True)
             best_trees = [idx for idx, value in idx_couples_sorted[:3]]
             self.trees_for_classes.update({int(c) : best_trees})
+            logger.debug(f"[TMR] Pruning remaining trees for class {c}")
             # Prune the trees not present in the configuration 
             for tree_idx in range(0, len(self.classifier.trees)):
                 # If the tree is not in the 
@@ -98,25 +104,44 @@ class TMR(GREP):
                             # append the leaf to the pruning configuration  
                             # The pruning configuration is : Class Label - Tree Idx - SOP 
                             self.pruning_configuration.append((c, str(tree_idx), l["sop"]))
-
+        # Evaluate the overall computational time.
+        comp_time = time.time() - comp_time
         # Now evaluate the accuracy of the pruned tree and save results
         # Arguments for evaluating accuracy 
         self.args_evaluate_validation = [[t, self.x_validation] for t in self.classifier.p_tree]
         self.pool = self.classifier.pool
         self.baseline_accuracy = self.evaluate_accuracy()[0]
-        pruned_acc = self.evaluate_accuracy_tmr()
-        print(f" Baseline {self.baseline_accuracy} Pruned {pruned_acc}")
-        
-        # GREP.set_pruning_conf(self.classifier, self.pruning_configuration)
-        # self.pruned_accuracy = self.evaluate_accuracy_tmr()
-        # print(f"")
-
-        #     # Save the pruning configuration
-        #     self.store_pruning_conf(pruning_path)
-        #     # Save the files
-        #     with open(f"{flow_store_path}", "w") as f:
-        #         json5.dump(self.flow, f, indent=2)
-
+        GREP.set_pruning_conf(self.classifier, self.pruning_configuration)
+        pruned_acc, nro_draw = self.evaluate_accuracy_tmr()
+        logger.info(f'Baseline acc {self.baseline_accuracy} Pruned Accuracy {pruned_acc}')
+        logger.info(f'N.ro pruned leaves {len(self.pruning_configuration)}  N.ro draw {nro_draw} Computational Time {comp_time}')
+        # Save the pruning configuration
+        self.store_pruning_conf(pruning_path)
+        # Save the flow
+        with open(f"{flow_store_path}", "w") as f:
+            json5.dump(self.flow, f, indent=2)
+        # Save the report 
+        if report :
+            csv_header = [  "N.ro pruned leaves",
+                            "Pruned Accuracy", 
+                            "Base Accuracy",
+                            "N.ro draw conditions"
+                            "Computational Time"]
+            csv_body = [ 
+                        len(self.pruning_configuration),
+                        pruned_acc,
+                        self.baseline_accuracy,
+                        nro_draw,
+                        comp_time
+                        ]
+            add_csv_head = os.path.exists(report_path)
+            with open(report_path, 'a') as f:
+                writer = csv.writer(f)
+                if not add_csv_head:
+                    writer.writerow(csv_header)
+                writer.writerow(csv_body)
+    
+    # Evaluate the accuracy of a tmr approximated model. 
     def evaluate_accuracy_tmr(self):
         correctly_classified_no_draw = 0
         number_draws = 0
@@ -136,12 +161,18 @@ class TMR(GREP):
                 # Local counter for draw conditions
                 local_counter_draw = 0
                 # For each other TMR ( i.e. for each other class)
-                for wrong_class, trees in self.trees_for_classes.items():
+                for wrong_class, other_trees in self.trees_for_classes.items():
                     if wrong_class != correct_class:
                         # Check if the other tree correctly vote for their class
-                        for tree in trees:
-                            if np.argmax(self.classifier.trees[tree].visit(x_val)) == wrong_class: 
+                        for ot in other_trees:
+                            pred_vec = self.classifier.trees[ot].visit(x_val)
+                            # When trees are approximated then maybe no class is obtained, so the argmax will return 0.
+                            # However 0 is the index of a class, resulting in a misclassification.
+                            if np.argmax(pred_vec) == wrong_class and np.max(pred_vec) > 0: 
                                 local_counter_draw += 1
+                                # print(f" The predicted class is {np.argmax(self.classifier.trees[ot].visit(x_val))}")
+                                # print(f" THe vector {self.classifier.trees[ot].visit(x_val)}")
+
                         # If at least two trees vote for their class, we have a draw condition.
                         if local_counter_draw >= 2 : 
                             correctly_classified_no_draw -= 1
