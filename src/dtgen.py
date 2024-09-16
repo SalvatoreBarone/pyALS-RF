@@ -73,6 +73,17 @@ def get_sets(dataset_file, config, fraction):
     logger.info(f"Testing sets is {len(x_test)} feature vectors and {len(y_test)} labels")
     return list(x_train), list(y_train), list(x_test), list(y_test)
 
+def get_sets_no_split(dataset_file, config):
+    logger = logging.getLogger("pyALS-RF")
+    if config.outcome_col is None:
+        config.outcome_col = -1
+    attributes, outcomes = read_dataset_from_csv(dataset_file, config.separator, config.skip_header, config.outcome_col)
+    # Categorical features are utilized elsewhere, but here the features are obtained via the get_labels function.
+    # Return the list of different outcomes
+    outcomes = get_labels(outcomes, config)
+    logger.info(f"Read {len(attributes)} feature vectors and {len(outcomes)} labels")
+    return list(attributes), list(outcomes)
+
 def save_dataset_to_csv(filename, attributes_name, attributes, labels):
     original_stdout = sys.stdout
     with open(filename, "w") as file:
@@ -240,10 +251,23 @@ def models_crossvalidation(config, model, x_test, y_test, pmml_file, test_datase
     logger.info(f"Accuracy of the pyALS model: {acc_pyals / len(y_test) * 100}%")
     logger.info(f"Accuracy of the scikit-learn model: {acc_scikit / len(y_test)*100}%")
 
-def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, cross_validate):
+def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, cross_validate, hyp_dataset, test_dataset, ncpus):
     logger = logging.getLogger("pyALS-RF")
     config = DtGenConfigParser(configfile)
-    x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
+    if not config.separated_training:
+        x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
+    else: # If the dataset is already splitted do not internally split into train and validation, but automatically integrate the functionality 
+        x_train, y_train = get_sets_no_split(dataset, config)
+        x_test, y_test = get_sets_no_split(test_dataset, config)
+    logging.info(f"Train size:  {len(x_train)} Test size: {len(x_test)}")
+    # If the dataset has a small training dataset.
+    # Else..
+    if not config.separated_hyperparametrization:
+        x_train_hyp_search = x_train
+        y_train_hyp_search = y_train
+    else:
+        x_train_hyp_search, y_train_hyp_search = get_sets_no_split(hyp_dataset, config)
+    logging.info(f"Grid Search/Random Search size {len(x_train_hyp_search)}")
     search_grid = { 'max_features': [None, 'log2', 'sqrt'],
                     'criterion' : ["gini", "entropy", "log_loss"],
                     'max_depth': [int(x) for x in np.linspace(7, 100, 2)],
@@ -256,9 +280,9 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
         pass
     else:
         if tuning == "random":
-            rf_random = RandomizedSearchCV(estimator = estimator, param_distributions = search_grid, n_iter = niter, cv = 3, verbose = 1, random_state = np.random.default_rng().integers(0, 100), n_jobs = -1)
+            rf_random = RandomizedSearchCV(estimator = estimator, param_distributions = search_grid, n_iter = niter, cv = 3, verbose = 3, random_state = np.random.default_rng().integers(0, 100), n_jobs = ncpus)
         else:
-            rf_random = GridSearchCV(estimator = estimator, param_grid = search_grid, cv = 3, verbose = 1, n_jobs = -1)
+            rf_random = GridSearchCV(estimator = estimator, param_grid = search_grid, cv = 3, verbose = 3, n_jobs = ncpus)
         rf_random.fit(x_train, y_train)
         logger.info(f'Best parameters:\n{tabulate([ [k, v] for k, v in rf_random.best_params_.items()])}')
         data = [ [i, estimator.tree_.node_count, estimator.tree_.max_depth ] for i, estimator in enumerate(rf_random.best_estimator_.estimators_) ]

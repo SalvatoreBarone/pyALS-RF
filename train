@@ -66,12 +66,17 @@ def synthetic_dataset(outputdir, n_samples : int, n_features : int, n_classes : 
 @click.argument('dataset', type=click.Path(exists=True, dir_okay=False))
 @click.argument('configfile', type=click.Path(exists=True, dir_okay=False))
 @click.argument('outputdir', type=click.Path(dir_okay=True), default = "output")
-@click.option("-f", "--fraction", type = float, default = 0.9, help = "Fraction of data to be used as learning set. The remaining will be used as test data.")
+@click.option("-f", "--fraction", type = float, default = 0.9, help = "Fraction of data to be used as learning set. The remaining will be used as test data. In case the config.json enables different train and test datasets this option is not considered.")
+#"Instead of using the entire training set, this function uses a small portion of the dataset, already splitted, for configuration. This option is enabled in the config.json of the dataset."
+@click.option("-h",'--hyp_dataset', type=click.Path( dir_okay=False))
+# "Separate testing dataset from dataset. If specified in the config.json of the dataset, this variable specifies the path of a separate testing dataset."
+@click.option("-t",'--test_dataset',  type=click.Path(dir_okay=False))
 @click.option("-n", "--ntrees", type = int, default = 1, help = "The number of trees in the ensemble. Ignored if clf is dt.")
 @click.option("-i", "--niter", type = int, default = 150, help = "The number of iterations")
 @click.option("-x", "--crossvalidate", is_flag = True, help = "Enable crossvalidation between sklearn and pyALS-RF")
+@click.option("-j", "--ncpus", type = int, default = -1, help = "Number of cpus used.")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
-def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, crossvalidate, verbose : Union[int,str]):
+def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, hyp_dataset, test_dataset, ntrees, niter, crossvalidate, ncpus, verbose : Union[int,str]):
     """
     Generates a decision tree / random forest from CSV data using random search.
     
@@ -90,11 +95,14 @@ def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntre
                 f"\n\tclf: {clf}"
                 f"\n\ttuning: {tuning}"
                 f"\n\tdataset: {dataset}"
+                f"\n\thyp_dataset: {hyp_dataset}"
+                f"\n\ttest_dataset: {test_dataset}"
                 f"\n\tconfigfile: {configfile}"
                 f"\n\toutputdir: {outputdir}"
+                f"\n\tfraction: {fraction}"
+                f"\n\n_cpus: {ncpus}"
                 )
-    
-    training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, crossvalidate)
+    training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, crossvalidate, hyp_dataset, test_dataset, ncpus)
     
 @click.command("dtgen")
 @click.argument('clf', type = click.Choice(["dt", "rf"]), default = "rf")

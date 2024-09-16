@@ -144,7 +144,7 @@ def grep(ctx, conf, ncpus, espresso, fraction, approach, cost, minredundancy, ma
 @click.option('-s', '--loss_step', type = float, default = 0.5, help = "Step used for accuracy loss iteration from LB to UB")
 @click.option('-r', '--report', type = bool, default = True , help = "Enables the generation of a CSV file containing the report")
 @click.pass_context
-def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss_lb, maxloss_ub,loss_step, report):
+def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss_lb, maxloss_ub, loss_step, report):
     assert maxloss_ub == 0.0 or maxloss_ub >= maxloss_lb 
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False,"pruning")
     logger = logging.getLogger("pyALS-RF")
@@ -169,11 +169,12 @@ def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss_lb, maxloss_ub,los
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.option('-f', '--fraction', type = float, default = 0.5, help = "Fraction of the test set to be used as pruning set")
 @click.option('-r', '--report', type = bool, default = True , help = "Enables the generation of a CSV file containing the report")
+@click.option('-i', '--it', type = int, default = 0 , help = "Experiment iteration")
 @click.pass_context
-def tmr(ctx, conf, ncpus, output, verbose, fraction, report):
+def tmr(ctx, conf, ncpus, output, verbose, fraction, report, it):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False,"pruning")
     logger = logging.getLogger("pyALS-RF")
-    tmr_flow(ctx, output, fraction, ncpus, report)
+    tmr_flow(ctx, output, fraction, ncpus, report, it)
     # logger.info("Leaves correlation pruning flow"
     #             f"\n\tconf: {conf}"
     #             f"\n\toutput dir: {output}"

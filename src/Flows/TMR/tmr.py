@@ -41,7 +41,8 @@ class TMR(GREP):
                     pruning_set_fraction : float = 0.5,
                     ncpus : int = cpu_count(),
                     out_path : str = "./",
-                    flow : str = "pruning"
+                    flow : str = "pruning",
+                    experiment_iteration : int = 0
                 ):
         super().__init__(classifier, pruning_set_fraction, max_loss = 5.0, min_resiliency = 0, ncpus = ncpus)
         self.out_path = os.path.join(out_path, "tmr") 
@@ -53,6 +54,7 @@ class TMR(GREP):
         self.flow = flow
         self.pool = Pool(self.ncpus)
         self.pruning_configuration = []
+        self.exp_it = experiment_iteration
     
     # # Predispose the  trim operation by initializing internal values.
     # def predispose_trim(self):
@@ -64,14 +66,14 @@ class TMR(GREP):
         # Initialize the logger 
         logger = logging.getLogger("pyALS-RF")
         # Initialize the output paths 
-        report_path = os.path.join(self.out_path, "lcor_report.csv")
-        pruning_path =  os.path.join(self.out_path, "pruning_configuration.json5")
+        report_path = os.path.join(self.out_path, "tmr.csv")
+        pruning_path =  os.path.join(self.out_path, f"pruning_configuration_{self.exp_it}.json5")
         flow_store_path = os.path.join(self.out_path, ".flow.json5")
 
         # Split the dataset for the evaluation
         self.split_test_dataset(self.pruning_set_fraction)
         # Get the tree indexes for classes.
-        self.trees_for_classes = {}
+        self.trees_per_class = {}
         comp_time = time.time()
         # For each class, take the tree with the minimum number of classifications
         for c in self.classifier.model_classes:
@@ -91,7 +93,7 @@ class TMR(GREP):
             idx_couples = list(enumerate(acc_vec))
             idx_couples_sorted = sorted(idx_couples, key=lambda x: x[1], reverse=True)
             best_trees = [idx for idx, value in idx_couples_sorted[:3]]
-            self.trees_for_classes.update({int(c) : best_trees})
+            self.trees_per_class.update({int(c) : best_trees})
             logger.debug(f"[TMR] Pruning remaining trees for class {c}")
             # Prune the trees not present in the configuration 
             for tree_idx in range(0, len(self.classifier.trees)):
@@ -104,6 +106,35 @@ class TMR(GREP):
                             # append the leaf to the pruning configuration  
                             # The pruning configuration is : Class Label - Tree Idx - SOP 
                             self.pruning_configuration.append((c, str(tree_idx), l["sop"]))
+        
+        def tree_in_class(tree_idx):
+            # for each class
+            for c in self.classifier.model_classes:
+                # If the tree having tree_idx is considered for a specific class
+                # Return true
+                if tree_idx in self.trees_per_class[int(c)]:
+                    return True
+            # The tree is not in a class, return False 
+            return False
+        
+        def leaf_in_pruning(leaf_cfg):
+            # For each leaf in pruning configuration 
+            for already_pruned in self.pruning_configuration:
+                # If the leaf is in the pruning cfg return true
+                if already_pruned[0] == leaf_cfg[0] and already_pruned[1] == leaf_cfg[1] and already_pruned[2] == leaf_cfg[2]:
+                    return True
+            # else false
+            return False
+        # Now, for each tree not present in any best tree configuration, simply prune every leaf.
+        for t in range(len(self.classifier.trees)):
+            # If the tree is not in a class
+            if not tree_in_class(t):
+                # For each leaf
+                for leaf in self.classifier.trees[t].leaves:
+                    leaf_prune_cfg = (l["class"], str(t), l["sop"])
+                    # If the leaf is not in the pruning cfg
+                    if not leaf_in_pruning(leaf_prune_cfg):
+                        self.pruning_configuration.append(leaf_prune_cfg)
         # Evaluate the overall computational time.
         comp_time = time.time() - comp_time
         # Now evaluate the accuracy of the pruned tree and save results
@@ -125,21 +156,24 @@ class TMR(GREP):
             csv_header = [  "N.ro pruned leaves",
                             "Pruned Accuracy", 
                             "Base Accuracy",
-                            "N.ro draw conditions"
-                            "Computational Time"]
+                            "N.ro draw conditions",
+                            "Computational Time",
+                            "Exp. It."]
             csv_body = [ 
                         len(self.pruning_configuration),
                         pruned_acc,
                         self.baseline_accuracy,
                         nro_draw,
-                        comp_time
+                        comp_time,
+                        self.exp_it
                         ]
-            add_csv_head = os.path.exists(report_path)
+            add_csv_head = not os.path.exists(report_path)
             with open(report_path, 'a') as f:
                 writer = csv.writer(f)
-                if not add_csv_head:
+                if add_csv_head: 
                     writer.writerow(csv_header)
                 writer.writerow(csv_body)
+    
     
     # Evaluate the accuracy of a tmr approximated model. 
     def evaluate_accuracy_tmr(self):
@@ -147,7 +181,7 @@ class TMR(GREP):
         number_draws = 0
         for x_val, y_val in zip(self.x_validation,self.y_validation):
             correct_class = y_val[0]
-            trees_for_class = self.trees_for_classes[correct_class]
+            trees_for_class = self.trees_per_class[correct_class]
             # Visit all the trees 
             local_counter = 0
             # Evaluate the number of correct classification over the selected trees
@@ -161,7 +195,8 @@ class TMR(GREP):
                 # Local counter for draw conditions
                 local_counter_draw = 0
                 # For each other TMR ( i.e. for each other class)
-                for wrong_class, other_trees in self.trees_for_classes.items():
+                for wrong_class, other_trees in self.trees_per_class.items():
+                    # For other TRMS
                     if wrong_class != correct_class:
                         # Check if the other tree correctly vote for their class
                         for ot in other_trees:

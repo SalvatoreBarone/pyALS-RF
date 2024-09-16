@@ -25,3 +25,7 @@ class DtGenConfigParser(ConfigParser):
 		self.skip_header = search_field_in_config(self.configuration, "skip_header", False, True)
 		self.attributes_name = search_field_in_config(self.configuration, "attributes_name", True)
 		self.classes_name = search_field_in_config(self.configuration, "classes_name", True)
+		# Separated training is used to indicate that the dataset has already separated training and testing sets.
+		self.separated_training = search_field_in_config(self.configuration, "separated_training", False, False)
+		# It is used to indicate that the hyperparametrization is performed on a different dataset.
+		self.separated_hyperparametrization = search_field_in_config(self.configuration, "separated_hyperparametrization", False, False)
