@@ -163,7 +163,7 @@ def print_nodes(model):
     elif isinstance(model, DecisionTreeClassifier):
         print_clf(model)
         
-def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, y_test, cross_validate):
+def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, y_test, cross_validate, neg_export_graphs = True):
     acc = 0
     samples_error = { i: [] for i in range(model.n_classes_) }
     predictions = model.predict_proba(np.array(x_test))
@@ -180,19 +180,27 @@ def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, 
     dump_file = f"{outputdir}/classifier.joblib"
     pmml_file = f"{outputdir}/classifier.pmml"
     params_file = f"{outputdir}/best_parameters.json5"
-    training_set_csv = f"{outputdir}/training_set.csv"
-    test_dataset_csv = f"{outputdir}/test_set.csv"
+    
+    if not config.separated_training:
+        training_set_csv = f"{outputdir}/training_set.csv"
+        test_dataset_csv = f"{outputdir}/test_set.csv"
+    
     error_boxplot = f"{outputdir}/error_boxplot.pdf"
-
-    logger.info(f"Saving training parameters to {params_file}")
-    with open(params_file, "w") as f:
-        json5.dump(best_params, f, indent=2)
-    logger.info(f"Exporting the training set to {training_set_csv} ...")
-    save_dataset_to_csv(training_set_csv, config.attributes_name, x_train, y_train)
-    logger.info(f"Exporting the test set to {test_dataset_csv} ...")
-    save_dataset_to_csv(test_dataset_csv, config.attributes_name, x_test, y_test)
-    logger.info(f"Exporting graphviz draws of learned trees to {outputdir}/export ...")
-    graphviz_export(model, config.attributes_name, list(config.classes_name.values()) if isinstance(config.classes_name, dict) else config.classes_name, outputdir)
+    
+    if best_params != None:
+        logger.info(f"Saving training parameters to {params_file}")
+        with open(params_file, "w") as f:
+            json5.dump(dict(best_params), f, indent=2)
+    
+    if not config.separated_training:
+        logger.info(f"Exporting the training set to {training_set_csv} ...")
+        save_dataset_to_csv(training_set_csv, config.attributes_name, x_train, y_train)
+        logger.info(f"Exporting the test set to {test_dataset_csv} ...")
+        save_dataset_to_csv(test_dataset_csv, config.attributes_name, x_test, y_test)
+    
+    if not neg_export_graphs:
+        logger.info(f"Exporting graphviz draws of learned trees to {outputdir}/export ...")
+        graphviz_export(model, config.attributes_name, list(config.classes_name.values()) if isinstance(config.classes_name, dict) else config.classes_name, outputdir)
 
     logger.info(f"Dumping to {dump_file} ...")
     joblib.dump(model, dump_file)
@@ -251,7 +259,7 @@ def models_crossvalidation(config, model, x_test, y_test, pmml_file, test_datase
     logger.info(f"Accuracy of the pyALS model: {acc_pyals / len(y_test) * 100}%")
     logger.info(f"Accuracy of the scikit-learn model: {acc_scikit / len(y_test)*100}%")
 
-def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, cross_validate, hyp_dataset, test_dataset, ncpus):
+def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, cross_validate, hyp_dataset, test_dataset, ncpus, neg_exp_graph):
     logger = logging.getLogger("pyALS-RF")
     config = DtGenConfigParser(configfile)
     if not config.separated_training:
@@ -268,13 +276,22 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
     else:
         x_train_hyp_search, y_train_hyp_search = get_sets_no_split(hyp_dataset, config)
     logging.info(f"Grid Search/Random Search size {len(x_train_hyp_search)}")
-    search_grid = { 'max_features': [None, 'log2', 'sqrt'],
-                    'criterion' : ["gini", "entropy", "log_loss"],
-                    'max_depth': [int(x) for x in np.linspace(7, 100, 2)],
-                    'min_samples_split': [int(x) for x in np.linspace(3, 100, 1)],
-                    'min_samples_leaf': [int(x) for x in np.linspace(3, 100, 1)],
-                    'ccp_alpha' : np.arange(0.001, 0.2, 0.002),
-                    'bootstrap': [True, False]}
+    # search_grid = { 'max_features': [None, 'log2', 'sqrt'],
+    #                 'criterion' : ["gini", "entropy", "log_loss"],
+    #                 'max_depth': [int(x) for x in np.arange(5, 102, 2)],
+    #                 'min_samples_split': [int(x) for x in np.arange(3, 101, 1)],
+    #                 'min_samples_leaf': [int(x) for x in np.arange(3, 101, 1)],
+    #                 'ccp_alpha' : np.arange(0.001, 0.2, 0.002),
+    #                 'bootstrap': [True, False]
+    #                 }
+
+    search_grid = { 
+                    'criterion' : ["entropy"],
+                    'max_depth': [int(x) for x in np.arange(18, 52, 2)],
+                    # 'min_samples_split': [int(x) for x in np.arange(3, 10, 1)],
+                    # 'min_samples_leaf': [int(x) for x in np.arange(3, 10, 1)],
+                    }
+
     estimator = RandomForestClassifierMV(n_estimators = ntrees)
     if clf == "dt":
         pass
@@ -287,12 +304,16 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
         logger.info(f'Best parameters:\n{tabulate([ [k, v] for k, v in rf_random.best_params_.items()])}')
         data = [ [i, estimator.tree_.node_count, estimator.tree_.max_depth ] for i, estimator in enumerate(rf_random.best_estimator_.estimators_) ]
         logger.info(f'DTs Stats.:\n{tabulate(data, headers=["tree", "#nodes", "depth"])}\n')
-        save_model(outputdir, config, rf_random.best_estimator_, rf_random.best_params_, x_train, y_train, x_test, y_test, cross_validate)
+        save_model(outputdir, config, rf_random.best_estimator_, rf_random.best_params_, x_train, y_train, x_test, y_test, cross_validate, neg_exp_graph)
         
-def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap, cross_validate):
+def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, criterion, min_sample_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap, cross_validate, testing_set, neg_exp_graph):
     logger = logging.getLogger("pyALS-RF")
     config = DtGenConfigParser(configfile)
-    x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
+    if not config.separated_training:
+        x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
+    else : 
+        x_train, y_train =  get_sets_no_split(dataset, config)
+        x_test, y_test   =  get_sets_no_split(testing_set, config)
     if clf == "dt":
         model = DecisionTreeClassifier(max_depth = depth, criterion = criterion, min_samples_split = min_sample_split, min_samples_leaf = min_samples_leaf, max_features = max_features, max_leaf_nodes = max_leaf_nodes, min_impurity_decrease = min_impurity_decrease, ccp_alpha = ccp_alpha).fit(x_train, y_train)
         logger.info(f"Node count: {model.tree_.node_count()}")
@@ -303,5 +324,5 @@ def dtgen(clf, dataset, configfile, outputdir, fraction, depth, predictors, crit
         data = [ [i, estimator.tree_.node_count, estimator.tree_.max_depth ] for i, estimator in enumerate(model.estimators_) ]
         logger.info(f'DTs Stats.:\n{tabulate(data, headers=["Tree", "#nodes", "depth"])}')
     #Todo Store training parameters on file (in place of None)
-    save_model(outputdir, config, model, None, x_train, y_train, x_test, y_test, cross_validate)    
+    save_model(outputdir, config, model, None, x_train, y_train, x_test, y_test, cross_validate, neg_exp_graph)    
     

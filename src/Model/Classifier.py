@@ -72,10 +72,15 @@ class Classifier:
         root = tree.getroot()
         self.__namespaces["pmml"] = Classifier.get_xmlns_uri(root)
         self.get_features_and_classes_from_pmml(root)
+        # Save other parameters
         if dataset_description is not None:
             self.classes_name = dataset_description.classes_name
+            self.csv_separator = dataset_description.separator
+            self.out_column = dataset_description.outcome_col
         else:
             self.classes_name = self.model_classes
+            self.csv_separator = ";"
+            self.out_column = -1
         segmentation = root.find("pmml:MiningModel/pmml:Segmentation", self.__namespaces)
         if segmentation is not None:
             for tree_id, segment in enumerate(segmentation.findall("pmml:Segment", self.__namespaces)):
@@ -102,6 +107,8 @@ class Classifier:
         model = joblib.load(joblib_file_name)
         self.classes_name = dataset_description.classes_name
         self.model_classes = dataset_description.classes_name
+        self.csv_separator = dataset_description.separator
+        self.out_column = dataset_description.outcome_col
         self.model_features = [ {"name": f, "type": "double" } for f in dataset_description.attributes_name ]
         if isinstance(model, (RandomForestClassifier, RandomForestClassifierMV)):
             for i, estimator in enumerate(model.estimators_):
@@ -126,14 +133,17 @@ class Classifier:
             t.dump()
             
     def read_test_set(self, dataset_csv):
-        self.dataframe = pd.read_csv(dataset_csv, sep = ";")
+
+        self.dataframe = pd.read_csv(dataset_csv, sep = self.csv_separator)
+        # Todo : Remove the assumption of the last column being the label
         attribute_name = list(self.dataframe.keys())[:-1]
+        out_col = self.dataframe.keys()[-1]
         assert len(attribute_name) == len(self.model_features), f"Mismatch in features vectors. Read {len(attribute_name)} features, buth PMML says it must be {len(self.model_features)}!"
         f_names = [ f["name"] for f in self.model_features]
         name_matches = [ a == f for a, f in zip(attribute_name, f_names) ]
         assert all(name_matches), f"Feature mismatch at index {name_matches.index(False)}: {attribute_name[name_matches.index(False)]} != {f_names[name_matches.index(False)]}"
-        self.x_test = self.dataframe.loc[:, self.dataframe.columns != "Outcome"].values
-        self.y_test = self.dataframe.loc[:, self.dataframe.columns == "Outcome"].values
+        self.x_test = self.dataframe.loc[:, self.dataframe.columns != out_col].values
+        self.y_test = self.dataframe.loc[:, self.dataframe.columns == out_col].values
         for arg in self.args:
             arg[1] = self.x_test
     
@@ -210,7 +220,7 @@ class Classifier:
     @staticmethod
     def compute_score(trees : list[DecisionTree], x_test : ndarray):
         assert len(np.shape(x_test)) == 2
-        return np.array( [ np.sum( [t.visit(x) for t in trees ], axis = 0) for x in x_test ] )
+        return np.array( [ np.sum( [t.visit(x) for t in trees ], axis = 0) for x in tqdm(x_test, desc = "Evaluating score") ] )
     
     def predict(self, x_test : ndarray):
         if len(np.shape(x_test)) == 1:

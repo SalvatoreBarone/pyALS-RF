@@ -56,6 +56,45 @@ class GREP:
         outcomes = np.sum(self.pool.starmap(Classifier.compute_score, self.args_evaluate_validation), axis = 0)
         return np.sum(np.argmax(o) == y and not self.classifier.check_draw(o)[0] for o, y in zip(outcomes, self.y_validation)) / len(self.y_validation) * 100
     
+    # Remove the draw condition checking and return two different accuracies
+    def evaluate_accuracy_draw(self):
+        outcomes = np.sum(self.pool.starmap(Classifier.compute_score, self.args_evaluate_validation), axis = 0)
+        correctly_classified_draw = 0
+        correctly_classified_no_draw = 0
+        classifications_draw = []
+        classifications_no_draw = []
+        draw_counter = 0
+        # for o, y in zip(outcomes, self.y_validation):
+        #     # If the draw condition is handled
+        #     draw = self.classifier.check_draw(o)[0]
+        #     if np.argmax(o) == y :#and not draw:
+        #         correctly_classified_draw += 1
+        #         # classifications_draw.append    
+        #         if not draw:
+        #             correctly_classified_no_draw += 1
+        
+        for o, y in zip(outcomes, self.y_validation):
+            # If the draw condition is handled
+            draw = self.classifier.check_draw(o)[0]
+            classification_result = np.argmax(o)
+            # No draw correctly classified
+            if not draw:
+                if classification_result == y:
+                    correctly_classified_draw += 1
+                    correctly_classified_no_draw += 1
+                classifications_draw.append((classification_result,y))
+                classifications_no_draw.append((classification_result,y))   
+            # Draw condition
+            elif draw:
+                draw_counter += 1
+                if classification_result == y:
+                    correctly_classified_no_draw += 1
+                classifications_draw.append((-1,y))
+                classifications_no_draw.append((classification_result,y))   
+  
+        return (correctly_classified_draw /len(self.x_validation) * 100,
+                 correctly_classified_no_draw / len(self.x_validation) * 100, classifications_draw, classifications_no_draw, draw_counter)
+    
     def evaluate_redundancy(self):
         logger = logging.getLogger("pyALS-RF")
         self.initial_redundancy = [] # keeps the initial redundancy of each sample (it's easier to sort a list of tuples)

@@ -25,7 +25,7 @@ from ..Model.Classifier import Classifier
 from .TMR.tmr import TMR
 import os 
 
-def tmr_flow(ctx, output, fraction,  ncpus, report, it ):
+def tmr_flow(ctx, output, fraction,  ncpus, report, it, test_samples):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the TMR flow.")
     load_configuration_ps(ctx)
@@ -35,6 +35,6 @@ def tmr_flow(ctx, output, fraction,  ncpus, report, it ):
         mkpath(ctx.obj["configuration"].outdir)
     create_classifier(ctx)    
     tmr = TMR (ctx.obj["classifier"], fraction,  ncpus,ctx.obj['configuration'].outdir,ctx.obj["flow"], it)
-    tmr.approx()
+    tmr.approx(test_samples = test_samples)
 
     

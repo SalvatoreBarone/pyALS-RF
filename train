@@ -76,7 +76,8 @@ def synthetic_dataset(outputdir, n_samples : int, n_features : int, n_classes : 
 @click.option("-x", "--crossvalidate", is_flag = True, help = "Enable crossvalidation between sklearn and pyALS-RF")
 @click.option("-j", "--ncpus", type = int, default = -1, help = "Number of cpus used.")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
-def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, hyp_dataset, test_dataset, ntrees, niter, crossvalidate, ncpus, verbose : Union[int,str]):
+@click.option("-e",'--neg_exp_graph', is_flag = True, help = "Disable the graph_export")
+def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, hyp_dataset, test_dataset, ntrees, niter, crossvalidate, ncpus, verbose : Union[int,str], neg_exp_graph: bool):
     """
     Generates a decision tree / random forest from CSV data using random search.
     
@@ -102,7 +103,7 @@ def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, hyp_
                 f"\n\tfraction: {fraction}"
                 f"\n\n_cpus: {ncpus}"
                 )
-    training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, crossvalidate, hyp_dataset, test_dataset, ncpus)
+    training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, crossvalidate, hyp_dataset, test_dataset, ncpus, neg_exp_graph)
     
 @click.command("dtgen")
 @click.argument('clf', type = click.Choice(["dt", "rf"]), default = "rf")
@@ -122,7 +123,9 @@ def parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, hyp_
 @click.option("-b", "--disable_bootstrap", is_flag = True, help = "Disable the bootstrap")
 @click.option("-x", "--crossvalidate", is_flag = True, help = "Enable crossvalidation between sklearn and pyALS-RF")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
-def learning(clf : str, dataset : str, configfile : str, outputdir : str, fraction : float, depth : int, ntrees : int, criterion : str, min_samples_split : int, min_samples_leaf : int, max_features : Union[int,str], max_leaf_nodes : int, min_impurity_decrease : float, ccp_alpha : float, disable_bootstrap : bool, crossvalidate : bool, verbose : Union[int,str]):
+@click.option("-t",'--test_dataset',  type=click.Path(dir_okay=False))
+@click.option("-e",'--neg_exp_graph', is_flag = True, help = "Disable the graph_export")
+def learning(clf : str, dataset : str, configfile : str, outputdir : str, fraction : float, depth : int, ntrees : int, criterion : str, min_samples_split : int, min_samples_leaf : int, max_features : Union[int,str], max_leaf_nodes : int, min_impurity_decrease : float, ccp_alpha : float, disable_bootstrap : bool, crossvalidate : bool, verbose : Union[int,str], test_dataset : str, neg_exp_graph):
     """
     Generates a decision tree/ random forest from CSV data.
 
@@ -135,7 +138,7 @@ def learning(clf : str, dataset : str, configfile : str, outputdir : str, fracti
     OUTPUTDIR is the path of the output directory.
     """
     configure_logger("pyALS-RF", verbose)
-    dtgen(clf, dataset, configfile, outputdir, fraction, depth, ntrees, criterion, min_samples_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap, crossvalidate)
+    dtgen(clf, dataset, configfile, outputdir, fraction, depth, ntrees, criterion, min_samples_split, min_samples_leaf, max_features, max_leaf_nodes, min_impurity_decrease, ccp_alpha, disable_bootstrap, crossvalidate, test_dataset, neg_exp_graph)
 
 cli.add_command(synthetic_dataset)
 cli.add_command(parameter_tuning)

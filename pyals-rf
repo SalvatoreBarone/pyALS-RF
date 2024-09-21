@@ -170,20 +170,23 @@ def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss_lb, maxloss_ub, lo
 @click.option('-f', '--fraction', type = float, default = 0.5, help = "Fraction of the test set to be used as pruning set")
 @click.option('-r', '--report', type = bool, default = True , help = "Enables the generation of a CSV file containing the report")
 @click.option('-i', '--it', type = int, default = 0 , help = "Experiment iteration")
+@click.option('-t', '--test_samples', type = int, default = 0 , help = "Number of test samples used from the validation after the split. Test set is first splitted and then test_samples are taken.")
 @click.pass_context
-def tmr(ctx, conf, ncpus, output, verbose, fraction, report, it):
+def tmr(ctx, conf, ncpus, output, verbose, fraction, report, it, test_samples):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False,"pruning")
     logger = logging.getLogger("pyALS-RF")
-    tmr_flow(ctx, output, fraction, ncpus, report, it)
-    # logger.info("Leaves correlation pruning flow"
-    #             f"\n\tconf: {conf}"
-    #             f"\n\toutput dir: {output}"
-    #             )
-    # logger.info(f"Starting with Nro CPU: {ncpus}"
-    #             f"\n\t  Max Loss LB: {maxloss_lb}"
-    #             f"\n\t  Max Loss UB: {maxloss_ub}"
-    #             f"\n\t  Loss step: {loss_step}"
-    #             f"\n\t  Fraction of Dataset {fraction}")
+    logger.info("TMRn pruning flow"
+                f"\n\tconf: {conf}"
+                f"\n\toutput dir: {output}"
+                )
+    logger.info(f"Starting with Nro CPU: {ncpus}"
+                f"\n\t  Outdir: {output}"
+                f"\n\t  Fraction of Dataset {fraction}"
+                f"\n\t  report enabled {test_samples}"
+                f"\n\t  report enabled {report}"
+                f"\n\t  iteration {it}"
+                )
+    tmr_flow(ctx, output, fraction, ncpus, report, it, test_samples)
     # #store_flow(ctx)
 
 @cli.command("reduplot")
