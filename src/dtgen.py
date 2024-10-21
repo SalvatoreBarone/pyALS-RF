@@ -286,13 +286,14 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
     #                 }
 
     search_grid = { 
-                    'criterion' : ["entropy"],
-                    'max_depth': [int(x) for x in np.arange(18, 52, 2)],
-                    # 'min_samples_split': [int(x) for x in np.arange(3, 10, 1)],
-                    # 'min_samples_leaf': [int(x) for x in np.arange(3, 10, 1)],
+                    'criterion' : ["entropy", "gini"],
+                    'max_depth': [5, 7, 10],
+                    'min_samples_split': [2, 5 , 10],
+                    'min_samples_leaf': [1, 5, 9],
+                    'bootstrap' : [True, False]
                     }
 
-    estimator = RandomForestClassifierMV(n_estimators = ntrees)
+    estimator = RandomForestClassifierMV(random_state=42, n_estimators = ntrees)
     if clf == "dt":
         pass
     else:

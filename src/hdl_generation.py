@@ -28,7 +28,7 @@ from .HDLGenerators.TwoStepsAlsWcHdlGenerator import TwoStepsAlsWcHdlGenerator
 from .HDLGenerators.TwoStepsFullHdlGenerator import TwoStepsFullHdlGenerator
 from .ctx_factory import load_configuration_ps, create_classifier, create_yshelper, load_flow, create_problem, create_optimizer
 
-def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
+def hdl_generation(ctx, lut_tech, skip_exact : bool, output, pruning_name):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the HDL generation flow.")
     load_configuration_ps(ctx)
@@ -54,13 +54,18 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output):
     
     logger.info("Generating the approximate implementation...")
     if ctx.obj["flow"] == "pruning":
-        pruning_configuration_json = f"{ctx.obj['configuration'].outdir}/pruning_configuration.json5"
+        if not pruning_name:
+            pruning_configuration_json = f"{ctx.obj['configuration'].outdir}/pruning_configuration.json5"
+        else:
+            pruning_configuration_json = f"{ctx.obj['configuration'].outdir}/{pruning_name}"
+
         if "pruning_configuration" not in ctx.obj:
             logger.info(f"Reading pruning configuration from {pruning_configuration_json}")
             ctx.obj['pruning_configuration'] = json5.load(open(pruning_configuration_json))
         hdl_generator = GREPHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
         hdl_generator.generate_axhdl(pruning_configuration = ctx.obj['pruning_configuration'], enable_espresso = ctx.obj['espresso'], lut_tech = lut_tech)
         ax_luts_dbs, ax_luts_bns, ax_ffs_dbs = hdl_generator.get_resource_usage()
+        
         logger.info("Approximate implementations expected requirements (voting excluded):"
                     f"\n\t- LUTs for decision boxes (approx.): {ax_luts_dbs}"
                     f"\n\t- FFs for decision boxes (approx.): {ax_ffs_dbs}"
