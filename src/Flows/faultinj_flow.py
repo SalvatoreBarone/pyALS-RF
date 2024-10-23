@@ -69,6 +69,14 @@ def test_boxes_output(classifier: Classifier):
                 print(type(x))
             exit(1)
         
+def tree_visiting_injected(classifier: Classifier, input_sample, input_faults, boxes_faults, bn_faults):
+    # Inject into the input sample.
+    # Get the Boxes out
+    # Inject into the boxes
+    # Inject into assertions
+    # Compute outupt
+    # Return prediction 
+    return 0
 
 def fault_injection(ctx, output, ncpus):
     # Initialize the logger 
