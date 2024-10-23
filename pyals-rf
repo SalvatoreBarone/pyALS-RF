@@ -28,6 +28,7 @@ from src.hdl_generation import hdl_generation
 from src.git_updater import git_updater
 from src.Flows.lcor_flow import leaves_correlation_flow
 from src.Flows.tmr_flow import tmr_flow
+from src.Flows.faultinj_flow import fault_injection
 
 @click.group(chain=True)
 @click.pass_context
@@ -216,8 +217,9 @@ def reduplot(ctx, conf, ncpus, output, verbose):
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.option('-r', '--report', type = bool, default = True , help = "Enables the generation of a CSV file containing the report")
+@click.option('-p', '--pruning_name',  default = None , help = "Overrides the name of the pruning configuration into the output dir.")
 @click.pass_context
-def generate_hdl(ctx, conf, ncpus, espresso, luts, skip_exact, output, verbose, report):
+def generate_hdl(ctx, conf, ncpus, espresso, luts, skip_exact, output, verbose, report, pruning_name):
     """
     Generates HDL implementations for a given classifier, including its approximate variants, if any.
     """
@@ -229,8 +231,9 @@ def generate_hdl(ctx, conf, ncpus, espresso, luts, skip_exact, output, verbose, 
                 f"\n\tLUT tech: {luts}"
                 f"\n\tskip non-approximate: {skip_exact}"
                 f"\n\toutput dir: {output}"
+                f"\n\tpruning name: {pruning_name}"
                 )
-    hdl_generation(ctx, luts, skip_exact, output)
+    hdl_generation(ctx, luts, skip_exact, output, pruning_name)
     
 @cli.command("debug")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
@@ -324,7 +327,19 @@ def compare(configfile, axapproach, outdir, pareto, axmode, alpha, beta, gamma, 
 @click.pass_context
 def compgini(configfile, outdir):
     compute_gini_dist(configfile, outdir)
-    
+
+@cli.command("faultinjection")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
+@click.option('-o', '--out', type=click.Path(exists=True, dir_okay=True), default = None, help = "Output directory.")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
+@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.pass_context
+def faultinjection(ctx, conf, out, verbose, ncpus):#, outdir):
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "faultinj")
+    fault_injection(ctx = ctx,output = out, ncpus = ncpus)
+    exit(1)
+    return 0
+
 cli.add_command(bitwidth)
 cli.add_command(als)
 cli.add_command(full)
@@ -338,6 +353,7 @@ cli.add_command(eval)
 cli.add_command(distance)
 cli.add_command(compare)
 cli.add_command(compgini)
+cli.add_command(faultinjection)
 
 if __name__ == '__main__':
     if git_updater(os.path.dirname(os.path.realpath(__file__))):

@@ -75,7 +75,13 @@ class Classifier:
         # Save other parameters
         if dataset_description is not None:
             self.classes_name = dataset_description.classes_name
-            self.csv_separator = dataset_description.separator
+            # In case the dataset is splitted (copied into the outdir folder during training)
+            # then use the original separator
+            if dataset_description.separated_training : 
+                self.csv_separator = dataset_description.separator
+            # Otherwise use the standard ";"
+            else:
+                self.csv_separator = ";"
             self.out_column = dataset_description.outcome_col
         else:
             self.classes_name = self.model_classes
@@ -95,7 +101,7 @@ class Classifier:
             tree = self.get_tree_model_from_pmml("0", tree_model_root)
             self.trees.append(tree)
         logger.debug(f"Done parsing {pmml_file_name}")
-        
+
 
     def joblib_parser(self, joblib_file_name, dataset_description):
         logger = logging.getLogger("pyALS-RF")
@@ -133,7 +139,6 @@ class Classifier:
             t.dump()
             
     def read_test_set(self, dataset_csv):
-
         self.dataframe = pd.read_csv(dataset_csv, sep = self.csv_separator)
         # Todo : Remove the assumption of the last column being the label
         attribute_name = list(self.dataframe.keys())[:-1]

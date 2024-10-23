@@ -41,7 +41,7 @@ class DecisionTree:
         self.exact_box_output = None
         if root_node:
             self.parse(root_node, use_espresso)
-    
+
     def brace4ALS(self, als_conf):
         if als_conf is None:
             self.als_conf = als_conf
@@ -197,7 +197,7 @@ class DecisionTree:
                 assert f"{n} " not in l["sop"], f"Leaf name found in boolean expression for class {l['class']}! {n} found in {l['sop']}"
         self.class_assertions = { c : [item["sop"] for item in self.leaves if item["class"] == c] for c in self.model_classes}
         logger.debug(f'Tree {self.name} class assertions:\n{tabulate([[k, f"{nl}".join(v), ] for k, v in self.class_assertions.items()], headers=["class", "minterms"], tablefmt="grid")}')
-        
+
     def define_boolean_expression(self, minterms, use_espresso):
         logger = logging.getLogger("pyALS-RF")
         if not minterms:
