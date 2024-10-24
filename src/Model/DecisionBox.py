@@ -111,3 +111,15 @@ class DecisionBox:
       return input_to_compare < threshold
     else: 
       return input_to_compare == threshold
+    
+      
+class FaultedBox:
+      
+  def __init__(self, box_name, feature_name, data_type, fixed_value):
+    self.name = box_name
+    self.feature_name = feature_name
+    self.data_type = data_type
+    self.fixed_value = fixed_value
+
+  def compare(self, input):
+    return self.fixed_value 

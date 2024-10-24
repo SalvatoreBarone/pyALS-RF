@@ -331,9 +331,35 @@ class Classifier:
                 current_node.score = self.model_classes[np.argmax(values[current_node_id])]
                 is_leaves[current_node_id] = True
         return root_node
-                
+
+    # Inject a fault into the decision boxes.            
     def inject_tree_boxes_faults(self, faults_per_tree):
         for tree_name in faults_per_tree.keys():
             for tree in self.trees:
                 if tree.name == tree_name:
                     tree.fix_boxes_outs(faults_per_tree[tree_name])
+
+    # Replace Tree decision boxes with faulted boxes.            
+    def inject_tree_boxes_faults_fb(self, faults_per_tree):
+        for tree_name in faults_per_tree.keys():
+            for tree in self.trees:
+                if tree.name == tree_name:
+                    tree.replace_db_with_fb(faults_per_tree[tree_name])
+
+    # Change the BNs, by loading 
+    # directly a new assertion function configuration.
+    def set_tree_bns(self, faults_per_tree):
+        for tree_name in faults_per_tree.keys():
+            for tree in self.trees:
+                if tree.name == tree_name:
+                    tree.set_assertion_functions(faults_per_tree[tree_name])
+
+    # Fix the assertion functions
+    # This function simply changes specific assertion functions for each 
+    # tree by setting specific assertions to True or false. 
+    def inject_bns_faults(self, faults_per_tree):
+        for tree_name in faults_per_tree.keys():
+            for tree in self.trees:
+                if tree.name == tree_name:
+                    tree.inj_fault_assertion_functions(faults_per_tree[tree_name])
+    

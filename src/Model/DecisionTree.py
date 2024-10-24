@@ -220,6 +220,10 @@ class DecisionTree:
         minterms, sop, hdl_expression = self.define_boolean_expression(minterms, use_espresso)
         return {"class" : class_name, "minterms" : minterms, "sop" : sop, "hdl_expression" : hdl_expression}
 
+    # Functions used for fault injection
+
+    # faults:   dictionary where keys are nodes and values are
+    #           the fixed faulted value (True/False)
     def fix_boxes_outs(self, faults):
         self.correct_boxes = []
         self.faulted_boxes = {}
@@ -228,6 +232,72 @@ class DecisionTree:
                 self.correct_boxes.append(box)
         self.faulted_boxes = faults
     
+    # faults:   dictionary where keys are nodes and values are
+    #           the fixed faulted value (True/False)
+    def fix_boxes_outs(self, faults):
+        self.correct_boxes = []
+        self.faulted_boxes = {}
+        for box in self.decision_boxes:
+            if box["name"] not in faults.keys():
+                self.correct_boxes.append(box)
+        self.faulted_boxes = faults
+    
+    # Get the output of decision boxes in case of a fault.
     def get_boxes_out_faults(self, attributes):
         outs = {box["box"].name if self.als_conf is None else "\\" + box["box"].name() : box["box"].compare(attributes[self.attrbutes_name.index(box["box"].feature_name)]) for box in self.correct_boxes}
         return {**outs, **self.faulted_boxes}
+    
+    # faults:   dictionary where keys are nodes and values are
+    #           the fixed faulted value (True/False)
+    # DIFFERENTLY FROM THE PREVIOUS ONE THIS FUNCION REPLACES
+    # THE DECISION BOX WITH A FAULTED BOX ENABLING THE USE OF THE 
+    # STANDARD VISIT FUNCTION
+    def replace_db_with_fb(self, faults):
+        for box in self.decision_boxes:
+            if box["name"]  in faults.keys():
+                box["box"] = FaultedBox(box_name = box["box"].name, feature_name = box["box"].feature_name, data_type = box["box"].data_type, fixed_value = faults[[box["name"]]])
+        self.faulted_boxes = faults
+    
+    # Fix the value of an assertion function
+    # assertions:   Dictionary where keys are classes name containing the new list of assertion functions 
+    def set_assertion_functions(self, assertions, use_espresso = False):
+        # For each boolean network.
+        for boolean_network in self.boolean_networks: 
+            new_assertions = assertions["class"]
+            new_minterms, new_sop, new_hdl_expr = self.define_boolean_expression(minterms = assertions, use_espresso = use_espresso)
+            boolean_network["minterms"] = new_minterms
+            boolean_network["sop"]      = new_sop
+            boolean_network["hdl_expression"] = new_hdl_expr
+
+    # Inject faults into the assertion functions by altering the assertion functions.
+    # Assertions is a dictionary, containing for each assertion function (keys) its fixed value.    
+    def inj_fault_assertion_functions(self, altered_assertions, use_espresso = False):
+        for boolean_network in self.boolean_networks:
+            if boolean_network["class"] in altered_assertions.keys():
+                modified_assertions = altered_assertions[boolean_network["class"]]
+                minterms_temp = []
+                # Generate the new assertion functions
+                for old_minterms in boolean_network["minterms"]:
+                    # If the value is in altered assertions
+                    if old_minterms in modified_assertions.keys():
+                        # The new value ( probably directly True/False for FI) is taken as a minterm.
+                        minterms_temp.append(modified_assertions[old_minterms])
+                    # Otherwise... take the previous one !
+                    else :
+                        minterms_temp.append(old_minterms)
+                # Now, update..
+                new_minterms, new_sop, new_hdl_expr = self.define_boolean_expression(minterms = minterms_temp, use_espresso = use_espresso)
+                boolean_network["minterms"] = new_minterms
+                boolean_network["sop"]      = new_sop
+                boolean_network["hdl_expression"] = new_hdl_expr
+    
+    # Tree visiting for the fault injection
+    def visit_fi(self, attributes):
+        boxes_output = self.get_boxes_out_faults(attributes)
+        if self.als_conf is None:
+            return [ int(eval(a["sop"], boxes_output)) for a in self.boolean_networks ]
+        exit()
+        lut_io_info = {}
+        output = self.assertions_graph.evaluate(boxes_output, lut_io_info, self.current_als_configuration)[0]
+        return [ o[f"\\{c}"] for c in self.model_classes ]
+

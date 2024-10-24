@@ -157,22 +157,48 @@ def fault_injection(ctx, output, ncpus):
     load_configuration_ps(ctx)
     create_classifier(ctx)    
     classifier = ctx.obj["classifier"]
-    boxes_fault_universe = get_decision_boxes_fault_sites(classifier = classifier)
-    bn_fault_sites = get_bn_fault_sites(classifier = classifier)
-    input_fault_sites = get_input_fault_sites(classifier = classifier)
-    classifier.inject_tree_boxes_faults({"0": {"Node_1" : True, "Node_2" : False}, "1": {"Node_3" : False, "Node_4": True}})
-    #classifier_visit_injected(classifier = classifier, input_faults = [[[[6,7,8],[0,0,0]]]], boxes_faults = 0, bn_faults = 0)
-    #print(classifier.trees[0].boolean_networks)
-    v = " True or Y or N"
-    print(int(eval(v, {"X": False, "N" : False, "Y" : False})))
-    print("HEllo")
+    #boxes_fault_universe = get_decision_boxes_fault_sites(classifier = classifier)
+    #bn_fault_sites = get_bn_fault_sites(classifier = classifier)
+    #input_fault_sites = get_input_fault_sites(classifier = classifier)
+    
+    # Test Injection Assertions
+    #print(classifier.trees[0].get_boolean_net("0", False))
+    #print(classifier.trees[0].get_boolean_net("1", False))
+    #print(classifier.trees[1].get_boolean_net("0", False))
+    #classifier.inject_bns_faults({ "0" : {"0": {'(not Node_0 and not Node_1 and Node_2 and Node_22 and Node_24)': "False"}, "1" : {'(Node_0 and not Node_28 and Node_29)': "True"}}, "1": {"0": {'(not Node_0 and not Node_1 and not Node_2 and Node_3)': "False"} }})
+    #print(classifier.trees[0].boolean_networks[0])
+    #print(classifier.trees[0].boolean_networks[1])
+    #print(classifier.trees[1].boolean_networks[0])
+    #print("Ciao Ciao")
+
+    # Test altered visiting phase.
+    scores = classifier.predict(classifier.x_test)
+    
+    #classifier.inject_bns_faults({ "0" : {"0": {'(not Node_0 and not Node_1 and Node_2 and Node_22 and Node_24)': "False"}, "1" : {'(Node_0 and not Node_28 and Node_29)': "True"}}, "1": {"0": {'(not Node_0 and not Node_1 and not Node_2 and Node_3)': "False"} }})
+    classifier.inject_tree_boxes_faults_fb({"0": {"Node_1" : True, "Node_2" : False}, "1": {"Node_3" : False, "Node_4": True}})
+    scores_altered = classifier.predict(classifier.x_test)
+    ctr_original = 0
+    ctr_n_altered = 0
+    for score, altered_score in zip(scores,scores_altered):
+        ctr_original += 1
+        if not np.array_equal(score, altered_score):
+            print(f"Original {score} Altered {altered_score}")
+            ctr_n_altered += 1
+            ctr_original  -= 1
+    print(ctr_original)
+    print(ctr_n_altered)
+    # Test modified assertion visiting.
+    #    v = " False or Y"
+    #    print(int(eval(v, {"X": False, "N" : False, "Y" : False})))
+    #    print("Hello")
+    
+    # Test boolean networks injection
     #print(classifier.trees[0].correct_boxes)
     #print(classifier.trees[0].faulted_boxes)
-
+    
+    #print(classifier.trees[0].fix_assertion_fns())
     #print(classifier.trees[1].correct_boxes)
     #print(classifier.trees[1].faulted_boxes)
 
-    #print(input_fault_sites)
     exit(1)
-    # Obtaining the fault sites for each input.
-    #print(bn_fault_sites)
+    
