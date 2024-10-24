@@ -219,4 +219,15 @@ class DecisionTree:
         minterms = [item["sop"] for item in self.leaves if item["class"] == class_name]
         minterms, sop, hdl_expression = self.define_boolean_expression(minterms, use_espresso)
         return {"class" : class_name, "minterms" : minterms, "sop" : sop, "hdl_expression" : hdl_expression}
-        
+
+    def fix_boxes_outs(self, faults):
+        self.correct_boxes = []
+        self.faulted_boxes = {}
+        for box in self.decision_boxes:
+            if box["name"] not in faults.keys():
+                self.correct_boxes.append(box)
+        self.faulted_boxes = faults
+    
+    def get_boxes_out_faults(self, attributes):
+        outs = {box["box"].name if self.als_conf is None else "\\" + box["box"].name() : box["box"].compare(attributes[self.attrbutes_name.index(box["box"].feature_name)]) for box in self.correct_boxes}
+        return {**outs, **self.faulted_boxes}

@@ -332,3 +332,8 @@ class Classifier:
                 is_leaves[current_node_id] = True
         return root_node
                 
+    def inject_tree_boxes_faults(self, faults_per_tree):
+        for tree_name in faults_per_tree.keys():
+            for tree in self.trees:
+                if tree.name == tree_name:
+                    tree.fix_boxes_outs(faults_per_tree[tree_name])
