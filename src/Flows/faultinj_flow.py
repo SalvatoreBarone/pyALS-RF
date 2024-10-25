@@ -102,6 +102,14 @@ def get_input_fault_sites(classifier: Classifier):
         input_fault_sites.update({f["name"] : 64})
     return input_fault_sites
 
+def inject_fault_input(classifier: Classifier, ):
+    x_test_inj = np.copy(classifier.x_test)
+    # For each sample
+    for i, input_sample in enumerate(x_test_inj):
+        # For each feature, inject faults.
+        for j, input_feature in enumerate(input_sample):
+            x_test_inj[i][j] = inject_fault_feature(input_feature, input_faults[i][j][0], input_faults[i][j][1])
+    
 def test_boxes_output(classifier: Classifier):
     for x in classifier.x_test:
         for tree in classifier.trees:
@@ -174,7 +182,7 @@ def fault_injection(ctx, output, ncpus):
     # Test altered visiting phase.
     scores = classifier.predict(classifier.x_test)
     
-    #classifier.inject_bns_faults({ "0" : {"0": {'(not Node_0 and not Node_1 and Node_2 and Node_22 and Node_24)': "False"}, "1" : {'(Node_0 and not Node_28 and Node_29)': "True"}}, "1": {"0": {'(not Node_0 and not Node_1 and not Node_2 and Node_3)': "False"} }})
+    classifier.inject_bns_faults({ "0" : {"0": {'(not Node_0 and not Node_1 and Node_2 and Node_22 and Node_24)': "False"}, "1" : {'(Node_0 and not Node_28 and Node_29)': "True"}}, "1": {"0": {'(not Node_0 and not Node_1 and not Node_2 and Node_3)': "False"} }})
     classifier.inject_tree_boxes_faults_fb({"0": {"Node_1" : True, "Node_2" : False}, "1": {"Node_3" : False, "Node_4": True}})
     scores_altered = classifier.predict(classifier.x_test)
     ctr_original = 0
@@ -187,6 +195,7 @@ def fault_injection(ctx, output, ncpus):
             ctr_original  -= 1
     print(ctr_original)
     print(ctr_n_altered)
+
     # Test modified assertion visiting.
     #    v = " False or Y"
     #    print(int(eval(v, {"X": False, "N" : False, "Y" : False})))

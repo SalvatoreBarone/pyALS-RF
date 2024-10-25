@@ -255,7 +255,7 @@ class DecisionTree:
     def replace_db_with_fb(self, faults):
         for box in self.decision_boxes:
             if box["name"]  in faults.keys():
-                box["box"] = FaultedBox(box_name = box["box"].name, feature_name = box["box"].feature_name, data_type = box["box"].data_type, fixed_value = faults[[box["name"]]])
+                box["box"] = FaultedBox(box_name = box["box"].name, feature_name = box["box"].feature_name, data_type = box["box"].data_type, fixed_value = faults[box["name"]])
         self.faulted_boxes = faults
     
     # Fix the value of an assertion function
