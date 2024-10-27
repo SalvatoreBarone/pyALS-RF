@@ -22,8 +22,9 @@ from tqdm import tqdm
 from ..ctx_factory import load_configuration_ps, create_classifier, store_flow
 from ..ConfigParsers.PsConfigParser import *
 from ..Model.Classifier import Classifier
+from ..Model.FaultCollection import FaultCollection
 import os 
-
+import random
 
 
 import numpy as np
@@ -109,7 +110,8 @@ def inject_fault_input(classifier: Classifier, ):
         # For each feature, inject faults.
         for j, input_feature in enumerate(input_sample):
             x_test_inj[i][j] = inject_fault_feature(input_feature, input_faults[i][j][0], input_faults[i][j][1])
-    
+
+# TO REMOVE 
 def test_boxes_output(classifier: Classifier):
     for x in classifier.x_test:
         for tree in classifier.trees:
@@ -131,6 +133,7 @@ def test_boxes_output(classifier: Classifier):
     bn_faults:      For each tree in the classifier contains the set of assertion functions with a fixed True or False value. 
 
 """        
+# TO REMOVE
 def classifier_visit_injected(classifier: Classifier, input_faults, boxes_faults, bn_faults):
     # Inject into the input sample.
     x_test_inj = np.copy(classifier.x_test)
@@ -158,6 +161,8 @@ def classifier_visit_injected(classifier: Classifier, input_faults, boxes_faults
     # Return prediction 
     return 0
 
+
+    
 def fault_injection(ctx, output, ncpus):
     # Initialize the logger 
     logger = logging.getLogger("pyALS-RF")
@@ -180,21 +185,21 @@ def fault_injection(ctx, output, ncpus):
     #print("Ciao Ciao")
 
     # Test altered visiting phase.
-    scores = classifier.predict(classifier.x_test)
+    # scores = classifier.predict(classifier.x_test)
     
-    classifier.inject_bns_faults({ "0" : {"0": {'(not Node_0 and not Node_1 and Node_2 and Node_22 and Node_24)': "False"}, "1" : {'(Node_0 and not Node_28 and Node_29)': "True"}}, "1": {"0": {'(not Node_0 and not Node_1 and not Node_2 and Node_3)': "False"} }})
-    classifier.inject_tree_boxes_faults_fb({"0": {"Node_1" : True, "Node_2" : False}, "1": {"Node_3" : False, "Node_4": True}})
-    scores_altered = classifier.predict(classifier.x_test)
-    ctr_original = 0
-    ctr_n_altered = 0
-    for score, altered_score in zip(scores,scores_altered):
-        ctr_original += 1
-        if not np.array_equal(score, altered_score):
-            print(f"Original {score} Altered {altered_score}")
-            ctr_n_altered += 1
-            ctr_original  -= 1
-    print(ctr_original)
-    print(ctr_n_altered)
+    # classifier.inject_bns_faults({ "0" : {"0": {'(not Node_0 and not Node_1 and Node_2 and Node_22 and Node_24)': "False"}, "1" : {'(Node_0 and not Node_28 and Node_29)': "True"}}, "1": {"0": {'(not Node_0 and not Node_1 and not Node_2 and Node_3)': "False"} }})
+    # classifier.inject_tree_boxes_faults_fb({"0": {"Node_1" : True, "Node_2" : False}, "1": {"Node_3" : False, "Node_4": True}})
+    # scores_altered = classifier.predict(classifier.x_test)
+    # ctr_original = 0
+    # ctr_n_altered = 0
+    # for score, altered_score in zip(scores,scores_altered):
+    #     ctr_original += 1
+    #     if not np.array_equal(score, altered_score):
+    #         print(f"Original {score} Altered {altered_score}")
+    #         ctr_n_altered += 1
+    #         ctr_original  -= 1
+    # print(ctr_original)
+    # print(ctr_n_altered)
 
     # Test modified assertion visiting.
     #    v = " False or Y"
@@ -208,6 +213,26 @@ def fault_injection(ctx, output, ncpus):
     #print(classifier.trees[0].fix_assertion_fns())
     #print(classifier.trees[1].correct_boxes)
     #print(classifier.trees[1].faulted_boxes)
+    
+    # faults = sample_faults(list(range(100)), 5)
+    # print(faults)
 
+    # Test fault collection, change type_of_faults for different fault types.
+    # f = FaultCollection(classifier)
+    # f.print_fault_sites()
+    # f.sample_faults(type_of_faults = 3, nro_faults = 100)
+    # f.print_faults()
+
+    # Test the fault collection json generation
+    f = FaultCollection(classifier)
+    f.sample_faults(type_of_faults = 1, nro_faults = 10)
+    f.sample_faults(type_of_faults = 2, nro_faults = 10)
+    f.sample_faults(type_of_faults = 3, nro_faults = 10)
+
+    f.print_faults()
+    tree_names = [tree.name for tree in classifier.trees]
+    classes_names = [class_name for class_name in classifier.classes_name]
+    list_features = [feat["name"] for feat in classifier.model_features]
+    f.faults_to_json5(list_feature_names = list_features,list_tree_names = tree_names, list_class_names = classes_names,  out_path = "./")
     exit(1)
     
