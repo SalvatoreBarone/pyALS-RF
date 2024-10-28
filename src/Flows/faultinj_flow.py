@@ -184,23 +184,34 @@ def fault_injection(ctx, output, ncpus):
     #print(classifier.trees[1].boolean_networks[0])
     #print("Ciao Ciao")
 
-    # Test altered visiting phase.
-    # scores = classifier.predict(classifier.x_test)
+    # Test altered visiting phase with restoring
     
-    # classifier.inject_bns_faults({ "0" : {"0": {'(not Node_0 and not Node_1 and Node_2 and Node_22 and Node_24)': "False"}, "1" : {'(Node_0 and not Node_28 and Node_29)': "True"}}, "1": {"0": {'(not Node_0 and not Node_1 and not Node_2 and Node_3)': "False"} }})
-    # classifier.inject_tree_boxes_faults_fb({"0": {"Node_1" : True, "Node_2" : False}, "1": {"Node_3" : False, "Node_4": True}})
-    # scores_altered = classifier.predict(classifier.x_test)
-    # ctr_original = 0
-    # ctr_n_altered = 0
-    # for score, altered_score in zip(scores,scores_altered):
-    #     ctr_original += 1
-    #     if not np.array_equal(score, altered_score):
-    #         print(f"Original {score} Altered {altered_score}")
-    #         ctr_n_altered += 1
-    #         ctr_original  -= 1
-    # print(ctr_original)
-    # print(ctr_n_altered)
+    scores = classifier.predict(classifier.x_test[0:10])
+    old_bns = classifier.store_bns()
+    # Store the previously sampled classifier output.
+    
+    classifier.inject_bns_faults({ "0" : {"0": {'(not Node_0 and not Node_1 and Node_2 and Node_22 and Node_24)': "False"}, "1" : {'(Node_0 and not Node_28 and Node_29)': "True"}}, "1": {"0": {'(not Node_0 and not Node_1 and not Node_2 and Node_3)': "False"} }})
+    old_dbs = classifier.inject_tree_boxes_faults_fb({"0": {"Node_1" : True, "Node_2" : False}, "1": {"Node_3" : False, "Node_4": True}})
+    scores_altered = classifier.predict(classifier.x_test[0:10])
+    ctr_original = 0
+    ctr_n_altered = 0
+    for score, altered_score in zip(scores,scores_altered):
+        ctr_original += 1
+        if not np.array_equal(score, altered_score):
+            print(f"Original {score} Altered {altered_score}")
+            ctr_n_altered += 1
+            ctr_original  -= 1
+    print(ctr_original)
+    print(ctr_n_altered)
+    classifier.restore_bns(old_bns)
+    classifier.restore_dbs(old_dbs)
+    restored_scores = classifier.predict(classifier.x_test[0:10])
+    for score, restored_score in zip(scores, restored_scores):
+        if not np.array_equal(score,restored_score):
+            assert 1 == 0,"RESTORING NOT WORING"
+    print("ALL OK !")
 
+    
     # Test modified assertion visiting.
     #    v = " False or Y"
     #    print(int(eval(v, {"X": False, "N" : False, "Y" : False})))
@@ -224,15 +235,22 @@ def fault_injection(ctx, output, ncpus):
     # f.print_faults()
 
     # Test the fault collection json generation
-    f = FaultCollection(classifier)
-    f.sample_faults(type_of_faults = 1, nro_faults = 10)
-    f.sample_faults(type_of_faults = 2, nro_faults = 10)
-    f.sample_faults(type_of_faults = 3, nro_faults = 10)
 
-    f.print_faults()
-    tree_names = [tree.name for tree in classifier.trees]
-    classes_names = [class_name for class_name in classifier.classes_name]
-    list_features = [feat["name"] for feat in classifier.model_features]
-    f.faults_to_json5(list_feature_names = list_features,list_tree_names = tree_names, list_class_names = classes_names,  out_path = "./")
-    exit(1)
+    # f = FaultCollection(classifier)
+    # f.sample_faults(type_of_faults = 1, nro_faults = 10)
+    # f.sample_faults(type_of_faults = 2, nro_faults = 10)
+    # f.sample_faults(type_of_faults = 3, nro_faults = 10)
+
+    # f.print_faults()
+    # tree_names = [tree.name for tree in classifier.trees]
+    # classes_names = [class_name for class_name in classifier.classes_name]
+    # list_features = [feat["name"] for feat in classifier.model_features]
+    # f.faults_to_json5(list_feature_names = list_features,list_tree_names = tree_names, list_class_names = classes_names,  out_path = "./")
+    # exit(1)
+
+    # print("Fault universe size")
+    # f = FaultCollection(classifier)
+    # f.sample_faults(type_of_faults = 3, error_margin = 0.01, confidence_level = 0.95, individual_prob = 0.5)
+    # f.faults_to_json5(classifier = classifier,  out_path = "./")
     
+

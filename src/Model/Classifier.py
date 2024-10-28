@@ -332,34 +332,64 @@ class Classifier:
                 is_leaves[current_node_id] = True
         return root_node
 
-    # Inject a fault into the decision boxes.            
-    def inject_tree_boxes_faults(self, faults_per_tree):
-        for tree_name in faults_per_tree.keys():
-            for tree in self.trees:
-                if tree.name == tree_name:
-                    tree.fix_boxes_outs(faults_per_tree[tree_name])
+    # # Inject a fault into the decision boxes.            
+    # def inject_tree_boxes_faults(self, faults_per_tree):
+    #     for tree_name in faults_per_tree.keys():
+    #         for tree in self.trees:
+    #             if tree.name == tree_name:
+    #                 tree.fix_boxes_outs(faults_per_tree[tree_name])
 
-    # Replace Tree decision boxes with faulted boxes.            
+    # # Change the BNs, by loading 
+    # # directly a new assertion function configuration.
+    # def set_tree_bns(self, faults_per_tree):
+    #     for tree_name in faults_per_tree.keys():
+    #         for tree in self.trees:
+    #             if tree.name == tree_name:
+    #                 tree.set_assertion_functions(faults_per_tree[tree_name])
+
+    # Replace Tree decision boxes with faulted boxes.    
+    # Returns the set of stored decision boxes per each different tree.        
     def inject_tree_boxes_faults_fb(self, faults_per_tree):
+        stored_boxes = {}
         for tree_name in faults_per_tree.keys():
             for tree in self.trees:
                 if tree.name == tree_name:
-                    tree.replace_db_with_fb(faults_per_tree[tree_name])
-
-    # Change the BNs, by loading 
-    # directly a new assertion function configuration.
-    def set_tree_bns(self, faults_per_tree):
-        for tree_name in faults_per_tree.keys():
-            for tree in self.trees:
-                if tree.name == tree_name:
-                    tree.set_assertion_functions(faults_per_tree[tree_name])
-
+                    old_boxes = tree.replace_db_with_fb(faults_per_tree[tree_name])
+                    stored_boxes.update({tree_name : old_boxes})
+        return stored_boxes
+    
     # Fix the assertion functions
     # This function simply changes specific assertion functions for each 
     # tree by setting specific assertions to True or false. 
+    def inject_bns_faults_ws(self, faults_per_tree):
+        old_bns_per_tree = {}
+        for tree_name in faults_per_tree.keys():
+            for tree in self.trees:
+                if tree.name == tree_name:
+                    old_bns = tree.inj_fault_assertion_functions(faults_per_tree[tree_name])
+                old_bns_per_tree.update(old_bns)
+        return old_bns_per_tree
+    
+    # Identical, without bns savings
     def inject_bns_faults(self, faults_per_tree):
         for tree_name in faults_per_tree.keys():
             for tree in self.trees:
                 if tree.name == tree_name:
-                    tree.inj_fault_assertion_functions(faults_per_tree[tree_name])
+                    tree.inj_fault_assertion_functions_ws(faults_per_tree[tree_name])
     
+    # Restore functions..
+    def restore_dbs(self, old_dbs):
+        print(old_dbs.keys())
+        for tree in self.trees:
+            if tree.name in old_dbs.keys():
+                tree.restore_db(old_dbs[tree.name])
+                
+    def restore_bns(self, old_bns):
+        for tree in self.trees:
+            tree.boolean_networks = old_bns[tree.name]
+
+    def store_bns(self):
+        bns = {}
+        for tree in self.trees:
+            bns.update({ tree.name : copy.deepcopy(tree.boolean_networks)})
+        return bns
