@@ -223,14 +223,14 @@ class Classifier:
         return r[0] == r[1], r[0]
     
     @staticmethod
-    def compute_score(trees : list[DecisionTree], x_test : ndarray):
+    def compute_score(trees : list[DecisionTree], x_test : ndarray, disable_tqdm = False):
         assert len(np.shape(x_test)) == 2
-        return np.array( [ np.sum( [t.visit(x) for t in trees ], axis = 0) for x in tqdm(x_test, desc = "Evaluating score") ] )
+        return np.array( [ np.sum( [t.visit(x) for t in trees ], axis = 0) for x in tqdm(x_test, desc = "Evaluating score", disable = disable_tqdm) ] )
     
-    def predict(self, x_test : ndarray):
+    def predict(self, x_test : ndarray, disable_tqdm = False):
         if len(np.shape(x_test)) == 1:
             np.reshape(x_test, np.shape(x_test)[0])
-        args = [[t, x_test] for t in self.p_tree]
+        args = [[t, x_test, disable_tqdm] for t in self.p_tree]
         return np.sum(self.pool.starmap(Classifier.compute_score, args), axis = 0)
     
     def evaluate_test_dataset(self):
@@ -379,7 +379,6 @@ class Classifier:
     
     # Restore functions..
     def restore_dbs(self, old_dbs):
-        print(old_dbs.keys())
         for tree in self.trees:
             if tree.name in old_dbs.keys():
                 tree.restore_db(old_dbs[tree.name])

@@ -294,7 +294,7 @@ class DecisionTree:
                     # If the value is in altered assertions
                     if old_minterms in modified_assertions.keys():
                         # The new value ( probably directly True/False for FI) is taken as a minterm.
-                        minterms_temp.append(modified_assertions[old_minterms])
+                        minterms_temp.append(str(modified_assertions[old_minterms]))
                     # Otherwise... take the previous one !
                     else :
                         minterms_temp.append(old_minterms)
@@ -317,7 +317,9 @@ class DecisionTree:
                     # If the value is in altered assertions
                     if old_minterms in modified_assertions.keys():
                         # The new value ( probably directly True/False for FI) is taken as a minterm.
-                        minterms_temp.append(modified_assertions[old_minterms])
+                        # str is used to be sure that in case modified_assertions is a boolean value 
+                        # then the minterm is still a literal i.e. string.
+                        minterms_temp.append(str(modified_assertions[old_minterms]))
                     # Otherwise... take the previous one !
                     else :
                         minterms_temp.append(old_minterms)

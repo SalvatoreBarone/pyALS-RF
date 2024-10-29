@@ -126,6 +126,7 @@ def gen_fault_collection(ctx, working_mode = 0, error_margin = 0.01, confidence_
 # files, containts a list, for each fault for type in input fault, of the probabilities vector.
 # i.e. for 10 feature faults and 50 input samples the feat out file contains 50 vector for each different
 # fault (i.e. 10 different features.)
+# The input faults is a list containing for each fault different features used during experiments. 
 def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
     # Initialize the logger 
     logger = logging.getLogger("pyALS-RF")
@@ -149,7 +150,7 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
         # Inject faults into the inputs
         inject_fault_input(classifier = classifier, faults = loaded_faults, x_test = x_test_temp)
         # Visit
-        faulted_vec = classifier.predict(x_test_temp)
+        faulted_vec = classifier.predict(x_test_temp, disable_tqdm = True)
         # Save values 
         fault_vect_list.append(faulted_vec.tolist())
         # # Restore, x_test_temps mantaints at each cycle always the pointer to the original array.
@@ -166,19 +167,19 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
     with open(dbs_path, "r") as file:
         loaded_faults = json5.load(file)
     # For each fault
-    for f in tqdm(loaded_faults, desc = "Visiting with feature faults"):
+    for f in tqdm(loaded_faults, desc = "Visiting with DBs faults"):
         # Inject faults into the inputs
         old_dbs = classifier.inject_tree_boxes_faults_fb(f)
         # Visit
-        faulted_vec = classifier.predict(x_test_temp)
+        faulted_vec = classifier.predict(x_test_temp, disable_tqdm = True)
         # Save values 
         fault_vect_list.append(faulted_vec.tolist())
         # Restore
-        classifier.restore_dbs(f)
+        classifier.restore_dbs(old_dbs)
     # Save to json5 the list of vectors
     with open(out_path_vectors, "w") as f:
         json5.dump(fault_vect_list, f, indent = 2)
-    
+
     """ ************************************************ """
     # For BNs faults
     bns_path   = os.path.join(input_faults, "bns_faults.json5") 
@@ -189,11 +190,11 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
         loaded_faults = json5.load(file)
     old_bns = classifier.store_bns()
     # For each fault
-    for f in tqdm(loaded_faults, desc = "Visiting with feature faults"):
+    for f in tqdm(loaded_faults, desc = "Visiting with BNs faults"):
         # Inject faults into the inputs
         classifier.inject_bns_faults(f)
         # Visit
-        faulted_vec = classifier.predict(x_test_temp)
+        faulted_vec = classifier.predict(x_test_temp, disable_tqdm = True)
         # Save values 
         fault_vect_list.append(faulted_vec.tolist())
         # Restore
