@@ -231,7 +231,7 @@ class Classifier:
         if len(np.shape(x_test)) == 1:
             np.reshape(x_test, np.shape(x_test)[0])
         args = [[t, x_test] for t in self.p_tree]
-        return np.sum(self.pool.starmap(Classifier.compute_score, self.args), axis = 0)
+        return np.sum(self.pool.starmap(Classifier.compute_score, args), axis = 0)
     
     def evaluate_test_dataset(self):
         outcomes = np.sum(self.pool.starmap(Classifier.compute_score, self.args), axis = 0)
@@ -383,7 +383,7 @@ class Classifier:
         for tree in self.trees:
             if tree.name in old_dbs.keys():
                 tree.restore_db(old_dbs[tree.name])
-                
+
     def restore_bns(self, old_bns):
         for tree in self.trees:
             tree.boolean_networks = old_bns[tree.name]

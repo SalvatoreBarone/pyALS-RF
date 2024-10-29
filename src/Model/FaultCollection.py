@@ -48,7 +48,7 @@ class FaultCollection:
         self.db_faults_idx = 1
         self.bn_faults_idx = 2
         self.list_of_faults = [[],[],[]]
-        #self.list_of_fixed_values = [[], [], []]
+        self.list_of_fixed_values = [[], [], []]
         self.get_fault_sites_features(classifier = classifier)
         self.get_fault_sites_db(classifier = classifier)
         self.get_fault_sites_bn(classifier = classifier)
@@ -62,13 +62,11 @@ class FaultCollection:
         # For each tree
         for tree in classifier.trees:
             fault_per_class = {}
-            print(f"Appending for tree {tree.name}")
             # Save the minterms for each class.
             for bn in tree.boolean_networks:    
                 # For each minterm.
                 for minterm in bn["minterms"]:
                     c_name = bn["class"]
-                    print(f"Appending for class {c_name} {minterm}")
                     fault_site = (self.bn_faults_idx, {tree.name : { bn["class"] : minterm}})
                     self.list_of_fault_sites.append(fault_site)
                     self.list_of_bn_fault_sites.append(fault_site)
@@ -86,9 +84,10 @@ class FaultCollection:
 
     # Initialize the fault universe for the features of the classifier.
     def get_fault_sites_features(self, classifier: Classifier):
-        for f in classifier.trees[0].model_features:
+        for f in range(0, len(classifier.trees[0].model_features)):
             for i in range(0,64):
-                fault_site = (self.feat_faults_idx, {f["name"] : i})
+                #fault_site = (self.feat_faults_idx, {f["name"] : i})
+                fault_site = (self.feat_faults_idx, {f : i})
                 self.list_of_feature_fault_sites.append(fault_site)
                 self.list_of_fault_sites.append(fault_site)
     
@@ -147,6 +146,9 @@ class FaultCollection:
         faults = [fault_sites[idx] for idx in faulted_indexes]
         # Get all the fixed values
         fixed_values = self.__sample_fixed_values(faults)
+        # print(len(fault_sites))
+        # print(len(faults))
+        # exit(1)
         # Append in list
         for f, val in tqdm(zip(faults, fixed_values), desc = "Storing sampled fault sites"):
             # f[0] is the fault_type idx while f[1] is the fault.
@@ -246,44 +248,34 @@ class FaultCollection:
         logger.info("Done dumping BNs faults")
     
 
-    """    
     def faults_to_json5_list(self, classifier, out_path):
         logger = logging.getLogger("pyALS-RF")
         # Generate the dictionary for the output of feature faults.
         logging.info("Storing Feat faults into json")
+
         list_feature_names = [feat["name"] for feat in classifier.model_features]
         list_tree_names =  [tree.name for tree in classifier.trees]
         list_class_names = [class_name for class_name in classifier.model_classes]
         feat_list = []
         fault_list = self.list_of_faults[self.feat_faults_idx]
         fixed_vals = self.list_of_fixed_values[self.feat_faults_idx]
-        # for feature_name in tqdm(list_feature_names, desc = "Converting Feats fault sites into DICT JSON"):
-        #     bit_idx_list = []
-        #     bit_idx_fixed_values = []
-        
+
         for f, val in zip(fault_list, fixed_vals):
-            feat_list.append( { feature_name: {"bits": bit_idx_list, "value" : bit_idx_fixed_values} })
-        # logger.info("Feat dictionary")
-        # logger.info(feat_dict)
+            feature = list(f.keys())[0]
+            bit = f[feature]
+            feat_list.append({feature : { bit : val}})
 
         # Generate the dictionary for the output of DBs faults.
         logging.info("Storing DBs faults into json")
         # The dictionary of DBs contains for each tree the set of nodes as 
         # following:  
-        # {"0": {"Node_1" : True, "Node_2" : False}, "1": {"Node_3" : False, "Node_4": True}}
         fault_list = self.list_of_faults[self.db_faults_idx]
-        fixed_vals = self.list_of_fixed_values [self.db_faults_idx]
-        dbs_dict = {}
-        for tree_name in tqdm(list_tree_names, desc = "Converting DBs fault sites into DICT JSON"):
-            dict_per_tree = {}
-            for f, val in zip(fault_list, fixed_vals):
-                # If the name of the tree is correct 
-                # then append to the dictionary of the BNs
-                if list(f.keys())[0] == tree_name:
-                    dict_per_tree.update({f[tree_name] : val})
-            dbs_dict.update({tree_name: dict_per_tree})
-        # logger.info("DBs faults")
-        # logger.info(dbs_dict)
+        fixed_vals = self.list_of_fixed_values[self.db_faults_idx]
+        dbs_list = []
+        for f, val in zip(fault_list, fixed_vals):
+            tree_name = list(f.keys())[0]
+            node_name = f[tree_name]
+            dbs_list.append({tree_name : {node_name : val}})
 
         # Generate the dictionary for the output of BNs faults
         # For the BNs the fault dictionary is described as following:
@@ -292,34 +284,24 @@ class FaultCollection:
         logging.info("Storing BNs faults into json")
         fault_list = self.list_of_faults[self.bn_faults_idx]
         fixed_vals = self.list_of_fixed_values[self.bn_faults_idx]
-        bns_dict = {}
-        # For each tree
-        for tree_name in tqdm(list_tree_names, desc = "Converting BNs fault sites into DICT JSON"):
-            dict_per_tree = {}
-            for class_name in list_class_names:
-                dict_per_class = {}
-                for f, val in zip(fault_list, fixed_vals): 
-                    # If tree is correct 
-                    if list(f.keys())[0] == tree_name:
-                        # If the class is correct
-                        dict_minterm = f[tree_name]
-                        if list(dict_minterm.keys())[0] == class_name:
-                            dict_per_class.update({dict_minterm[class_name] : val})
-                dict_per_tree.update({class_name: dict_per_class})
-            bns_dict.update({tree_name: dict_per_tree})
-        
+        bns_list = []
+        for f, val in zip(fault_list, fixed_vals): 
+            tree_name   = list(f.keys())[0]
+            class_name  = list(f[tree_name].keys())[0]
+            minterm     = f[tree_name][class_name]
+            bns_list.append({tree_name : { class_name : { minterm : val }}})
+
         with open(f"{out_path}/feat_faults.json5", "w") as f:
-            json5.dump(feat_dict, f, indent = 2)
+            json5.dump(feat_list, f, indent = 2)
         logger.info("Done dumping feat faults")
 
         with open(f"{out_path}/dbs_faults.json5", "w") as f:
-            json5.dump(dbs_dict, f, indent = 2)
+            json5.dump(dbs_list, f, indent = 2)
         logger.info("Done dumping DBs faults")
         
         with open(f"{out_path}/bns_faults.json5", "w") as f:
-            json5.dump(bns_dict, f, indent = 2)
+            json5.dump(bns_list, f, indent = 2)
         logger.info("Done dumping BNs faults") 
-    """
     
     """ Computes the number of injected faults using the Leveugle formula.
         number of faults =                      fault_universe_size
