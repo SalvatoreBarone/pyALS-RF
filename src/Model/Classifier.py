@@ -372,11 +372,18 @@ class Classifier:
     
     # Identical, without bns savings
     def inject_bns_faults(self, faults_per_tree):
+#        injected_cnt = 0
         for tree_name in faults_per_tree.keys():
             for tree in self.trees:
                 if tree.name == tree_name:
                     tree.inj_fault_assertion_functions_ws(faults_per_tree[tree_name])
-    
+        #             injected_cnt += 1
+        # print(f"Number of injected Trees {injected_cnt}")
+        # if injected_cnt > 1:
+        #     print(f"Error in tree selection")
+        #     exit(1)
+        # else:
+        #     print(f"Injection in tree ok")
     # Restore functions..
     def restore_dbs(self, old_dbs):
         for tree in self.trees:
@@ -385,7 +392,7 @@ class Classifier:
 
     def restore_bns(self, old_bns):
         for tree in self.trees:
-            tree.boolean_networks = old_bns[tree.name]
+            tree.boolean_networks = copy.deepcopy(old_bns[tree.name])
 
     def store_bns(self):
         bns = {}

@@ -105,7 +105,7 @@ def inject_fault_input(classifier: Classifier, faults, x_test):
 def gen_fault_collection(ctx, working_mode = 0, error_margin = 0.01, confidence_level = 0.95, individual_prob = 0.5, out_dir = "./", ncpus = 1):
     # Initialize the logger 
     logger = logging.getLogger("pyALS-RF")
-    logger.info("Runing the TMR flow.")
+    logger.info("Generating the fault collection.")
     load_configuration_ps(ctx)
     create_classifier(ctx)    
     classifier = ctx.obj["classifier"]
@@ -136,6 +136,7 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
     classifier = ctx.obj["classifier"]
     x_test = copy.deepcopy(classifier.x_test[0 : num_samples])
     y_test = copy.deepcopy(classifier.y_test[0 : num_samples])
+    original_pred = classifier.predict(x_test)
     """ ************************************************ """
     # Feature Faults
     feat_path   = os.path.join(input_faults, "feat_faults.json5") 
@@ -148,7 +149,7 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
     # For each fault
     for f in tqdm(loaded_faults, desc = "Visiting with feature faults"):
         # Inject faults into the inputs
-        inject_fault_input(classifier = classifier, faults = loaded_faults, x_test = x_test_temp)
+        inject_fault_input(classifier = classifier, faults = [f], x_test = x_test_temp)
         # Visit
         faulted_vec = classifier.predict(x_test_temp, disable_tqdm = True)
         # Save values 
@@ -158,6 +159,7 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
     # Save to json5 the list of vectors
     with open(out_path_vectors, "w") as f:
         json5.dump(fault_vect_list, f, indent = 2)
+    feat_perc_detected, feat_perc_crit, feat_list_prob_det, feat_list_prob_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
     """ ************************************************ """
     # For DBs faults.
     dbs_path   = os.path.join(input_faults, "dbs_faults.json5") 
@@ -171,15 +173,16 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
         # Inject faults into the inputs
         old_dbs = classifier.inject_tree_boxes_faults_fb(f)
         # Visit
-        faulted_vec = classifier.predict(x_test_temp, disable_tqdm = True)
+        faulted_vec = classifier.predict(x_test, disable_tqdm = True)
         # Save values 
         fault_vect_list.append(faulted_vec.tolist())
         # Restore
         classifier.restore_dbs(old_dbs)
+    
     # Save to json5 the list of vectors
     with open(out_path_vectors, "w") as f:
         json5.dump(fault_vect_list, f, indent = 2)
-
+    dbs_perc_detected, dbs_perc_crit, dbs_list_prob_det, dbs_list_prob_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
     """ ************************************************ """
     # For BNs faults
     bns_path   = os.path.join(input_faults, "bns_faults.json5") 
@@ -194,7 +197,7 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
         # Inject faults into the inputs
         classifier.inject_bns_faults(f)
         # Visit
-        faulted_vec = classifier.predict(x_test_temp, disable_tqdm = True)
+        faulted_vec = classifier.predict(x_test, disable_tqdm = True)
         # Save values 
         fault_vect_list.append(faulted_vec.tolist())
         # Restore
@@ -202,7 +205,38 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
     # Save to json5 the list of vectors
     with open(out_path_vectors, "w") as f:
         json5.dump(fault_vect_list, f, indent = 2)
-
+    bns_perc_detected, bns_perc_crit, bns_list_prob_det, bns_list_prob_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
+    logger.info(f"FEAT. DET:  {feat_perc_detected} CRIT: {feat_perc_crit}")
+    logger.info(f"DBS. DET:  {dbs_perc_detected} CRIT: {dbs_perc_crit}")
+    logger.info(f"BNS: DET:  {bns_perc_detected} CRIT: {bns_perc_crit}")
+    summary_path = os.path.join(output, "summary.json5")
+    with open(summary_path, "w") as f:
+        json5.dump(
+            {
+                "Feat_Perc_Det" : feat_perc_detected,
+                "Feat_Perc_Crit" : feat_perc_crit,
+                "DBS_Perc_Det" :    dbs_perc_detected,
+                "DBS_Perc_Crit" : dbs_perc_crit,
+                "BNS_Perc_Det" :  bns_perc_detected,
+                "BNS_Perc_Crit" : bns_perc_crit,
+                
+                "Feat_Mean_Det_Prob" : np.mean(feat_list_prob_det),
+                "DBS_Mean_Det_Prob" : np.mean(dbs_list_prob_det),
+                "BNS_Mean_Det_Prob" : np.mean(bns_list_prob_det),
+                "Feat_Mean_Crit_Prob" : np.mean(feat_list_prob_crit),
+                "DBS_Mean_Crit_Prob" : np.mean(dbs_list_prob_crit),
+                "BNS_Mean_Crit_Prob" : np.mean(bns_list_prob_crit),
+                
+                "Feat_Mean_Det_List" : feat_list_prob_det,
+                "DBS_Mean_Det_List" : dbs_list_prob_det,
+                "BNS_Mean_Det_List" : bns_list_prob_det,
+                "Feat_Mean_Crit_List" : feat_list_prob_crit,
+                "DBS_Mean_Crit_List" : dbs_list_prob_crit,
+                "BNS_Mean_Crit_List" : bns_list_prob_crit
+            }
+            f,
+            indent = 2
+        )
 # Function used to dump class probabilities vectors without any fault. 
 def dump_unfaulted_class_vector(ctx, output, ncpus, num_samples = 50):
     # Initialize the logger 
@@ -217,6 +251,7 @@ def dump_unfaulted_class_vector(ctx, output, ncpus, num_samples = 50):
     # Save to json5 the list of vectors
     with open(os.path.join(output, "class_vec_no_faults.json5"), "w") as file:
         json5.dump(vectors, file, indent = 2)
+
 """ Test function used during development. """
 # def fault_injection(ctx, output, ncpus):
 #     # Initialize the logger 
@@ -307,3 +342,153 @@ def dump_unfaulted_class_vector(ctx, output, ncpus, num_samples = 50):
 #     f = FaultCollection(classifier)
 #     f.sample_faults(type_of_faults = 0, error_margin = 0.01, confidence_level = 0.95, individual_prob = 0.5)
 #     f.faults_to_json5_list(classifier = classifier,  out_path = "./")
+
+def test_bns_faulted_inference(ctx, conf, input_faults, num_samples = 50):
+    # Initialize the logger 
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("Runing the TMR flow.")
+    load_configuration_ps(ctx)
+    create_classifier(ctx)    
+    classifier = ctx.obj["classifier"]
+    x_test = copy.deepcopy(classifier.x_test[0 : num_samples])
+    y_test = copy.deepcopy(classifier.y_test[0 : num_samples])
+    
+    path   = os.path.join(input_faults, "bns_faults.json5") 
+    #out_path_vectors    = os.path.join(output, "dbs_faults_vectors.json5")
+    fault_vect_list = []
+    # Load the feat JSON5 file
+    with open(path, "r") as file:
+        loaded_faults = json5.load(file)
+    original_pred = classifier.predict(x_test, disable_tqdm = True)
+    old_bns = classifier.store_bns()
+    # For each fault
+    for f in tqdm(loaded_faults, desc = "Visiting with BNs faults"):
+        # Inject faults into the inputs
+        classifier.inject_bns_faults(f)
+        # Visit
+        faulted_vec = classifier.predict(x_test, disable_tqdm = True)
+        # Save values 
+        fault_vect_list.append(faulted_vec.tolist())
+        # count_neq = 0
+        # for (x,y) in zip(faulted_vec, original_pred):
+        #     # print(f"Original {y}")
+        #     # print(f"Faulted {x}")
+        #     if not np.array_equal(x,y):
+        #         count_neq += 1
+        # #print(f"Neq {count_neq} Eq {len(original_pred) - count_neq}")
+        # # Restore
+        classifier.restore_bns(old_bns)
+        nv = classifier.predict(x_test, disable_tqdm = True)
+        for x,y in zip(original_pred, nv):
+            if not np.array_equal(x,y):
+                print(f"Restoring NOT WORKING")
+                exit(1)
+                assert 1 == 0
+        # temp_vec = classifier.predict(x_test, disable_tqdm = True)
+        # is_ok = True
+        # for x,y in zip(temp_vec, original_pred):
+        #     if not np.array_equal(x,y):
+        #         is_ok = False
+        #         break 
+        # if not is_ok:
+        #     logger.info("ERROR IN RESTORING")
+        #     exit(1)
+        # else:
+        #     logger.info("RESTORE IS OK. W IL MARSUPIO")
+        #exit(1)
+    bns_perc_detected, bns_perc_crit, bns_list_prob_det, bns_list_prob_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
+
+    logger.info(f"The Percentage of detected faults is {bns_perc_detected}")
+    logger.info(f"The Percentage of critical faults is {bns_perc_crit}")
+    return 0
+
+
+
+def test_dbs_faulted_inference(ctx, conf, input_faults, num_samples = 50):
+    # Initialize the logger 
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("Runing the TMR flow.")
+    load_configuration_ps(ctx)
+    create_classifier(ctx)    
+    classifier = ctx.obj["classifier"]
+    x_test = copy.deepcopy(classifier.x_test[0 : num_samples])
+    y_test = copy.deepcopy(classifier.y_test[0 : num_samples])
+    
+    # For DBs faults.
+    dbs_path   = os.path.join(input_faults, "dbs_faults.json5") 
+    #out_path_vectors    = os.path.join(output, "dbs_faults_vectors.json5")
+    fault_vect_list = []
+    # Load the feat JSON5 file
+    with open(dbs_path, "r") as file:
+        loaded_faults = json5.load(file)
+    original_pred = classifier.predict(x_test, disable_tqdm = True)
+
+    # For each fault
+    for f in tqdm(loaded_faults, desc = "Visiting with DBs faults"):
+        # Inject faults into the inputs
+        old_dbs = classifier.inject_tree_boxes_faults_fb(f)
+        # Visit
+        faulted_vec = classifier.predict(x_test, disable_tqdm = True)
+        # Save values 
+        fault_vect_list.append(faulted_vec)
+        # Restore
+        classifier.restore_dbs(old_dbs)
+        temp_vec = classifier.predict(x_test, disable_tqdm = True)
+        is_ok = True
+        for x,y in zip(temp_vec, original_pred):
+            if not np.array_equal(x,y):
+                is_ok = False
+                break 
+        if not is_ok:
+            logger.info("ERROR IN RESTORING")
+            exit(1)
+        else:
+            logger.info("RESTORE IS OK. W IL MARSUPIO")
+    detected = 0
+    critical = 0
+    for faulted_vec in fault_vect_list:
+        to_detect = True 
+        to_add_crit = True
+        for o, v in zip(original_pred, faulted_vec):
+            if not np.array_equal(o, v):
+                if to_detect:
+                    detected += 1
+                    to_detect = False
+                if np.argmax(o) != np.argmax(v):
+                    if to_add_crit :
+                        critical += 1
+                        to_add_crit = False
+    logger.info(f"The Percentage of detected faults is {detected / len(fault_vect_list)}")
+    logger.info(f"The Percentage of critical faults is {critical / len(fault_vect_list)}")
+    return 0
+
+def compute_faults_prob(original_pred, fault_vect_list):
+    detected = 0
+    critical = 0
+    list_prob_det = []
+    list_prob_crit = []
+    # Initialize the logger 
+    #logger = logging.getLogger("pyALS-RF")
+    for faulted_vec in fault_vect_list:
+        to_detect = True 
+        to_add_crit = True
+        counter_prob_det = 0
+        counter_prob_crit = 0
+        for o, v in zip(original_pred, faulted_vec):
+            if not np.array_equal(o, v):
+                #logger.info(f"NE ORIGINAL {o} FAULTED {v}")
+                if to_detect:
+                    detected += 1
+                    to_detect = False
+                counter_prob_det += 1
+                if np.argmax(o) != np.argmax(v):
+                    if to_add_crit :
+                        critical += 1
+                        to_add_crit = False
+                    counter_prob_crit += 1
+        #     else:
+        #         logger.info(f"EQ ORIGINAL {o} FAULTED {v}")
+        list_prob_det.append(counter_prob_det / len(original_pred))
+        list_prob_crit.append(counter_prob_crit / len(original_pred))
+
+    return detected / len(fault_vect_list), critical / len(fault_vect_list), list_prob_det, list_prob_crit

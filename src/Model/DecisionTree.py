@@ -120,6 +120,13 @@ class DecisionTree:
     def visit(self, attributes):
         boxes_output = self.get_boxes_output(attributes)
         if self.als_conf is None:
+            # bns_outs = [ int(eval(a["sop"], boxes_output)) for a in self.boolean_networks ]
+            # #print(f"The bns outs are {bns_outs} Sum {np.sum(bns_outs)}")
+            # if(np.sum(bns_outs) > 2):
+            #     print(f"Error in sum {bns_outs}")
+            # else:
+            #     print(f"Sum ok {bns_outs} Sum: {np.sum(bns_outs)}")
+            # return bns_outs
             return [ int(eval(a["sop"], boxes_output)) for a in self.boolean_networks ]
         exit()
         lut_io_info = {}
@@ -308,14 +315,26 @@ class DecisionTree:
     # Identical to the previous function.
     # The only difference is that this function do not store a value.
     def inj_fault_assertion_functions_ws(self, altered_assertions, use_espresso = False):
+        # cnt = 0
+        # cnt_class = 0
+        # indexes = []
         for boolean_network in self.boolean_networks:
             if boolean_network["class"] in altered_assertions.keys():
+                # cnt_class += 1
+                # indexes.append(boolean_network["class"])
+                # c = boolean_network["class"]
+                # print(f"Entering for class {c}")
+                # print("Altering assertion")
+                # print("OlD")
+                # print(boolean_network["minterms"])
+                # print(boolean_network["sop"])
                 modified_assertions = altered_assertions[boolean_network["class"]]
                 minterms_temp = []
                 # Generate the new assertion functions
                 for old_minterms in boolean_network["minterms"]:
                     # If the value is in altered assertions
                     if old_minterms in modified_assertions.keys():
+                        #cnt += 1
                         # The new value ( probably directly True/False for FI) is taken as a minterm.
                         # str is used to be sure that in case modified_assertions is a boolean value 
                         # then the minterm is still a literal i.e. string.
@@ -328,3 +347,11 @@ class DecisionTree:
                 boolean_network["minterms"]         = new_minterms
                 boolean_network["sop"]              = new_sop
                 boolean_network["hdl_expression"]   = new_hdl_expr
+                # print("NEW")
+                # print(boolean_network["minterms"])
+                # print(boolean_network["sop"])
+        # print(f"Number of injected BNS {cnt} {indexes}")
+        # print(f"Nro. Considered classess {cnt_class}, Indexes ")
+        # if cnt > 1:
+        #     print(f"Error in injection")
+        #     exit(1)
