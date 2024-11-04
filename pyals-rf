@@ -339,9 +339,9 @@ dump_unfaulted_class_vector
 @click.pass_context
 def fault_injection_visit(ctx, conf, input_faults, out, verbose, ncpus):#, outdir):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "faultinj")
-    #fault_visit(ctx = ctx, input_faults = input_faults, output = out, ncpus = ncpus)
+    fault_visit(ctx = ctx, input_faults = input_faults, output = out, ncpus = ncpus)
     #test_dbs_faulted_inference(ctx = ctx, conf = conf, input_faults = input_faults)
-    test_bns_faulted_inference(ctx = ctx, conf = conf, input_faults = input_faults)
+    #test_bns_faulted_inference(ctx = ctx, conf = conf, input_faults = input_faults)
 
 @cli.command("gen_class_vectors")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
