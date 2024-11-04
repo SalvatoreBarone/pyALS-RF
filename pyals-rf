@@ -28,7 +28,7 @@ from src.hdl_generation import hdl_generation
 from src.git_updater import git_updater
 from src.Flows.lcor_flow import leaves_correlation_flow
 from src.Flows.tmr_flow import tmr_flow
-from src.Flows.faultinj_flow import fault_visit, gen_fault_collection, dump_unfaulted_class_vector
+from src.Flows.faultinj_flow import fault_visit, gen_fault_collection, dump_unfaulted_class_vector, test_dbs_faulted_inference, test_bns_faulted_inference
 
 @click.group(chain=True)
 @click.pass_context
@@ -339,7 +339,9 @@ dump_unfaulted_class_vector
 @click.pass_context
 def fault_injection_visit(ctx, conf, input_faults, out, verbose, ncpus):#, outdir):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "faultinj")
-    fault_visit(ctx = ctx, input_faults = input_faults, output = out, ncpus = ncpus)
+    #fault_visit(ctx = ctx, input_faults = input_faults, output = out, ncpus = ncpus)
+    #test_dbs_faulted_inference(ctx = ctx, conf = conf, input_faults = input_faults)
+    test_bns_faulted_inference(ctx = ctx, conf = conf, input_faults = input_faults)
 
 @cli.command("gen_class_vectors")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")

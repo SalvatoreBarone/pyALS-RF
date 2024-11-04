@@ -219,7 +219,7 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
                 "DBS_Perc_Crit" : dbs_perc_crit,
                 "BNS_Perc_Det" :  bns_perc_detected,
                 "BNS_Perc_Crit" : bns_perc_crit,
-                
+
                 "Feat_Mean_Det_Prob" : np.mean(feat_list_prob_det),
                 "DBS_Mean_Det_Prob" : np.mean(dbs_list_prob_det),
                 "BNS_Mean_Det_Prob" : np.mean(bns_list_prob_det),
@@ -233,7 +233,7 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
                 "Feat_Mean_Crit_List" : feat_list_prob_crit,
                 "DBS_Mean_Crit_List" : dbs_list_prob_crit,
                 "BNS_Mean_Crit_List" : bns_list_prob_crit
-            }
+            },
             f,
             indent = 2
         )
