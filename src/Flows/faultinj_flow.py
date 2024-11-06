@@ -144,6 +144,7 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
     # Load the feat JSON5 file
     with open(feat_path, "r") as file:
         loaded_faults = json5.load(file)
+    nro_feat_faults = len(loaded_faults)
     x_test_temp = x_test
     fault_vect_list  = []
     # For each fault
@@ -159,7 +160,7 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
     # Save to json5 the list of vectors
     with open(out_path_vectors, "w") as f:
         json5.dump(fault_vect_list, f, indent = 2)
-    feat_perc_detected, feat_perc_crit, feat_list_prob_det, feat_list_prob_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
+    feat_perc_detected, feat_perc_crit, feat_list_prob_det, feat_list_prob_crit, feat_ctr_det, feat_ctr_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
     """ ************************************************ """
     # For DBs faults.
     dbs_path   = os.path.join(input_faults, "dbs_faults.json5") 
@@ -168,6 +169,7 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
     # Load the feat JSON5 file
     with open(dbs_path, "r") as file:
         loaded_faults = json5.load(file)
+    nro_dbs_faults = len(loaded_faults)
     # For each fault
     for f in tqdm(loaded_faults, desc = "Visiting with DBs faults"):
         # Inject faults into the inputs
@@ -182,7 +184,7 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
     # Save to json5 the list of vectors
     with open(out_path_vectors, "w") as f:
         json5.dump(fault_vect_list, f, indent = 2)
-    dbs_perc_detected, dbs_perc_crit, dbs_list_prob_det, dbs_list_prob_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
+    dbs_perc_detected, dbs_perc_crit, dbs_list_prob_det, dbs_list_prob_crit, dbs_ctr_det, dbs_ctr_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
     """ ************************************************ """
     # For BNs faults
     bns_path   = os.path.join(input_faults, "bns_faults.json5") 
@@ -191,6 +193,7 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
     # Load the feat JSON5 file
     with open(bns_path, "r") as file:
         loaded_faults = json5.load(file)
+    nro_bns_faults = len(loaded_faults)
     old_bns = classifier.store_bns()
     # For each fault
     for f in tqdm(loaded_faults, desc = "Visiting with BNs faults"):
@@ -205,7 +208,7 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
     # Save to json5 the list of vectors
     with open(out_path_vectors, "w") as f:
         json5.dump(fault_vect_list, f, indent = 2)
-    bns_perc_detected, bns_perc_crit, bns_list_prob_det, bns_list_prob_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
+    bns_perc_detected, bns_perc_crit, bns_list_prob_det, bns_list_prob_crit, bns_ctr_det, bns_ctr_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
     logger.info(f"FEAT. DET:  {feat_perc_detected} CRIT: {feat_perc_crit}")
     logger.info(f"DBS. DET:  {dbs_perc_detected} CRIT: {dbs_perc_crit}")
     logger.info(f"BNS: DET:  {bns_perc_detected} CRIT: {bns_perc_crit}")
@@ -213,13 +216,24 @@ def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
     with open(summary_path, "w") as f:
         json5.dump(
             {
+                # Percentage per fault.
                 "Feat_Perc_Det" : feat_perc_detected,
                 "Feat_Perc_Crit" : feat_perc_crit,
                 "DBS_Perc_Det" :    dbs_perc_detected,
                 "DBS_Perc_Crit" : dbs_perc_crit,
                 "BNS_Perc_Det" :  bns_perc_detected,
                 "BNS_Perc_Crit" : bns_perc_crit,
-
+                # Counters and number of injected faults.
+                "Feat_Ctr_Det" : feat_ctr_det,
+                "Feat_Ctr_Crit": feat_ctr_crit,
+                "DBS_Ctr_Det"  : dbs_ctr_det,
+                "DBS_Ctr_Crit" : dbs_ctr_crit,
+                "BNS_Ctr_Det"  : bns_ctr_det,
+                "BNS_Ctr_Crit" : bns_ctr_crit,
+                "Nro_Feat_Inj" : nro_feat_faults,
+                "Nro_DBS_Inj"  : nro_dbs_faults,
+                "Nro_BNS_Inj"  : nro_bns_faults,
+                # Probabilities per entire test sample...
                 "Feat_Mean_Det_Prob" : np.mean(feat_list_prob_det),
                 "DBS_Mean_Det_Prob" : np.mean(dbs_list_prob_det),
                 "BNS_Mean_Det_Prob" : np.mean(bns_list_prob_det),
@@ -396,7 +410,7 @@ def test_bns_faulted_inference(ctx, conf, input_faults, num_samples = 50):
         # else:
         #     logger.info("RESTORE IS OK. W IL MARSUPIO")
         #exit(1)
-    bns_perc_detected, bns_perc_crit, bns_list_prob_det, bns_list_prob_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
+    bns_perc_detected, bns_perc_crit, bns_list_prob_det, bns_list_prob_crit, bns_ctr_detected, bns_ctr_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
 
     logger.info(f"The Percentage of detected faults is {bns_perc_detected}")
     logger.info(f"The Percentage of critical faults is {bns_perc_crit}")
@@ -491,4 +505,4 @@ def compute_faults_prob(original_pred, fault_vect_list):
         list_prob_det.append(counter_prob_det / len(original_pred))
         list_prob_crit.append(counter_prob_crit / len(original_pred))
 
-    return detected / len(fault_vect_list), critical / len(fault_vect_list), list_prob_det, list_prob_crit
+    return detected / len(fault_vect_list), critical / len(fault_vect_list), list_prob_det, list_prob_crit, detected, critical
