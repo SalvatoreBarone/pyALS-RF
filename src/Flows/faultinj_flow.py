@@ -16,8 +16,6 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 
 import logging, joblib, numpy as np
-from distutils.dir_util import mkpath
-from itertools import combinations, product
 from tqdm import tqdm
 from ..ctx_factory import load_configuration_ps, create_classifier, store_flow
 from ..ConfigParsers.PsConfigParser import *
@@ -28,6 +26,8 @@ import json5
 import copy
 import numpy as np
 import struct
+from .GREP.GREP import GREP
+import random
 
 """ Begin bit string manipulation functions. **** """
 # Convert numpy.float64 to a bitstring
@@ -81,34 +81,23 @@ def inject_fault_input(classifier: Classifier, faults, x_test):
         fixed_value = int(fixed_value)
         # For each possible input alter the specific feature of the fault.
         for idx, ipt in enumerate(x_test):
-#            old_feat = x_test[idx][feature_idx]
             x_test[idx][feature_idx] = inject_fault_feature(feature = ipt[feature_idx], bit_positions = [bit_to_flip], fixed_values = [fixed_value])
-            # if old_feat != x_test[idx][feature_idx]:
-            #     print("ALTERED ")
-            #     print(old_feat)
-            #     print(x_test[idx][feature_idx])
-            #     print(float64_to_bitstring(old_feat))
-            #     print(float64_to_bitstring(x_test[idx][feature_idx]))
-            #     print(f)
-            #     exit(1)
-            # else:
-            #     print("NOT ALTERED ")
-            #     print(f)
-            #     print(old_feat)
-            #     print(x_test[idx][feature_idx])
-            #     print(float64_to_bitstring(old_feat))
-            #     print(float64_to_bitstring(x_test[idx][feature_idx]))
-            #print(x_test[idx][feature_idx])
+
 
 """ End bit string manipulation functions. **** """
+
 # Module interface function used to generate a fault collection
-def gen_fault_collection(ctx, working_mode = 0, error_margin = 0.01, confidence_level = 0.95, individual_prob = 0.5, out_dir = "./", ncpus = 1):
+def gen_fault_collection(ctx, pruning_cfg = None,  working_mode = 0, error_margin = 0.01, confidence_level = 0.95, individual_prob = 0.5, out_dir = "./", ncpus = 1):
     # Initialize the logger 
     logger = logging.getLogger("pyALS-RF")
     logger.info("Generating the fault collection.")
     load_configuration_ps(ctx)
     create_classifier(ctx)    
     classifier = ctx.obj["classifier"]
+    if pruning_cfg is not None:
+        with open(pruning_cfg, "r") as f:
+            pruning_readed = json5.load(f)
+        GREP.set_pruning_conf(classifier = classifier, pruning_conf = pruning_readed)
     # Generate the fault collection
     f = FaultCollection(classifier)
     # Distinct the two working modes.
@@ -127,15 +116,27 @@ def gen_fault_collection(ctx, working_mode = 0, error_margin = 0.01, confidence_
 # i.e. for 10 feature faults and 50 input samples the feat out file contains 50 vector for each different
 # fault (i.e. 10 different features.)
 # The input faults is a list containing for each fault different features used during experiments. 
-def fault_visit(ctx, output, input_faults, ncpus, num_samples = 50):
+def fault_visit(ctx, output, input_faults, samples_idx,  ncpus, num_samples = 50, pruning_cfg = None):
     # Initialize the logger 
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the TMR flow.")
     load_configuration_ps(ctx)
     create_classifier(ctx)    
     classifier = ctx.obj["classifier"]
-    x_test = copy.deepcopy(classifier.x_test[0 : num_samples])
-    y_test = copy.deepcopy(classifier.y_test[0 : num_samples])
+    # Read the pruning_cfg to approximate the classifier.
+    if pruning_cfg is not None:
+        with open(pruning_cfg, "r") as f:
+            pruning_readed = json5.load(f)
+        GREP.set_pruning_conf(classifier = classifier, pruning_conf = pruning_readed)
+    # Read the test set.
+    if samples_idx is not None:
+        with open(samples_idx, "r") as file:
+            indexes = json5.load(file)
+        x_test = copy.deepcopy(classifier.x_test[indexes])
+        y_test = copy.deepcopy(classifier.y_test[indexes])
+    else:
+        x_test = copy.deepcopy(classifier.x_test[0 : num_samples])
+        y_test = copy.deepcopy(classifier.y_test[0 : num_samples])
     original_pred = classifier.predict(x_test)
     """ ************************************************ """
     # Feature Faults
@@ -267,95 +268,6 @@ def dump_unfaulted_class_vector(ctx, output, ncpus, num_samples = 50):
         json5.dump(vectors, file, indent = 2)
 
 """ Test function used during development. """
-# def fault_injection(ctx, output, ncpus):
-#     # Initialize the logger 
-#     logger = logging.getLogger("pyALS-RF")
-#     logger.info("Runing the TMR flow.")
-#     load_configuration_ps(ctx)
-#     create_classifier(ctx)    
-#     classifier = ctx.obj["classifier"]
-#     #boxes_fault_universe = get_decision_boxes_fault_sites(classifier = classifier)
-#     #bn_fault_sites = get_bn_fault_sites(classifier = classifier)
-#     #input_fault_sites = get_input_fault_sites(classifier = classifier)
-    
-#     # Test Injection Assertions
-#     #print(classifier.trees[0].get_boolean_net("0", False))
-#     #print(classifier.trees[0].get_boolean_net("1", False))
-#     #print(classifier.trees[1].get_boolean_net("0", False))
-#     #classifier.inject_bns_faults({ "0" : {"0": {'(not Node_0 and not Node_1 and Node_2 and Node_22 and Node_24)': "False"}, "1" : {'(Node_0 and not Node_28 and Node_29)': "True"}}, "1": {"0": {'(not Node_0 and not Node_1 and not Node_2 and Node_3)': "False"} }})
-#     #print(classifier.trees[0].boolean_networks[0])
-#     #print(classifier.trees[0].boolean_networks[1])
-#     #print(classifier.trees[1].boolean_networks[0])
-#     #print("Ciao Ciao")
-
-#     # # Test altered visiting phase with restoring
-    
-#     # scores = classifier.predict(classifier.x_test[0:10])
-#     # old_bns = classifier.store_bns()
-#     # # Store the previously sampled classifier output.
-    
-#     # classifier.inject_bns_faults({ "0" : {"0": {'(not Node_0 and not Node_1 and Node_2 and Node_22 and Node_24)': "False"}, "1" : {'(Node_0 and not Node_28 and Node_29)': "True"}}, "1": {"0": {'(not Node_0 and not Node_1 and not Node_2 and Node_3)': "False"} }})
-#     # old_dbs = classifier.inject_tree_boxes_faults_fb({"0": {"Node_1" : True, "Node_2" : False}, "1": {"Node_3" : False, "Node_4": True}})
-#     # scores_altered = classifier.predict(classifier.x_test[0:10])
-#     # ctr_original = 0
-#     # ctr_n_altered = 0
-#     # for score, altered_score in zip(scores,scores_altered):
-#     #     ctr_original += 1
-#     #     if not np.array_equal(score, altered_score):
-#     #         print(f"Original {score} Altered {altered_score}")
-#     #         ctr_n_altered += 1
-#     #         ctr_original  -= 1
-#     # print(ctr_original)
-#     # print(ctr_n_altered)
-#     # classifier.restore_bns(old_bns)
-#     # classifier.restore_dbs(old_dbs)
-#     # restored_scores = classifier.predict(classifier.x_test[0:10])
-#     # for score, restored_score in zip(scores, restored_scores):
-#     #     if not np.array_equal(score,restored_score):
-#     #         assert 1 == 0,"RESTORING NOT WORING"
-#     # print("ALL OK !")
-
-
-#     # Test modified assertion visiting.
-#     #    v = " False or Y"
-#     #    print(int(eval(v, {"X": False, "N" : False, "Y" : False})))
-#     #    print("Hello")
-    
-#     # Test boolean networks injection
-#     #print(classifier.trees[0].correct_boxes)
-#     #print(classifier.trees[0].faulted_boxes)
-    
-#     #print(classifier.trees[0].fix_assertion_fns())
-#     #print(classifier.trees[1].correct_boxes)
-#     #print(classifier.trees[1].faulted_boxes)
-    
-#     # faults = sample_faults(list(range(100)), 5)
-#     # print(faults)
-
-#     # Test fault collection, change type_of_faults for different fault types.
-#     # f = FaultCollection(classifier)
-#     # f.print_fault_sites()
-#     # f.sample_faults(type_of_faults = 3, nro_faults = 100)
-#     # f.print_faults()
-
-#     # Test the fault collection json generation
-
-#     # f = FaultCollection(classifier)
-#     # f.sample_faults(type_of_faults = 1, nro_faults = 10)
-#     # f.sample_faults(type_of_faults = 2, nro_faults = 10)
-#     # f.sample_faults(type_of_faults = 3, nro_faults = 10)
-
-#     # f.print_faults()
-#     # tree_names = [tree.name for tree in classifier.trees]
-#     # classes_names = [class_name for class_name in classifier.classes_name]
-#     # list_features = [feat["name"] for feat in classifier.model_features]
-#     # f.faults_to_json5(list_feature_names = list_features,list_tree_names = tree_names, list_class_names = classes_names,  out_path = "./")
-#     # exit(1)
-
-#     # print("Fault universe size")
-#     f = FaultCollection(classifier)
-#     f.sample_faults(type_of_faults = 0, error_margin = 0.01, confidence_level = 0.95, individual_prob = 0.5)
-#     f.faults_to_json5_list(classifier = classifier,  out_path = "./")
 
 def test_bns_faulted_inference(ctx, conf, input_faults, num_samples = 50):
     # Initialize the logger 
@@ -482,7 +394,6 @@ def compute_faults_prob(original_pred, fault_vect_list):
     list_prob_det = []
     list_prob_crit = []
     # Initialize the logger 
-    #logger = logging.getLogger("pyALS-RF")
     for faulted_vec in fault_vect_list:
         to_detect = True 
         to_add_crit = True
@@ -490,7 +401,6 @@ def compute_faults_prob(original_pred, fault_vect_list):
         counter_prob_crit = 0
         for o, v in zip(original_pred, faulted_vec):
             if not np.array_equal(o, v):
-                #logger.info(f"NE ORIGINAL {o} FAULTED {v}")
                 if to_detect:
                     detected += 1
                     to_detect = False
@@ -500,9 +410,22 @@ def compute_faults_prob(original_pred, fault_vect_list):
                         critical += 1
                         to_add_crit = False
                     counter_prob_crit += 1
-        #     else:
-        #         logger.info(f"EQ ORIGINAL {o} FAULTED {v}")
         list_prob_det.append(counter_prob_det / len(original_pred))
         list_prob_crit.append(counter_prob_crit / len(original_pred))
 
     return detected / len(fault_vect_list), critical / len(fault_vect_list), list_prob_det, list_prob_crit, detected, critical
+
+def sample_test_set(ctx, perc, num,  out, ncpus):
+    load_configuration_ps(ctx)
+    create_classifier(ctx)    
+    classifier = ctx.obj["classifier"]
+    idx = [ i for i in range(0, len(classifier.x_test))]
+    if perc is not None:
+        split = int(len(classifier.x_test) * perc)
+    else: 
+        split = num
+    samples =  random.sample(idx, split)
+    path = os.path.join(out, "Test_Samples_FI.json5")
+    with open(path, "w") as file:
+        json5.dump(samples, file, indent = 2)
+    
