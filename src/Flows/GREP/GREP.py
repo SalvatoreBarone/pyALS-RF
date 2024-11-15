@@ -37,7 +37,7 @@ class GREP:
         self.max_loss = max_loss
         self.min_resiliency = min_resiliency
         self.ncpus = min(ncpus, len(self.classifier.trees))
-        
+
     def store_pruning_conf(self, outfile : str):
         with open(outfile, "w") as f:
             json5.dump(self.pruning_configuration, f, indent=2)
@@ -50,7 +50,7 @@ class GREP:
             t.boolean_networks = self.bns_backup[t.name]
 
     def split_test_dataset(self, pruning_set_fraction : float = 0.5):
-        self.x_pruning, self.x_validation, self.y_pruning, self.y_validation = train_test_split(self.classifier.x_test, self.classifier.y_test, train_size = pruning_set_fraction)       
+        self.x_pruning, self.x_validation, self.y_pruning, self.y_validation, self.idx_prun, self.idx_test = train_test_split(self.classifier.x_test, self.classifier.y_test, [i for i in range(len(self.classifier.x_test))], train_size = pruning_set_fraction, shuffle = True)       
     
     def evaluate_accuracy(self):
         outcomes = np.sum(self.pool.starmap(Classifier.compute_score, self.args_evaluate_validation), axis = 0)

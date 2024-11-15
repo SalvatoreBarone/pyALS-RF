@@ -227,9 +227,17 @@ class LCOR(GREP):
             report_path = self.out_path + "/lcor_" + str(it_loss) + "/lcor_report.csv"
             pruning_path =  self.out_path + "/lcor_" + str(it_loss) + "/pruning_configuration.json5"
             flow_store_path = self.out_path + "/lcor_" + str(it_loss) + "/.flow.json5"
+            pruning_idxs = self.out_path + "/lcor_" + str(it_loss) + "/.pruning_idxs.json5"
+            test_idxs = self.out_path + "/lcor_" + str(it_loss) + "/.test_idxs.json5"
+
             # Generate the out dir
             if not os.path.exists(self.out_path + "/lcor_" + str(it_loss)): 
                 os.makedirs(self.out_path + "/lcor_" + str(it_loss))
+            # Save indexes
+            with open(pruning_idxs, "w") as f:
+                json5.dump(self.idx_prun, f, indent = 2)
+            with open(test_idxs, "w") as f:
+                json5.dump(self.idx_test, f, indent = 2)
             # set the new maximum loss
             self.max_loss = it_loss
             # Trim with the actual accuracy

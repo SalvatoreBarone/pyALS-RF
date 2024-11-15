@@ -253,14 +253,26 @@ def fault_visit(ctx, output, input_faults, samples_idx,  ncpus, num_samples = 50
             indent = 2
         )
 # Function used to dump class probabilities vectors without any fault. 
-def dump_unfaulted_class_vector(ctx, output, ncpus, num_samples = 50):
+def dump_unfaulted_class_vector(ctx, output, test_idx, pruning_conf, ncpus, num_samples = 50):
     # Initialize the logger 
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the TMR flow.")
     load_configuration_ps(ctx)
     create_classifier(ctx)    
     classifier = ctx.obj["classifier"]
-    x_test = copy.deepcopy(classifier.x_test[0 : num_samples])
+    # Apply the pruning
+    if pruning_conf is not None:
+        with open(pruning_conf, "r") as f:
+            pruning_readed = json5.load(f)
+        GREP.set_pruning_conf(classifier = classifier, pruning_conf = pruning_readed)
+    # Select the test idx
+    if test_idx is None:
+        x_test = copy.deepcopy(classifier.x_test[0 : num_samples])
+    else: 
+        with open(test_idx, "r") as f :
+            idx = json5.load(f)
+        x_test = copy.deepcopy(classifier.x_test[idx])
+    
     vectors = classifier.predict(x_test)
     vectors = vectors.tolist()
     # Save to json5 the list of vectors
