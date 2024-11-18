@@ -29,7 +29,6 @@ import json5
 # Get the accuracy of a single decision tree on class c ( x_set contains only c samples).
 def tree_accuracy( tree, x_set, c ):
     correctly = 0
-    #for x in tqdm(x_set, desc = " Computing accuracy"):
     for x in tqdm(x_set, desc = " Computing accuracy"):
         res = np.argmax(tree.visit(x))
         if res == c: 
@@ -89,31 +88,35 @@ class TMR(GREP):
             # Get the pruning set samples associated to the specific class. 
             pruning_set_classes_x = [ ]
             for x,y in zip(self.x_pruning, self.y_pruning): 
-                #print(f" Y on pruning is {str(y[0])} and c is {c} {y[0] == int(c)} {type(y[0])} {type(c)}")
                 if y[0] == int(c):
                     pruning_set_classes_x.append(x)
-            # Find the accuracy of each single tree for the specific class.
-            logger.info(f"[TMR] Finding best trees for class {c}")
-            accvec_args = [(t, pruning_set_classes_x, int(c)) for t in self.classifier.trees]        
-            acc_vec = self.pool.starmap(tree_accuracy, accvec_args)
-            # Get the best 3 different trees
-            idx_couples = list(enumerate(acc_vec))
-            idx_couples_sorted = sorted(idx_couples, key=lambda x: x[1], reverse=True)
-            best_trees = [idx for idx, value in idx_couples_sorted[:3]]
-            self.trees_per_class.update({int(c) : best_trees})
-            logger.info(f"[TMR] Pruning remaining trees for class {c}")
-            # Prune the trees not present in the configuration 
-            for tree_idx in tqdm(range(0, len(self.classifier.trees)), desc = f"Removing IO Logic for class {c}"):
-                # If the tree is not in the list
-                if not tree_idx in best_trees:
-                    # Remove all the leaves associated with the class
-                    for l in self.classifier.trees[tree_idx].leaves:
-                        # If the leaf is associated to the class
-                        if l["class"] == c:
-                            # append the leaf to the pruning configuration  
-                            # The pruning configuration is : Class Label - Tree Idx - SOP 
-                            self.pruning_configuration.append((c, str(tree_idx), l["sop"]))
-        
+            # Temporary fix, simply skip in case of missing classes
+            if len(pruning_set_classes_x) > 0:
+                # Find the accuracy of each single tree for the specific class.
+                logger.info(f"[TMR] Finding best trees for class {c}")
+                accvec_args = [(t, pruning_set_classes_x, int(c)) for t in self.classifier.trees]        
+                acc_vec = self.pool.starmap(tree_accuracy, accvec_args)
+                # Get the best 3 different trees
+                idx_couples = list(enumerate(acc_vec))
+                idx_couples_sorted = sorted(idx_couples, key=lambda x: x[1], reverse=True)
+                best_trees = [idx for idx, value in idx_couples_sorted[:3]]
+                self.trees_per_class.update({int(c) : best_trees})
+                logger.info(f"[TMR] Pruning remaining trees for class {c}")
+                # Prune the trees not present in the configuration 
+                for tree_idx in tqdm(range(0, len(self.classifier.trees)), desc = f"Removing IO Logic for class {c}"):
+                    # If the tree is not in the list
+                    if not tree_idx in best_trees:
+                        # Remove all the leaves associated with the class
+                        for l in self.classifier.trees[tree_idx].leaves:
+                            # If the leaf is associated to the class
+                            if l["class"] == c:
+                                # append the leaf to the pruning configuration  
+                                # The pruning configuration is : Class Label - Tree Idx - SOP 
+                                self.pruning_configuration.append((c, str(tree_idx), l["sop"]))
+            else:
+                # No trees in that specific class
+                self.trees_per_class.update({int(c) : []})
+
         def tree_in_class(tree_idx):
             # for each class
             for c in self.classifier.model_classes:
@@ -151,8 +154,8 @@ class TMR(GREP):
         logger.info("[TMR] Evaluating accuracy")
         # Now evaluate the accuracy of the pruned tree and save results
         # Arguments for evaluating accuracy
-        self.x_validation = self.x_validation[0 : test_samples]
-        self.y_validation = self.y_validation[0 : test_samples]
+        # self.x_validation = self.x_validation[0 : test_samples]
+        # self.y_validation = self.y_validation[0 : test_samples]
         self.args_evaluate_validation = [[t, self.x_validation] for t in self.classifier.p_tree]
         self.pool = self.classifier.pool
         self.baseline_accuracy_draw, self.baseline_accuracy_no_draw, exact_classifications_draw, exact_classifications_no_draw, exact_draw_counter = self.evaluate_accuracy_draw()
@@ -221,7 +224,9 @@ class TMR(GREP):
             json5.dump(report_pruned_draw, f, indent=2)
         with open(os.path.join(self.out_path, f"pruned_draw_not_considered_{self.exp_it}.json"),'w') as f:
             json5.dump(report_pruned_no_draw, f, indent=2)
-        
+    
+
+    
     """ This function implements the true visiting procedure for the TMR. 
         It is important to note that, in case at least two nodes identify the same class,
         then it is useless to continue. For this reason, when a class is found, the classification
