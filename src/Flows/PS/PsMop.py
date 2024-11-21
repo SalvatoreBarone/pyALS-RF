@@ -17,6 +17,25 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import logging, numpy as np, pyamosa
 from ...Model.Classifier import *
 from ...Model.rank_based import datasetRanking, estimateLoss
+from scipy.stats import norm # For cut-offs.
+from sklearn.model_selection import train_test_split
+
+""" Computes the number of test set sizes to obtain an extimation of the accuracy loss.
+    number of samples =                      test_set_size
+                            -----------------------------------------------------
+                                                                test_set_size - 1
+                            1   +   error_margin^2 -----------------------------------------------------
+                                                    cut_off^2 * individual_prob * (1 - individual_prob)
+    test_set_size: Size of the test set.
+    error_margin : Given a Probability Peval this defines the error interval size [Peval - error_margin, Peval + error_margin]
+    cut_off:    The quantile of the standard normal distribution assumed a specififc confidence level (i.e. the probability that 
+                the acc loss is within the interval centered in Peval).
+                This value is computed internally of the function that takes as input the confidence level.
+    individual_prob : The probability that a sample is present.
+""" 
+def compute_sample_size(test_set_size, error_margin, confidence_level, individual_prob):
+    cut_off = norm.ppf(confidence_level) 
+    return int(test_set_size / (1 + pow(error_margin,2) * ( (test_set_size - 1) / (pow(cut_off,2) * individual_prob * (1 - individual_prob)) ) ))
 
 class PsMop(pyamosa.Problem):
     def __init__(self, classifier : Classifier, max_loss : float, ncpus : int):
@@ -26,10 +45,23 @@ class PsMop(pyamosa.Problem):
         self.classifier.reset_nabs_configuration()
         self.classifier.reset_assertion_configuration()
         logger = logging.getLogger("pyALS-RF")
+        """ ATTENTION: SAMPLE VALUES WILL BE ADDED IN CONFIGURATION. """
+        mop_size = compute_sample_size(test_set_size = len(self.classifier.x_test), error_margin = 0.05, confidence_level = 0.95, individual_prob = 0.5)
+        portion = mop_size / len(self.classifier.x_test)
+        indexes = np.arange(len(self.classifier.x_test))
+        self.x_mop, self.x_val, self.y_mop, self.y_val, self.mop_indexes, self.validation_indexes = train_test_split(self.classifier.x_test, self.classifier.y_test, indexes, train_size = portion)       
         
-        logger.info("Computing the baseline accuracy...")
-        self.baseline_accuracy = self.classifier.evaluate_test_dataset()
-        logger.info(f"Baseline accuracy: {self.baseline_accuracy} %")
+        logger.info(f"Evaluating accuracy on x_mop samples {len(self.x_mop)}")
+        self.baseline_accuracy_mop = self.classifier.evaluate_accuracy(self.x_mop, self.y_mop, disable_tqdm = True)
+        logger.info(f"Accuracy on x_mop is : {self.baseline_accuracy_mop}")
+        
+        logger.info(f"Evaluating accuracy on x_val samples {len(self.x_val)}")
+        self.baseline_accuracy_val = self.classifier.evaluate_accuracy(self.x_val, self.y_val, disable_tqdm = True)
+        logger.info(f"Accuracy on x_val is : {self.baseline_accuracy_val}")
+        
+        # logger.info("Computing the baseline accuracy...")
+        # self.baseline_accuracy = self.classifier.evaluate_test_dataset()
+        #logger.info(f"Baseline accuracy: {self.baseline_accuracy} %")
         self.baseline_bits = self.classifier.get_total_retained()
         logger.info(f"Baseline retained bits: {self.baseline_bits}")
         n_vars = len(self.classifier.model_features)
@@ -43,7 +75,8 @@ class PsMop(pyamosa.Problem):
 
     def evaluate(self, x, out):
         self.set_matter_configuration(x)
-        acc_loss = self.baseline_accuracy - self.classifier.evaluate_test_dataset()
+        #acc_loss = self.baseline_accuracy - self.classifier.evaluate_test_dataset()
+        acc_loss = self.baseline_accuracy_mop - self.classifier.evaluate_accuracy(self.x_mop, self.y_mop, disable_tqdm = True)
         retained_bits = self.classifier.get_total_retained()
         out["f"] = [acc_loss, retained_bits]
         out["g"] = [acc_loss - self.max_loss]

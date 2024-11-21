@@ -149,7 +149,8 @@ class HDLGenerator:
     def generate_exact_test_vectors(self):
         test_vectors = { f["name"] : [] for f in self.classifier.model_features }
         expected_outputs = { **{ c : [] for c in self.classifier.classes_name},  **{ "draw" : []} }
-        predictions = self.classifier.predict(self.classifier.x_test)
+        #predictions = self.classifier.predict(self.classifier.x_test)
+        predictions = [[0 for j in range(0, len(self.classifier.model_classes))] for i in range(0, len(self.classifier.x_test))]
         for x, output in zip(self.classifier.x_test, predictions):
             for k, v in zip(self.classifier.model_features, x):
                 test_vectors[k["name"]].append(double_to_bin(v))

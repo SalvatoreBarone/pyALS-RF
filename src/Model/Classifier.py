@@ -223,7 +223,7 @@ class Classifier:
         return r[0] == r[1], r[0]
     
     @staticmethod
-    def compute_score(trees : list[DecisionTree], x_test : ndarray, disable_tqdm = False):
+    def compute_score(trees : list[DecisionTree], x_test : ndarray, disable_tqdm = True):
         assert len(np.shape(x_test)) == 2
         return np.array( [ np.sum( [t.visit(x) for t in trees ], axis = 0) for x in tqdm(x_test, desc = "Evaluating score", disable = disable_tqdm) ] )
     
@@ -236,6 +236,10 @@ class Classifier:
     def evaluate_test_dataset(self):
         outcomes = np.sum(self.pool.starmap(Classifier.compute_score, self.args), axis = 0)
         return np.sum(tuple( np.argmax(o) == y[0] and not Classifier.check_draw(o)[0] for o, y in zip(outcomes, self.y_test))) / len(self.y_test) * 100
+    
+    def evaluate_accuracy(self, X, y, disable_tqdm = False):
+        outcomes = self.predict(X, disable_tqdm = disable_tqdm)
+        return np.sum(tuple( np.argmax(o) == y[0] and not Classifier.check_draw(o)[0] for o, y in zip(outcomes, y))) / len(y) * 100
     
     def predict_dump(self, index: int, outfile: str):
         score = self.predict(self.x_test[index])

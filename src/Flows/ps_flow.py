@@ -47,13 +47,20 @@ def ps_flow(ctx : dict, mode : str, alpha : float, beta : float, gamma : float, 
     logger.info(f"Took {hours} hours, {minutes} minutes")
     logger.info(f"Cache hits: {ctx.obj['problem'].cache_hits} over {ctx.obj['problem'].total_calls} evaluations.")
     logger.info(f"{len(ctx.obj['problem'].cache)} cache entries collected")
+    logger.info(f"Saving the validation and mop set indexes")
+    mop_indexes = ctx.obj["problem"].mop_indexes
+    val_indexes = ctx.obj["problem"].validation_indexes
+    np.savetxt(os.path.join(ctx.obj['configuration'].outdir, "mop_indexes.txt"), mop_indexes, fmt='%d')
+    np.savetxt(os.path.join(ctx.obj['configuration'].outdir, "val_indexes.txt"), val_indexes, fmt='%d')
+
+
     if mode == "rank":
         logger.info(f"Average samples: {np.mean(ctx.obj['problem'].sample_count)} (Total #of samples: {len(ctx.obj['classifier'].y_test)})")
         #! the accuracy is re-computed using the whole data set, and the archive overwritten
         ctx.obj["optimizer"].archive = ctx.obj['problem'].archived_actual_accuracy(ctx.obj['problem'].archive)
     
     ctx.obj["optimizer"].archive.write_json(f"{ctx.obj['configuration'].outdir}/final_archive.json")
-    ctx.obj["optimizer"].archive.plot_front(ctx.obj['problem'].num_of_objectives, f"{ctx.obj['configuration'].outdir}/pareto_front.pdf")
+    #ctx.obj["optimizer"].archive.plot_front(ctx.obj['problem'].num_of_objectives, f"{ctx.obj['configuration'].outdir}/pareto_front.pdf") # It gives me an error...
     ctx.obj["pareto_front"] = ctx.obj["optimizer"].archive
     logger.info(f"All done! Take a look at the {ctx.obj['configuration'].outdir} directory.")
 
