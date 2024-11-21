@@ -107,6 +107,10 @@ def gen_fault_collection(ctx, pruning_cfg = None,  working_mode = 0, error_margi
         f.sample_faults(type_of_faults = 1, error_margin = error_margin, confidence_level = confidence_level, individual_prob = individual_prob)
         f.sample_faults(type_of_faults = 2, error_margin = error_margin, confidence_level = confidence_level, individual_prob = individual_prob)
         f.sample_faults(type_of_faults = 3, error_margin = error_margin, confidence_level = confidence_level, individual_prob = individual_prob)
+    elif working_mode >= 2 and working_mode < 5:
+        f.sample_faults(type_of_faults = working_mode - 1, error_margin = error_margin, confidence_level = confidence_level, individual_prob = individual_prob)
+    else:
+        assert 1 == 0, "Invalid configuration of the fault parameter"
     f.faults_to_json5_list(classifier = classifier,  out_path = out_dir)
 
 # Execute a faulted visit for each different fault in the folder input_faults.
@@ -161,7 +165,10 @@ def fault_visit(ctx, output, input_faults, samples_idx,  ncpus, num_samples = 50
     # Save to json5 the list of vectors
     with open(out_path_vectors, "w") as f:
         json5.dump(fault_vect_list, f, indent = 2)
-    feat_perc_detected, feat_perc_crit, feat_list_prob_det, feat_list_prob_crit, feat_ctr_det, feat_ctr_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
+    if len(fault_vect_list) > 0:
+        feat_perc_detected, feat_perc_crit, feat_list_prob_det, feat_list_prob_crit, feat_ctr_det, feat_ctr_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
+    else:
+        feat_perc_detected, feat_perc_crit, feat_list_prob_det, feat_list_prob_crit, feat_ctr_det, feat_ctr_crit = 0,0,0,0,0,0
     """ ************************************************ """
     # For DBs faults.
     dbs_path   = os.path.join(input_faults, "dbs_faults.json5") 
@@ -185,7 +192,10 @@ def fault_visit(ctx, output, input_faults, samples_idx,  ncpus, num_samples = 50
     # Save to json5 the list of vectors
     with open(out_path_vectors, "w") as f:
         json5.dump(fault_vect_list, f, indent = 2)
-    dbs_perc_detected, dbs_perc_crit, dbs_list_prob_det, dbs_list_prob_crit, dbs_ctr_det, dbs_ctr_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
+    if len(fault_vect_list) > 0:
+        dbs_perc_detected, dbs_perc_crit, dbs_list_prob_det, dbs_list_prob_crit, dbs_ctr_det, dbs_ctr_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
+    else:
+        dbs_perc_detected, dbs_perc_crit, dbs_list_prob_det, dbs_list_prob_crit, dbs_ctr_det, dbs_ctr_crit = 0,0,0,0,0,0
     """ ************************************************ """
     # For BNs faults
     bns_path   = os.path.join(input_faults, "bns_faults.json5") 
@@ -210,6 +220,10 @@ def fault_visit(ctx, output, input_faults, samples_idx,  ncpus, num_samples = 50
     with open(out_path_vectors, "w") as f:
         json5.dump(fault_vect_list, f, indent = 2)
     bns_perc_detected, bns_perc_crit, bns_list_prob_det, bns_list_prob_crit, bns_ctr_det, bns_ctr_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
+    if len(fault_vect_list) > 0:
+        bns_perc_detected, bns_perc_crit, bns_list_prob_det, bns_list_prob_crit, bns_ctr_det, bns_ctr_crit = compute_faults_prob(original_pred = original_pred, fault_vect_list = fault_vect_list)
+    else:
+        bns_perc_detected, bns_perc_crit, bns_list_prob_det, bns_list_prob_crit, bns_ctr_det, bns_ctr_crit = 0, 0, 0, 0, 0, 0
     logger.info(f"FEAT. DET:  {feat_perc_detected} CRIT: {feat_perc_crit}")
     logger.info(f"DBS. DET:  {dbs_perc_detected} CRIT: {dbs_perc_crit}")
     logger.info(f"BNS: DET:  {bns_perc_detected} CRIT: {bns_perc_crit}")
