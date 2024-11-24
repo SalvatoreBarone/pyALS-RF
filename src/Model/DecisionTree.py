@@ -20,9 +20,12 @@ from tabulate import tabulate
 from pyeda.inter import *
 from .DecisionBox import *
 from pyalslib import YosysHelper, ALSGraph, ALSCatalog, negate
+from jinja2 import Environment, FileSystemLoader
+import re
+
+
 
 class DecisionTree:
-
     def __init__(self, name = None, root_node = None, features = None, classes = None, use_espresso : bool = False):
         self.name = name
         self.model_features = features
@@ -41,7 +44,7 @@ class DecisionTree:
         self.exact_box_output = None
         if root_node:
             self.parse(root_node, use_espresso)
-
+        
     def brace4ALS(self, als_conf):
         if als_conf is None:
             self.als_conf = als_conf
@@ -120,13 +123,6 @@ class DecisionTree:
     def visit(self, attributes):
         boxes_output = self.get_boxes_output(attributes)
         if self.als_conf is None:
-            # bns_outs = [ int(eval(a["sop"], boxes_output)) for a in self.boolean_networks ]
-            # #print(f"The bns outs are {bns_outs} Sum {np.sum(bns_outs)}")
-            # if(np.sum(bns_outs) > 2):
-            #     print(f"Error in sum {bns_outs}")
-            # else:
-            #     print(f"Sum ok {bns_outs} Sum: {np.sum(bns_outs)}")
-            # return bns_outs
             return [ int(eval(a["sop"], boxes_output)) for a in self.boolean_networks ]
         exit()
         lut_io_info = {}
@@ -227,36 +223,6 @@ class DecisionTree:
         minterms, sop, hdl_expression = self.define_boolean_expression(minterms, use_espresso)
         return {"class" : class_name, "minterms" : minterms, "sop" : sop, "hdl_expression" : hdl_expression}
 
-    # # Functions used for fault injection
-    """ Begin old functions useless **** """
-    # # faults:   dictionary where keys are nodes and values are
-    # #           the fixed faulted value (True/False)
-    # def fix_boxes_outs(self, faults):
-    #     self.correct_boxes = []
-    #     self.faulted_boxes = {}
-    #     for box in self.decision_boxes:
-    #         if box["name"] not in faults.keys():
-    #             self.correct_boxes.append(box)
-    #     self.faulted_boxes = faults
-    
-    # # Get the output of decision boxes in case of a fault.
-    # def get_boxes_out_faults(self, attributes):
-    #     outs = {box["box"].name if self.als_conf is None else "\\" + box["box"].name() : box["box"].compare(attributes[self.attrbutes_name.index(box["box"].feature_name)]) for box in self.correct_boxes}
-    #     return {**outs, **self.faulted_boxes}
-    
-    
-    # # Tree visiting for the fault injection
-    # def visit_fi(self, attributes):
-    #     boxes_output = self.get_boxes_out_faults(attributes)
-    #     if self.als_conf is None:
-    #         return [ int(eval(a["sop"], boxes_output)) for a in self.boolean_networks ]
-    #     exit()
-    #     lut_io_info = {}
-    #     output = self.assertions_graph.evaluate(boxes_output, lut_io_info, self.current_als_configuration)[0]
-    #     return [ o[f"\\{c}"] for c in self.model_classes ]
-
-    """ End old functions useless **** """
-    
     # faults:   dictionary where keys are nodes and values are
     #           the fixed faulted value (True/False)
     # DIFFERENTLY FROM THE PREVIOUS ONE THIS FUNCION REPLACES
@@ -320,14 +286,6 @@ class DecisionTree:
         # indexes = []
         for boolean_network in self.boolean_networks:
             if boolean_network["class"] in altered_assertions.keys():
-                # cnt_class += 1
-                # indexes.append(boolean_network["class"])
-                # c = boolean_network["class"]
-                # print(f"Entering for class {c}")
-                # print("Altering assertion")
-                # print("OlD")
-                # print(boolean_network["minterms"])
-                # print(boolean_network["sop"])
                 modified_assertions = altered_assertions[boolean_network["class"]]
                 minterms_temp = []
                 # Generate the new assertion functions
@@ -347,11 +305,29 @@ class DecisionTree:
                 boolean_network["minterms"]         = new_minterms
                 boolean_network["sop"]              = new_sop
                 boolean_network["hdl_expression"]   = new_hdl_expr
-                # print("NEW")
-                # print(boolean_network["minterms"])
-                # print(boolean_network["sop"])
-        # print(f"Number of injected BNS {cnt} {indexes}")
-        # print(f"Nro. Considered classess {cnt_class}, Indexes ")
-        # if cnt > 1:
-        #     print(f"Error in injection")
-        #     exit(1)
+
+
+            
+    def get_bns_functions(self):
+        # template_path = "./original.py.template"
+        # env = Environment(loader = FileSystemLoader("./"))
+        # bns_template = env.get_template(template_path)
+        box_mapping = {}
+        new_bns = [bn["sop"][:] for bn in self.boolean_networks]
+        for box_idx, box in enumerate(self.decision_boxes):
+            old_box = box["box"].name
+            new_box = f"minterms[{box_idx}]"
+            box_mapping.update({old_box: new_box})
+            #print(f"New box {new_box} Old Box {old_box}")
+            for bns_idx, bn in enumerate(new_bns):
+                mod_str =  re.sub(r'\b' + re.escape(old_box) + r'\b', new_box, bn)
+                #nbn = bn.replace(old_box, new_box)
+                new_bns[bns_idx] = mod_str
+        return new_bns
+        bn_functions = []
+        for id, new_bn in enumerate(new_bns):
+            bn_functions.append(generate_boolean_function(new_bn, f"bn_{self.name}_{id}"))
+        return bn_functions
+            
+    # def evaluate_bns(self, minterms):
+    #     return np.array([self.bn_functions[i](minterms) for i in range(0,len(self.boolean_networks))])

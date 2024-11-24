@@ -35,14 +35,20 @@ class LCOR(GREP):
                     min_resiliency : int = 0, 
                     ncpus : int = cpu_count(),
                     out_path : str = "./",
-                    flow : str = "pruning"
+                    flow : str = "pruning",
+                    use_iv : bool = True # Use Vector Extension
                 ):
-        super().__init__(classifier, pruning_set_fraction, max_loss, min_resiliency, ncpus)
+        super().__init__(classifier, pruning_set_fraction, max_loss, min_resiliency, ncpus, use_iv)
         self.leaf_scores = {}
         self.corr_per_leaf = {}
         self.tabu_leaves = []
         self.out_path = out_path
         self.flow = flow
+        if self.use_iv:
+            self.set_prun_conf = self.set_pruning_conf_iv
+        else:
+            self.set_prun_conf = self.set_pruning_conf_classical
+
 
     """     
     Compute the number of samples in each leaf
@@ -142,7 +148,14 @@ class LCOR(GREP):
     # Predispose the  trim operation by initializing internal values.
     def predispose_trim(self):
         super().trim(GREP.CostCriterion.depth) # cost_criterion is useless.
+        self.tentative = []
 
+    """ Can not directly hide these functions in GREP as they are static ones. """
+    def set_pruning_conf_iv(self, pruning_conf):
+        self.classifier_bns_fns = GREP.set_prun_iv(pruning_conf)
+    
+    def set_pruning_conf_classical(self, pruning_conf):
+        GREP.set_pruning_conf(pruning_conf)
     """     
     Algorithm(classifier, sample_per_leaf,corr_per_leaf,T',max_loss):
     
@@ -170,12 +183,16 @@ class LCOR(GREP):
         final_acc = 0
         nro_candidates = len(self.leaf_scores)
         comp_time = time.time()
+        #tentative = copy.deepcopy(self.pruning_configuration) # Do this here for supporting the trim alternative procedure
         while self.loss <= self.max_loss and len(self.leaf_scores) > scores_idx:
-            tentative = copy.deepcopy(self.pruning_configuration) # save the pruning conf.
+            print(f"Trying with score idx {scores_idx}")
+            #tentative = copy.deepcopy(self.pruning_configuration) # save the pruning conf.
             leaf_id = self.leaf_scores[scores_idx][0] # Save the leaf id to try.  
-            tentative.append(leaf_id)  # append the element with the best value.
-            GREP.set_pruning_conf(self.classifier, tentative) # Set the pruning configuration
-            self.accuracy = self.evaluate_accuracy() # Evaluate the accuracy
+            self.tentative.append(leaf_id)  # append the element with the best value.
+            #GREP.set_pruning_conf(self.classifier, tentative) # Set the pruning configuration
+            self.classifier_bns_fns_new = GREP.set_prun_iv(self.classifier, self.tentative)
+            #self.accuracy = self.evaluate_accuracy() # Evaluate the accuracy
+            self.accuracy = self.evaluate_accuracy_iv_nb(self.classifier_bns_fns_new) # Evaluate the accuracy
             loss = self.baseline_accuracy - self.accuracy # compute the loss
             if loss <= self.max_loss:   # If the loss is acceptable
                 self.loss = loss        # Update the loss 
@@ -190,6 +207,7 @@ class LCOR(GREP):
                 # self.leaf_scores = sorted(scores.items(), key=lambda x: x[1],reverse = True) # Sort scores
             else :
                 self.tabu_leaves.append(self.leaf_scores[scores_idx][0]) # Remove the leaf
+                self.tentative.pop() # Tentative must remain coherent with pruning configuration
             scores_idx += 1
         comp_time = time.time() - comp_time
         logger.info(f'Total N.ro Leaves {len(self.corr_per_leaf)} N.ro pruned leaves {len(self.pruning_configuration)}')
@@ -210,14 +228,17 @@ class LCOR(GREP):
                          nro_candidates, pruned_leaves,
                          scores_idx, len(self.leaf_scores),
                          final_acc, self.baseline_accuracy,
-                         self.max_loss, self.loss[0],
+                         self.max_loss, self.loss,
                          comp_time]
             with open(report_path, 'w') as f:
                 writer = csv.writer(f)
                 writer.writerow(csv_header)
                 writer.writerow(csv_body)
 
-    # Iterare the pruning by curr
+    """ 
+        Iterative version of the LCOR algorithm that restarts
+        from the previous version.
+    """
     def trim_alternative(self, report, loss_lb, loss_ub, step):
         self.predispose_trim()
         # for each possible loss
@@ -229,7 +250,6 @@ class LCOR(GREP):
             flow_store_path = self.out_path + "/lcor_" + str(it_loss) + "/.flow.json5"
             pruning_idxs = self.out_path + "/lcor_" + str(it_loss) + "/.pruning_idxs.json5"
             test_idxs = self.out_path + "/lcor_" + str(it_loss) + "/.test_idxs.json5"
-
             # Generate the out dir
             if not os.path.exists(self.out_path + "/lcor_" + str(it_loss)): 
                 os.makedirs(self.out_path + "/lcor_" + str(it_loss))
@@ -241,7 +261,7 @@ class LCOR(GREP):
             # set the new maximum loss
             self.max_loss = it_loss
             # Trim with the actual accuracy
-            self.trim(report,report_path)
+            self.trim(report, report_path)
             # Update the scores
             scores = self.compute_leaves_score(self.corr_per_leaf) # Just need to recompute the scores and sort them. 
             self.leaf_scores = sorted(scores.items(), key=lambda x: x[1],reverse = True) # Sort scores

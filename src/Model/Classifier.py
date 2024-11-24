@@ -28,6 +28,17 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import export_graphviz, DecisionTreeClassifier
 from ..scikit.RandonForestClassifierMV import RandomForestClassifierMV
 
+import time # To remove
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+def generate_boolean_function(expr, func_name):
+    func_code = f"""
+def {func_name}(minterms):
+    return {expr}
+"""
+    exec(func_code, globals()) 
+    return globals()[func_name]
+
 class Classifier:
     __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_4'}
 
@@ -41,6 +52,7 @@ class Classifier:
         self.als_conf = None
         
     def __del__(self):
+        self.thd_pool.shutdown(wait = True)
         self.pool.close()
     
     @staticmethod
@@ -60,6 +72,7 @@ class Classifier:
         self.p_tree = list_partitioning(self.trees, self.ncpus)
         self.args = [[t, None] for t in self.p_tree]
         self.pool = Pool(self.ncpus)
+        self.thd_pool = ThreadPoolExecutor(max_workers = self.ncpus)
 
     def pmml_parser(self, pmml_file_name, dataset_description = None):
         logger = logging.getLogger("pyALS-RF")
@@ -336,21 +349,6 @@ class Classifier:
                 is_leaves[current_node_id] = True
         return root_node
 
-    # # Inject a fault into the decision boxes.            
-    # def inject_tree_boxes_faults(self, faults_per_tree):
-    #     for tree_name in faults_per_tree.keys():
-    #         for tree in self.trees:
-    #             if tree.name == tree_name:
-    #                 tree.fix_boxes_outs(faults_per_tree[tree_name])
-
-    # # Change the BNs, by loading 
-    # # directly a new assertion function configuration.
-    # def set_tree_bns(self, faults_per_tree):
-    #     for tree_name in faults_per_tree.keys():
-    #         for tree in self.trees:
-    #             if tree.name == tree_name:
-    #                 tree.set_assertion_functions(faults_per_tree[tree_name])
-
     # Replace Tree decision boxes with faulted boxes.    
     # Returns the set of stored decision boxes per each different tree.        
     def inject_tree_boxes_faults_fb(self, faults_per_tree):
@@ -376,18 +374,11 @@ class Classifier:
     
     # Identical, without bns savings
     def inject_bns_faults(self, faults_per_tree):
-#        injected_cnt = 0
         for tree_name in faults_per_tree.keys():
             for tree in self.trees:
                 if tree.name == tree_name:
                     tree.inj_fault_assertion_functions_ws(faults_per_tree[tree_name])
-        #             injected_cnt += 1
-        # print(f"Number of injected Trees {injected_cnt}")
-        # if injected_cnt > 1:
-        #     print(f"Error in tree selection")
-        #     exit(1)
-        # else:
-        #     print(f"Injection in tree ok")
+    
     # Restore functions..
     def restore_dbs(self, old_dbs):
         for tree in self.trees:
@@ -403,3 +394,190 @@ class Classifier:
         for tree in self.trees:
             bns.update({ tree.name : copy.deepcopy(tree.boolean_networks)})
         return bns
+    
+    # VISIT TESTS
+    """ 
+        Returns a list, where each elements contains the set of pointers to 
+        boolean functions for each different tree.
+    """
+    def get_bns_functions(self):
+        # Save the boolean functions
+        bns_fns_tree = []
+        for tree in self.trees:
+            new_bns = tree.get_bns_functions()
+            bns_fns = []
+            for bn_id, bn in enumerate(new_bns):
+                bns_fns.append(generate_boolean_function(bn, f"bn_{tree.name}_{bn_id}"))
+            bns_fns_tree.append(bns_fns)
+        return bns_fns_tree
+    
+    """ 
+        This function is used when inference is performed by ""linearizing"" the features
+        vector with the decision boxes.
+        Therefore, this function, returns the offsets for each tree in the feature linearized
+        vector, in order to be able to isolate samples during BNs evaluations.
+    """
+    def get_dbs_offset_in_samples(self):
+        # Save tree starts and endings
+        self.list_starts = []
+        self.list_ends   = []
+        start_boxes = 0
+        for tree_id, tree in enumerate(self.trees):
+            boxes_tree  = len(tree.decision_boxes)
+            end_boxes   = start_boxes + boxes_tree
+            self.list_starts.append(start_boxes)
+            self.list_ends.append(end_boxes)
+            start_boxes += boxes_tree
+        return self.list_starts, self.list_ends
+    
+    """ 
+        For each tree, this function instantiates an array of thresholds for each comparator.
+        Used to perform the linear comparison with the DBs.
+    """
+    def instantiate_dbs_vectors(self):
+        self.dbs_thd_lin = np.array([np.float64(box["box"].threshold) for tree in self.trees for box in tree.decision_boxes])
+    
+    """ 
+        This function generates for each x sample a linear vector to be directly compared with self.dbs_thd_lin.
+        IT IS STRONGLY ADVIDE TO EXECUTE THIS FUNCTION JUST ONCE AND NOT DURING INFERENCES.
+        Execution time is with this approach EXTREMELY reduced.
+    """
+    def linearize_samples(self, x_test: np.ndarray):
+        samples_refactorized = [np.array([s[tree.attrbutes_name.index(box["box"].feature_name)]  for tree in self.trees for box in tree.decision_boxes]) for s in x_test]
+        return samples_refactorized
+    
+    """ 
+        Perform on single core a linear visit on the test samples.
+        This function is better than the test_sample variants when the size of vectors is low.
+        Future investigation is required to test with multiprocessing alternatives.
+    """
+    def visit_acc_iv(self, samples, bns_fns_tree):
+        box_outs = [s > self.dbs_thd_lin for s in samples]
+        # Initialize to 0 for each class
+        sample_preds = [np.array([0 for i in range(len(self.trees[0].boolean_networks))]) for s in samples]
+        # For each output
+        for sample in box_outs:
+            #start_boxes = 0
+            preds_per_tree = []
+            # For each tree
+            for tree_id, tree in enumerate(self.trees):
+                tree_boxes = sample[self.list_starts[tree_id]: self.list_ends[tree_id]]
+                preds_per_tree.append(np.array([bn(tree_boxes) for bn in bns_fns_tree[tree_id]]))
+            sample_preds.append(np.sum(np.array(preds_per_tree), axis = 0))
+        return sample_preds
+
+    """ 
+        This function splits the test samples into different cores, executes inferences like in visit_acc_iv
+        and then uses multithreading to evaluate bns.
+        The reason of multithreading stands behind the fact that bns are dynamically compiled ( no more eval),
+        for the joy of Filippo.
+        However, with simpler models, this function performs slightly worse than visit_acc_iv.
+        While further investigation is required, it is recomended to use this function with larger datasets,
+        with an high number of inferences ( like doing LCOR or PS) as the function easily outperforms
+        its single core variant. 
+    """
+    def visit_acc_multhd_samples(self, samples, bns_fns_tree):
+        box_outs = [s > self.dbs_thd_lin for s in samples]
+        box_ids  = np.arange(len(box_outs))
+        partitioned_boxes = np.array_split(box_ids, self.ncpus)
+        mthd_preds = [np.array([0 for i in range(len(self.trees[0].boolean_networks))]) for s in samples]
+        parallel_args = [[bns_fns_tree, self.list_starts, self.list_ends, box_outs, pb, mthd_preds] for pb in partitioned_boxes]
+        self.thd_pool.map(evaluate_bns_mthd_per_sample, parallel_args)    
+        return mthd_preds
+    
+    def get_dbs_vectors(self):
+        bns_tree = self.get_bns_functions()
+        partitioning_indexes = list_partitioning([i for i in range(0, len(self.trees))], self.ncpus)
+        list_starts, list_ends = self.get_dbs_offset_in_samples()
+        # multicore_bns = [[bns_tree[idx] for idx in indexes] for indexes in partitioning_indexes]
+        # multicore_starts = [[list_starts[idx] for idx in indexex ]for indexex in partitioning_indexes]
+        # multicore_ends   = [[list_ends[idx] for idx in indexex] for indexex in partitioning_indexes]  
+        self.instantiate_dbs_vectors()
+        Node_ = self.dbs_thd_lin
+        samples = self.x_test[0 : 50]
+        samples_refactorized = self.linearize_samples(samples)
+
+        start_time = time.time()
+        box_outs = [s > Node_ for s in samples_refactorized]
+        sample_preds = self.visit_acc_iv(samples = samples_refactorized, bns_fns_tree = bns_tree)
+        end_time = (time.time() - start_time) * 1000
+        print(f"Parallel time {end_time:.2f} ms")
+
+        print(f"Executing parallel with Multithread")        
+        start_time  = time.time()
+        mthd_preds = self.visit_acc_multhd_samples(samples = samples_refactorized, bns_fns_tree = bns_tree)
+        end_time = (time.time() - start_time) * 1000
+        
+        print(f"Multicore with Parallel time {end_time:.2f} ms")
+        print("Executing Multicore")
+        start_time = time.time()
+        multicore_outs = self.predict(samples, disable_tqdm = True)
+        end_time = (time.time() - start_time) * 1000
+        print(f"Multicore time {end_time:.2f} ms")
+
+        # Validate visiting results
+        for out_parallel, mouts in zip(sample_preds, multicore_outs):
+            if not np.array_equal(out_parallel, mouts):
+                print("Non validati")
+                exit(1)
+        print("Output uguali per parallel")  
+        for out_parallel, mouts in zip(multicore_outs, mthd_preds):
+            if not np.array_equal(out_parallel, mouts):
+                print(out_parallel)
+                print(mouts)
+                print("Non validati")
+                exit(1)
+        print("Output uguali per Mthd Parallel")
+
+    """ 
+    This function executes the prediction function using IV.
+    Firstly, features FOR ALL THE SAMPLES are alligned to that of DBS 
+    (i.e. features are iterated and setted against the thresholds of DBS) 
+    and then they are sequentially compared.
+    Later, in parallel, boolean functions are evaluated for portions of the test samples
+    by leveraging the evaluate_bns_mthd_per_sample.
+    """
+    def predict_iv(self, x_test: np.ndarray):
+        return 0
+
+# mthd_preds = []
+""" 
+This function assumes that the test sample is partitioned using the list partitioning
+For each input sample evaluates the output of ALL the decision trees in the ensemble 
+produding the output matrix for each sample
+"""
+def evaluate_bns_mthd_per_sample(args):
+    bns = args[0]
+    starts = args[1]
+    ends = args[2]
+    box_outs = args[3]
+    box_out_indedex = args[4]
+    out_preds = args[5]
+    for sample_id in box_out_indedex:
+        preds_per_tree = []
+        for tree_idx, bns_tree in enumerate(bns):
+            tree_dbs = box_outs[sample_id][starts[tree_idx]:ends[tree_idx]]
+            preds_per_tree.append(np.array([bn(tree_dbs) for bn in bns_tree]))
+        out_preds[sample_id] = np.sum(preds_per_tree, axis = 0)
+    
+# @staticmethod
+# def pls_be_fast(args):
+#     Node_ = args[0]
+#     trees = args[1]
+#     bns_tree = args[2]
+#     list_starts = args[3]
+#     list_ends = args[4]
+#     sample_preds = args[5]
+#     x_tst = args[6]
+#     samples_refactorized = [np.array([s[tree.attrbutes_name.index(box["box"].feature_name)]  for tree in trees for box in tree.decision_boxes]) for s in x_tst]
+#     box_outs = [s > Node_ for s in samples_refactorized]
+#     # For each output
+#     for sample in box_outs:
+#         #start_boxes = 0
+#         preds_per_tree = []
+#         # For each tree
+#         for tree_id, tree in enumerate(trees):
+#             tree_boxes = sample[list_starts[tree_id]:list_ends[tree_id]]
+#             preds_per_tree.append(np.array([bn(tree_boxes) for bn in bns_tree[tree_id]]))
+#         sample_preds.append(np.sum(np.array(preds_per_tree), axis = 0))
+    

@@ -1,0 +1,8 @@
+Checking for updates...
+Cmd('git') failed due to: exit code(128)
+  cmdline: git fetch -v --progress -- origin
+  stderr: 'fatal: detected dubious ownership in repository at '/home/user/pyALS-RF-dbg''
+Thresholds 
+15332
+2086
+15332
