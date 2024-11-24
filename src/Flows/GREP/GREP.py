@@ -23,6 +23,25 @@ from ...Model.Classifier import *
 from ...Model.DecisionTree import *
 from ...plot import boxplot
 from enum import Enum
+import time 
+from scipy.stats import norm # For cut-offs.
+
+""" Computes the number of test set sizes to obtain an extimation of the accuracy loss.
+    number of samples =                      test_set_size
+                            -----------------------------------------------------
+                                                                test_set_size - 1
+                            1   +   error_margin^2 -----------------------------------------------------
+                                                    cut_off^2 * individual_prob * (1 - individual_prob)
+    test_set_size: Size of the test set.
+    error_margin : Given a Probability Peval this defines the error interval size [Peval - error_margin, Peval + error_margin]
+    cut_off:    The quantile of the standard normal distribution assumed a specififc confidence level (i.e. the probability that 
+                the acc loss is within the interval centered in Peval).
+                This value is computed internally of the function that takes as input the confidence level.
+    individual_prob : The probability that a sample is present.
+""" 
+def compute_sample_size(test_set_size, error_margin, confidence_level, individual_prob):
+    cut_off = norm.ppf(confidence_level) 
+    return int(test_set_size / (1 + pow(error_margin,2) * ( (test_set_size - 1) / (pow(cut_off,2) * individual_prob * (1 - individual_prob)) ) ))
 
 class GREP:
     
@@ -71,7 +90,19 @@ class GREP:
         self.classifier_bns_fns = self.classifier_bns_fns()
     
     def split_test_dataset(self, pruning_set_fraction : float = 0.5):
-        self.x_pruning, self.x_validation, self.y_pruning, self.y_validation, self.idx_prun, self.idx_test = train_test_split(self.classifier.x_test, self.classifier.y_test, [i for i in range(len(self.classifier.x_test))], train_size = pruning_set_fraction, shuffle = True)       
+        #self.x_pruning, self.x_validation, self.y_pruning, self.y_validation, self.idx_prun, self.idx_test = train_test_split(self.classifier.x_test, self.classifier.y_test, [i for i in range(len(self.classifier.x_test))], train_size = pruning_set_fraction, shuffle = True)       
+        valuation_size = compute_sample_size(test_set_size = len(self.classifier.x_test), error_margin = 0.05, confidence_level = 0.95, individual_prob = 0.5)
+        # With the valuation:_size compute the pruning portion size 
+        pruning_portion = ( len(self.classifier.x_test) - valuation_size) / len(self.classifier.x_test) # This is the portion of the validation
+        indexes = np.arange(len(self.classifier.x_test))
+        self.x_pruning, self.x_validation, self.y_pruning, self.y_validation, self.idx_prun, self.idx_test = train_test_split(self.classifier.x_test, self.classifier.y_test, indexes, train_size = pruning_portion)#, shuffle = True)
+        print(len(self.x_validation))
+        print(len(self.x_pruning))
+        # print("Pruning")
+        # print(self.idx_prun)
+        # print("Testing")
+        # print(self.idx_test)
+        #exit(1)
         # If use vec ext then load into memory the values of linearized vectors.
         if self.use_iv:
             self.x_pruning_linear = self.classifier.linearize_samples(self.x_pruning)
@@ -83,12 +114,18 @@ class GREP:
     
     # Function used to evaluate the accuracy.
     def evaluate_accuracy_iv(self):
+        # start = time.time()
         outcomes = self.classifier.visit_acc_multhd_samples(samples = self.x_validation_linear, bns_fns_tree = self.classifier_bns_fns)
+        # end = time.time() 
+        # print(f"Inference time is {(end-start)*1000:.2f}")
+        # exit(1)
         return np.sum( np.argmax(o) == y and not self.classifier.check_draw(o)[0] for o, y in zip(outcomes, self.y_validation)) / len(self.y_validation) * 100
     
     # Function used to evaluate the accuracy.
     def evaluate_accuracy_iv_nb(self, bns):
+        start = time.time()
         outcomes = self.classifier.visit_acc_multhd_samples(samples = self.x_validation_linear, bns_fns_tree = bns)
+        end = time.time()
         # print(outcomes)
         # exit(1)
         return np.sum( np.argmax(o) == y and not self.classifier.check_draw(o)[0] for o, y in zip(outcomes, self.y_validation)) / len(self.y_validation) * 100

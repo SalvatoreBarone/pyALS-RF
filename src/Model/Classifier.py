@@ -456,14 +456,15 @@ class Classifier:
         # Initialize to 0 for each class
         sample_preds = [np.array([0 for i in range(len(self.trees[0].boolean_networks))]) for s in samples]
         # For each output
-        for sample in box_outs:
+        for idx, sample in enumerate(box_outs):
             #start_boxes = 0
             preds_per_tree = []
             # For each tree
             for tree_id, tree in enumerate(self.trees):
                 tree_boxes = sample[self.list_starts[tree_id]: self.list_ends[tree_id]]
                 preds_per_tree.append(np.array([bn(tree_boxes) for bn in bns_fns_tree[tree_id]]))
-            sample_preds.append(np.sum(np.array(preds_per_tree), axis = 0))
+            #sample_preds.append(np.sum(np.array(preds_per_tree), axis = 0))
+            sample_preds[idx] = np.sum(np.array(preds_per_tree), axis = 0)
         return sample_preds
 
     """ 
@@ -494,7 +495,7 @@ class Classifier:
         # multicore_ends   = [[list_ends[idx] for idx in indexex] for indexex in partitioning_indexes]  
         self.instantiate_dbs_vectors()
         Node_ = self.dbs_thd_lin
-        samples = self.x_test[0 : 50]
+        samples = self.x_test[0 : int(len(self.x_test)/2)]
         samples_refactorized = self.linearize_samples(samples)
 
         start_time = time.time()

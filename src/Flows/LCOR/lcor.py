@@ -185,7 +185,7 @@ class LCOR(GREP):
         comp_time = time.time()
         #tentative = copy.deepcopy(self.pruning_configuration) # Do this here for supporting the trim alternative procedure
         while self.loss <= self.max_loss and len(self.leaf_scores) > scores_idx:
-            print(f"Trying with score idx {scores_idx}")
+            logger.info(f"Trying with score idx {scores_idx}")
             #tentative = copy.deepcopy(self.pruning_configuration) # save the pruning conf.
             leaf_id = self.leaf_scores[scores_idx][0] # Save the leaf id to try.  
             self.tentative.append(leaf_id)  # append the element with the best value.
@@ -255,9 +255,9 @@ class LCOR(GREP):
                 os.makedirs(self.out_path + "/lcor_" + str(it_loss))
             # Save indexes
             with open(pruning_idxs, "w") as f:
-                json5.dump(self.idx_prun, f, indent = 2)
+                json5.dump(list(self.idx_prun), f, indent = 2)
             with open(test_idxs, "w") as f:
-                json5.dump(self.idx_test, f, indent = 2)
+                json5.dump(list(self.idx_test), f, indent = 2)
             # set the new maximum loss
             self.max_loss = it_loss
             # Trim with the actual accuracy
