@@ -28,7 +28,7 @@ from src.hdl_generation import hdl_generation
 from src.git_updater import git_updater
 from src.Flows.lcor_flow import leaves_correlation_flow
 from src.Flows.tmr_flow import tmr_flow
-from src.Flows.faultinj_flow import fault_visit, gen_fault_collection, gen_fault_coll_ps,  dump_unfaulted_class_vector, sample_test_set #, test_dbs_faulted_inference, test_bns_faulted_inference
+from src.Flows.faultinj_flow import fault_visit, gen_fault_collection, gen_fault_coll_ps,  dump_unfaulted_class_vector, sample_test_set, ps_faultinj_visit #, test_dbs_faulted_inference, test_bns_faulted_inference
 from src.Flows.visit_testing import visit_test
 @click.group(chain=True)
 @click.pass_context
@@ -333,15 +333,19 @@ dump_unfaulted_class_vector
 @cli.command("fault_injection_visit")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-g', '--grep_pruning_configuration', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON GREP pruning configuration file of the classifier")
+@click.option('-p', '--ps_index', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON index for the PS visit")
 @click.option('-f', '--input_faults', type=click.Path(exists=True, dir_okay=True), default = None, help = "Input faults ")
 @click.option('-t', '--xtest', type=click.Path(exists=True, dir_okay=False), default = None, help = "Indexes of X_test vectors")
 @click.option('-o', '--out', type=click.Path(exists=True, dir_okay=True), default = None, help = "Output directory.")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.pass_context
-def fault_injection_visit(ctx, conf, grep_pruning_configuration, input_faults, xtest, out, verbose, ncpus):#, outdir):
+def fault_injection_visit(ctx, conf, grep_pruning_configuration, ps_index, input_faults, xtest, out, verbose, ncpus):#, outdir):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "faultinj")
-    fault_visit(ctx = ctx, pruning_cfg = grep_pruning_configuration, input_faults = input_faults, samples_idx = xtest, output = out, ncpus = ncpus)
+    if ps_index is not None:
+        ps_faultinj_visit(ctx, out, ps_index, input_faults, xtest, ncpus, 50)
+    else:
+        fault_visit(ctx = ctx, pruning_cfg = grep_pruning_configuration, input_faults = input_faults, samples_idx = xtest, output = out, ncpus = ncpus)
     #test_dbs_faulted_inference(ctx = ctx, conf = conf, input_faults = input_faults)
     #test_bns_faulted_inference(ctx = ctx, conf = conf, input_faults = input_faults)
 
@@ -372,7 +376,7 @@ def gen_class_vectors(ctx, conf, test_idx, pruning_conf, out, verbose, ncpus):#,
 @click.pass_context
 def gen_fault_coll(ctx, conf, grep_pruning_configuration, archive_nab, val_idx, out, verbose, working_mode, error_margin, individual_prob, confidence_level, ncpus):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "faultinj")
-    assert (archive_nab != None and grep_pruning_configuration != None), "Not supported mode, select only one approximate configuration"
+    assert not (archive_nab != None and grep_pruning_configuration != None), "Not supported mode, select only one approximate configuration"
     if archive_nab is None:
         gen_fault_collection(ctx, pruning_cfg = grep_pruning_configuration, working_mode = working_mode, error_margin = error_margin, confidence_level = confidence_level, individual_prob = individual_prob, out_dir = out, ncpus = ncpus)
     else:

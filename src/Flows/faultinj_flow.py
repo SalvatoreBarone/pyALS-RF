@@ -120,18 +120,27 @@ def gen_fault_collection(ctx, pruning_cfg = None,  working_mode = 0, error_margi
 # i.e. for 10 feature faults and 50 input samples the feat out file contains 50 vector for each different
 # fault (i.e. 10 different features.)
 # The input faults is a list containing for each fault different features used during experiments. 
-def fault_visit(ctx, output, input_faults, samples_idx,  ncpus, num_samples = 50, pruning_cfg = None):
+def fault_visit(ctx, output, input_faults, samples_idx,  ncpus, num_samples = 50, pruning_cfg = None, nabs = None):
+    assert not (nabs != None and pruning_cfg != None), "Mode not supported, use just one axc technique!"
     # Initialize the logger 
     logger = logging.getLogger("pyALS-RF")
-    logger.info("Runing the TMR flow.")
-    load_configuration_ps(ctx)
-    create_classifier(ctx)    
+    logger.info("Runing the Fault Visit.")
+    logger.info(f"Output: {output}")
+    logger.info(f"Input Faults: {input_faults}")
+    logger.info(f"Path of samples {samples_idx}")
+    logger.info(f"Pruning cfg: {pruning_cfg}")
+    logger.info(f"NABS : {nabs}")
+    if nabs is not None:    # For NABS this function is called only inside the other functions
+        load_configuration_ps(ctx)
+        create_classifier(ctx)    
     classifier = ctx.obj["classifier"]
     # Read the pruning_cfg to approximate the classifier.
     if pruning_cfg is not None:
         with open(pruning_cfg, "r") as f:
             pruning_readed = json5.load(f)
         GREP.set_pruning_conf(classifier = classifier, pruning_conf = pruning_readed)
+    elif nabs is not None:
+        classifier.set_nabs(nabs) # REMEMBER THAT THE FUNCTION DOES NOT RESET THE NABS !
     # Read the test set.
     if samples_idx is not None:
         with open(samples_idx, "r") as file:
@@ -560,4 +569,20 @@ def gen_fault_coll_ps(ctx, ps_dir, val_path, working_mode = 0, error_margin = 0.
         fc.faults_to_json5_list(classifier = classifier,  out_path = cp)
         
 
-    
+def ps_faultinj_visit(ctx, output, ps_index, input_faults, samples_idx,  ncpus, num_samples = 50):
+    load_configuration_ps(ctx)
+    create_classifier(ctx)    
+    classifier = ctx.obj["classifier"]
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("Runing the Fault Visit with PRECISION SCALING")
+    logger.info(f"Ps index {ps_index}")
+    with open(ps_index, "r") as f:
+        ps_cfgs = json5.load(f)
+    logger.info("Executing Faulted visits.")
+    for pscfg in ps_cfgs:
+        nabs = [int(nb) for nb in pscfg["Nab"]]
+        nabs_dict = {f["name"]: n for f, n in zip(classifier.model_features, nabs[:len(classifier.model_features)])}
+        ipt_faults = pscfg["Out:"] # A little bit tired of writing functions... so direct embedding :)
+        out_dir = pscfg["Out:"]
+        fault_visit(ctx, out_dir, ipt_faults, samples_idx,  ncpus, num_samples, pruning_cfg = None, nabs = nabs_dict) # Tooo tired to think about reenginering.
+        classifier.reset_nabs_configuration()
