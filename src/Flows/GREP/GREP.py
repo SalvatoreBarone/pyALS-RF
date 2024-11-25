@@ -23,7 +23,6 @@ from ...Model.Classifier import *
 from ...Model.DecisionTree import *
 from ...plot import boxplot
 from enum import Enum
-import time 
 from scipy.stats import norm # For cut-offs.
 
 """ Computes the number of test set sizes to obtain an extimation of the accuracy loss.
@@ -50,28 +49,13 @@ class GREP:
         activity = 2,  # lower the frequency of activation higher the cost
         combined = 3    # both the previous, combined; thus, leaves with the same costs in terms of depth but with lower frequency of activations cost more!
         
-    def __init__(self, classifier : Classifier, pruning_set_fraction : float = 0.5, max_loss : float = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count(), use_iv : bool = True):
+    def __init__(self, classifier : Classifier, pruning_set_fraction : float = 0.5, max_loss : float = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count()):
         self.classifier = classifier
         self.pruning_set_fraction = pruning_set_fraction
         self.max_loss = max_loss
         self.min_resiliency = min_resiliency
         self.ncpus = min(ncpus, len(self.classifier.trees))
-        self.use_iv = use_iv
-        # Initialize the correct visiting function
-        if self.use_iv:
-            # Get the boolean networks ( represented as python functions)
-            self.classifier_bns_fns = self.classifier.get_bns_functions()
-            # Get the set of linear thresholds
-            self.classifier.instantiate_dbs_vectors()
-            # Initialize start and end offset 
-            self.classifier.get_dbs_offset_in_samples()
-            # Change the function
-            self.evaluate_accuracy = GREP.evaluate_accuracy_iv
-            self.restore_bns = GREP.restore_bns_iv
-        else:
-            self.evaluate_accuracy = GREP.evaluate_accuracy_classical
-            self.restore_bns = GREP.restore_bns_classic
-    
+
     def store_pruning_conf(self, outfile : str):
         with open(outfile, "w") as f:
             json5.dump(self.pruning_configuration, f, indent=2)
@@ -79,16 +63,10 @@ class GREP:
     def backup_bns(self):
         self.bns_backup = { t.name : copy.deepcopy(t.boolean_networks) for t in self.classifier.trees }
         
-    def restore_bns_classic(self):
+    def restore_bns(self):
         for t in self.classifier.trees:
             t.boolean_networks = self.bns_backup[t.name]
-        
-    def restore_bns_iv(self):
-        for t in self.classifier.trees:
-            t.boolean_networks = self.bns_backup[t.name]
-        # Update the functions
-        self.classifier_bns_fns = self.classifier_bns_fns()
-    
+
     def split_test_dataset(self, pruning_set_fraction : float = 0.5):
         #self.x_pruning, self.x_validation, self.y_pruning, self.y_validation, self.idx_prun, self.idx_test = train_test_split(self.classifier.x_test, self.classifier.y_test, [i for i in range(len(self.classifier.x_test))], train_size = pruning_set_fraction, shuffle = True)       
         valuation_size = compute_sample_size(test_set_size = len(self.classifier.x_test), error_margin = 0.05, confidence_level = 0.95, individual_prob = 0.5)
@@ -96,39 +74,10 @@ class GREP:
         pruning_portion = ( len(self.classifier.x_test) - valuation_size) / len(self.classifier.x_test) # This is the portion of the validation
         indexes = np.arange(len(self.classifier.x_test))
         self.x_pruning, self.x_validation, self.y_pruning, self.y_validation, self.idx_prun, self.idx_test = train_test_split(self.classifier.x_test, self.classifier.y_test, indexes, train_size = pruning_portion)#, shuffle = True)
-        print(len(self.x_validation))
-        print(len(self.x_pruning))
-        # print("Pruning")
-        # print(self.idx_prun)
-        # print("Testing")
-        # print(self.idx_test)
-        #exit(1)
-        # If use vec ext then load into memory the values of linearized vectors.
-        if self.use_iv:
-            self.x_pruning_linear = self.classifier.linearize_samples(self.x_pruning)
-            self.x_validation_linear = self.classifier.linearize_samples(self.x_validation)
-            
-    def evaluate_accuracy_classical(self):
+
+    def evaluate_accuracy(self):
         outcomes = np.sum(self.pool.starmap(Classifier.compute_score, self.args_evaluate_validation), axis = 0)
         return np.sum(np.argmax(o) == y and not self.classifier.check_draw(o)[0] for o, y in zip(outcomes, self.y_validation)) / len(self.y_validation) * 100
-    
-    # Function used to evaluate the accuracy.
-    def evaluate_accuracy_iv(self):
-        # start = time.time()
-        outcomes = self.classifier.visit_acc_multhd_samples(samples = self.x_validation_linear, bns_fns_tree = self.classifier_bns_fns)
-        # end = time.time() 
-        # print(f"Inference time is {(end-start)*1000:.2f}")
-        # exit(1)
-        return np.sum( np.argmax(o) == y and not self.classifier.check_draw(o)[0] for o, y in zip(outcomes, self.y_validation)) / len(self.y_validation) * 100
-    
-    # Function used to evaluate the accuracy.
-    def evaluate_accuracy_iv_nb(self, bns):
-        start = time.time()
-        outcomes = self.classifier.visit_acc_multhd_samples(samples = self.x_validation_linear, bns_fns_tree = bns)
-        end = time.time()
-        # print(outcomes)
-        # exit(1)
-        return np.sum( np.argmax(o) == y and not self.classifier.check_draw(o)[0] for o, y in zip(outcomes, self.y_validation)) / len(self.y_validation) * 100
     
     # Remove the draw condition checking and return two different accuracies
     def evaluate_accuracy_draw(self):
@@ -284,15 +233,6 @@ class GREP:
             #tree.boolean_networks.append({"class" : class_name, "minterms" : kept_assertions, "sop" : sop, "hdl_expression" : hdl_expression})
         logger.debug(f'Tree {tree.name} pruning configuration:\n{tabulate([[bn["class"], f"{nl}".join(bn["minterms"]), bn["sop"].replace(" or ", f" or{nl}"), bn["hdl_expression"].replace(" or ", f" or{nl}")] for bn in tree.boolean_networks], headers=["class", "minterms", "SoP", "HDL"], tablefmt="grid")}')    
 
-    """ CALL THESE FUNCTIONS WHEN USING IV.. UNFORTUNATELY THE IV SUPPORT CAN NOT BE MASKERATED HERE AS THESE
-        ARE STATIC FUNCTIONS. SO EACH GREP DERIVED CLASS MUST MASK THE IV USE.
-    """
-    @staticmethod
-    def set_prun_iv(classifier : Classifier, pruning_conf):
-        for t in classifier.trees:
-            GREP.set_pruning(t, pruning_conf)
-        return classifier.get_bns_functions() # It overrides previously generated functions.
-    
     @staticmethod
     def compute_redundancy(trees, dataset):
         return [[ GREP.tree_visit_with_leaf(t, x) for t in trees ] for x in dataset ]
@@ -320,8 +260,7 @@ class GREP:
         self.args_evaluate_pruning = [[t, self.x_pruning] for t in self.p_tree]
         self.args_evaluate_validation = [[t, self.x_validation] for t in self.p_tree]
         self.pool = self.classifier.pool
-        #self.baseline_accuracy = self.evaluate_accuracy()
-        self.baseline_accuracy = self.evaluate_accuracy_iv()
+        self.baseline_accuracy = self.evaluate_accuracy()
         logger.info(f"Baseline accuracy (on validation set) : {self.baseline_accuracy}%")
         self.original_cost = self.get_cost()
         logger.info(f"Original cost: {self.original_cost}")
