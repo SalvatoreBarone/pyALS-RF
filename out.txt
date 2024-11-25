@@ -1,44 +1,0 @@
-[38;20mpyALS-RF - INFO: Runing the TMR flow.[0m
-Checking for updates...
-Cmd('git') failed due to: exit code(128)
-  cmdline: git fetch -v --progress -- origin
-  stderr: 'fatal: detected dubious ownership in repository at '/home/user/pyALS-RF-dbg''
-[38;20mpyALS-RF - INFO: Tree 0: 117 DBs instantiated.[0m
-[38;20mpyALS-RF - INFO: Tree 1: 114 DBs instantiated.[0m
-[38;20mpyALS-RF - INFO: Tree 2: 116 DBs instantiated.[0m
-[38;20mpyALS-RF - INFO: Tree 3: 117 DBs instantiated.[0m
-[38;20mpyALS-RF - INFO: Tree 4: 128 DBs instantiated.[0m
-[38;20mpyALS-RF - INFO: Validating accuracy on new samples[0m
-Evaluating score:   0%|          | 0/1137 [00:00<?, ?it/s]Evaluating score:   0%|          | 0/1137 [00:00<?, ?it/s]Evaluating score:   0%|          | 0/1137 [00:00<?, ?it/s]Evaluating score:   0%|          | 0/1137 [00:00<?, ?it/s]Evaluating score:   0%|          | 0/1137 [00:00<?, ?it/s]Evaluating score:   7%|▋         | 77/1137 [00:00<00:01, 765.78it/s]Evaluating score:   8%|▊         | 86/1137 [00:00<00:01, 857.86it/s]Evaluating score:   7%|▋         | 81/1137 [00:00<00:01, 808.65it/s]Evaluating score:   7%|▋         | 83/1137 [00:00<00:01, 826.45it/s]Evaluating score:   6%|▌         | 71/1137 [00:00<00:01, 701.24it/s]Evaluating score:  14%|█▍        | 161/1137 [00:00<00:01, 808.73it/s]Evaluating score:  15%|█▌        | 172/1137 [00:00<00:01, 865.37it/s]Evaluating score:  15%|█▌        | 172/1137 [00:00<00:01, 840.49it/s]Evaluating score:  15%|█▌        | 172/1137 [00:00<00:01, 862.04it/s]Evaluating score:  13%|█▎        | 147/1137 [00:00<00:01, 729.89it/s]Evaluating score:  22%|██▏       | 245/1137 [00:00<00:01, 820.95it/s]Evaluating score:  23%|██▎       | 261/1137 [00:00<00:01, 875.21it/s]Evaluating score:  23%|██▎       | 266/1137 [00:00<00:00, 896.19it/s]Evaluating score:  23%|██▎       | 257/1137 [00:00<00:01, 774.13it/s]Evaluating score:  19%|█▉        | 220/1137 [00:00<00:01, 682.68it/s]Evaluating score:  31%|███       | 349/1137 [00:00<00:00, 856.95it/s]Evaluating score:  29%|██▉       | 328/1137 [00:00<00:01, 774.51it/s]Evaluating score:  31%|███▏      | 356/1137 [00:00<00:00, 867.25it/s]Evaluating score:  30%|██▉       | 336/1137 [00:00<00:01, 778.90it/s]Evaluating score:  26%|██▌       | 290/1137 [00:00<00:01, 686.93it/s]Evaluating score:  38%|███▊      | 435/1137 [00:00<00:00, 828.18it/s]Evaluating score:  36%|███▌      | 406/1137 [00:00<00:01, 726.31it/s]Evaluating score:  32%|███▏      | 359/1137 [00:00<00:01, 652.87it/s]Evaluating score:  36%|███▋      | 415/1137 [00:00<00:00, 726.38it/s]Evaluating score:  39%|███▉      | 443/1137 [00:00<00:00, 733.60it/s]Evaluating score:  46%|████▌     | 518/1137 [00:00<00:00, 746.20it/s]Evaluating score:  43%|████▎     | 489/1137 [00:00<00:00, 709.55it/s]Evaluating score:  42%|████▏     | 480/1137 [00:00<00:01, 647.28it/s]Evaluating score:  46%|████▌     | 520/1137 [00:00<00:00, 724.87it/s]Evaluating score:  37%|███▋      | 425/1137 [00:00<00:01, 586.48it/s]Evaluating score:  53%|█████▎    | 605/1137 [00:00<00:00, 780.93it/s]Evaluating score:  51%|█████     | 581/1137 [00:00<00:00, 771.82it/s]Evaluating score:  49%|████▉     | 562/1137 [00:00<00:00, 694.73it/s]Evaluating score:  54%|█████▍    | 612/1137 [00:00<00:00, 779.72it/s]Evaluating score:  44%|████▍     | 504/1137 [00:00<00:00, 645.12it/s]Evaluating score:  60%|██████    | 686/1137 [00:00<00:00, 786.13it/s]Evaluating score:  58%|█████▊    | 659/1137 [00:00<00:00, 769.04it/s]Evaluating score:  57%|█████▋    | 653/1137 [00:00<00:00, 755.85it/s]Evaluating score:  50%|█████     | 574/1137 [00:00<00:00, 660.88it/s]Evaluating score:  61%|██████    | 692/1137 [00:00<00:00, 780.57it/s]Evaluating score:  68%|██████▊   | 768/1137 [00:00<00:00, 795.50it/s]Evaluating score:  66%|██████▋   | 754/1137 [00:00<00:00, 823.33it/s]Evaluating score:  66%|██████▌   | 746/1137 [00:00<00:00, 805.28it/s]Evaluating score:  58%|█████▊    | 655/1137 [00:00<00:00, 702.36it/s]Evaluating score:  68%|██████▊   | 772/1137 [00:00<00:00, 762.32it/s]Evaluating score:  75%|███████▌  | 853/1137 [00:01<00:00, 809.89it/s]Evaluating score:  74%|███████▍  | 840/1137 [00:01<00:00, 832.14it/s]Evaluating score:  73%|███████▎  | 834/1137 [00:01<00:00, 826.28it/s]Evaluating score:  64%|██████▍   | 732/1137 [00:01<00:00, 721.09it/s]Evaluating score:  75%|███████▌  | 855/1137 [00:01<00:00, 779.23it/s]Evaluating score:  82%|████████▏ | 938/1137 [00:01<00:00, 820.59it/s]Evaluating score:  81%|████████▏ | 924/1137 [00:01<00:00, 830.26it/s]Evaluating score:  71%|███████▏  | 811/1137 [00:01<00:00, 738.95it/s]Evaluating score:  81%|████████  | 918/1137 [00:01<00:00, 816.62it/s]Evaluating score:  83%|████████▎ | 940/1137 [00:01<00:00, 799.26it/s]Evaluating score:  90%|████████▉ | 1021/1137 [00:01<00:00, 810.83it/s]Evaluating score:  89%|████████▊ | 1008/1137 [00:01<00:00, 798.53it/s]Evaluating score:  78%|███████▊  | 889/1137 [00:01<00:00, 750.24it/s]Evaluating score:  88%|████████▊ | 1001/1137 [00:01<00:00, 812.38it/s]Evaluating score:  91%|█████████ | 1035/1137 [00:01<00:00, 840.35it/s]Evaluating score:  97%|█████████▋| 1103/1137 [00:01<00:00, 801.27it/s]Evaluating score:  96%|█████████▌| 1089/1137 [00:01<00:00, 792.40it/s]Evaluating score:  95%|█████████▌| 1083/1137 [00:01<00:00, 802.97it/s]Evaluating score:  85%|████████▍ | 965/1137 [00:01<00:00, 708.67it/s]Evaluating score:  99%|█████████▊| 1120/1137 [00:01<00:00, 794.50it/s]Evaluating score: 100%|██████████| 1137/1137 [00:01<00:00, 804.81it/s]
-Evaluating score: 100%|██████████| 1137/1137 [00:01<00:00, 795.64it/s]
-Evaluating score: 100%|██████████| 1137/1137 [00:01<00:00, 787.14it/s]
-Evaluating score: 100%|██████████| 1137/1137 [00:01<00:00, 777.81it/s]
-Evaluating score:  92%|█████████▏| 1046/1137 [00:01<00:00, 737.51it/s]Evaluating score: 100%|██████████| 1137/1137 [00:01<00:00, 713.47it/s]
-[38;20mpyALS-RF - INFO: Baseline accuracy 92.52418645558487[0m
-Evaluating accuracy on the test set:   0%|          | 0/9 [00:00<?, ?it/s][38;20mpyALS-RF - INFO: Accuracy for new solution 90.325417766051 Loss: 2.198768689533864[0m
-Evaluating accuracy on the test set:  11%|█         | 1/9 [00:01<00:14,  1.76s/it][38;20mpyALS-RF - INFO: Accuracy for new solution 90.41336851363236 Loss: 2.1108179419525044[0m
-Evaluating accuracy on the test set:  22%|██▏       | 2/9 [00:03<00:12,  1.78s/it][38;20mpyALS-RF - INFO: Accuracy for new solution 89.9736147757256 Loss: 2.5505716798592744[0m
-Evaluating accuracy on the test set:  33%|███▎      | 3/9 [00:05<00:10,  1.78s/it][38;20mpyALS-RF - INFO: Accuracy for new solution 86.71943711521548 Loss: 5.8047493403693835[0m
-Evaluating accuracy on the test set:  44%|████▍     | 4/9 [00:07<00:08,  1.77s/it][38;20mpyALS-RF - INFO: Accuracy for new solution 90.50131926121372 Loss: 2.0228671943711447[0m
-Evaluating accuracy on the test set:  56%|█████▌    | 5/9 [00:08<00:07,  1.79s/it][38;20mpyALS-RF - INFO: Accuracy for new solution 86.103781882146 Loss: 6.420404573438873[0m
-Evaluating accuracy on the test set:  67%|██████▋   | 6/9 [00:10<00:05,  1.80s/it][38;20mpyALS-RF - INFO: Accuracy for new solution 88.12664907651715 Loss: 4.397537379067714[0m
-Evaluating accuracy on the test set:  78%|███████▊  | 7/9 [00:12<00:03,  1.81s/it][38;20mpyALS-RF - INFO: Accuracy for new solution 86.45558487247142 Loss: 6.068601583113448[0m
-Evaluating accuracy on the test set:  89%|████████▉ | 8/9 [00:14<00:01,  1.81s/it][38;20mpyALS-RF - INFO: Accuracy for new solution 88.47845206684258 Loss: 4.045734388742289[0m
-Evaluating accuracy on the test set: 100%|██████████| 9/9 [00:16<00:00,  1.79s/it]Evaluating accuracy on the test set: 100%|██████████| 9/9 [00:16<00:00,  1.79s/it]
-Sampling and Saving Fault Configurations: 0it [00:00, ?it/s]
-Storing sampled fault sites: 0it [00:00, ?it/s][AStoring sampled fault sites: 1211it [00:00, 3390722.39it/s]
-[38;20mpyALS-RF - INFO: Done dumping feat faults[0m
-INFO:pyALS-RF:Done dumping feat faults
-[38;20mpyALS-RF - INFO: Done dumping DBs faults[0m
-INFO:pyALS-RF:Done dumping DBs faults
-[38;20mpyALS-RF - INFO: Done dumping BNs faults[0m
-INFO:pyALS-RF:Done dumping BNs faults
-
-Storing sampled fault sites: 0it [00:00, ?it/s][AStoring sampled fault sites: 1211it [00:00, 3413509.51it/s]
-[38;20mpyALS-RF - INFO: Done dumping feat faults[0m
-INFO:pyALS-RF:Done dumping feat faults
-[38;20mpyALS-RF - INFO: Done dumping DBs faults[0m
-INFO:pyALS-RF:Done dumping DBs faults
-[38;20mpyALS-RF - INFO: Done dumping BNs faults[0m
-INFO:pyALS-RF:Done dumping BNs faults
-Sampling and Saving Fault Configurations: 2it [00:00, 37.10it/s]
