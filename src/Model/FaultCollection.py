@@ -23,7 +23,11 @@ from scipy.stats import norm # For cut-offs.
 
 class FaultCollection:
 
-    def __init__(self, classifier : Classifier):
+    def __init__(self, classifier : Classifier, nabs = None):
+        
+        if nabs is not None:
+            assert len(nabs) == len(classifier.model_features), "Insert a valid NABS configuration"
+            self.nabs = nabs
         self.list_of_fault_sites = []   
         """ Internally each fault site is represented by a tuple containing
             0 -> The type of fault (DB/BN/Feat), specified by the indexes described in the following code.
@@ -49,6 +53,7 @@ class FaultCollection:
         self.bn_faults_idx = 2
         self.list_of_faults = [[],[],[]]
         self.list_of_fixed_values = [[], [], []]
+        
         self.get_fault_sites_features(classifier = classifier)
         self.get_fault_sites_db(classifier = classifier)
         self.get_fault_sites_bn(classifier = classifier)
@@ -85,7 +90,7 @@ class FaultCollection:
     # Initialize the fault universe for the features of the classifier.
     def get_fault_sites_features(self, classifier: Classifier):
         for f in range(0, len(classifier.trees[0].model_features)):
-            for i in range(0,64):
+            for i in range(0, 64 - self.nabs[f]):
                 #fault_site = (self.feat_faults_idx, {f["name"] : i})
                 fault_site = (self.feat_faults_idx, {f : i})
                 self.list_of_feature_fault_sites.append(fault_site)

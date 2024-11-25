@@ -1,9 +1,0 @@
-import numpy
-
-bns_outs = np.array(boolean_networks|lenght)
-def eval_bns(minterms):
-    {% for bns_index, bns in boolean_networks|enumerate %}
-        <li>bns_outs[{{ bns_index }}]: {{ bns }}</li>
-    {% endfor %}
-    return bns_outs
-    

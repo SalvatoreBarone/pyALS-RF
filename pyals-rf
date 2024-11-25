@@ -28,7 +28,7 @@ from src.hdl_generation import hdl_generation
 from src.git_updater import git_updater
 from src.Flows.lcor_flow import leaves_correlation_flow
 from src.Flows.tmr_flow import tmr_flow
-from src.Flows.faultinj_flow import fault_visit, gen_fault_collection, dump_unfaulted_class_vector, sample_test_set, test_dbs_faulted_inference, test_bns_faulted_inference
+from src.Flows.faultinj_flow import fault_visit, gen_fault_collection, gen_fault_coll_ps,  dump_unfaulted_class_vector, sample_test_set #, test_dbs_faulted_inference, test_bns_faulted_inference
 from src.Flows.visit_testing import visit_test
 @click.group(chain=True)
 @click.pass_context
@@ -360,6 +360,8 @@ def gen_class_vectors(ctx, conf, test_idx, pruning_conf, out, verbose, ncpus):#,
 @cli.command("gen_fault_coll")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file of the classifier")
 @click.option('-g', '--grep_pruning_configuration', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON GREP pruning configuration file of the classifier")
+@click.option('-a', '--archive_nab', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON path of the Final Archive of the classifier.")
+@click.option('-i', '--val_idx', type = click.Path(exists=False, dir_okay=False), default = None, help = "Path of the validation indexes, valid only for NAB (PS) ")
 @click.option('-o', '--out', type=click.Path(exists=True, dir_okay=True), default = "./", help = "Output directory of the fault configurations.")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.option('-w', '--working_mode', type = int, default = 0, help = "Sample fault sites for the entire universe or from single different fault universes.")
@@ -368,9 +370,13 @@ def gen_class_vectors(ctx, conf, test_idx, pruning_conf, out, verbose, ncpus):#,
 @click.option('-t', '--confidence_level', type = float, default = 0.95, help = " Confidence level used to compute the cut off from N-dist in the Leveugle formula.")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.pass_context
-def gen_fault_coll(ctx, conf, grep_pruning_configuration, out, verbose, working_mode, error_margin, individual_prob, confidence_level, ncpus):
+def gen_fault_coll(ctx, conf, grep_pruning_configuration, archive_nab, val_idx, out, verbose, working_mode, error_margin, individual_prob, confidence_level, ncpus):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "faultinj")
-    gen_fault_collection(ctx, pruning_cfg = grep_pruning_configuration, working_mode = working_mode, error_margin = error_margin, confidence_level = confidence_level, individual_prob = individual_prob, out_dir = out, ncpus = ncpus)
+    assert (archive_nab != None and grep_pruning_configuration != None), "Not supported mode, select only one approximate configuration"
+    if archive_nab is None:
+        gen_fault_collection(ctx, pruning_cfg = grep_pruning_configuration, working_mode = working_mode, error_margin = error_margin, confidence_level = confidence_level, individual_prob = individual_prob, out_dir = out, ncpus = ncpus)
+    else:
+        gen_fault_coll_ps(ctx, archive_nab, val_idx, working_mode, error_margin, confidence_level, individual_prob, out, ncpus)    
 
 @cli.command("gen_xtest_coll")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file of the classifier")
@@ -386,12 +392,14 @@ def gen_xtest_coll(ctx, conf, perc, num,  out, verbose, ncpus):
 
 @cli.command("test_visit")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file of the classifier")
+@click.option('-p', '--ps_dir', type=click.Path(exists=True, dir_okay=False), default = None, help = "File containing the final_archiver")
+@click.option('-a', '--accuracy_validation', type=click.Path(exists=True, dir_okay=False), default = None, help = "File containing the validation test indexes for validating accuracy.")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.pass_context
-def test_visit(ctx, conf, verbose, ncpus):
+def test_visit(ctx, conf, ps_dir, accuracy_validation, verbose, ncpus):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "visiting_testing")
-    visit_test(ctx)
+    visit_test(ctx, ps_dir, accuracy_validation)
 
 cli.add_command(bitwidth)
 cli.add_command(als)

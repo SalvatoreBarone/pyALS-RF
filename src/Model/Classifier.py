@@ -64,6 +64,8 @@ class Classifier:
         return uri
     
     def parse(self, model_source : str, dataset_description = None):
+        self.pool = Pool(self.ncpus)
+        self.thd_pool = ThreadPoolExecutor(max_workers = self.ncpus)
         if model_source.endswith(".pmml"):
             self.pmml_parser(model_source, dataset_description)
         elif model_source.endswith(".joblib"):
@@ -71,9 +73,8 @@ class Classifier:
         self.ncpus = min(self.ncpus, len(self.trees))
         self.p_tree = list_partitioning(self.trees, self.ncpus)
         self.args = [[t, None] for t in self.p_tree]
-        self.pool = Pool(self.ncpus)
-        self.thd_pool = ThreadPoolExecutor(max_workers = self.ncpus)
-
+        
+    
     def pmml_parser(self, pmml_file_name, dataset_description = None):
         logger = logging.getLogger("pyALS-RF")
         logger.debug(f"Parsing {pmml_file_name}")
@@ -427,7 +428,9 @@ class Classifier:
             end_boxes   = start_boxes + boxes_tree
             self.list_starts.append(start_boxes)
             self.list_ends.append(end_boxes)
+            tree.set_end_start_sample(start_boxes, end_boxes)
             start_boxes += boxes_tree
+
         return self.list_starts, self.list_ends
     
     """ 
@@ -444,6 +447,11 @@ class Classifier:
     """
     def linearize_samples(self, x_test: np.ndarray):
         samples_refactorized = [np.array([s[tree.attrbutes_name.index(box["box"].feature_name)]  for tree in self.trees for box in tree.decision_boxes]) for s in x_test]
+        return samples_refactorized
+    
+    @staticmethod
+    def linearize_samples_static(trees : DecisionTreeClassifier, x_test: np.ndarray):
+        samples_refactorized = [np.array([s[tree.attrbutes_name.index(box["box"].feature_name)]  for tree in trees for box in tree.decision_boxes]) for s in x_test]
         return samples_refactorized
     
     """ 
@@ -486,7 +494,19 @@ class Classifier:
         self.thd_pool.map(evaluate_bns_mthd_per_sample, parallel_args)    
         return mthd_preds
     
+#    return np.array( [ np.sum( [t.visit(x) for t in trees ], axis = 0) for x in tqdm(x_test, desc = "Evaluating score", disable = disable_tqdm) ] )
+    @staticmethod
+    def visit_per_tree(trees, linearized_box_outs):
+        #minterms 
+        # for box_idx, box in enumerate(tree.decision_boxes): minterms={box["box"].name : sample[tree.start: tree.end]}]
+
+        return [np.sum([[ int(eval(a["sop"], {box["box"].name : sample[tree.start: tree.end][box_idx] for box_idx, box in enumerate(tree.decision_boxes)})) for a in tree.boolean_networks ] for tree in trees ],axis = 0) for sample in linearized_box_outs]
+        
+
     def get_dbs_vectors(self):
+        for tree in self.trees:
+            tree.regenerate_asserions()
+            exit(1)
         bns_tree = self.get_bns_functions()
         partitioning_indexes = list_partitioning([i for i in range(0, len(self.trees))], self.ncpus)
         list_starts, list_ends = self.get_dbs_offset_in_samples()
@@ -495,7 +515,7 @@ class Classifier:
         # multicore_ends   = [[list_ends[idx] for idx in indexex] for indexex in partitioning_indexes]  
         self.instantiate_dbs_vectors()
         Node_ = self.dbs_thd_lin
-        samples = self.x_test[0 : int(len(self.x_test)/2)]
+        samples = self.x_test[0 : -1]
         samples_refactorized = self.linearize_samples(samples)
 
         start_time = time.time()
@@ -515,6 +535,13 @@ class Classifier:
         multicore_outs = self.predict(samples, disable_tqdm = True)
         end_time = (time.time() - start_time) * 1000
         print(f"Multicore time {end_time:.2f} ms")
+
+        print("Executing Multicore v.2")
+        start_time = time.time()
+        box_outs = [s > self.dbs_thd_lin for s in samples_refactorized]
+        multicore_outs_v2 = np.sum(self.pool.starmap(Classifier.visit_per_tree, [ [tree, box_outs] for tree in self.p_tree]), axis = 0)
+        end_time = (time.time() - start_time) * 1000
+        print(f"Multicore v.2 time {end_time:.2f} ms")
 
         # Validate visiting results
         for out_parallel, mouts in zip(sample_preds, multicore_outs):

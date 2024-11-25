@@ -306,8 +306,6 @@ class DecisionTree:
                 boolean_network["sop"]              = new_sop
                 boolean_network["hdl_expression"]   = new_hdl_expr
 
-
-            
     def get_bns_functions(self):
         # template_path = "./original.py.template"
         # env = Environment(loader = FileSystemLoader("./"))
@@ -328,6 +326,51 @@ class DecisionTree:
         for id, new_bn in enumerate(new_bns):
             bn_functions.append(generate_boolean_function(new_bn, f"bn_{self.name}_{id}"))
         return bn_functions
-            
+    
+    
+    """ 
+        Generate BNS alias for iv evaluation.
+    """
+    def replace_box_with_minterms(self):
+        box_mapping = {}
+        self.renamed_bns = [bn["sop"][:] for bn in self.boolean_networks]
+        for box_idx, box in enumerate(self.decision_boxes):
+            old_box = box["box"].name
+            new_box = f"minterms[{box_idx}]"
+            box_mapping.update({old_box: new_box})
+            #print(f"New box {new_box} Old Box {old_box}")
+            for bns_idx, bn in enumerate(self.renamed_bns):
+                mod_str =  re.sub(r'\b' + re.escape(old_box) + r'\b', new_box, bn)
+                #nbn = bn.replace(old_box, new_box)
+                self.renamed_bns[bns_idx] = mod_str
+    
+    # # """ Generate assertion function aliases."""
+    # def regenerate_asserions(self):
+    #     # This vector contains for each class the possible value used for pruning.
+    #     self.parsed_assertion_per_class = [[item["sop"] for item in self.leaves if item["class"] == cl] for cl in self.class_assertions.keys()]
+    #     # For each assertion, generate a new one.
+    #     for assertion_class_id in range(len(self.parsed_assertion_per_class)):
+    #         for assertion_in_class_id in range(len(self.parsed_assertion_per_class[assertion_class_id])):
+    #             # Remap decision boxes
+    #             for box_idx, box in enumerate(self.decision_boxes):
+    #                 old_box = box["box"].name
+    #                 new_box = f"minterms[{box_idx}]"
+    #                 self.parsed_assertion_per_class[assertion_class_id][assertion_in_class_id] =  re.sub(r'\b' + re.escape(old_box) + r'\b', new_box, self.parsed_assertion_per_class[assertion_class_id][assertion_in_class_id])
+    #          _, new_sop, _ = self.define_boolean_expression(["Mn_i" for i in range(0,len)], use_espresso = False)
+    #     # Now, regenerate BNs.
+    #     print(self.parsed_assertion_per_class[0][0])
+    #     _, sop, _ = self.define_boolean_expression(minterms, use_espresso = False)
+
+    #     exit(1)
+
+    #     minterms, sop, hdl_expression = self.define_boolean_expression(minterms, use_espresso)
+    #     print(minterms)
+    #     print(sop)
+    #     exit(1)
+
     # def evaluate_bns(self, minterms):
     #     return np.array([self.bn_functions[i](minterms) for i in range(0,len(self.boolean_networks))])
+
+    def set_end_start_sample(self, start, end):
+        self.start = start
+        self.end = end
