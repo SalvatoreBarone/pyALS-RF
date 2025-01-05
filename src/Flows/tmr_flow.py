@@ -23,6 +23,7 @@ from ..ctx_factory import load_configuration_ps, create_classifier, store_flow
 from ..ConfigParsers.PsConfigParser import *
 from ..Model.Classifier import Classifier
 from .TMR.tmr import TMR
+from .TMR.tmr_moo import TMR_MOO
 import os 
 
 def tmr_flow(ctx, output, fraction,  ncpus, report, it, test_samples):
@@ -37,4 +38,18 @@ def tmr_flow(ctx, output, fraction,  ncpus, report, it, test_samples):
     tmr = TMR (ctx.obj["classifier"], fraction,  ncpus,ctx.obj['configuration'].outdir,ctx.obj["flow"], it)
     tmr.approx(test_samples = test_samples)
 
-    
+
+
+def tmr_moo_flow(ctx, output,  ncpus):
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("Runing the TMR-MOO flow.")
+    load_configuration_ps(ctx)
+    assert "configuration" in ctx.obj, "No configuration. Bailing out."
+    if output is not None:
+        ctx.obj['configuration'].outdir = output
+        mkpath(ctx.obj["configuration"].outdir)
+    create_classifier(ctx)    
+    tmr = TMR_MOO(ctx.obj["classifier"])
+
+    # tmr = TMR (ctx.obj["classifier"], fraction,  ncpus,ctx.obj['configuration'].outdir,ctx.obj["flow"], it)
+    # tmr.approx(test_samples = test_samples)

@@ -27,7 +27,7 @@ from src.ConfigParsers.DtGenConfigParser import *
 from src.hdl_generation import hdl_generation
 from src.git_updater import git_updater
 from src.Flows.lcor_flow import leaves_correlation_flow
-from src.Flows.tmr_flow import tmr_flow
+from src.Flows.tmr_flow import tmr_flow, tmr_moo_flow
 from src.Flows.faultinj_flow import fault_visit, gen_fault_collection, gen_fault_coll_ps,  dump_unfaulted_class_vector, sample_test_set, ps_faultinj_visit #, test_dbs_faulted_inference, test_bns_faulted_inference
 from src.Flows.visit_testing import visit_test
 @click.group(chain=True)
@@ -164,6 +164,7 @@ def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss_lb, maxloss_ub, lo
     #store_flow(ctx)
 
 @cli.command("tmr")
+@click.option('-m', '--moo', type = bool, default =False, help = "Set the MR optimization as a MOO optimization problem.")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
@@ -173,10 +174,10 @@ def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss_lb, maxloss_ub, lo
 @click.option('-i', '--it', type = int, default = 0 , help = "Experiment iteration")
 @click.option('-t', '--test_samples', type = int, default = 0 , help = "Number of test samples used from the validation after the split. Test set is first splitted and then test_samples are taken.")
 @click.pass_context
-def tmr(ctx, conf, ncpus, output, verbose, fraction, report, it, test_samples):
+def tmr(ctx, moo, conf, ncpus, output, verbose, fraction, report, it, test_samples):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False,"pruning")
     logger = logging.getLogger("pyALS-RF")
-    logger.info("TMRn pruning flow"
+    logger.info("TMR pruning flow"
                 f"\n\tconf: {conf}"
                 f"\n\toutput dir: {output}"
                 )
@@ -187,8 +188,14 @@ def tmr(ctx, conf, ncpus, output, verbose, fraction, report, it, test_samples):
                 f"\n\t  report enabled {report}"
                 f"\n\t  iteration {it}"
                 )
-    tmr_flow(ctx, output, fraction, ncpus, report, it, test_samples)
+    if moo:
+        tmr_moo_flow(ctx, output, ncpus)
+    else:
+        tmr_flow(ctx, output, fraction, ncpus, report, it, test_samples)
+        
     # #store_flow(ctx)
+
+
 
 @cli.command("reduplot")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")

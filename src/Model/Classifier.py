@@ -247,6 +247,22 @@ class Classifier:
         args = [[t, x_test, disable_tqdm] for t in self.p_tree]
         return np.sum(self.pool.starmap(Classifier.compute_score, args), axis = 0)
     
+    @staticmethod
+    def compute_indexes(trees : list[DecisionTree], X : ndarray, disable_tqdm = True):
+        assert len(np.shape(X)) == 2
+        return np.array( [t.get_leaf_idx(X) for t in tqdm(trees, disable = disable_tqdm) ])
+    
+    def get_leaf_index_ensemble(self, X, disable_tqdm = True):
+        args = [[t, X, disable_tqdm] for t in self.p_tree]
+        lists = np.array(self.pool.starmap(Classifier.compute_indexes, args))
+        final_list = []
+        for p_t_leaves in lists:
+            for tree_leaf in p_t_leaves:
+                final_list.append(tree_leaf)
+        return np.array(final_list)
+
+        
+
     def evaluate_test_dataset(self):
         outcomes = np.sum(self.pool.starmap(Classifier.compute_score, self.args), axis = 0)
         return np.sum(tuple( np.argmax(o) == y[0] and not Classifier.check_draw(o)[0] for o, y in zip(outcomes, self.y_test))) / len(self.y_test) * 100
@@ -255,6 +271,7 @@ class Classifier:
         outcomes = self.predict(X, disable_tqdm = disable_tqdm)
         return np.sum(tuple( np.argmax(o) == y[0] and not Classifier.check_draw(o)[0] for o, y in zip(outcomes, y))) / len(y) * 100
     
+            
     def predict_dump(self, index: int, outfile: str):
         score = self.predict(self.x_test[index])
         draw, max_score = Classifier.check_draw(score)

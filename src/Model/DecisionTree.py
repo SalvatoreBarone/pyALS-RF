@@ -128,7 +128,22 @@ class DecisionTree:
         lut_io_info = {}
         output = self.assertions_graph.evaluate(boxes_output, lut_io_info, self.current_als_configuration)[0]
         return [ o[f"\\{c}"] for c in self.model_classes ]
-                
+    
+    def get_leaf_idx(self, attributes_list):
+        if self.als_conf is not None:
+            assert 1 == 0, "Not supported "
+        leaf_indexes = []
+        for x in attributes_list:
+            leaf_id = -1 
+            boxes_output = self.get_boxes_output(x)
+            for l_id, l in enumerate(self.leaves):
+                if int(eval(l["sop"], boxes_output)):
+                    leaf_id = l_id
+                    break
+            leaf_indexes.append(leaf_id)
+        return leaf_indexes
+
+
     def parse(self, root_node, use_espresso):
         logger = logging.getLogger("pyALS-RF")
         db_aliases = {}
