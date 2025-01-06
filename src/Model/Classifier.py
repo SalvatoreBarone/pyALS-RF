@@ -247,11 +247,52 @@ class Classifier:
         args = [[t, x_test, disable_tqdm] for t in self.p_tree]
         return np.sum(self.pool.starmap(Classifier.compute_score, args), axis = 0)
     
+    
+    """ These functions works with leaf indexes instead of boolean functions.
+    """
+    """ Given a set of leaves obtained using the  get_leaf_index_ensemble this function returns the number of vores for each class. """
+    def get_votes_vectors_by_leaves_idx(self, leaves, y):
+        votes_vector = [ [0 for t in self.model_classes] for x in y]
+        for tree_id, tree_leaves in enumerate(leaves):
+            for sample_id, single_tree_leaf in enumerate(tree_leaves):
+                # If the prediction truly happened
+                if single_tree_leaf > 0:
+                    votes_vector[sample_id][int(self.trees[tree_id].leaves[single_tree_leaf]["class"])] += 1
+        return votes_vector
+    
+    """ Given a set of leaves obtained using the  get_leaf_index_ensemble this function returns the number of vores for each class
+        and the accuracy w.r.t the oracle y.
+    """
+    def get_accuracy_by_leaves_idx(self, leaves, y):
+        votes_vector = self.get_votes_vectors_by_leaves_idx(leaves, y)
+        correctly_classified = 0
+        for vote, correct_classess in zip(votes_vector, y):        
+            # print(f"Vote {np.argmax(vote)} {correct_classess} {np.argmax(vote) == int(correct_classess)} {Classifier.check_draw(vote)}")
+            # exit(1)
+            if np.argmax(vote) == int(correct_classess) and not Classifier.check_draw(vote)[0]:
+                correctly_classified += 1
+        return votes_vector, 100 * correctly_classified / len(y)
+    
+    """ Given a set of leaves obtained using the  get_leaf_index_ensemble this function returns the corresponding classes.
+    """
+    def transform_leaves_into_classess(self, leaves):
+        classes = []
+        for tree_id, tree_leaves in enumerate(leaves):
+            tree_classes = []
+            for single_tree_leaf in tree_leaves:
+                # If the prediction truly happened
+                if single_tree_leaf > 0:
+                    tree_classes.append(int(self.trees[tree_id].leaves[single_tree_leaf]["class"]))
+                else:
+                    tree_classes.append(-1)
+        return classes
+    
     @staticmethod
     def compute_indexes(trees : list[DecisionTree], X : ndarray, disable_tqdm = True):
         assert len(np.shape(X)) == 2
         return np.array( [t.get_leaf_idx(X) for t in tqdm(trees, disable = disable_tqdm) ])
     
+    """ Given a set of input vectors X get the corresponding leaf index for each X. Returns a vector len(tree) X len(X) """
     def get_leaf_index_ensemble(self, X, disable_tqdm = True):
         args = [[t, X, disable_tqdm] for t in self.p_tree]
         lists = np.array(self.pool.starmap(Classifier.compute_indexes, args))
