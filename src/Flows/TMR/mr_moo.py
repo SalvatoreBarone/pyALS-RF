@@ -43,6 +43,7 @@ class MrMop(pyamosa.Problem):
         self.max_loss = max_loss
         self.ncpus = ncpus
         # Initialize the problem.
+        
     #             ub = [53] * n_vars
     #     logger.info(f"#vars: {n_vars}, ub:{ub}, #conf.s {np.prod([ float(x + 1) for x in ub ])}.")
     #     pyamosa.Problem.__init__(self, n_vars, [pyamosa.Type.INTEGER] * n_vars, [0] * n_vars, ub, 2, 1)
@@ -60,3 +61,45 @@ class MrMop(pyamosa.Problem):
     #     retained_bits = self.classifier.get_total_retained()
     #     out["f"] = [acc_loss, retained_bits]
     #     out["g"] = [acc_loss - self.max_loss]
+
+    """ Initialize the MOO problem. Optionally, if mr_axc is not none, then the current mr_axc is overwritten. """
+    def initialize_problem(self, mr_axc: MrAxC = None):
+        if mr_axc != None:
+            self.mr_axc = mr_axc
+        """ In our approach variables are t_(i,j). Such variables indicate whether a  tree i is used for the classification of class j."""
+        n_vars = len(self.mr_axc.classifier.trees) * len(self.mr_axc.classifier.model_classes)
+        """ 
+        Init sign: 
+        (self, num_of_variables : int , types : list, lower_bounds : list, upper_bounds : list, num_of_objectives : int, num_of_constraints : int):
+            num_of_variables :  the number of variables in our problem is equal to the number of tree * number of classes.
+            types:              Different variable types for each class. For us they're 0 or 1.
+            lower_bounds:       The lower bound values for each variable. For us, as they're binary variables, they are 0.
+            upper_bounds:       The upper bound values for each variable. For us, as they're binary variables, they are 1. 
+            num_of_objectives : The number of different objectives considered during optimization. For us they're two different objectives.
+            constraints:        Different constraints, for us there is only one, i.e. the maximum accuracy loss.         
+        """
+        pyamosa.Problem.__init__(self, n_vars, [pyamosa.Type.INTEGER] * n_vars, [0] * n_vars, [1] n_vars, 2, 1)
+    
+    """ Given a solution, get the new variables."""
+    def get_tree_cfg(self, x):
+        n_trees = len(self.mr_axc.classifier.trees)
+        per_class_cfg = []
+        # Transform the x solution into a new configuration. 
+        for i in range(0, len(self.mr_axc.model_classes)):
+            # Consider the Tree.
+            class_cfg = [ tree_idx  for tree_idx, t_bin in enumerate(x[i * n_trees : ( i + 1) * n_trees ]) if t_bin == 1 ]
+            per_class_cfg.append(class_cfg)
+        return per_class_cfg
+
+
+    def evaluate(self, x, out):
+        cfg_under_eval = self.get_tree_cfg(x)
+        # 0 is accuracy draw and 1 is accuracy no draw.
+        accuracies = self.mr_axc.evaluate_cfg_xmop(cfg_under_eval)
+        # accuracy_draw, accuracy_no_draw = self.mr_axc.evaluate_cfg_xmop(cfg_under_eval)
+        acc_loss = self.mr_axc.x_mop_baseline_accuracy - accuracies 
+        #retained_bits = self.classifier.get_total_retained()
+        out["f"] = [acc_loss, retained_bits]
+        out["g"] = [acc_loss - self.max_loss]
+
+

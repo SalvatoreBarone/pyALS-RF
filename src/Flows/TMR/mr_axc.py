@@ -136,7 +136,7 @@ class MrAxC:
         this function returns the output of a TMR structure ( a set of 0 or 1 for each class).
     """
     @staticmethod
-    def get_tmr_vectors(classes_per_tree, class_configurations):
+    def get_mr_vectors(classes_per_tree, class_configurations):
         assert np.shape(classes_per_tree) == 2, "Invalid input vector, provide per each tree the list of classes for input samples"
         num_tree_per_cfg = [np.sum(cfg >= 0) for cfg in class_configurations]
         thds = [np.ceil(num_trees/2) for num_trees in range(0,num_tree_per_cfg)]
@@ -148,7 +148,7 @@ class MrAxC:
             for c_id, config in class_configurations:
                 # If there is at least one tree in the cfg.
                 if num_tree_per_cfg[c_id] > 0 :
-                    # Get the tree predictions
+                    # Get the predictions of the trees in configuration. 
                     tree_preds = tree_votes[config]
                     voting_trees = np.sum(tree_preds == c_id)
                     # Append 0 or 1 depending on the final outcome
@@ -189,10 +189,10 @@ class MrAxC:
         # Return the accuracy considering the draw condition as a misclassification and the one with no missclassification.
         return 100 * (correct_draw / len(y)), 100 * (correct_no_draw / len(y))
 
-    def get_x_mop_tmr_vectors(self):
-        pred_vectors = MrAxC.get_tmr_vectors(self.x_mop_classes, self.current_mr_cfg)
-        self.curr_accuracy_draw, self.curr_accuracy_no_draw = MrAxC.get_accuracy_from_vectors(self.x_mop_classes, self.y_mop)
-        
+    def evaluate_cfg_xmop(self, mr_cfg):
+        pred_vectors = MrAxC.get_mr_vectors(self.x_mop_classes, mr_cfg)
+        #self.curr_accuracy_draw, self.curr_accuracy_no_draw = MrAxC.get_accuracy_from_vectors(pred_vectors, self.y_mop)
+        return MrAxC.get_accuracy_from_vectors(pred_vectors, self.y_mop)
 
     def __init__(self, classifier):
         self.logger = logging.getLogger("pyALS-RF")
