@@ -27,7 +27,7 @@ from src.ConfigParsers.DtGenConfigParser import *
 from src.hdl_generation import hdl_generation
 from src.git_updater import git_updater
 from src.Flows.lcor_flow import leaves_correlation_flow
-from src.Flows.tmr_flow import tmr_flow, tmr_moo_flow
+from src.Flows.tmr_flow import tmr_flow, mr_mop_flow
 from src.Flows.faultinj_flow import fault_visit, gen_fault_collection, gen_fault_coll_ps,  dump_unfaulted_class_vector, sample_test_set, ps_faultinj_visit #, test_dbs_faulted_inference, test_bns_faulted_inference
 from src.Flows.visit_testing import visit_test
 @click.group(chain=True)
@@ -173,14 +173,21 @@ def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss_lb, maxloss_ub, lo
 @click.option('-r', '--report', type = bool, default = True , help = "Enables the generation of a CSV file containing the report")
 @click.option('-i', '--it', type = int, default = 0 , help = "Experiment iteration")
 @click.option('-t', '--test_samples', type = int, default = 0 , help = "Number of test samples used from the validation after the split. Test set is first splitted and then test_samples are taken.")
+@click.option('--alpha', type=float, default = 0.07)
+@click.option('--beta', type=float, default = 0.5)
+@click.option('--gamma', type=float, default = 2)
 @click.pass_context
-def tmr(ctx, moo, conf, ncpus, output, verbose, fraction, report, it, test_samples):
-    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False,"pruning")
+def tmr(ctx, moo, conf, ncpus, output, verbose, fraction, report, it, test_samples, alpha, beta, gamma):
+    if moo :
+        set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "MR_MOO")
+    else:
+        set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "MR")
     logger = logging.getLogger("pyALS-RF")
-    logger.info("TMR pruning flow"
+    logger.info("MR pruning flow"
                 f"\n\tconf: {conf}"
                 f"\n\toutput dir: {output}"
                 )
+    logger.info(f"Using MOO: {moo}")
     logger.info(f"Starting with Nro CPU: {ncpus}"
                 f"\n\t  Outdir: {output}"
                 f"\n\t  Fraction of Dataset {fraction}"
@@ -189,11 +196,10 @@ def tmr(ctx, moo, conf, ncpus, output, verbose, fraction, report, it, test_sampl
                 f"\n\t  iteration {it}"
                 )
     if moo:
-        tmr_moo_flow(ctx, output, ncpus)
+        mr_mop_flow(ctx, alpha, beta, gamma, output)
     else:
         tmr_flow(ctx, output, fraction, ncpus, report, it, test_samples)
         
-    # #store_flow(ctx)
 
 
 

@@ -51,7 +51,7 @@ def compute_sample_size(test_set_size, error_margin, confidence_level, individua
     return int(test_set_size / (1 + pow(error_margin,2) * ( (test_set_size - 1) / (pow(cut_off,2) * individual_prob * (1 - individual_prob)) ) ))
 
 
-class TMR_MOO:
+class MrAxC:
 
     """ 
         Split MOP samples and validation samples.  
@@ -80,7 +80,7 @@ class TMR_MOO:
         x_test_classess = list(set(y_flat))
         for x in x_test_classess:
             if x not in self.sampled_classes:
-                self.logger.error("[TMR-MOO] ERROR: In sampling, each class in the test set should be considered.")
+                self.logger.error("[MR-AXC] ERROR: In sampling, each class in the test set should be considered.")
                 exit(1)
     
     """ Compute the cost of each leaf as the number of nodes in that specific leaf. """
@@ -108,29 +108,33 @@ class TMR_MOO:
         return np.array(classes_per_tree)
     
     def initialize_tree_prediction_per_sample(self):
-        self.logger.info("[TMR-MOO] Initiating accuracy evaluation on X_MOP..")
+        self.logger.info("[MR-AXC] Initiating accuracy evaluation on X_MOP..")
         start = time.time()
         x_mop_leaves = self.classifier.get_leaf_index_ensemble(self.x_mop)
         _, self.x_mop_baseline_accuracy = self.classifier.get_accuracy_by_leaves_idx(x_mop_leaves, self.y_mop)
         end = time.time()
         x_mop_classes = self.classifier.transform_leaves_into_classess(x_mop_leaves)
-        self.x_mop_classes = TMR_MOO.per_tree_classess_into_classes_per_tree(x_mop_classes)
-        self.logger.info(f"[TMR-MOO] Accuracy on X_MOP and Leaves initialized in ms {(end - start)* 1000}")
-        self.logger.info(f"[TMR-MOO] Accuracy on X_MOP :{self.x_mop_baseline_accuracy}")
+        self.x_mop_classes = MrAxC.per_tree_classess_into_classes_per_tree(x_mop_classes)
+        self.logger.info(f"[MR-AXC] Accuracy on X_MOP and Leaves initialized in ms {(end - start)* 1000}")
+        self.logger.info(f"[MR-AXC] Accuracy on X_MOP :{self.x_mop_baseline_accuracy}")
     
         # print(f"Accuracy on XMOP is {self.x_mop_accuracy} Time {(end - start)* 1000}")
         # start = time.time()
         # acc = self.classifier.evaluate_accuracy(self.x_mop, self.y_mop.reshape(-1,1), disable_tqdm=True)
         # end = time.time()
         # print(f"Accuracy Cross Val is {acc} Time {(end - start) * 1000}")
-        self.logger.info("[TMR-MOO] Initiating accuracy evaluation on X_VAL..")
+        self.logger.info("[MR-AXC] Initiating accuracy evaluation on X_VAL..")
         start = time.time()
         x_val_leaves = self.classifier.get_leaf_index_ensemble(self.x_val)
         _, self.x_val_baseline_accuracy = self.classifier.get_accuracy_by_leaves_idx(x_val_leaves, self.y_val)
         end = time.time()
-        self.logger.info(f"[TMR-MOO] Accuracy on X_VAL and Leaves initialized in ms {(end - start)* 1000}")
-        self.logger.info(f"[TMR-MOO] Accuracy on X_VAL :{self.x_val_baseline_accuracy}")
+        self.logger.info(f"[MR-AXC] Accuracy on X_VAL and Leaves initialized in ms {(end - start)* 1000}")
+        self.logger.info(f"[MR-AXC] Accuracy on X_VAL :{self.x_val_baseline_accuracy}")
     
+    """ Get the set of TMR vector predictions.
+        given the set of classes per each tree (i.e. classes_per_tree) and the modular redundant configuration (i.e. class configuration)
+        this function returns the output of a TMR structure ( a set of 0 or 1 for each class).
+    """
     @staticmethod
     def get_tmr_vectors(classes_per_tree, class_configurations):
         assert np.shape(classes_per_tree) == 2, "Invalid input vector, provide per each tree the list of classes for input samples"
@@ -186,25 +190,25 @@ class TMR_MOO:
         return 100 * (correct_draw / len(y)), 100 * (correct_no_draw / len(y))
 
     def get_x_mop_tmr_vectors(self):
-        pred_vectors = TMR_MOO.get_tmr_vectors(self.x_mop_classes, self.current_mr_cfg)
-        self.curr_accuracy_draw, self.curr_accuracy_no_draw = TMR_MOO.get_accuracy_from_vectors(self.x_mop_classes, self.y_mop)
+        pred_vectors = MrAxC.get_tmr_vectors(self.x_mop_classes, self.current_mr_cfg)
+        self.curr_accuracy_draw, self.curr_accuracy_no_draw = MrAxC.get_accuracy_from_vectors(self.x_mop_classes, self.y_mop)
         
 
     def __init__(self, classifier):
         self.logger = logging.getLogger("pyALS-RF")
-        self.logger.info("[TMR-MOO] Initializing the module")
+        self.logger.info("[MR-AXC] Initializing the module")
         self.classifier : Classifier = classifier    
-        self.logger.info("[TMR-MOO] Sampling classess..")
+        self.logger.info("[MR-AXC] Sampling classess..")
         self.sample_dse_samples()
-        self.logger.info("[TMR-MOO] Sampling completed.")
-        self.logger.info(f"[TMR-MOO] MOO-Samples: {(len(self.x_mop))}")
-        self.logger.info(f"[TMR-MOO] Validation-Samples: {(len(self.x_val))}")
+        self.logger.info("[MR-AXC] Sampling completed.")
+        self.logger.info(f"[MR-AXC] MOO-Samples: {(len(self.x_mop))}")
+        self.logger.info(f"[MR-AXC] Validation-Samples: {(len(self.x_val))}")
         # Compute leaves costs
-        self.logger.info(f"[TMR-MOO] Initializing leaves costs.")
+        self.logger.info(f"[MR-AXC] Initializing leaves costs.")
         self.compute_leaves_costs()
-        self.logger.info(f"[TMR-MOO] Computed leaves costs.")
-        self.logger.info(f"[TMR-MOO] Leaves costs: \r\n {self.cost_per_tree}")
+        self.logger.info(f"[MR-AXC] Computed leaves costs.")
+        self.logger.info(f"[MR-AXC] Leaves costs: \r\n {self.cost_per_tree}")
         # Compute Predictions         
-        self.logger.info(f"[TMR-MOO] Initializing samples per leaf.")
+        self.logger.info(f"[MR-AXC] Initializing samples per leaf.")
         self.initialize_tree_prediction_per_sample()
         

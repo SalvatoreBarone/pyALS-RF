@@ -21,6 +21,7 @@ from .logger import configure_logger
 from .ConfigParsers.PsConfigParser import *
 from .Model.Classifier import *
 from .Flows.PS.PsMop import *
+from .Flows.TMR.mr_moo import MrMop
 
 def set_global_options(ctx, confifile, logger_name, verbosity, ncpus, use_espresso, flow = None):
     #assert "flow" not in ctx.obj, f"Approximation flow already set ({ctx.obj['flow']}). You issued more than one approximation command. Bailing out."
@@ -103,7 +104,9 @@ def create_problem(ctx, **kwargs):
     if "problem" not in ctx.obj:
         if ctx.obj["flow"] == "ps":
             ctx.obj["problem"] = PsMop(ctx.obj["classifier"], ctx.obj["configuration"].error_conf.max_loss_perc, ctx.obj["ncpus"]) if kwargs['mode'] == "full" else RankBasedPsMop(ctx.obj["classifier"], ctx.obj["configuration"].error_conf.max_loss_perc, kwargs['alpha'], kwargs['beta'], kwargs['gamma'], ctx.obj["ncpus"])
-    
+        elif ctx.obj["flow"] == "MR_MOO":
+            ctx.obj["problem"] = MrMop(None, ctx.obj["configuration"].error_conf.max_loss_perc, ctx.obj["ncpus"])
+            
     # assert "configuration" in ctx.obj, "You must read the JSON configuration file to run this command(s)"
     # assert "graph" in ctx.obj, "You must create a ALSGraph object first"
     # if "problem" not in ctx.obj:

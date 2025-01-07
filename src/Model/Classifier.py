@@ -256,7 +256,7 @@ class Classifier:
         for tree_id, tree_leaves in enumerate(leaves):
             for sample_id, single_tree_leaf in enumerate(tree_leaves):
                 # If the prediction truly happened
-                if single_tree_leaf > 0:
+                if single_tree_leaf >= 0:
                     votes_vector[sample_id][int(self.trees[tree_id].leaves[single_tree_leaf]["class"])] += 1
         return votes_vector
     
@@ -281,10 +281,11 @@ class Classifier:
             tree_classes = []
             for single_tree_leaf in tree_leaves:
                 # If the prediction truly happened
-                if single_tree_leaf > 0:
+                if single_tree_leaf >= 0:
                     tree_classes.append(int(self.trees[tree_id].leaves[single_tree_leaf]["class"]))
                 else:
                     tree_classes.append(-1)
+            classes.append(tree_classes)
         return classes
     
     @staticmethod

@@ -19,11 +19,13 @@ import logging, joblib, numpy as np
 from distutils.dir_util import mkpath
 from itertools import combinations, product
 from tqdm import tqdm
-from ..ctx_factory import load_configuration_ps, create_classifier, store_flow
+from ..ctx_factory import load_configuration_ps, create_classifier, store_flow, create_problem, create_optimizer, can_improve
+
 from ..ConfigParsers.PsConfigParser import *
 from ..Model.Classifier import Classifier
 from .TMR.tmr import TMR
-from .TMR.tmr_moo import TMR_MOO
+from .TMR.mr_axc import MrAxC
+from .TMR.mr_moo import MrMop
 import os 
 
 def tmr_flow(ctx, output, fraction,  ncpus, report, it, test_samples):
@@ -40,7 +42,7 @@ def tmr_flow(ctx, output, fraction,  ncpus, report, it, test_samples):
 
 
 
-def tmr_moo_flow(ctx, output,  ncpus):
+def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the TMR-MOO flow.")
     load_configuration_ps(ctx)
@@ -49,7 +51,11 @@ def tmr_moo_flow(ctx, output,  ncpus):
         ctx.obj['configuration'].outdir = output
         mkpath(ctx.obj["configuration"].outdir)
     create_classifier(ctx)    
-    tmr = TMR_MOO(ctx.obj["classifier"])
-
+    mr_axc = MrAxC(ctx.obj["classifier"])
+    create_problem(ctx, mode = None, alpha = alpha, beta = beta, gamma = gamma)
+    ctx.obj["problem"].mr_axc = mr_axc
+    # create_optimizer(ctx)
+    # can_improve(ctx)
+    
     # tmr = TMR (ctx.obj["classifier"], fraction,  ncpus,ctx.obj['configuration'].outdir,ctx.obj["flow"], it)
     # tmr.approx(test_samples = test_samples)
