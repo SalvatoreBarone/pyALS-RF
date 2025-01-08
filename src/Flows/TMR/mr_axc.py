@@ -87,6 +87,7 @@ class MrAxC:
     def compute_leaves_costs(self):
         """ For each tree mantains the number of nodes involved in each class.  """
         self.cost_per_tree = []
+        self.total_cost = 0
         for t in self.classifier.trees:
             cost_per_class = [0 for c in self.classifier.model_classes]
             for leaf in t.leaves:
@@ -96,7 +97,9 @@ class MrAxC:
                 cost_per_class[int(leaf["class"])] += node_count
             # Append the cost of the single tree.
             self.cost_per_tree.append(cost_per_class)
-    
+            # Increase the total cost of the ensemble.
+            self.total_cost += np.sum(cost_per_class)
+
     """ Transform the set of per_tree_classes (i.e. a vector where for each tree the set of classes is present)  
         into a vector where for each sample the vector of classes for each tree is considered.
     """
@@ -194,6 +197,17 @@ class MrAxC:
         #self.curr_accuracy_draw, self.curr_accuracy_no_draw = MrAxC.get_accuracy_from_vectors(pred_vectors, self.y_mop)
         return MrAxC.get_accuracy_from_vectors(pred_vectors, self.y_mop)
 
+    """ Evaluate the savings of the current cfg."""
+    def evaluate_mr_cfg_cost(self, new_cfg):
+        current_cost = self.total_cost
+        # For each tree, if the class is no longer classifier 
+        for tree_id, tree_costs in self.cost_per_tree:
+            # If the tree no longer classifies a class then remove the actual cost
+            for class_id, class_cfg in enumerate(new_cfg):
+                if tree_id not in class_cfg:
+                    current_cost -= tree_costs[class_id]
+        return current_cost
+    
     def __init__(self, classifier):
         self.logger = logging.getLogger("pyALS-RF")
         self.logger.info("[MR-AXC] Initializing the module")
@@ -211,4 +225,4 @@ class MrAxC:
         # Compute Predictions         
         self.logger.info(f"[MR-AXC] Initializing samples per leaf.")
         self.initialize_tree_prediction_per_sample()
-        
+    

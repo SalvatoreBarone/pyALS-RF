@@ -80,7 +80,7 @@ class MrMop(pyamosa.Problem):
         """
         pyamosa.Problem.__init__(self, n_vars, [pyamosa.Type.INTEGER] * n_vars, [0] * n_vars, [1] n_vars, 2, 1)
     
-    """ Given a solution, get the new variables."""
+    """ Given a solution, represented in terms of 0 and 1, return the configuration variable."""
     def get_tree_cfg(self, x):
         n_trees = len(self.mr_axc.classifier.trees)
         per_class_cfg = []
@@ -94,12 +94,14 @@ class MrMop(pyamosa.Problem):
 
     def evaluate(self, x, out):
         cfg_under_eval = self.get_tree_cfg(x)
-        # 0 is accuracy draw and 1 is accuracy no draw.
+        # Get the current accuracy.
         accuracies = self.mr_axc.evaluate_cfg_xmop(cfg_under_eval)
-        # accuracy_draw, accuracy_no_draw = self.mr_axc.evaluate_cfg_xmop(cfg_under_eval)
-        acc_loss = self.mr_axc.x_mop_baseline_accuracy - accuracies 
-        #retained_bits = self.classifier.get_total_retained()
-        out["f"] = [acc_loss, retained_bits]
+        # Get the current cost
+        current_cost = self.mr_axc.evaluate_mr_cfg_cost(cfg_under_eval)
+        # Evaluate the accuracy loss
+        acc_loss = self.mr_axc.x_mop_baseline_accuracy - accuracies[0] # The evaluated accuracy depends on whether the draw conditions are considered or not.
+        # F should refer to the two objectives while g to the constraints
+        out["f"] = [acc_loss, current_cost]
         out["g"] = [acc_loss - self.max_loss]
 
 
