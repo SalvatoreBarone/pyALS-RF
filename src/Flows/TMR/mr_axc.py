@@ -141,8 +141,16 @@ class MrAxC:
     @staticmethod
     def get_mr_vectors(classes_per_tree, class_configurations):
         assert len(np.shape(classes_per_tree)) == 2, "Invalid input vector, provide per each tree the list of classes for input samples"
-        num_tree_per_cfg = [sum(tree for tree in cfg if tree > 0) for cfg in class_configurations]
-        thds = [np.ceil(num_trees/2) for num_trees in num_tree_per_cfg]
+        # print(len(classes_per_tree))
+        # print(len(classes_per_tree[0]))
+        # exit(1)
+
+        num_tree_per_cfg = [sum(1 for tree in cfg if tree > 0) for cfg in class_configurations]
+        thds = [int(np.ceil(num_trees/2)) for num_trees in num_tree_per_cfg]
+        # print("Nm Treees")
+        # print(num_tree_per_cfg)
+        # print("Thds")
+        # print(thds)
         to_ret = []
         # For each inference
         for tree_votes in classes_per_tree:
@@ -153,7 +161,12 @@ class MrAxC:
                 if num_tree_per_cfg[c_id] > 0 :
                     # Get the predictions of the trees in configuration. 
                     tree_preds = tree_votes[config]
+                    # print(tree_preds)
+                    # print(tree_votes)
                     voting_trees = np.sum(tree_preds == c_id)
+                    # print(voting_trees)
+                    # print(thds[c_id])
+                    #exit(1)
                     # Append 0 or 1 depending on the final outcome
                     if voting_trees > thds[c_id]:
                         out_vector.append(1)
@@ -194,6 +207,7 @@ class MrAxC:
 
     def evaluate_cfg_xmop(self, mr_cfg):
         pred_vectors = MrAxC.get_mr_vectors(self.x_mop_classes, mr_cfg)
+        # print(pred_vectors)
         #self.curr_accuracy_draw, self.curr_accuracy_no_draw = MrAxC.get_accuracy_from_vectors(pred_vectors, self.y_mop)
         return MrAxC.get_accuracy_from_vectors(pred_vectors, self.y_mop)
 

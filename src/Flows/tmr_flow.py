@@ -53,6 +53,16 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str):
         mkpath(ctx.obj["configuration"].outdir)
     create_classifier(ctx)    
     mr_axc = MrAxC(ctx.obj["classifier"])
+
+    # vars = [1 for i in range(0, len(mr_axc.classifier.model_classes) * len(  mr_axc.classifier.trees))]
+    # vars = [1 if i %2 == 0 else 0 for i in range(0, len(mr_axc.classifier.model_classes) * len(  mr_axc.classifier.trees))]
+    # print(vars)
+    # confs = MrMop.get_tree_cfg(mr_axc, vars)
+    # print(confs)
+    # accs = mr_axc.evaluate_cfg_xmop(confs)
+    # print(accs)
+
+    # DA DECOMMENTARE DOPO I TEST SU ACCURACY
     create_problem(ctx, mode = None, alpha = alpha, beta = beta, gamma = gamma)
     ctx.obj["problem"].initialize_problem(mr_axc)
     create_optimizer(ctx)
@@ -66,6 +76,7 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str):
     logger.info(f"Cache hits: {ctx.obj['problem'].cache_hits} over {ctx.obj['problem'].total_calls} evaluations.")
     logger.info(f"{len(ctx.obj['problem'].cache)} cache entries collected")
     logger.info(f"Saving the validation and mop set indexes")
-
-    # tmr = TMR (ctx.obj["classifier"], fraction,  ncpus,ctx.obj['configuration'].outdir,ctx.obj["flow"], it)
-    # tmr.approx(test_samples = test_samples)
+    ctx.obj["optimizer"].archive.write_json(f"{ctx.obj['configuration'].outdir}/final_archive.json")
+    #ctx.obj["optimizer"].archive.plot_front(ctx.obj['problem'].num_of_objectives, f"{ctx.obj['configuration'].outdir}/pareto_front.pdf") # It gives me an error...
+    ctx.obj["pareto_front"] = ctx.obj["optimizer"].archive
+    logger.info(f"All done! Take a look at the {ctx.obj['configuration'].outdir} directory.")
