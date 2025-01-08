@@ -78,14 +78,14 @@ class MrMop(pyamosa.Problem):
             num_of_objectives : The number of different objectives considered during optimization. For us they're two different objectives.
             constraints:        Different constraints, for us there is only one, i.e. the maximum accuracy loss.         
         """
-        pyamosa.Problem.__init__(self, n_vars, [pyamosa.Type.INTEGER] * n_vars, [0] * n_vars, [1] n_vars, 2, 1)
+        pyamosa.Problem.__init__(self, n_vars, [pyamosa.Type.INTEGER] * n_vars, [0] * n_vars, [1] * n_vars, 2, 1)
     
     """ Given a solution, represented in terms of 0 and 1, return the configuration variable."""
     def get_tree_cfg(self, x):
         n_trees = len(self.mr_axc.classifier.trees)
         per_class_cfg = []
         # Transform the x solution into a new configuration. 
-        for i in range(0, len(self.mr_axc.model_classes)):
+        for i in range(0, len(self.mr_axc.classifier.model_classes)):
             # Consider the Tree.
             class_cfg = [ tree_idx  for tree_idx, t_bin in enumerate(x[i * n_trees : ( i + 1) * n_trees ]) if t_bin == 1 ]
             per_class_cfg.append(class_cfg)
@@ -93,6 +93,8 @@ class MrMop(pyamosa.Problem):
 
 
     def evaluate(self, x, out):
+        print(out)
+    
         cfg_under_eval = self.get_tree_cfg(x)
         # Get the current accuracy.
         accuracies = self.mr_axc.evaluate_cfg_xmop(cfg_under_eval)
@@ -103,5 +105,4 @@ class MrMop(pyamosa.Problem):
         # F should refer to the two objectives while g to the constraints
         out["f"] = [acc_loss, current_cost]
         out["g"] = [acc_loss - self.max_loss]
-
-
+        print(out)

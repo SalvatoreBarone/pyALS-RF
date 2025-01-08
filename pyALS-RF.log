@@ -1,0 +1,1386 @@
+2025-01-08 14:13:02,672 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:13:02,672 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:13:02,672 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:13:02,672 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:13:02,789 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:13:02,793 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:13:02,794 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:13:02,796 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:13:02,797 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:13:02,802 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:13:02,802 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:13:02,804 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:13:02,804 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:13:02,804 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:13:02,804 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:13:02,805 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:13:02,805 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:13:02,805 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:13:02,805 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:13:02,841 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 36.054372787475586
+2025-01-08 14:13:02,842 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :93.54838709677419
+2025-01-08 14:13:02,842 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:13:02,866 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 24.233341217041016
+2025-01-08 14:13:02,866 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :92.5233644859813
+2025-01-08 14:13:02,866 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:18:17,669 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:18:17,669 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:18:17,670 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:18:17,670 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:18:17,792 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:18:17,795 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:18:17,796 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:18:17,798 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:18:17,799 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:18:17,804 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:18:17,804 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:18:17,806 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:18:17,806 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:18:17,806 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:18:17,806 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:18:17,806 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:18:17,806 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:18:17,806 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:18:17,806 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:18:17,841 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 34.87443923950195
+2025-01-08 14:18:17,842 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :93.54838709677419
+2025-01-08 14:18:17,842 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:18:17,875 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 32.97281265258789
+2025-01-08 14:18:17,875 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :92.5233644859813
+2025-01-08 14:18:17,875 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:23:22,047 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:23:22,047 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:23:22,047 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:23:22,047 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:23:22,168 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:23:22,171 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:23:22,173 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:23:22,174 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:23:22,176 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:23:22,181 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:23:22,181 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:23:22,183 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:23:22,183 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:23:22,183 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:23:22,183 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:23:22,183 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:23:22,183 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:23:22,183 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:23:22,183 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:23:22,204 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 21.1637020111084
+2025-01-08 14:23:22,205 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :92.74193548387096
+2025-01-08 14:23:22,205 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:23:22,233 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 28.637170791625977
+2025-01-08 14:23:22,234 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :93.45794392523365
+2025-01-08 14:23:22,234 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:23:56,455 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:23:56,455 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:23:56,455 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:23:56,455 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:23:56,578 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:23:56,581 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:23:56,583 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:23:56,584 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:23:56,585 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:23:56,590 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:23:56,591 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:23:56,592 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:23:56,592 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:23:56,592 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:23:56,592 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:23:56,593 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:23:56,593 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:23:56,593 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:23:56,593 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:23:56,614 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 21.270036697387695
+2025-01-08 14:23:56,614 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :91.12903225806451
+2025-01-08 14:23:56,615 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:23:56,649 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 34.796714782714844
+2025-01-08 14:23:56,650 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :95.32710280373831
+2025-01-08 14:23:56,650 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:24:19,859 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:24:19,860 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:24:19,860 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:24:19,860 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:24:19,966 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:24:19,969 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:24:19,971 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:24:19,973 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:24:19,976 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:24:19,984 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:24:19,984 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:24:19,987 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:24:19,987 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:24:19,987 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:24:19,987 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:24:19,988 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:24:19,988 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:24:19,988 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:24:19,988 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:24:20,026 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 37.13846206665039
+2025-01-08 14:24:20,026 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :92.74193548387096
+2025-01-08 14:24:20,026 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:24:20,044 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 18.477678298950195
+2025-01-08 14:24:20,045 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :93.45794392523365
+2025-01-08 14:24:20,045 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:25:09,547 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:25:09,547 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:25:09,547 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:25:09,547 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:25:09,677 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:25:09,681 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:25:09,682 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:25:09,683 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:25:09,685 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:25:09,690 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:25:09,690 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:25:09,692 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:25:09,692 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:25:09,692 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:25:09,692 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:25:09,692 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:25:09,692 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:25:09,692 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:25:09,692 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:25:09,718 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 25.949716567993164
+2025-01-08 14:25:09,719 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :89.51612903225806
+2025-01-08 14:25:09,719 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:25:09,750 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 31.12053871154785
+2025-01-08 14:25:09,750 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :97.19626168224299
+2025-01-08 14:25:09,750 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:27:39,354 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:27:39,354 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:27:39,354 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:27:39,354 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:27:39,481 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:27:39,484 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:27:39,485 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:27:39,487 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:27:39,488 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:27:39,493 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:27:39,493 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:27:39,494 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:27:39,494 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:27:39,494 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:27:39,495 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:27:39,495 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:27:39,495 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:27:39,495 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:27:39,495 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:27:39,521 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 25.896310806274414
+2025-01-08 14:27:39,521 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :94.35483870967742
+2025-01-08 14:27:39,522 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:27:39,550 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 28.684139251708984
+2025-01-08 14:27:39,550 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :91.58878504672897
+2025-01-08 14:27:39,551 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:28:08,090 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:28:08,090 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:28:08,090 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:28:08,090 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:28:08,205 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:28:08,210 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:28:08,212 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:28:08,215 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:28:08,218 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:28:08,226 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:28:08,227 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:28:08,229 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:28:08,229 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:28:08,229 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:28:08,229 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:28:08,229 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:28:08,230 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:28:08,230 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:28:08,230 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:28:08,257 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 27.05073356628418
+2025-01-08 14:28:08,257 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :91.93548387096774
+2025-01-08 14:28:08,257 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:28:08,288 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 30.504465103149414
+2025-01-08 14:28:08,288 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :94.39252336448598
+2025-01-08 14:28:08,288 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:28:48,290 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:28:48,290 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:28:48,290 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:28:48,290 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:28:48,407 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:28:48,410 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:28:48,412 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:28:48,413 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:28:48,415 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:28:48,421 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:28:48,421 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:28:48,424 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:28:48,424 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:28:48,424 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:28:48,424 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:28:48,424 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:28:48,424 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:28:48,424 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:28:48,425 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:28:48,460 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 35.214900970458984
+2025-01-08 14:28:48,460 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :93.54838709677419
+2025-01-08 14:28:48,460 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:28:48,479 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 18.869400024414062
+2025-01-08 14:28:48,479 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :92.5233644859813
+2025-01-08 14:28:48,479 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:29:02,909 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:29:02,910 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:29:02,910 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:29:02,910 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:29:03,027 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:29:03,030 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:29:03,031 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:29:03,033 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:29:03,034 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:29:03,039 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:29:03,039 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:29:03,041 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:29:03,041 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:29:03,041 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:29:03,041 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:29:03,041 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:29:03,041 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:29:03,041 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:29:03,041 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:29:03,077 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 35.59684753417969
+2025-01-08 14:29:03,078 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :91.93548387096774
+2025-01-08 14:29:03,078 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:29:03,107 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 29.035091400146484
+2025-01-08 14:29:03,107 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :94.39252336448598
+2025-01-08 14:29:03,107 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:29:20,033 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:29:20,033 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:29:20,033 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:29:20,034 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:29:20,158 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:29:20,164 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:29:20,166 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:29:20,169 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:29:20,170 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:29:20,176 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:29:20,176 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:29:20,177 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:29:20,177 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:29:20,177 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:29:20,177 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:29:20,178 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:29:20,178 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:29:20,178 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:29:20,178 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:29:20,211 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 32.89079666137695
+2025-01-08 14:29:20,211 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :95.16129032258064
+2025-01-08 14:29:20,211 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:29:20,237 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 25.508642196655273
+2025-01-08 14:29:20,237 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :90.65420560747664
+2025-01-08 14:29:20,237 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:29:31,908 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:29:31,909 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:29:31,909 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:29:31,909 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:29:32,038 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:29:32,043 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:29:32,045 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:29:32,048 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:29:32,050 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:29:32,057 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:29:32,057 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:29:32,058 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:29:32,058 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:29:32,058 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:29:32,058 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:29:32,059 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:29:32,059 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:29:32,059 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:29:32,059 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:29:32,081 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 22.00484275817871
+2025-01-08 14:29:32,081 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :91.12903225806451
+2025-01-08 14:29:32,081 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:29:32,110 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 28.592586517333984
+2025-01-08 14:29:32,110 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :95.32710280373831
+2025-01-08 14:29:32,110 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:29:46,337 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:29:46,337 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:29:46,337 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:29:46,337 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:29:46,453 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:29:46,458 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:29:46,461 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:29:46,463 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:29:46,464 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:29:46,470 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:29:46,470 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:29:46,471 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:29:46,471 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:29:46,471 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:29:46,471 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:29:46,472 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:29:46,472 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:29:46,472 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:29:46,472 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:29:46,506 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 33.986568450927734
+2025-01-08 14:29:46,506 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :94.35483870967742
+2025-01-08 14:29:46,506 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:29:46,537 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 31.188011169433594
+2025-01-08 14:29:46,538 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :91.58878504672897
+2025-01-08 14:29:46,538 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:29:48,945 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:29:48,946 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:29:48,946 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:29:48,946 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:29:49,039 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:29:49,042 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:29:49,044 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:29:49,045 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:29:49,046 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:29:49,051 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:29:49,051 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:29:49,053 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:29:49,053 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:29:49,053 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:29:49,053 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:29:49,053 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:29:49,053 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:29:49,053 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:29:49,053 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:29:49,074 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 20.87712287902832
+2025-01-08 14:29:49,075 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :95.16129032258064
+2025-01-08 14:29:49,075 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:29:49,095 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 20.541667938232422
+2025-01-08 14:29:49,095 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :90.65420560747664
+2025-01-08 14:29:49,095 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:29:50,697 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:29:50,697 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:29:50,697 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:29:50,697 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:29:50,792 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:29:50,795 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:29:50,796 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:29:50,798 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:29:50,799 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:29:50,804 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:29:50,804 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:29:50,806 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:29:50,806 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:29:50,806 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:29:50,806 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:29:50,806 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:29:50,806 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:29:50,807 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:29:50,807 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:29:50,832 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 24.807214736938477
+2025-01-08 14:29:50,832 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :93.54838709677419
+2025-01-08 14:29:50,832 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:29:50,852 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 20.33710479736328
+2025-01-08 14:29:50,852 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :92.5233644859813
+2025-01-08 14:29:50,852 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:30:44,425 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:30:44,425 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:30:44,425 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:30:44,425 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:30:44,519 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:30:44,522 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:30:44,524 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:30:44,525 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:30:44,527 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:30:44,532 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:30:44,532 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:30:44,533 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:30:44,533 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:30:44,533 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:30:44,533 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:30:44,534 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:30:44,534 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:30:44,534 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:30:44,534 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:30:44,556 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 21.73447608947754
+2025-01-08 14:30:44,556 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :89.51612903225806
+2025-01-08 14:30:44,556 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:30:44,575 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 18.67532730102539
+2025-01-08 14:30:44,575 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :97.19626168224299
+2025-01-08 14:30:44,575 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:31:15,039 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:31:15,039 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:31:15,039 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:31:15,039 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:31:15,133 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:31:15,136 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:31:15,138 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:31:15,139 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:31:15,141 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:31:15,146 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:31:15,146 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:31:15,147 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:31:15,147 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:31:15,148 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:31:15,148 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:31:15,148 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:31:15,148 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:31:15,148 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:31:15,148 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:31:15,174 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 25.486469268798828
+2025-01-08 14:31:15,174 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :94.35483870967742
+2025-01-08 14:31:15,174 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:31:15,196 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 22.55105972290039
+2025-01-08 14:31:15,196 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :91.58878504672897
+2025-01-08 14:31:15,197 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:32:02,022 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:32:02,022 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:32:02,023 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:32:02,023 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:32:02,116 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:32:02,119 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:32:02,121 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:32:02,122 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:32:02,124 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:32:02,129 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:32:02,129 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:32:02,130 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:32:02,130 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:32:02,130 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:32:02,131 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:32:02,131 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:32:02,131 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:32:02,131 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:32:02,131 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:32:02,152 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 20.988941192626953
+2025-01-08 14:32:02,152 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :90.3225806451613
+2025-01-08 14:32:02,152 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:32:02,172 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 19.25969123840332
+2025-01-08 14:32:02,172 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :96.26168224299066
+2025-01-08 14:32:02,172 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:32:31,435 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:32:31,435 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:32:31,435 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:32:31,435 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:32:31,533 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:32:31,536 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:32:31,538 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:32:31,539 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:32:31,540 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:32:31,545 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:32:31,545 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:32:31,547 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:32:31,547 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:32:31,547 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:32:31,547 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:32:31,547 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:32:31,548 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:32:31,548 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:32:31,548 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:32:31,571 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 23.27132225036621
+2025-01-08 14:32:31,571 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :91.93548387096774
+2025-01-08 14:32:31,571 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:32:31,592 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 21.103858947753906
+2025-01-08 14:32:31,592 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :94.39252336448598
+2025-01-08 14:32:31,592 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:33:10,017 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:33:10,017 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:33:10,017 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:33:10,017 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:33:10,111 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:33:10,114 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:33:10,116 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:33:10,117 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:33:10,119 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:33:10,124 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:33:10,124 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:33:10,125 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:33:10,125 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:33:10,126 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:33:10,126 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:33:10,126 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:33:10,126 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:33:10,126 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:33:10,126 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:33:10,153 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 26.96704864501953
+2025-01-08 14:33:10,153 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :94.35483870967742
+2025-01-08 14:33:10,153 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:33:10,173 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 20.10345458984375
+2025-01-08 14:33:10,173 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :91.58878504672897
+2025-01-08 14:33:10,174 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:33:22,140 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:33:22,140 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:33:22,140 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:33:22,140 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:33:22,235 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:33:22,238 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:33:22,240 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:33:22,241 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:33:22,242 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:33:22,247 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:33:22,247 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:33:22,249 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:33:22,249 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:33:22,249 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:33:22,249 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:33:22,249 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:33:22,249 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:33:22,250 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:33:22,250 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:33:22,275 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 24.878263473510742
+2025-01-08 14:33:22,275 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :92.74193548387096
+2025-01-08 14:33:22,275 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:33:22,295 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 19.68550682067871
+2025-01-08 14:33:22,295 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :93.45794392523365
+2025-01-08 14:33:22,295 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:35:21,429 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:35:21,429 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:35:21,429 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:35:21,429 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:35:21,524 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:35:21,527 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:35:21,528 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:35:21,530 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:35:21,531 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:35:21,536 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:35:21,536 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:35:21,538 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:35:21,538 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:35:21,538 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:35:21,538 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:35:21,538 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:35:21,538 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:35:21,538 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:35:21,538 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:35:21,574 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 35.71438789367676
+2025-01-08 14:35:21,574 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :90.3225806451613
+2025-01-08 14:35:21,574 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:35:21,596 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 21.548032760620117
+2025-01-08 14:35:21,596 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :96.26168224299066
+2025-01-08 14:35:21,596 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:35:44,959 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:35:44,959 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:35:44,959 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:35:44,959 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:35:45,053 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:35:45,056 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:35:45,057 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:35:45,059 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:35:45,060 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:35:45,065 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:35:45,065 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:35:45,067 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:35:45,067 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:35:45,067 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:35:45,067 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:35:45,067 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:35:45,067 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:35:45,067 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:35:45,067 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:35:45,101 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 33.35142135620117
+2025-01-08 14:35:45,101 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :92.74193548387096
+2025-01-08 14:35:45,101 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:35:45,123 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 22.33576774597168
+2025-01-08 14:35:45,123 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :93.45794392523365
+2025-01-08 14:35:45,124 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:36:00,048 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:36:00,048 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:36:00,048 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:36:00,048 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:36:00,145 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:36:00,148 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:36:00,149 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:36:00,151 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:36:00,152 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:36:00,157 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:36:00,157 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:36:00,159 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:36:00,159 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:36:00,159 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:36:00,159 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:36:00,159 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:36:00,159 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:36:00,159 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:36:00,159 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:36:00,181 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 21.477460861206055
+2025-01-08 14:36:00,181 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :94.35483870967742
+2025-01-08 14:36:00,181 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:36:00,201 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 19.458770751953125
+2025-01-08 14:36:00,201 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :91.58878504672897
+2025-01-08 14:36:00,201 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:36:21,635 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:36:21,635 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:36:21,635 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:36:21,635 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:36:21,730 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:36:21,734 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:36:21,735 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:36:21,736 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:36:21,738 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:36:21,743 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:36:21,743 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:36:21,745 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:36:21,745 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:36:21,745 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:36:21,745 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:36:21,745 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:36:21,745 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:36:21,745 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:36:21,745 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:36:21,767 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 21.686315536499023
+2025-01-08 14:36:21,767 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :91.93548387096774
+2025-01-08 14:36:21,767 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:36:21,787 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 19.1805362701416
+2025-01-08 14:36:21,787 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :94.39252336448598
+2025-01-08 14:36:21,787 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:37:01,993 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:37:01,993 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:37:01,993 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:37:01,993 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:37:02,087 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:37:02,090 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:37:02,092 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:37:02,093 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:37:02,095 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:37:02,100 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:37:02,100 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:37:02,101 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:37:02,101 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:37:02,101 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:37:02,101 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:37:02,102 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:37:02,102 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:37:02,102 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:37:02,102 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:37:02,124 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 22.348642349243164
+2025-01-08 14:37:02,124 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :93.54838709677419
+2025-01-08 14:37:02,124 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:37:02,143 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 18.85080337524414
+2025-01-08 14:37:02,143 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :92.5233644859813
+2025-01-08 14:37:02,144 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:44:12,498 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:44:12,498 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:44:12,498 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:44:12,498 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:44:12,593 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:44:12,596 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:44:12,598 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:44:12,599 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:44:12,600 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:44:12,606 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:44:12,606 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:44:12,607 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:44:12,607 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:44:12,607 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:44:12,607 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:44:12,608 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:44:12,608 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:44:12,608 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:44:12,608 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:44:12,629 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 21.326303482055664
+2025-01-08 14:44:12,629 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :94.35483870967742
+2025-01-08 14:44:12,629 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:44:12,658 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 28.329849243164062
+2025-01-08 14:44:12,658 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :91.58878504672897
+2025-01-08 14:44:12,658 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:44:19,204 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:44:19,204 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:44:19,204 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:44:19,205 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:44:19,305 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:44:19,308 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:44:19,309 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:44:19,311 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:44:19,312 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:44:19,317 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:44:19,317 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:44:19,319 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:44:19,319 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:44:19,319 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:44:19,319 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:44:19,319 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:44:19,319 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:44:19,319 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:44:19,319 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:44:19,342 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 22.65644073486328
+2025-01-08 14:44:19,342 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :93.54838709677419
+2025-01-08 14:44:19,342 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:44:19,361 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 18.840312957763672
+2025-01-08 14:44:19,361 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :92.5233644859813
+2025-01-08 14:44:19,361 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:44:46,519 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:44:46,519 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:44:46,519 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:44:46,519 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:44:46,613 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:44:46,617 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:44:46,618 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:44:46,619 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:44:46,621 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:44:46,626 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:44:46,626 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:44:46,628 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:44:46,628 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:44:46,628 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:44:46,628 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:44:46,628 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:44:46,628 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:44:46,628 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:44:46,628 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:44:46,652 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 23.64349365234375
+2025-01-08 14:44:46,652 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :92.74193548387096
+2025-01-08 14:44:46,652 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:44:46,673 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 20.146608352661133
+2025-01-08 14:44:46,673 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :93.45794392523365
+2025-01-08 14:44:46,673 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:45:25,861 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:45:25,861 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:45:25,861 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:45:25,861 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:45:25,955 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:45:25,959 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:45:25,960 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:45:25,962 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:45:25,963 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:45:25,968 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:45:25,968 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:45:25,970 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:45:25,970 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:45:25,970 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:45:25,970 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:45:25,970 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:45:25,970 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:45:25,970 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:45:25,970 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:45:25,993 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 22.930383682250977
+2025-01-08 14:45:25,993 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :92.74193548387096
+2025-01-08 14:45:25,994 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:45:26,012 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 18.295764923095703
+2025-01-08 14:45:26,012 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :93.45794392523365
+2025-01-08 14:45:26,012 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:45:50,039 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:45:50,039 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:45:50,039 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:45:50,039 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:45:50,137 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:45:50,140 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:45:50,142 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:45:50,143 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:45:50,145 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:45:50,150 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:45:50,150 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:45:50,151 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:45:50,151 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:45:50,151 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:45:50,151 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:45:50,152 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:45:50,152 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:45:50,152 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:45:50,152 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:45:50,177 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 24.338245391845703
+2025-01-08 14:45:50,177 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :92.74193548387096
+2025-01-08 14:45:50,177 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:45:50,195 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 18.660783767700195
+2025-01-08 14:45:50,195 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :93.45794392523365
+2025-01-08 14:45:50,196 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:46:30,018 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:46:30,018 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:46:30,018 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:46:30,018 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:46:30,113 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:46:30,116 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:46:30,118 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:46:30,119 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:46:30,121 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:46:30,126 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:46:30,126 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:46:30,127 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:46:30,127 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:46:30,127 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:46:30,127 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:46:30,128 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:46:30,128 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:46:30,128 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:46:30,128 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:46:30,153 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 24.680137634277344
+2025-01-08 14:46:30,153 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :91.93548387096774
+2025-01-08 14:46:30,153 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:46:30,175 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 21.784543991088867
+2025-01-08 14:46:30,175 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :94.39252336448598
+2025-01-08 14:46:30,175 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:47:35,166 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:47:35,167 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:47:35,167 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:47:35,167 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:47:35,261 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:47:35,265 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:47:35,266 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:47:35,267 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:47:35,269 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:47:35,274 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:47:35,274 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:47:35,276 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:47:35,276 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:47:35,276 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:47:35,276 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:47:35,276 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:47:35,276 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:47:35,276 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:47:35,276 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:47:35,310 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 33.4012508392334
+2025-01-08 14:47:35,310 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :91.93548387096774
+2025-01-08 14:47:35,310 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:47:35,331 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 21.587848663330078
+2025-01-08 14:47:35,331 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :94.39252336448598
+2025-01-08 14:47:35,332 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:50:02,989 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:50:02,989 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:50:02,990 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:50:02,990 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:50:03,083 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:50:03,087 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:50:03,088 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:50:03,089 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:50:03,091 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:50:03,096 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:50:03,096 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:50:03,097 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:50:03,097 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:50:03,097 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:50:03,098 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:50:03,098 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:50:03,098 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:50:03,098 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:50:03,098 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:50:03,123 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 24.27983283996582
+2025-01-08 14:50:03,123 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :94.35483870967742
+2025-01-08 14:50:03,123 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:50:03,142 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 19.52648162841797
+2025-01-08 14:50:03,142 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :91.58878504672897
+2025-01-08 14:50:03,142 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:51:45,510 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:51:45,510 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:51:45,510 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:51:45,510 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:51:45,605 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:51:45,608 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:51:45,610 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:51:45,611 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:51:45,612 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:51:45,617 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:51:45,617 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:51:45,619 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:51:45,619 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:51:45,619 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:51:45,619 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:51:45,619 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:51:45,620 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:51:45,620 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:51:45,620 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:51:45,642 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 22.4609375
+2025-01-08 14:51:45,642 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :92.74193548387096
+2025-01-08 14:51:45,642 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:51:45,672 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 29.375076293945312
+2025-01-08 14:51:45,672 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :93.45794392523365
+2025-01-08 14:51:45,672 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:52:17,140 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:52:17,140 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:52:17,140 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:52:17,140 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:52:17,235 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:52:17,239 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:52:17,240 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:52:17,242 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:52:17,243 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:52:17,248 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:52:17,248 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:52:17,250 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:52:17,250 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:52:17,250 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:52:17,250 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:52:17,250 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:52:17,251 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:52:17,251 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:52:17,251 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:52:17,291 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 39.7496223449707
+2025-01-08 14:52:17,291 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :91.12903225806451
+2025-01-08 14:52:17,291 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:52:17,315 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 24.339675903320312
+2025-01-08 14:52:17,315 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :95.32710280373831
+2025-01-08 14:52:17,315 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:55:07,798 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:55:07,798 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:55:07,798 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:55:07,798 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:55:07,895 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:55:07,898 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:55:07,899 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:55:07,901 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:55:07,902 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:55:07,907 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:55:07,907 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:55:07,909 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:55:07,909 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:55:07,909 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:55:07,909 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:55:07,909 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:55:07,909 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:55:07,909 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:55:07,909 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:55:07,931 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 21.744966506958008
+2025-01-08 14:55:07,931 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :92.74193548387096
+2025-01-08 14:55:07,931 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:55:07,951 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 19.847631454467773
+2025-01-08 14:55:07,951 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :93.45794392523365
+2025-01-08 14:55:07,951 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:55:12,227 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:55:12,227 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:55:12,227 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:55:12,228 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:55:12,323 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:55:12,327 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:55:12,328 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:55:12,329 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:55:12,331 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:55:12,336 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:55:12,336 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:55:12,337 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:55:12,337 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:55:12,337 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:55:12,337 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:55:12,338 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:55:12,338 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:55:12,338 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:55:12,338 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:55:12,364 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 26.044130325317383
+2025-01-08 14:55:12,364 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :92.74193548387096
+2025-01-08 14:55:12,364 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:55:12,385 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 20.165443420410156
+2025-01-08 14:55:12,385 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :93.45794392523365
+2025-01-08 14:55:12,385 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:58:50,308 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:58:50,308 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:58:50,308 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:58:50,308 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:58:50,403 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:58:50,406 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:58:50,408 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:58:50,409 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:58:50,410 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:58:50,415 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:58:50,415 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:58:50,417 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:58:50,417 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:58:50,417 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:58:50,417 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:58:50,417 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:58:50,418 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:58:50,418 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:58:50,418 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:58:50,440 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 21.631956100463867
+2025-01-08 14:58:50,440 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :93.54838709677419
+2025-01-08 14:58:50,440 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:58:50,458 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 18.315792083740234
+2025-01-08 14:58:50,458 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :92.5233644859813
+2025-01-08 14:58:50,458 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 14:59:07,315 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 14:59:07,315 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 14:59:07,315 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 14:59:07,315 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 14:59:07,408 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 14:59:07,411 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 14:59:07,413 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 14:59:07,414 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 14:59:07,416 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 14:59:07,421 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 14:59:07,421 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 14:59:07,422 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 14:59:07,423 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 14:59:07,423 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 14:59:07,423 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 14:59:07,423 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 14:59:07,423 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 14:59:07,423 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 14:59:07,423 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 14:59:07,456 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 32.65118598937988
+2025-01-08 14:59:07,456 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :91.12903225806451
+2025-01-08 14:59:07,456 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 14:59:07,476 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 20.197391510009766
+2025-01-08 14:59:07,476 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :95.32710280373831
+2025-01-08 14:59:07,477 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 15:03:16,735 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 15:03:16,736 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 15:03:16,736 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 15:03:16,736 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 15:03:16,830 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 15:03:16,833 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 15:03:16,834 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 15:03:16,836 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 15:03:16,837 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 15:03:16,842 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 15:03:16,842 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 15:03:16,844 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 15:03:16,844 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 15:03:16,844 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 15:03:16,844 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 15:03:16,844 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 15:03:16,844 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 15:03:16,844 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 15:03:16,844 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 15:03:16,877 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 32.33742713928223
+2025-01-08 15:03:16,877 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :94.35483870967742
+2025-01-08 15:03:16,877 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 15:03:16,899 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 21.949291229248047
+2025-01-08 15:03:16,899 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :91.58878504672897
+2025-01-08 15:03:16,899 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-08 15:06:22,458 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-08 15:06:22,458 - pyALS-RF - INFO: Using MOO: True
+2025-01-08 15:06:22,458 - pyALS-RF - INFO: Starting with Nro CPU: 24
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-08 15:06:22,458 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-08 15:06:22,555 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-08 15:06:22,558 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-08 15:06:22,559 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-08 15:06:22,561 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-08 15:06:22,562 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-08 15:06:22,567 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-08 15:06:22,567 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-08 15:06:22,569 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-08 15:06:22,569 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-08 15:06:22,569 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-08 15:06:22,569 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-08 15:06:22,569 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-08 15:06:22,569 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-08 15:06:22,569 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-08 15:06:22,569 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-08 15:06:22,593 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 24.106740951538086
+2025-01-08 15:06:22,593 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :93.54838709677419
+2025-01-08 15:06:22,594 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-08 15:06:22,613 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 19.64569091796875
+2025-01-08 15:06:22,613 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :92.5233644859813
+2025-01-08 15:06:22,613 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem

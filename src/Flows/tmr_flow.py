@@ -27,6 +27,7 @@ from .TMR.tmr import TMR
 from .TMR.mr_axc import MrAxC
 from .TMR.mr_moo import MrMop
 import os 
+import time
 
 def tmr_flow(ctx, output, fraction,  ncpus, report, it, test_samples):
     logger = logging.getLogger("pyALS-RF")
@@ -53,9 +54,18 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str):
     create_classifier(ctx)    
     mr_axc = MrAxC(ctx.obj["classifier"])
     create_problem(ctx, mode = None, alpha = alpha, beta = beta, gamma = gamma)
-    ctx.obj["problem"].mr_axc = mr_axc
-    # create_optimizer(ctx)
-    # can_improve(ctx)
-    
+    ctx.obj["problem"].initialize_problem(mr_axc)
+    create_optimizer(ctx)
+    can_improve(ctx)
+    # Now create the problem
+    ctx.obj["optimizer"].run(ctx.obj["problem"], termination_criterion = ctx.obj['configuration'].termination_criterion, improve = ctx.obj["improve"])
+    logger.info(f"AMOSA heuristic completed!")
+    hours = int(ctx.obj["optimizer"].duration / 3600)
+    minutes = int((ctx.obj["optimizer"].duration - hours * 3600) / 60)
+    logger.info(f"Took {hours} hours, {minutes} minutes")
+    logger.info(f"Cache hits: {ctx.obj['problem'].cache_hits} over {ctx.obj['problem'].total_calls} evaluations.")
+    logger.info(f"{len(ctx.obj['problem'].cache)} cache entries collected")
+    logger.info(f"Saving the validation and mop set indexes")
+
     # tmr = TMR (ctx.obj["classifier"], fraction,  ncpus,ctx.obj['configuration'].outdir,ctx.obj["flow"], it)
     # tmr.approx(test_samples = test_samples)

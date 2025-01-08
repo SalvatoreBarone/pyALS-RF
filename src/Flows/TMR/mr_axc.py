@@ -140,15 +140,15 @@ class MrAxC:
     """
     @staticmethod
     def get_mr_vectors(classes_per_tree, class_configurations):
-        assert np.shape(classes_per_tree) == 2, "Invalid input vector, provide per each tree the list of classes for input samples"
-        num_tree_per_cfg = [np.sum(cfg >= 0) for cfg in class_configurations]
-        thds = [np.ceil(num_trees/2) for num_trees in range(0,num_tree_per_cfg)]
+        assert len(np.shape(classes_per_tree)) == 2, "Invalid input vector, provide per each tree the list of classes for input samples"
+        num_tree_per_cfg = [sum(tree for tree in cfg if tree > 0) for cfg in class_configurations]
+        thds = [np.ceil(num_trees/2) for num_trees in num_tree_per_cfg]
         to_ret = []
         # For each inference
         for tree_votes in classes_per_tree:
             out_vector = []
             # For each class configuration
-            for c_id, config in class_configurations:
+            for c_id, config in enumerate(class_configurations):
                 # If there is at least one tree in the cfg.
                 if num_tree_per_cfg[c_id] > 0 :
                     # Get the predictions of the trees in configuration. 
@@ -201,7 +201,7 @@ class MrAxC:
     def evaluate_mr_cfg_cost(self, new_cfg):
         current_cost = self.total_cost
         # For each tree, if the class is no longer classifier 
-        for tree_id, tree_costs in self.cost_per_tree:
+        for tree_id, tree_costs in enumerate(self.cost_per_tree):
             # If the tree no longer classifies a class then remove the actual cost
             for class_id, class_cfg in enumerate(new_cfg):
                 if tree_id not in class_cfg:
