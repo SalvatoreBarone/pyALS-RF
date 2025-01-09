@@ -1,4 +1,3 @@
-
 """
 Copyright 2021-2025 Antonio Emmanuele <antonio.emmanuele@unina.it>
                     Salvatore Barone <salvatore.barone@unina.it>
@@ -27,11 +26,12 @@ import time
 import csv 
 import os
 import json5
-import pyamosa
 from scipy.stats import norm # For cut-offs.
 from sklearn.model_selection import train_test_split
 import re
 import time
+from multiprocessing import cpu_count, Pool
+from pyalslib import list_partitioning
 
 """ Computes the number of test set sizes to obtain an extimation of the accuracy loss.
     number of samples =                      test_set_size
@@ -50,7 +50,6 @@ def compute_sample_size(test_set_size, error_margin, confidence_level, individua
     cut_off = norm.ppf(confidence_level) 
     return int(test_set_size / (1 + pow(error_margin,2) * ( (test_set_size - 1) / (pow(cut_off,2) * individual_prob * (1 - individual_prob)) ) ))
 
-
 class MrAxC:
 
     """ 
@@ -59,17 +58,6 @@ class MrAxC:
     def sample_dse_samples(self):
         #def sample_dse_samples(self, per_class_subsampling = False):    
         classifier = self.classifier
-        # if per_class_subsampling:
-        #     considered_classess = []
-        #     self.x_
-        #     for c in classifier.model_classes:
-        #         class_indexes = np.where(classifier.y_test == np.int64(int(c)))[0]
-        #         if len(class_indexes) > 0 : 
-        #             mop_size = compute_sample_size(test_set_size = len(class_indexes), error_margin = 0.05, confidence_level = 0.95, individual_prob = 0.5)
-        #             portion = mop_size / len(class_indexes)
-        #             self.x_mop, self.x_val, self.y_mop, self.y_val, self.mop_indexes, self.validation_indexes = train_test_split(self.classifier.x_test[class_indexes], self.classifier.y_test[class_indexes], class_indexes, train_size = portion)       
-
-
         indexes = np.arange(0, len(classifier.x_test))
         y_flat = self.classifier.y_test.ravel()
         mop_size = compute_sample_size(test_set_size = len(classifier.x_test), error_margin = 0.05, confidence_level = 0.95, individual_prob = 0.5)
@@ -120,12 +108,11 @@ class MrAxC:
         self.x_mop_classes = MrAxC.per_tree_classess_into_classes_per_tree(x_mop_classes)
         self.logger.info(f"[MR-AXC] Accuracy on X_MOP and Leaves initialized in ms {(end - start)* 1000}")
         self.logger.info(f"[MR-AXC] Accuracy on X_MOP :{self.x_mop_baseline_accuracy}")
-    
-        # print(f"Accuracy on XMOP is {self.x_mop_accuracy} Time {(end - start)* 1000}")
-        # start = time.time()
-        # acc = self.classifier.evaluate_accuracy(self.x_mop, self.y_mop.reshape(-1,1), disable_tqdm=True)
-        # end = time.time()
-        # print(f"Accuracy Cross Val is {acc} Time {(end - start) * 1000}")
+        # If multicore evaluation function is used.
+        if self.num_cores > 1:
+            # The partitioning is ordered.
+            self.p_xmop_classes = list_partitioning(self.x_mop_classes, self.num_cores)
+            self.p_ymop = list_partitioning(self.y_mop, self.num_cores)
         self.logger.info("[MR-AXC] Initiating accuracy evaluation on X_VAL..")
         start = time.time()
         x_val_leaves = self.classifier.get_leaf_index_ensemble(self.x_val)
@@ -133,7 +120,7 @@ class MrAxC:
         end = time.time()
         self.logger.info(f"[MR-AXC] Accuracy on X_VAL and Leaves initialized in ms {(end - start)* 1000}")
         self.logger.info(f"[MR-AXC] Accuracy on X_VAL :{self.x_val_baseline_accuracy}")
-    
+        
     """ Get the set of TMR vector predictions.
         given the set of classes per each tree (i.e. classes_per_tree) and the modular redundant configuration (i.e. class configuration)
         this function returns the output of a TMR structure ( a set of 0 or 1 for each class).
@@ -141,16 +128,8 @@ class MrAxC:
     @staticmethod
     def get_mr_vectors(classes_per_tree, class_configurations):
         assert len(np.shape(classes_per_tree)) == 2, "Invalid input vector, provide per each tree the list of classes for input samples"
-        # print(len(classes_per_tree))
-        # print(len(classes_per_tree[0]))
-        # exit(1)
-
         num_tree_per_cfg = [sum(1 for tree in cfg if tree > 0) for cfg in class_configurations]
         thds = [int(np.ceil(num_trees/2)) for num_trees in num_tree_per_cfg]
-        # print("Nm Treees")
-        # print(num_tree_per_cfg)
-        # print("Thds")
-        # print(thds)
         to_ret = []
         # For each inference
         for tree_votes in classes_per_tree:
@@ -161,12 +140,7 @@ class MrAxC:
                 if num_tree_per_cfg[c_id] > 0 :
                     # Get the predictions of the trees in configuration. 
                     tree_preds = tree_votes[config]
-                    # print(tree_preds)
-                    # print(tree_votes)
                     voting_trees = np.sum(tree_preds == c_id)
-                    # print(voting_trees)
-                    # print(thds[c_id])
-                    #exit(1)
                     # Append 0 or 1 depending on the final outcome
                     if voting_trees > thds[c_id]:
                         out_vector.append(1)
@@ -183,7 +157,7 @@ class MrAxC:
         one not considering a draw as misclassification.
     """
     @staticmethod
-    def get_accuracy_from_vectors(tmr_vectors, y):
+    def get_correctly_predicted_from_vectors(tmr_vectors, y):
         assert len(tmr_vectors) == len(y), "The number of TMR vectors should be equal to the number of different cfgs."
         correct_draw = 0
         correct_no_draw = 0
@@ -203,15 +177,55 @@ class MrAxC:
                         correct_no_draw += 1
                         correct_draw += 1
         # Return the accuracy considering the draw condition as a misclassification and the one with no missclassification.
+        return correct_draw, correct_no_draw
+
+
+    """ Given a tmr_vector predictions and an oracle y returns the accuracy considering the draw as a missclassification and the 
+        one not considering a draw as misclassification.
+    """
+    @staticmethod
+    def get_accuracy_from_vectors(tmr_vectors, y):
+        assert len(tmr_vectors) == len(y), "The number of TMR vectors should be equal to the number of different cfgs."
+        correct_draw, correct_no_draw = MrAxC.get_correctly_predicted_from_vectors(tmr_vectors, y)
+        # Return the accuracy considering the draw condition as a misclassification and the one with no missclassification.
         return 100 * (correct_draw / len(y)), 100 * (correct_no_draw / len(y))
 
-    def evaluate_cfg_xmop(self, mr_cfg):
-        pred_vectors = MrAxC.get_mr_vectors(self.x_mop_classes, mr_cfg)
-        # print(pred_vectors)
-        #self.curr_accuracy_draw, self.curr_accuracy_no_draw = MrAxC.get_accuracy_from_vectors(pred_vectors, self.y_mop)
-        return MrAxC.get_accuracy_from_vectors(pred_vectors, self.y_mop)
+    @staticmethod
+    def evaluate_mr_cfg_corr_class(per_tree_classes, y, cfg):
+        pred_vectors = MrAxC.get_mr_vectors(per_tree_classes, cfg)
+        return MrAxC.get_correctly_predicted_from_vectors(pred_vectors, y)
+    
+    """ Evaluates the accuracy of a configuration.
+        per_tree_classes:   Vector where for each input sample, the set of votes (predicted classes), for each tree 
+                            is inserted.
+        y:                  Set of oracle predictions for each different tree.
+        cfg:                CFG per classess ( i.e. for each different class it contains the set of trees voting for that class)
+        Returns:            A tuple consisting on:
+                                1-  Accuracy considering the draw condition as missclassifications.
+                                2-  Accuracy considering not considering the draw conditions as missclassifications but
+                                    with the first class considered.
+    """
+    @staticmethod
+    def evaluate_mr_cfg_accuracy( per_tree_classes, y, cfg):
+        pred_vectors = MrAxC.get_mr_vectors(per_tree_classes, cfg)
+        return MrAxC.get_accuracy_from_vectors(pred_vectors, y)
+    
+    def __evaluate_xmop_single_core(self, mr_cfg):
+        return MrAxC.evaluate_cfg_xmop(self.x_mop_classes, self.y_mop, mr_cfg)
+    
+    def __evaluate_xmop_multi_core(self, mr_cfg):
+        args = [(x,y)for x, y in zip(self.p_xmop_classes, self.p_ymop)]
+        corr_classified_draw_list, corr_classified_no_draw_list = self.pool.starmap(MrAxC.evaluate_mr_cfg_corr_class, args)
+        return 100 * (np.sum(corr_classified_draw_list) / len(self.y_mop)), 100 * (np.sum(corr_classified_no_draw_list) /len(self.y_mop)) 
+        
 
-    """ Evaluate the savings of the current cfg."""
+    """ Evaluate the accuracy on X_MOP. """
+    def evaluate_mr_cfg_xmop(self, mr_cfg):
+        return self.__xmop_priv_eval(mr_cfg)
+    
+    """ Evaluate the savings of the current cfg.
+        The cost is computed as the actual cost minus the cost of the removed parts.        
+    """
     def evaluate_mr_cfg_cost(self, new_cfg):
         current_cost = self.total_cost
         # For each tree, if the class is no longer classifier 
@@ -222,10 +236,17 @@ class MrAxC:
                     current_cost -= tree_costs[class_id]
         return current_cost
     
-    def __init__(self, classifier):
+    def __init__(self, classifier: Classifier, num_cores: int = 1):
         self.logger = logging.getLogger("pyALS-RF")
         self.logger.info("[MR-AXC] Initializing the module")
-        self.classifier : Classifier = classifier    
+        self.classifier : Classifier = classifier   
+        self.num_cores = num_cores
+        # Select the correct function for the multicore evaluation.
+        if self.num_cores > 1:
+            self.__xmop_priv_eval = self.__evaluate_xmop_multi_core
+        else:
+            self.__xmop_priv_eval = self.__evaluate_xmop_single_core
+            
         self.logger.info("[MR-AXC] Sampling classess..")
         self.sample_dse_samples()
         self.logger.info("[MR-AXC] Sampling completed.")

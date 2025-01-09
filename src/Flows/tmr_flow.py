@@ -43,7 +43,7 @@ def tmr_flow(ctx, output, fraction,  ncpus, report, it, test_samples):
 
 
 
-def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str):
+def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n_jobs: int = 1):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the TMR-MOO flow.")
     load_configuration_ps(ctx)
@@ -52,31 +52,31 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str):
         ctx.obj['configuration'].outdir = output
         mkpath(ctx.obj["configuration"].outdir)
     create_classifier(ctx)    
-    mr_axc = MrAxC(ctx.obj["classifier"])
+    mr_axc = MrAxC(ctx.obj["classifier"], n_jobs)
 
-    # vars = [1 for i in range(0, len(mr_axc.classifier.model_classes) * len(  mr_axc.classifier.trees))]
-    # vars = [1 if i %2 == 0 else 0 for i in range(0, len(mr_axc.classifier.model_classes) * len(  mr_axc.classifier.trees))]
-    # print(vars)
-    # confs = MrMop.get_tree_cfg(mr_axc, vars)
-    # print(confs)
-    # accs = mr_axc.evaluate_cfg_xmop(confs)
-    # print(accs)
+    vars = [1 for i in range(0, len(mr_axc.classifier.model_classes) * len(  mr_axc.classifier.trees))]
+    vars = [1 if i %2 == 0 else 0 for i in range(0, len(mr_axc.classifier.model_classes) * len(  mr_axc.classifier.trees))]
+    print(vars)
+    confs = MrMop.get_tree_cfg(mr_axc, vars)
+    print(confs)
+    accs = mr_axc.evaluate_cfg_xmop(confs)
+    print(accs)
 
-    # DA DECOMMENTARE DOPO I TEST SU ACCURACY
-    create_problem(ctx, mode = None, alpha = alpha, beta = beta, gamma = gamma)
-    ctx.obj["problem"].initialize_problem(mr_axc)
-    create_optimizer(ctx)
-    can_improve(ctx)
-    # Now create the problem
-    ctx.obj["optimizer"].run(ctx.obj["problem"], termination_criterion = ctx.obj['configuration'].termination_criterion, improve = ctx.obj["improve"])
-    logger.info(f"AMOSA heuristic completed!")
-    hours = int(ctx.obj["optimizer"].duration / 3600)
-    minutes = int((ctx.obj["optimizer"].duration - hours * 3600) / 60)
-    logger.info(f"Took {hours} hours, {minutes} minutes")
-    logger.info(f"Cache hits: {ctx.obj['problem'].cache_hits} over {ctx.obj['problem'].total_calls} evaluations.")
-    logger.info(f"{len(ctx.obj['problem'].cache)} cache entries collected")
-    logger.info(f"Saving the validation and mop set indexes")
-    ctx.obj["optimizer"].archive.write_json(f"{ctx.obj['configuration'].outdir}/final_archive.json")
-    #ctx.obj["optimizer"].archive.plot_front(ctx.obj['problem'].num_of_objectives, f"{ctx.obj['configuration'].outdir}/pareto_front.pdf") # It gives me an error...
-    ctx.obj["pareto_front"] = ctx.obj["optimizer"].archive
-    logger.info(f"All done! Take a look at the {ctx.obj['configuration'].outdir} directory.")
+    # # DA DECOMMENTARE DOPO I TEST SU ACCURACY
+    # create_problem(ctx, mode = None, alpha = alpha, beta = beta, gamma = gamma)
+    # ctx.obj["problem"].initialize_problem(mr_axc)
+    # create_optimizer(ctx)
+    # can_improve(ctx)
+    # # Now create the problem
+    # ctx.obj["optimizer"].run(ctx.obj["problem"], termination_criterion = ctx.obj['configuration'].termination_criterion, improve = ctx.obj["improve"])
+    # logger.info(f"AMOSA heuristic completed!")
+    # hours = int(ctx.obj["optimizer"].duration / 3600)
+    # minutes = int((ctx.obj["optimizer"].duration - hours * 3600) / 60)
+    # logger.info(f"Took {hours} hours, {minutes} minutes")
+    # logger.info(f"Cache hits: {ctx.obj['problem'].cache_hits} over {ctx.obj['problem'].total_calls} evaluations.")
+    # logger.info(f"{len(ctx.obj['problem'].cache)} cache entries collected")
+    # logger.info(f"Saving the validation and mop set indexes")
+    # ctx.obj["optimizer"].archive.write_json(f"{ctx.obj['configuration'].outdir}/final_archive.json")
+    # #ctx.obj["optimizer"].archive.plot_front(ctx.obj['problem'].num_of_objectives, f"{ctx.obj['configuration'].outdir}/pareto_front.pdf") # It gives me an error...
+    # ctx.obj["pareto_front"] = ctx.obj["optimizer"].archive
+    # logger.info(f"All done! Take a look at the {ctx.obj['configuration'].outdir} directory.")

@@ -196,7 +196,7 @@ def tmr(ctx, moo, conf, ncpus, output, verbose, fraction, report, it, test_sampl
                 f"\n\t  iteration {it}"
                 )
     if moo:
-        mr_mop_flow(ctx, alpha, beta, gamma, output)
+        mr_mop_flow(ctx, alpha, beta, gamma, output, ncpus)
     else:
         tmr_flow(ctx, output, fraction, ncpus, report, it, test_samples)
         
