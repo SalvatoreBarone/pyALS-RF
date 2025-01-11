@@ -19,3 +19,4 @@ results_rf10_1s/
 export/
 ps_result
 *.log
+.DS_Store
