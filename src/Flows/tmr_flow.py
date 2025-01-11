@@ -28,6 +28,19 @@ from .TMR.mr_axc import MrAxC
 from .TMR.mr_moo import MrMop
 import os 
 import time
+import pandas as pd
+from .GREP.GREP import GREP
+
+# Given a pareto front (a list of dictionaries), generate a set of unique solutions 
+def __unique_pareto(pareto):
+    seen = set()
+    unique_data = []
+    for entry in pareto:
+        x_tuple = tuple(entry["x"])  # Convert `x` to a tuple (hashable)
+        if x_tuple not in seen:
+            seen.add(x_tuple)
+            unique_data.append(entry)
+    return unique_data
 
 def tmr_flow(ctx, output, fraction,  ncpus, report, it, test_samples):
     logger = logging.getLogger("pyALS-RF")
@@ -62,7 +75,8 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
     # accs = mr_axc.evaluate_cfg_xmop(confs)
     # print(accs)
 
-    # DA DECOMMENTARE DOPO I TEST SU ACCURACY
+
+
     create_problem(ctx, mode = None, alpha = alpha, beta = beta, gamma = gamma)
     ctx.obj["problem"].initialize_problem(mr_axc)
     create_optimizer(ctx)
@@ -80,30 +94,85 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
     #ctx.obj["optimizer"].archive.plot_front(ctx.obj['problem'].num_of_objectives, f"{ctx.obj['configuration'].outdir}/pareto_front.pdf") # It gives me an error...
     ctx.obj["pareto_front"] = ctx.obj["optimizer"].archive
     logger.info(f"Pareto front saved! Take a look at the {ctx.obj['configuration'].outdir} directory.")
-    # ******* MISSING STUFF.
     logger.info("Dumping the MOP and Validation indexes...")
     # Dump MOP and validation indexes.
     mr_axc.dump_mop_val_indexes(ctx.obj['configuration'].outdir)
     logger.info(f"Dump of Validation and MOP completed ! Check {ctx.obj['configuration'].outdir} directory.")
+    
+    # Used for log infos generation tests.
+    # with open(os.path.join(ctx.obj['configuration'].outdir, "final_archive.json"), "r") as f:
+    #     pareto_no_rep = json5.load(f)
+
     # Get the leaves for each sample in the validation set.
     logger.info(f"Initializing classes for evaluating validation across solutions....")
-    validation_leaves = mr_axc.classifier.get_leaf_index_ensemble(mr_axc.x_val, False)
+    validation_leaves = mr_axc.classifier.compute_leaves_idx(mr_axc.x_val, False)
     validation_classes = mr_axc.classifier.transform_leaves_into_classess(validation_leaves)
     validation_classes = MrAxC.per_tree_classess_into_classes_per_tree(validation_classes)
     logger.info(f"Classes per tree initialized ! Now evaluating the different CFG.")
     # For each configuration in the pareto front, save the pruning indexed of MOP and validation.
-    for solution in ctx.obj["pareto_front"].candidate_solutions:
+    pareto_no_rep = __unique_pareto(ctx.obj["pareto_front"].candidate_solutions) # DA DECOMMENTARE DOPO
+    out_path = ctx.obj['configuration'].outdir
+    
+    # Save the solution in the set of unique pareto fronts. 
+    for solution in pareto_no_rep:
         logger.info(f"Evaluating solution {solution}")
         # Get solution X
         configuration = solution["x"]
+        x_mop_acc_draw = solution["f"][0]
+
         # Transform the solution into a feasible configuration.
         configuration = MrMop.get_tree_cfg(mr_axc, configuration)
         # Evaluate
         val_acc_draw, val_acc_no_draw = MrAxC.evaluate_mr_cfg_accuracy(validation_classes, mr_axc.y_val, configuration)
+        loss_draw = mr_axc.x_val_baseline_accuracy - val_acc_draw
+        loss_no_draw = mr_axc.x_val_baseline_accuracy - val_acc_no_draw
         logger.info(f"Evaluation completed! : Baseline: {mr_axc.x_val_baseline_accuracy}")
-        logger.info(f"Draw considered as missclassifications Acc. : {val_acc_draw}, Loss: {mr_axc.x_val_baseline_accuracy - val_acc_draw}")
-        logger.info(f"Draw NOT considered as missclassification Acc. : {val_acc_no_draw}, Loss: {mr_axc.x_val_baseline_accuracy - val_acc_no_draw}")
+        logger.info(f"Draw considered as missclassifications Acc. : {val_acc_draw}, Loss: {loss_draw}")
+        logger.info(f"Draw NOT considered as missclassification Acc. : {val_acc_no_draw}, Loss: {loss_no_draw}")
+        # Get indexes for the configuration 
+        out_dir_cfg = os.path.join(out_path, f"cfg_{loss_no_draw:.2f}")
+        if not os.path.exists(out_dir_cfg):
+            os.makedirs(out_dir_cfg)
+        logger.info(f"Starting the dump of CFG infos.")
+        # The configuration consists in the set of trees per each class, so this function returns the set of classes
+        # per each different tree.
+        per_tree_cfg = MrMop.cfg_per_class_in_cfg_per_tree(mr_axc, configuration)
+        pruned_leaves = mr_axc.classifier.get_leaf_indexes_not_in_class_list(per_tree_cfg)
+        # Dump configuration 
+        with open(os.path.join(out_dir_cfg, "cfg.json5"), "w") as f:
+            json5.dump(configuration, f, indent = 2)
+        # Dump Leaves
+        with open(os.path.join(out_dir_cfg, "leaves_idx.json5"), "w") as f:
+            json5.dump(pruned_leaves, f, indent = 2)
+        logger.info("Generating and dumping pruning configuration for the accelerator...")
+        pruning_cfg = GREP.get_pruning_cfg_from_leaves_idx(mr_axc.classifier, pruned_leaves)
+        pruning_cfg_path = os.path.join(out_dir_cfg, "pruning_conf.json5")
+        with open(pruning_cfg_path, "w") as f:
+            json5.dump(pruning_cfg, f, indent = 2)
+        logger.info(f"Pruning CFG Dump Completed! Check {pruning_cfg_path}")
+        # Generate the pruning configuration used by the GREP-like tools.
+        logger.info(f"Updating the summary CSV file.")
+        pruned_leaves_ctr = 0
+        for tree, classes_per_tree_pruned_leaves in pruned_leaves.items():
+            for _, pruned_leaves in classes_per_tree_pruned_leaves.items():
+                pruned_leaves_ctr += len(pruned_leaves)
+        logger.info(f"CFG infos dumped. Check {out_dir_cfg} ")
+        sol_summary = {
+                "Pruned-Leaves"         : pruned_leaves_ctr,
+                "Baseline_XMOP_Acc"     : mr_axc.x_val_baseline_accuracy,
+                "Acc-XMOP_Draw"         : x_mop_acc_draw,  
+                "Loss-XMOP_Draw"        : mr_axc.x_val_baseline_accuracy - x_mop_acc_draw,
+                "Baseline_XVal_Acc."    : mr_axc.x_val_baseline_accuracy,
+                "Acc-XVal_Draw"         : val_acc_draw,
+                "Loss-XVal_Draw"        : loss_draw,
+                "Acc-XVal_NO_Draw"      : val_acc_no_draw,
+                "Loss-XVal_NO_Draw"     : loss_no_draw,
+            }
+        out_summary_csv = os.path.join(out_path, "summary.csv")
+        add_header = not os.path.exists(out_summary_csv)
+        df = pd.DataFrame(sol_summary, index=[0]).to_csv(out_summary_csv, index = False, header = add_header, mode = "a")
+        logger.info(f"Summary CSV updated! Please check {out_summary_csv}")
 
-    # Generate the pruning configuration for GREP-like approximation.
+        
 
     

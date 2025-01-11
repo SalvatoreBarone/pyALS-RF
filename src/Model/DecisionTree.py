@@ -167,9 +167,10 @@ class DecisionTree:
         Given a list of classes this function returns for each class not present in the list, 
         a dictionary containing for each class not present in class_list, the set of leaf index related to that
         specific class.
+        IMPORTANT: CLASS LIST SHOULD BE COMPOSED OF INTEGERS.
     """
     def get_leaves_idx_not_in_class(self, class_list):
-        excluded_classes = [ c for c in self.model_classes if c not in class_list]
+        excluded_classes = [ c for c in range(0, len(self.model_classes)) if c not in class_list]
         return self.get_leaves_idx_by_class(excluded_classes)
     
     def parse(self, root_node, use_espresso):

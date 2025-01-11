@@ -80,7 +80,9 @@ class MrMop(pyamosa.Problem):
         """
         pyamosa.Problem.__init__(self, n_vars, [pyamosa.Type.INTEGER] * n_vars, [0] * n_vars, [2] * n_vars, 2, 1)
     
-    """ Given a solution, represented in terms of 0 and 1, return the configuration variable."""
+    """ Given a solution, represented in terms of 0 and 1, return the configuration variable.
+        This function returns for each class the set of trees that classify that specific class.
+    """
     @staticmethod
     def get_tree_cfg(mr_axc, x):
         n_trees = len(mr_axc.classifier.trees)
@@ -92,6 +94,20 @@ class MrMop(pyamosa.Problem):
             per_class_cfg.append(class_cfg)
         return per_class_cfg
 
+    """ Given a solution, where for each class the set of trees is listed ( set of trees Per Class), transform the solution into che 
+        set of classes per tree.
+    """
+    @staticmethod
+    def cfg_per_class_in_cfg_per_tree(mr_axc, trees_per_class_cfg):
+        n_trees = len(mr_axc.classifier.trees)
+        per_tree_cfg = []
+        for tree in range(0, n_trees):
+            tree_classes = []
+            for considered_class, class_cfg in enumerate(trees_per_class_cfg): # It is a list.
+                if tree in class_cfg:
+                    tree_classes.append(considered_class)
+            per_tree_cfg.append(tree_classes)
+        return per_tree_cfg
 
     def evaluate(self, x, out):
     

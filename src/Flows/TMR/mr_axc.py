@@ -101,7 +101,7 @@ class MrAxC:
     def initialize_tree_prediction_per_sample(self):
         self.logger.info("[MR-AXC] Initiating accuracy evaluation on X_MOP..")
         start = time.time()
-        x_mop_leaves = self.classifier.get_leaf_index_ensemble(self.x_mop)
+        x_mop_leaves = self.classifier.compute_leaves_idx(self.x_mop)
         _, self.x_mop_baseline_accuracy = self.classifier.get_accuracy_by_leaves_idx(x_mop_leaves, self.y_mop)
         end = time.time()
         x_mop_classes = self.classifier.transform_leaves_into_classess(x_mop_leaves)
@@ -115,7 +115,7 @@ class MrAxC:
             self.p_ymop = list_partitioning(self.y_mop, self.num_cores)
         self.logger.info("[MR-AXC] Initiating accuracy evaluation on X_VAL..")
         start = time.time()
-        x_val_leaves = self.classifier.get_leaf_index_ensemble(self.x_val)
+        x_val_leaves = self.classifier.compute_leaves_idx(self.x_val)
         _, self.x_val_baseline_accuracy = self.classifier.get_accuracy_by_leaves_idx(x_val_leaves, self.y_val)
         end = time.time()
         self.logger.info(f"[MR-AXC] Accuracy on X_VAL and Leaves initialized in ms {(end - start)* 1000}")

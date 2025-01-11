@@ -284,7 +284,7 @@ class Classifier:
 
     """ These functions works with leaf indexes instead of boolean functions.
     """
-    """ Given a set of leaves obtained using the  get_leaf_index_ensemble this function returns the number of votes for each class. """
+    """ Given a set of leaves obtained using the  compute_leaves_idx this function returns the number of votes for each class. """
     def get_votes_vectors_by_leaves_idx(self, leaves, y):
         votes_vector = [ [0 for t in self.model_classes] for x in y]
         for tree_id, tree_leaves in enumerate(leaves):
@@ -294,7 +294,7 @@ class Classifier:
                     votes_vector[sample_id][int(self.trees[tree_id].leaves[single_tree_leaf]["class"])] += 1
         return votes_vector
     
-    """ Given a set of leaves obtained using the  get_leaf_index_ensemble this function returns the number of votes for each class
+    """ Given a set of leaves obtained using the  compute_leaves_idx this function returns the number of votes for each class
         and the accuracy w.r.t the oracle y.
     """
     def get_accuracy_by_leaves_idx(self, leaves, y):
@@ -307,7 +307,7 @@ class Classifier:
                 correctly_classified += 1
         return votes_vector, 100 * correctly_classified / len(y)
     
-    """ Given a set of leaves obtained using the  get_leaf_index_ensemble this function returns the corresponding classes.
+    """ Given a set of leaves obtained using the  compute_leaves_idx this function returns the corresponding classes.
     """
     def transform_leaves_into_classess(self, leaves):
         classes = []
@@ -328,7 +328,7 @@ class Classifier:
         return np.array( [t.visit_by_leaf_idx(X) for t in tqdm(trees, disable = disable_tqdm) ])
     
     """ Given a set of input vectors X get the corresponding leaf index for each X. Returns a vector len(tree) X len(X) """
-    def get_leaf_index_ensemble(self, X, disable_tqdm = True):
+    def compute_leaves_idx(self, X, disable_tqdm = True):
         args = [[t, X, disable_tqdm] for t in self.p_tree]
         lists = np.array(self.pool.starmap(Classifier.compute_indexes, args))
         final_list = []
@@ -336,8 +336,7 @@ class Classifier:
             for tree_leaf in p_t_leaves:
                 final_list.append(tree_leaf)
         return np.array(final_list)
-
-        
+    
 
     def evaluate_test_dataset(self):
         outcomes = np.sum(self.pool.starmap(Classifier.compute_score, self.args), axis = 0)

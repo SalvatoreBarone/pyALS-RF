@@ -237,6 +237,26 @@ class GREP:
     def compute_redundancy(trees, dataset):
         return [[ GREP.tree_visit_with_leaf(t, x) for t in trees ] for x in dataset ]
     
+    """ Given in input a classifier and a set of leaves indexes to prune, this function 
+        returns pruning configuration. 
+        pruned_leaves_idx_per_tree is a dictionary ( or a tree indexed list), containing
+        for each tree the pruned leaves for each class.
+     """
+    @staticmethod
+    def get_pruning_cfg_from_leaves_idx(classifier, pruned_leaves_idx_per_tree):
+        pruning_cfg = []
+        # For each tree.
+        for tree_id, tree in enumerate(classifier.trees):
+            pruned_leaves_per_class = pruned_leaves_idx_per_tree[tree_id]
+            tree_pruning_cfg = []
+            # For each class
+            for considered_class, pruned_leaves in pruned_leaves_per_class.items():
+                # For each pruned leaf per class.
+                for pruned_leaf in pruned_leaves:
+                    tree_pruning_cfg.append((str(considered_class), str(tree_id), tree.leaves[pruned_leaf]["sop"]))
+            pruning_cfg.append(tree_pruning_cfg)
+        return pruning_cfg
+
     def compare(self):
         data = []
         self.restore_bns()
