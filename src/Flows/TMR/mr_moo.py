@@ -97,7 +97,7 @@ class MrMop(pyamosa.Problem):
     
         cfg_under_eval = MrMop.get_tree_cfg(self.mr_axc, x)
         # Get the current accuracy.
-        accuracies = self.mr_axc.evaluate_cfg_xmop(cfg_under_eval)
+        accuracies = self.mr_axc.evaluate_mr_cfg_xmop(cfg_under_eval)
         # print(f"Accuracies {accuracies}")
         # Get the current cost
         current_cost = self.mr_axc.evaluate_mr_cfg_cost(cfg_under_eval)

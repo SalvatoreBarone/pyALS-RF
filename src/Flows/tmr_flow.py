@@ -52,31 +52,58 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
         ctx.obj['configuration'].outdir = output
         mkpath(ctx.obj["configuration"].outdir)
     create_classifier(ctx)    
-    mr_axc = MrAxC(ctx.obj["classifier"], n_jobs)
+    mr_axc = MrAxC(ctx.obj["classifier"], 1) # Fix this value to 1.
 
-    vars = [1 for i in range(0, len(mr_axc.classifier.model_classes) * len(  mr_axc.classifier.trees))]
-    vars = [1 if i %2 == 0 else 0 for i in range(0, len(mr_axc.classifier.model_classes) * len(  mr_axc.classifier.trees))]
-    print(vars)
-    confs = MrMop.get_tree_cfg(mr_axc, vars)
-    print(confs)
-    accs = mr_axc.evaluate_cfg_xmop(confs)
-    print(accs)
+    # vars = [1 for i in range(0, len(mr_axc.classifier.model_classes) * len(  mr_axc.classifier.trees))]
+    # vars = [1 if i %2 == 0 else 0 for i in range(0, len(mr_axc.classifier.model_classes) * len(  mr_axc.classifier.trees))]
+    # print(vars)
+    # confs = MrMop.get_tree_cfg(mr_axc, vars)
+    # print(confs)
+    # accs = mr_axc.evaluate_cfg_xmop(confs)
+    # print(accs)
 
-    # # DA DECOMMENTARE DOPO I TEST SU ACCURACY
-    # create_problem(ctx, mode = None, alpha = alpha, beta = beta, gamma = gamma)
-    # ctx.obj["problem"].initialize_problem(mr_axc)
-    # create_optimizer(ctx)
-    # can_improve(ctx)
-    # # Now create the problem
-    # ctx.obj["optimizer"].run(ctx.obj["problem"], termination_criterion = ctx.obj['configuration'].termination_criterion, improve = ctx.obj["improve"])
-    # logger.info(f"AMOSA heuristic completed!")
-    # hours = int(ctx.obj["optimizer"].duration / 3600)
-    # minutes = int((ctx.obj["optimizer"].duration - hours * 3600) / 60)
-    # logger.info(f"Took {hours} hours, {minutes} minutes")
-    # logger.info(f"Cache hits: {ctx.obj['problem'].cache_hits} over {ctx.obj['problem'].total_calls} evaluations.")
-    # logger.info(f"{len(ctx.obj['problem'].cache)} cache entries collected")
-    # logger.info(f"Saving the validation and mop set indexes")
-    # ctx.obj["optimizer"].archive.write_json(f"{ctx.obj['configuration'].outdir}/final_archive.json")
-    # #ctx.obj["optimizer"].archive.plot_front(ctx.obj['problem'].num_of_objectives, f"{ctx.obj['configuration'].outdir}/pareto_front.pdf") # It gives me an error...
-    # ctx.obj["pareto_front"] = ctx.obj["optimizer"].archive
-    # logger.info(f"All done! Take a look at the {ctx.obj['configuration'].outdir} directory.")
+    # DA DECOMMENTARE DOPO I TEST SU ACCURACY
+    create_problem(ctx, mode = None, alpha = alpha, beta = beta, gamma = gamma)
+    ctx.obj["problem"].initialize_problem(mr_axc)
+    create_optimizer(ctx)
+    can_improve(ctx)
+    # Now create the problem
+    ctx.obj["optimizer"].run(ctx.obj["problem"], termination_criterion = ctx.obj['configuration'].termination_criterion, improve = ctx.obj["improve"])
+    logger.info(f"AMOSA heuristic completed!")
+    hours = int(ctx.obj["optimizer"].duration / 3600)
+    minutes = int((ctx.obj["optimizer"].duration - hours * 3600) / 60)
+    logger.info(f"Took {hours} hours, {minutes} minutes")
+    logger.info(f"Cache hits: {ctx.obj['problem'].cache_hits} over {ctx.obj['problem'].total_calls} evaluations.")
+    logger.info(f"{len(ctx.obj['problem'].cache)} cache entries collected")
+    logger.info(f"Saving the validation and mop set indexes")
+    ctx.obj["optimizer"].archive.write_json(f"{ctx.obj['configuration'].outdir}/final_archive.json")
+    #ctx.obj["optimizer"].archive.plot_front(ctx.obj['problem'].num_of_objectives, f"{ctx.obj['configuration'].outdir}/pareto_front.pdf") # It gives me an error...
+    ctx.obj["pareto_front"] = ctx.obj["optimizer"].archive
+    logger.info(f"Pareto front saved! Take a look at the {ctx.obj['configuration'].outdir} directory.")
+    # ******* MISSING STUFF.
+    logger.info("Dumping the MOP and Validation indexes...")
+    # Dump MOP and validation indexes.
+    mr_axc.dump_mop_val_indexes(ctx.obj['configuration'].outdir)
+    logger.info(f"Dump of Validation and MOP completed ! Check {ctx.obj['configuration'].outdir} directory.")
+    # Get the leaves for each sample in the validation set.
+    logger.info(f"Initializing classes for evaluating validation across solutions....")
+    validation_leaves = mr_axc.classifier.get_leaf_index_ensemble(mr_axc.x_val, False)
+    validation_classes = mr_axc.classifier.transform_leaves_into_classess(validation_leaves)
+    validation_classes = MrAxC.per_tree_classess_into_classes_per_tree(validation_classes)
+    logger.info(f"Classes per tree initialized ! Now evaluating the different CFG.")
+    # For each configuration in the pareto front, save the pruning indexed of MOP and validation.
+    for solution in ctx.obj["pareto_front"].candidate_solutions:
+        logger.info(f"Evaluating solution {solution}")
+        # Get solution X
+        configuration = solution["x"]
+        # Transform the solution into a feasible configuration.
+        configuration = MrMop.get_tree_cfg(mr_axc, configuration)
+        # Evaluate
+        val_acc_draw, val_acc_no_draw = MrAxC.evaluate_mr_cfg_accuracy(validation_classes, mr_axc.y_val, configuration)
+        logger.info(f"Evaluation completed! : Baseline: {mr_axc.x_val_baseline_accuracy}")
+        logger.info(f"Draw considered as missclassifications Acc. : {val_acc_draw}, Loss: {mr_axc.x_val_baseline_accuracy - val_acc_draw}")
+        logger.info(f"Draw NOT considered as missclassification Acc. : {val_acc_no_draw}, Loss: {mr_axc.x_val_baseline_accuracy - val_acc_no_draw}")
+
+    # Generate the pruning configuration for GREP-like approximation.
+
+    

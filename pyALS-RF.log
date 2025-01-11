@@ -1384,3 +1384,186 @@
 2025-01-08 15:06:22,613 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 19.64569091796875
 2025-01-08 15:06:22,613 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :92.5233644859813
 2025-01-08 15:06:22,613 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-11 15:07:02,676 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-11 15:07:02,678 - pyALS-RF - INFO: Using MOO: True
+2025-01-11 15:07:02,678 - pyALS-RF - INFO: Starting with Nro CPU: 10
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-11 15:07:02,678 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-11 15:07:02,735 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-11 15:07:02,739 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-11 15:07:02,740 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-11 15:07:02,742 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-11 15:07:02,744 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-11 15:07:02,769 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-11 15:07:02,769 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-11 15:07:02,777 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-11 15:07:02,777 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-11 15:07:02,777 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-11 15:07:02,777 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-11 15:07:02,778 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-11 15:07:02,778 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-11 15:07:02,778 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-11 15:07:02,778 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-11 15:07:02,815 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 36.72027587890625
+2025-01-11 15:07:02,815 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :92.74193548387096
+2025-01-11 15:07:02,816 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-11 15:07:02,844 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 28.570890426635742
+2025-01-11 15:07:02,844 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :93.45794392523365
+2025-01-11 15:07:02,845 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-11 15:08:36,595 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-11 15:08:36,597 - pyALS-RF - INFO: Using MOO: True
+2025-01-11 15:08:36,598 - pyALS-RF - INFO: Starting with Nro CPU: 10
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-11 15:08:36,599 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-11 15:08:36,650 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-11 15:08:36,654 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-11 15:08:36,655 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-11 15:08:36,657 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-11 15:08:36,659 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-11 15:08:36,681 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-11 15:08:36,681 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-11 15:08:36,689 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-11 15:08:36,689 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-11 15:08:36,689 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-11 15:08:36,689 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-11 15:08:36,690 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-11 15:08:36,690 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-11 15:08:36,690 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-11 15:08:36,690 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-11 15:08:36,722 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 32.224178314208984
+2025-01-11 15:08:36,723 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :95.16129032258064
+2025-01-11 15:08:36,723 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-11 15:08:36,752 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 29.358386993408203
+2025-01-11 15:08:36,753 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :90.65420560747664
+2025-01-11 15:08:36,753 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-11 15:15:16,162 - pyALS-RF - INFO: AMOSA heuristic completed!
+2025-01-11 15:15:16,162 - pyALS-RF - INFO: Took 0 hours, 6 minutes
+2025-01-11 15:15:16,163 - pyALS-RF - INFO: Cache hits: 903 over 74990 evaluations.
+2025-01-11 15:15:16,163 - pyALS-RF - INFO: 74087 cache entries collected
+2025-01-11 15:15:16,163 - pyALS-RF - INFO: Saving the validation and mop set indexes
+2025-01-11 15:15:16,164 - pyALS-RF - INFO: Pareto front saved! Take a look at the /home/user/shared/HedgeTrimming/statlog_segment/rf_5/mr directory.
+2025-01-11 15:15:16,164 - pyALS-RF - INFO: Dumping the MOP and Validation indexes...
+2025-01-11 15:15:16,166 - pyALS-RF - INFO: Dump of Validation and MOP completed ! Check /home/user/shared/HedgeTrimming/statlog_segment/rf_5/mr directory.
+2025-01-11 15:15:16,167 - pyALS-RF - INFO: Initializing classes for evaluating validation across solutions....
+2025-01-11 15:15:16,202 - pyALS-RF - INFO: Classes per tree initialized ! Now evaluating the different CFG.
+2025-01-11 15:23:52,699 - pyALS-RF - INFO: MR pruning flow
+	conf: /home/user/shared/HedgeTrimming/statlog_segment/rf_5/config.json5
+	output dir: None
+2025-01-11 15:23:52,700 - pyALS-RF - INFO: Using MOO: True
+2025-01-11 15:23:52,701 - pyALS-RF - INFO: Starting with Nro CPU: 10
+	  Outdir: None
+	  Fraction of Dataset 0.5
+	  report enabled 0
+	  report enabled True
+	  iteration 0
+2025-01-11 15:23:52,701 - pyALS-RF - INFO: Runing the TMR-MOO flow.
+2025-01-11 15:23:52,757 - pyALS-RF - INFO: Tree 0: 23 DBs instantiated.
+2025-01-11 15:23:52,760 - pyALS-RF - INFO: Tree 1: 22 DBs instantiated.
+2025-01-11 15:23:52,762 - pyALS-RF - INFO: Tree 2: 24 DBs instantiated.
+2025-01-11 15:23:52,764 - pyALS-RF - INFO: Tree 3: 21 DBs instantiated.
+2025-01-11 15:23:52,765 - pyALS-RF - INFO: Tree 4: 25 DBs instantiated.
+2025-01-11 15:23:52,788 - pyALS-RF - INFO: [MR-AXC] Initializing the module
+2025-01-11 15:23:52,788 - pyALS-RF - INFO: [MR-AXC] Sampling classess..
+2025-01-11 15:23:52,796 - pyALS-RF - INFO: [MR-AXC] Sampling completed.
+2025-01-11 15:23:52,796 - pyALS-RF - INFO: [MR-AXC] MOO-Samples: 124
+2025-01-11 15:23:52,796 - pyALS-RF - INFO: [MR-AXC] Validation-Samples: 107
+2025-01-11 15:23:52,796 - pyALS-RF - INFO: [MR-AXC] Initializing leaves costs.
+2025-01-11 15:23:52,796 - pyALS-RF - INFO: [MR-AXC] Computed leaves costs.
+2025-01-11 15:23:52,796 - pyALS-RF - INFO: [MR-AXC] Leaves costs: 
+ [[10, 6, 33, 27, 43, 12, 2], [28, 2, 26, 14, 37, 10, 3], [4, 7, 32, 28, 34, 28, 2], [15, 3, 38, 20, 42, 7, 2], [15, 2, 26, 30, 29, 15, 17]]
+2025-01-11 15:23:52,797 - pyALS-RF - INFO: [MR-AXC] Initializing samples per leaf.
+2025-01-11 15:23:52,797 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_MOP..
+2025-01-11 15:23:52,833 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP and Leaves initialized in ms 36.3612174987793
+2025-01-11 15:23:52,834 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_MOP :92.74193548387096
+2025-01-11 15:23:52,834 - pyALS-RF - INFO: [MR-AXC] Initiating accuracy evaluation on X_VAL..
+2025-01-11 15:23:52,866 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL and Leaves initialized in ms 32.210350036621094
+2025-01-11 15:23:52,866 - pyALS-RF - INFO: [MR-AXC] Accuracy on X_VAL :93.45794392523365
+2025-01-11 15:23:52,866 - pyALS-RF - INFO: [MR-MOOP] Initializing MR-MOOP problem
+2025-01-11 15:30:36,577 - pyALS-RF - INFO: AMOSA heuristic completed!
+2025-01-11 15:30:36,578 - pyALS-RF - INFO: Took 0 hours, 6 minutes
+2025-01-11 15:30:36,578 - pyALS-RF - INFO: Cache hits: 915 over 74990 evaluations.
+2025-01-11 15:30:36,578 - pyALS-RF - INFO: 74075 cache entries collected
+2025-01-11 15:30:36,578 - pyALS-RF - INFO: Saving the validation and mop set indexes
+2025-01-11 15:30:36,579 - pyALS-RF - INFO: Pareto front saved! Take a look at the /home/user/shared/HedgeTrimming/statlog_segment/rf_5/mr directory.
+2025-01-11 15:30:36,579 - pyALS-RF - INFO: Dumping the MOP and Validation indexes...
+2025-01-11 15:30:36,582 - pyALS-RF - INFO: Dump of Validation and MOP completed ! Check /home/user/shared/HedgeTrimming/statlog_segment/rf_5/mr directory.
+2025-01-11 15:30:36,582 - pyALS-RF - INFO: Initializing classes for evaluating validation across solutions....
+2025-01-11 15:30:36,629 - pyALS-RF - INFO: Classes per tree initialized ! Now evaluating the different CFG.
+2025-01-11 15:30:36,629 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0], 'f': [3.225806451612897, 201], 'g': [-1.7741935483871032]}
+2025-01-11 15:30:36,632 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,632 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 85.04672897196261, Loss: 8.411214953271042
+2025-01-11 15:30:36,633 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 86.91588785046729, Loss: 6.542056074766364
+2025-01-11 15:30:36,633 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0], 'f': [0.0, 251], 'g': [-5.0]}
+2025-01-11 15:30:36,636 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,636 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 86.91588785046729, Loss: 6.542056074766364
+2025-01-11 15:30:36,636 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 86.91588785046729, Loss: 6.542056074766364
+2025-01-11 15:30:36,636 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0], 'f': [3.225806451612897, 201], 'g': [-1.7741935483871032]}
+2025-01-11 15:30:36,639 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,639 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 85.04672897196261, Loss: 8.411214953271042
+2025-01-11 15:30:36,639 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 86.91588785046729, Loss: 6.542056074766364
+2025-01-11 15:30:36,639 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0], 'f': [0.8064516129032171, 234], 'g': [-4.193548387096783]}
+2025-01-11 15:30:36,642 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,642 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 88.78504672897196, Loss: 4.672897196261687
+2025-01-11 15:30:36,643 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 90.65420560747664, Loss: 2.803738317757009
+2025-01-11 15:30:36,643 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0], 'f': [-2.419354838709694, 298], 'g': [-7.419354838709694]}
+2025-01-11 15:30:36,646 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,646 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 88.78504672897196, Loss: 4.672897196261687
+2025-01-11 15:30:36,646 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 88.78504672897196, Loss: 4.672897196261687
+2025-01-11 15:30:36,646 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0], 'f': [-2.419354838709694, 298], 'g': [-7.419354838709694]}
+2025-01-11 15:30:36,649 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,649 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 88.78504672897196, Loss: 4.672897196261687
+2025-01-11 15:30:36,649 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 88.78504672897196, Loss: 4.672897196261687
+2025-01-11 15:30:36,649 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0], 'f': [4.838709677419345, 196], 'g': [-0.1612903225806548]}
+2025-01-11 15:30:36,652 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,652 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 83.17757009345794, Loss: 10.280373831775705
+2025-01-11 15:30:36,652 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 83.17757009345794, Loss: 10.280373831775705
+2025-01-11 15:30:36,652 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0], 'f': [0.8064516129032171, 234], 'g': [-4.193548387096783]}
+2025-01-11 15:30:36,655 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,655 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 88.78504672897196, Loss: 4.672897196261687
+2025-01-11 15:30:36,655 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 90.65420560747664, Loss: 2.803738317757009
+2025-01-11 15:30:36,656 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0], 'f': [-2.419354838709694, 298], 'g': [-7.419354838709694]}
+2025-01-11 15:30:36,658 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,658 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 88.78504672897196, Loss: 4.672897196261687
+2025-01-11 15:30:36,658 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 88.78504672897196, Loss: 4.672897196261687
+2025-01-11 15:30:36,659 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0], 'f': [4.838709677419345, 196], 'g': [-0.1612903225806548]}
+2025-01-11 15:30:36,662 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,662 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 83.17757009345794, Loss: 10.280373831775705
+2025-01-11 15:30:36,662 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 83.17757009345794, Loss: 10.280373831775705
+2025-01-11 15:30:36,662 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0], 'f': [2.4193548387096797, 209], 'g': [-2.5806451612903203]}
+2025-01-11 15:30:36,665 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,665 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 83.17757009345794, Loss: 10.280373831775705
+2025-01-11 15:30:36,665 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 85.04672897196261, Loss: 8.411214953271042
+2025-01-11 15:30:36,665 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0], 'f': [0.0, 251], 'g': [-5.0]}
+2025-01-11 15:30:36,668 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,668 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 86.91588785046729, Loss: 6.542056074766364
+2025-01-11 15:30:36,668 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 86.91588785046729, Loss: 6.542056074766364
+2025-01-11 15:30:36,668 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0], 'f': [-0.8064516129032313, 259], 'g': [-5.806451612903231]}
+2025-01-11 15:30:36,672 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,672 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 86.91588785046729, Loss: 6.542056074766364
+2025-01-11 15:30:36,672 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 86.91588785046729, Loss: 6.542056074766364
+2025-01-11 15:30:36,672 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0], 'f': [2.4193548387096797, 209], 'g': [-2.5806451612903203]}
+2025-01-11 15:30:36,675 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,676 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 83.17757009345794, Loss: 10.280373831775705
+2025-01-11 15:30:36,676 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 85.04672897196261, Loss: 8.411214953271042
+2025-01-11 15:30:36,676 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0], 'f': [-1.6129032258064626, 280], 'g': [-6.612903225806463]}
+2025-01-11 15:30:36,679 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,679 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 88.78504672897196, Loss: 4.672897196261687
+2025-01-11 15:30:36,679 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 90.65420560747664, Loss: 2.803738317757009
+2025-01-11 15:30:36,679 - pyALS-RF - INFO: Evaluating solution {'x': [1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0], 'f': [-1.6129032258064626, 280], 'g': [-6.612903225806463]}
+2025-01-11 15:30:36,682 - pyALS-RF - INFO: Evaluation completed! : Baseline: 93.45794392523365
+2025-01-11 15:30:36,682 - pyALS-RF - INFO: Draw considered as missclassifications Acc. : 88.78504672897196, Loss: 4.672897196261687
+2025-01-11 15:30:36,682 - pyALS-RF - INFO: Draw NOT considered as missclassification Acc. : 90.65420560747664, Loss: 2.803738317757009

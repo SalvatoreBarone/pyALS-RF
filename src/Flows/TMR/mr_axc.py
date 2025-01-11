@@ -211,14 +211,13 @@ class MrAxC:
         return MrAxC.get_accuracy_from_vectors(pred_vectors, y)
     
     def __evaluate_xmop_single_core(self, mr_cfg):
-        return MrAxC.evaluate_cfg_xmop(self.x_mop_classes, self.y_mop, mr_cfg)
+        return MrAxC.evaluate_mr_cfg_accuracy(self.x_mop_classes, self.y_mop, mr_cfg)
     
     def __evaluate_xmop_multi_core(self, mr_cfg):
         args = [(x,y)for x, y in zip(self.p_xmop_classes, self.p_ymop)]
         corr_classified_draw_list, corr_classified_no_draw_list = self.pool.starmap(MrAxC.evaluate_mr_cfg_corr_class, args)
         return 100 * (np.sum(corr_classified_draw_list) / len(self.y_mop)), 100 * (np.sum(corr_classified_no_draw_list) /len(self.y_mop)) 
         
-
     """ Evaluate the accuracy on X_MOP. """
     def evaluate_mr_cfg_xmop(self, mr_cfg):
         return self.__xmop_priv_eval(mr_cfg)
@@ -235,6 +234,11 @@ class MrAxC:
                 if tree_id not in class_cfg:
                     current_cost -= tree_costs[class_id]
         return current_cost
+    
+    """ Dump the validation and MOP indexes into mop_indexes and val_indexes folders. """
+    def dump_mop_val_indexes(self, outdir):
+        np.savetxt(os.path.join(outdir, "mop_indexes.txt"), self.mop_indexes, fmt = "%d")
+        np.savetxt(os.path.join(outdir, "val_indexes.txt"), self.validation_indexes, fmt = "%d")
     
     def __init__(self, classifier: Classifier, num_cores: int = 1):
         self.logger = logging.getLogger("pyALS-RF")

@@ -31,13 +31,18 @@ from ..scikit.RandonForestClassifierMV import RandomForestClassifierMV
 import time # To remove
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+""" This function was used during the inference testing.
+    The main idea was to transform each boolean espression into an actual python boolean function.
+    In this way, the inference time would have been increasingly improved removing the need to use the 
+    eval function to evaluate boolean functions.
+"""
 def generate_boolean_function(expr, func_name):
     func_code = f"""
 def {func_name}(minterms):
     return {expr}
 """
     exec(func_code, globals()) 
-    return globals()[func_name]
+    return globals()[func_name] # Update the set of functions adding the boolean function evaluation.
 
 class Classifier:
     __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_4'}
@@ -63,6 +68,11 @@ class Classifier:
             uri = None
         return uri
     
+    """ This function takes in input the path of the stored model and the dataset_description.
+        Depending on the format in which the model is stored (either PMML or Joblib) a different parser
+        is invoked.
+        At the end of the function the number of cpus used during inferences is setted. 
+    """
     def parse(self, model_source : str, dataset_description = None):
         self.pool = Pool(self.ncpus)
         self.thd_pool = ThreadPoolExecutor(max_workers = self.ncpus)
@@ -171,7 +181,8 @@ class Classifier:
             self.als_conf = als_conf
             for t in self.trees:
                 t.brace4ALS(als_conf)
-
+    
+    """ This function resets the number of approximated bits for each feature. """
     def reset_nabs_configuration(self):
         self.set_nabs({f["name"]: 0 for f in self.model_features})
 
@@ -247,10 +258,33 @@ class Classifier:
         args = [[t, x_test, disable_tqdm] for t in self.p_tree]
         return np.sum(self.pool.starmap(Classifier.compute_score, args), axis = 0)
     
+    """ Given  a set of classes per each tree this function returns the set of leaf indexes for each tree.
+        For instance:
+            1 - class_list =  [[c_0, c_3], [c_2, c_4]]  c_0 and c_3 are the classes required for a specific tree 
+                            while c_2 and c_4 are the classes for the second tree ( the one having index 1)
+        This function returns the set of  
+    """
+    def get_leaf_indexes_by_class_list(self, class_per_tree):
+        leaves = {}
+        for tree_idx, tree_classes in enumerate(class_per_tree):
+            tree_leaves = self.trees[tree_idx].get_leaves_for_classes(tree_classes)
+            leaves.update({tree_idx: tree_leaves})
+        return leaves
     
+    """ Identical to the previous function, it considers only the classes and leaves which are not present in the
+        set of classes per tree. In other words this method returns for each tree the leaves idxs of classes not 
+        present in tree's classes list specified in class_per_tree.
+    """
+    def get_leaf_indexes_not_in_class_list(self, class_per_tree):
+        leaves = {}
+        for tree_idx, tree_classes in enumerate(class_per_tree):
+            tree_leaves = self.trees[tree_idx].get_leaves_idx_not_in_class(tree_classes)
+            leaves.update({tree_idx: tree_leaves})
+        return leaves
+
     """ These functions works with leaf indexes instead of boolean functions.
     """
-    """ Given a set of leaves obtained using the  get_leaf_index_ensemble this function returns the number of vores for each class. """
+    """ Given a set of leaves obtained using the  get_leaf_index_ensemble this function returns the number of votes for each class. """
     def get_votes_vectors_by_leaves_idx(self, leaves, y):
         votes_vector = [ [0 for t in self.model_classes] for x in y]
         for tree_id, tree_leaves in enumerate(leaves):
@@ -260,7 +294,7 @@ class Classifier:
                     votes_vector[sample_id][int(self.trees[tree_id].leaves[single_tree_leaf]["class"])] += 1
         return votes_vector
     
-    """ Given a set of leaves obtained using the  get_leaf_index_ensemble this function returns the number of vores for each class
+    """ Given a set of leaves obtained using the  get_leaf_index_ensemble this function returns the number of votes for each class
         and the accuracy w.r.t the oracle y.
     """
     def get_accuracy_by_leaves_idx(self, leaves, y):
@@ -291,7 +325,7 @@ class Classifier:
     @staticmethod
     def compute_indexes(trees : list[DecisionTree], X : ndarray, disable_tqdm = True):
         assert len(np.shape(X)) == 2
-        return np.array( [t.get_leaf_idx(X) for t in tqdm(trees, disable = disable_tqdm) ])
+        return np.array( [t.visit_by_leaf_idx(X) for t in tqdm(trees, disable = disable_tqdm) ])
     
     """ Given a set of input vectors X get the corresponding leaf index for each X. Returns a vector len(tree) X len(X) """
     def get_leaf_index_ensemble(self, X, disable_tqdm = True):
@@ -558,7 +592,6 @@ class Classifier:
     def visit_per_tree(trees, linearized_box_outs):
         #minterms 
         # for box_idx, box in enumerate(tree.decision_boxes): minterms={box["box"].name : sample[tree.start: tree.end]}]
-
         return [np.sum([[ int(eval(a["sop"], {box["box"].name : sample[tree.start: tree.end][box_idx] for box_idx, box in enumerate(tree.decision_boxes)})) for a in tree.boolean_networks ] for tree in trees ],axis = 0) for sample in linearized_box_outs]
         
 

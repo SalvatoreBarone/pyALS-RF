@@ -129,7 +129,13 @@ class DecisionTree:
         output = self.assertions_graph.evaluate(boxes_output, lut_io_info, self.current_als_configuration)[0]
         return [ o[f"\\{c}"] for c in self.model_classes ]
     
-    def get_leaf_idx(self, attributes_list):
+    """ This function implements an alternative visiting procedure.
+        Instead of evaluating all the tree leaves, and then evaluating the correct output
+        this function first evaluates all the boxes output and then returns the corresponding idx.
+        This assumes that no strange approximation (like a fault ) happened and only one leaf evaluates to true.
+        For instance this can be used in lcor, grep and mr flows but not in the Fault Injection.
+    """    
+    def visit_by_leaf_idx(self, attributes_list):
         if self.als_conf is not None:
             assert 1 == 0, "Not supported "
         leaf_indexes = []
@@ -142,8 +148,30 @@ class DecisionTree:
                     break
             leaf_indexes.append(leaf_id)
         return leaf_indexes
-
-
+    
+    """  
+        Given a list of classes this function returns a dictionay containing for each different class
+        the list of leaves related to the class.
+    """
+    def get_leaves_idx_by_class(self, class_list):
+        leaves_per_class = {}
+        for class_idx in class_list:
+            class_leaves = []
+            for l_id, l in enumerate(self.leaves):
+                if int(l["class"]) == class_idx:
+                    class_leaves.append(l_id)
+            leaves_per_class.update({class_idx : class_leaves})
+        return leaves_per_class
+    
+    """  
+        Given a list of classes this function returns for each class not present in the list, 
+        a dictionary containing for each class not present in class_list, the set of leaf index related to that
+        specific class.
+    """
+    def get_leaves_idx_not_in_class(self, class_list):
+        excluded_classes = [ c for c in self.model_classes if c not in class_list]
+        return self.get_leaves_idx_by_class(excluded_classes)
+    
     def parse(self, root_node, use_espresso):
         logger = logging.getLogger("pyALS-RF")
         db_aliases = {}
