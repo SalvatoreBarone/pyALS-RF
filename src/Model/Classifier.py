@@ -44,6 +44,51 @@ def {func_name}(minterms):
     exec(func_code, globals()) 
     return globals()[func_name] # Update the set of functions adding the boolean function evaluation.
 
+def extract_nodes_from_assertion(assertion):
+    """
+    Extract all nodes (including 'not') from the given assertion function.
+
+    :param assertion: A string containing the logical assertion function.
+    :return: A list of nodes including their negations (e.g., 'not Node_0').
+    """
+    # Define the regular expression pattern
+    pattern = r"(not\s+\w+|\w+)"
+    
+    # Find all matches
+    matches = re.findall(pattern, assertion)
+    
+    # Return the list of nodes
+    return matches
+
+
+def extract_nodes_from_assertion(assertion):
+    """
+    Extract all nodes (including 'not') from the given assertion function.
+
+    :param assertion: A string containing the logical assertion function.
+    :return: A list of nodes including their negations (e.g., 'not Node_0').
+    """
+    # Define the regular expression pattern
+    pattern = r"(not\s+\w+|\w+)"
+    
+    # Find all matches
+    matches = re.findall(pattern, assertion)
+    
+    # Return the list of nodes
+    return matches
+
+def clean_node_names_from_not(nodes):
+    """
+    Remove 'not' prefixes from a list of nodes.
+
+    :param nodes: A list of nodes (e.g., ['not Node_0', 'Node_1']).
+    :return: A list of cleaned node names (e.g., ['Node_0', 'Node_1']).
+    """
+    # Remove 'not ' from each node if it exists
+    cleaned_nodes = [node.replace("not ", "") for node in nodes]
+    
+    return cleaned_nodes
+
 class Classifier:
     __namespaces = {'pmml': 'http://www.dmg.org/PMML-4_4'}
 
@@ -262,7 +307,7 @@ class Classifier:
         For instance:
             1 - class_list =  [[c_0, c_3], [c_2, c_4]]  c_0 and c_3 are the classes required for a specific tree 
                             while c_2 and c_4 are the classes for the second tree ( the one having index 1)
-        This function returns the set of  
+        This function returns the set of leaves in a related to a specific class.
     """
     def get_leaf_indexes_by_class_list(self, class_per_tree):
         leaves = {}
@@ -327,6 +372,39 @@ class Classifier:
         assert len(np.shape(X)) == 2
         return np.array( [t.visit_by_leaf_idx(X) for t in tqdm(trees, disable = disable_tqdm) ])
     
+    """ I implemented this function to allow compatibility with other tools.
+        In pratice, a pyALSRF pruning configuration highly depends on the parsing process (i.e. to establish)
+        node names which corresponds to different decision boxes.
+        So for this reason this function takes in input a list of assertion functions (leaves) and returns the list of directions 
+        required to reach that specific leaf.
+        In practice, a direction is a set of 0 and 1 which indicate (if 0) that the right node is taken from the current node, and 
+        if 1 that the left node is taken from the current node.
+        Additionally, this function returns also the operators of each node in order to flip the direction in case other implementations
+        do not support the operator or uses a different tree-logic. 
+    """
+    def transform_assertion_into_directions(self, pruning_conf):
+        directions_per_tree = [[] for t in self.trees]
+        for _, tree_id, assertion in pruning_conf:
+            tree_idx = int(tree_id)
+            dirs, ops = self.__assertion_into_dir(tree_idx, assertion)
+            directions_per_tree[tree_idx].append((dirs, ops))
+        return directions_per_tree
+        
+    def __assertion_into_dir(self, tree_idx, assertion):
+        nodes_list = extract_nodes_from_assertion(assertion)
+        dirs    = []
+        ops     = []
+        for node in nodes_list:
+            if "not" in node:
+                dirs.append(0)
+            else:
+                dirs.append(1)
+            box_name = clean_node_names_from_not(node)
+            db : DecisionBox = self.trees[tree_idx].get_db(box_name)
+            assert db != None, "Fatal error, searching non existent box !"
+            ops.append(db.get_str_op())
+        return dirs, ops
+            
     """ Given a set of input vectors X get the corresponding leaf index for each X. Returns a vector len(tree) X len(X) """
     def compute_leaves_idx(self, X, disable_tqdm = True):
         args = [[t, X, disable_tqdm] for t in self.p_tree]

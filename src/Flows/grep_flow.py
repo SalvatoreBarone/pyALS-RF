@@ -24,7 +24,7 @@ from .GREP.ResiliencyBasedGREP import ResiliencyBasedGREP
 from .GREP.LossBasedGREP import LossBasedGREP
 from ..Model.Classifier import Classifier
 from ..plot import boxplot
-
+import os
 
 def grep_flow(ctx : dict, fraction : float, approach: str, cost_criterion: str, minredundancy : int, maxloss : float, output : str):
     logger = logging.getLogger("pyALS-RF")
@@ -69,6 +69,51 @@ def redundancy_plot(ctx : dict, output : str):
     error_boxplot = f"{ctx.obj['configuration'].outdir}/error_boxplot.pdf"
     boxplot(redundancy, "", "Redundancy", redundancy_boxplot, figsize = (2, 4), annotate = False, integer_only= True)
     boxplot([ list(v) for v in samples_error.values()], "Classes", r"$E_{p_i}$", error_boxplot, figsize = (skmodel.n_classes_, 4), annotate = False)
-                
+
+""" Direction files:
+    Such files contains for each leaf (present in a pruning configuration), i.e. the set of 0 ( right node ) or 1 ( left node) required to
+    reach that specific leaf.
+    In this way, other accellerators and software implementations can uniquely identify the leaf to prune and perform such operation. 
+    Moreover, as different implementation can use different logics in terms of operator, this function associates each direction (0 or 1) with the operator
+    of the node in question. For instance, if the node condition is greaterThan but the Node of the implementation supports only lerrOrEqual, then 
+    the direction must be flipped ( 0 should become 1 and viceversa).
+    Optionally ( depending on the value of gen_val_set) this function can generate the tree predictions of each single tree under the pruning configuration.
+    In this way, the tree is pruned. 
+"""
+def pruning_into_directions(ctx, pruning_conf, gen_val_set, val_idx, ncpus, output):
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("Transforming the pruning configuration into directions file.")
     
-    
+    load_configuration_ps(ctx)
+    if output is not None:
+        ctx.obj['configuration'].outdir = output
+        mkpath(ctx.obj["configuration"].outdir)
+
+    create_classifier(ctx)
+    classifier : Classifier = ctx.obj["classifier"]
+    with open(pruning_conf, "r") as f:
+        pc = json5.load(pc)
+    logger.info(f"Initiating transformation...")
+    direction_file_json = classifier.transform_assertion_into_directions(pc)
+    out_path_directions = os.path.join(output, "leaf_pruning_directions.json5")
+    logger.info(f"Dumping direction files...")
+    with open(out_path_directions, "w") as f:
+        json5.dump(direction_file_json, f, indent = 2)
+    logger.info(f"Direction files dumped at {out_path_directions}")
+    if gen_val_set: 
+        logger.info("Generating prediction vectors.")
+        out_pred_vecs_path = os.path.join(output, "axc_pred_vecs.json5")
+        # Identify the x_set
+        if val_idx is not None:
+            x_set = classifier.x_test[val_idx]
+        else:
+            x_set = classifier.x_test
+        # Generate all the testing set files. 
+        GREP.set_pruning_conf(classifier, pc)
+        logger.info(f"Starting predictions...")
+        # Generate and dump the prediction vectors.
+        pred_vectors = classifier.predict(x_test = x_set, disable_tqdm = False)   
+        logger.info(f"Dumping predictions...")
+        with open(out_pred_vecs_path, "w") as f:
+            json5.dump(pred_vectors)
+        logger.info(f"Prediction Vectors dumped at {out_pred_vecs_path}")

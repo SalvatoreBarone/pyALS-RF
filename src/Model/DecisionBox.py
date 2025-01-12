@@ -40,6 +40,7 @@ class DecisionBox:
     self.threshold = threashold
     self.nab = int(nab)
 
+
   def __deepcopy__(self, memo = None):
     box = DecisionBox()
     box.name = copy.deepcopy(self.name)
@@ -57,7 +58,15 @@ class DecisionBox:
       return "<"
     else: 
       return "==" 
-
+  
+  def get_str_op(self):
+    if self.operator == DecisionBox.CompOperator.greaterThan:
+      return "greaterThan"
+    elif self.operator == DecisionBox.CompOperator.lessThan:
+      return "lessThan"
+    else: 
+      return "equal" 
+    
   def get_hexstr_threashold(self):
     if self.data_type == "double":
       return str(double_to_hex(self.threshold))[2:]

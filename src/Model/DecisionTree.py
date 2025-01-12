@@ -266,7 +266,15 @@ class DecisionTree:
         minterms = [item["sop"] for item in self.leaves if item["class"] == class_name]
         minterms, sop, hdl_expression = self.define_boolean_expression(minterms, use_espresso)
         return {"class" : class_name, "minterms" : minterms, "sop" : sop, "hdl_expression" : hdl_expression}
-
+    
+    # Return a decision box obj from its name
+    def get_db_from_name(self, box_name):
+        for box in self.decision_boxes:
+            if box["name"] == box_name:
+                return box["box"]
+        # Propagate for error management.
+        return None
+    
     # faults:   dictionary where keys are nodes and values are
     #           the fixed faulted value (True/False)
     # DIFFERENTLY FROM THE PREVIOUS ONE THIS FUNCION REPLACES
