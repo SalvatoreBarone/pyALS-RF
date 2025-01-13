@@ -374,17 +374,17 @@ def gen_class_vectors(ctx, conf, test_idx, pruning_conf, out, verbose, ncpus):#,
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "faultinj")
     dump_unfaulted_class_vector(ctx = ctx, test_idx = test_idx, pruning_conf = pruning_conf, output = out, ncpus = ncpus)
 
-@cli.command("gen_class_vectors")
+@cli.command("pruningcfg_into_directions")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
-@click.option('-p', '--pruning_conf',  type=click.Path(exists=True, dir_okay=True), default = None, help = f"Path of the pruning configuration")
+@click.option('-p', '--pruning_conf',  type=click.Path(exists=True, dir_okay=False), default = None, help = f"Path of the pruning configuration")
 # The validation dataset is used to cross-validate the imported model w.r.t. the accellerator. 
-@click.option('-p', '--gen_val_set',  type = bool, default = False, help = f" Used to establish if the entire test-set or the test set is used to generate a validation dataset.")
-@click.option('-v', '--val_idx', type=click.Path(exists=True, dir_okay=True), default = None, help = f"Path of file containing the indexes used during validation")
+@click.option('-g', '--gen_val_set',  type = bool, default = False, help = f" Used to establish if the entire test-set or the test set is used to generate a validation dataset.")
+@click.option('-t', '--val_idx', type=click.Path(exists=True, dir_okay=True), default = None, help = f"Path of file containing the indexes used during validation")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
-@click.option('-o', '--out', type=click.Path(exists=True, dir_okay=True), default = "./", help = "Output directory for the directions and output..")
+@click.option('-o', '--out', type=click.Path(exists=True, dir_okay=True), default = None, help = "Output directory for the directions and output..")
 @click.pass_context
-def pruning_cfg_into_directions(ctx, conf, pruning_conf, gen_val_set,  val_idx, verbose, ncpus, out):
+def pruningcfg_into_directions(ctx, conf, pruning_conf, gen_val_set,  val_idx, verbose, ncpus, out):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "pruning_into_universal")
     pruning_into_directions(ctx, pruning_conf, gen_val_set, val_idx, ncpus, out)
     
@@ -451,7 +451,7 @@ cli.add_command(gen_fault_coll)
 cli.add_command(gen_class_vectors)
 cli.add_command(gen_xtest_coll)
 cli.add_command(test_visit)
-
+cli.add_command(pruningcfg_into_directions)
 if __name__ == '__main__':
     if git_updater(os.path.dirname(os.path.realpath(__file__))):
         os.execv(sys.argv[0], sys.argv)

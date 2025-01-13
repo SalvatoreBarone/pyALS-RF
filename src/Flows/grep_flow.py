@@ -88,21 +88,23 @@ def pruning_into_directions(ctx, pruning_conf, gen_val_set, val_idx, ncpus, outp
     if output is not None:
         ctx.obj['configuration'].outdir = output
         mkpath(ctx.obj["configuration"].outdir)
+    out = ctx.obj['configuration'].outdir
 
+        
     create_classifier(ctx)
     classifier : Classifier = ctx.obj["classifier"]
     with open(pruning_conf, "r") as f:
-        pc = json5.load(pc)
+        pc = json5.load(f)
     logger.info(f"Initiating transformation...")
     direction_file_json = classifier.transform_assertion_into_directions(pc)
-    out_path_directions = os.path.join(output, "leaf_pruning_directions.json5")
+    out_path_directions = os.path.join(out, "leaf_pruning_directions.json5")
     logger.info(f"Dumping direction files...")
     with open(out_path_directions, "w") as f:
         json5.dump(direction_file_json, f, indent = 2)
     logger.info(f"Direction files dumped at {out_path_directions}")
     if gen_val_set: 
         logger.info("Generating prediction vectors.")
-        out_pred_vecs_path = os.path.join(output, "axc_pred_vecs.json5")
+        out_pred_vecs_path = os.path.join(out, "axc_pred_vecs.json5")
         # Identify the x_set
         if val_idx is not None:
             x_set = classifier.x_test[val_idx]
@@ -115,5 +117,5 @@ def pruning_into_directions(ctx, pruning_conf, gen_val_set, val_idx, ncpus, outp
         pred_vectors = classifier.predict(x_test = x_set, disable_tqdm = False)   
         logger.info(f"Dumping predictions...")
         with open(out_pred_vecs_path, "w") as f:
-            json5.dump(pred_vectors)
+            json5.dump(pred_vectors.tolist(), f, indent = 2)
         logger.info(f"Prediction Vectors dumped at {out_pred_vecs_path}")

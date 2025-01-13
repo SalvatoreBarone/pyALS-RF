@@ -46,30 +46,14 @@ def {func_name}(minterms):
 
 def extract_nodes_from_assertion(assertion):
     """
-    Extract all nodes (including 'not') from the given assertion function.
+    Extract all nodes (including 'not') from the given assertion function,
+    excluding logical operators like 'and'.
 
     :param assertion: A string containing the logical assertion function.
     :return: A list of nodes including their negations (e.g., 'not Node_0').
     """
-    # Define the regular expression pattern
-    pattern = r"(not\s+\w+|\w+)"
-    
-    # Find all matches
-    matches = re.findall(pattern, assertion)
-    
-    # Return the list of nodes
-    return matches
-
-
-def extract_nodes_from_assertion(assertion):
-    """
-    Extract all nodes (including 'not') from the given assertion function.
-
-    :param assertion: A string containing the logical assertion function.
-    :return: A list of nodes including their negations (e.g., 'not Node_0').
-    """
-    # Define the regular expression pattern
-    pattern = r"(not\s+\w+|\w+)"
+    # Define the regular expression pattern for matching 'not Node_X' or 'Node_X'
+    pattern = r"(?:not\s+Node_\d+|Node_\d+)"
     
     # Find all matches
     matches = re.findall(pattern, assertion)
@@ -399,9 +383,9 @@ class Classifier:
                 dirs.append(0)
             else:
                 dirs.append(1)
-            box_name = clean_node_names_from_not(node)
-            db : DecisionBox = self.trees[tree_idx].get_db(box_name)
-            assert db != None, "Fatal error, searching non existent box !"
+            box_name = clean_node_names_from_not([node])[0]
+            db : DecisionBox = self.trees[tree_idx].get_db_from_name(box_name)
+            assert db != None, f"Fatal error, searching non existent box ! Name {box_name}"
             ops.append(db.get_str_op())
         return dirs, ops
             

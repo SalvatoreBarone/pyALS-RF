@@ -67,15 +67,6 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
     create_classifier(ctx)    
     mr_axc = MrAxC(ctx.obj["classifier"], 1) # Fix this value to 1.
 
-    # vars = [1 for i in range(0, len(mr_axc.classifier.model_classes) * len(  mr_axc.classifier.trees))]
-    # vars = [1 if i %2 == 0 else 0 for i in range(0, len(mr_axc.classifier.model_classes) * len(  mr_axc.classifier.trees))]
-    # print(vars)
-    # confs = MrMop.get_tree_cfg(mr_axc, vars)
-    # print(confs)
-    # accs = mr_axc.evaluate_cfg_xmop(confs)
-    # print(accs)
-
-
 
     create_problem(ctx, mode = None, alpha = alpha, beta = beta, gamma = gamma)
     ctx.obj["problem"].initialize_problem(mr_axc)
@@ -156,7 +147,15 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
         for tree, classes_per_tree_pruned_leaves in pruned_leaves.items():
             for _, pruned_leaves in classes_per_tree_pruned_leaves.items():
                 pruned_leaves_ctr += len(pruned_leaves)
-        logger.info(f"CFG infos dumped. Check {out_dir_cfg} ")
+        logger.info(f"CFG infos dumped. Check {out_dir_cfg} Nro")
+        logger.info(f"Generating the Direction Files for exporting pruning configuration.")
+        #GREP.
+        direction_file_json = mr_axc.classifier.transform_assertion_into_directions(pruning_cfg)
+        out_path_directions = os.path.join(out_dir_cfg, "leaf_pruning_directions.json5")
+        # Dump the direction file.
+        with open(out_path_directions, "w") as f:
+            json5.dump(out_path_directions, )
+        logger.info(f"Direction File dumped at {out_path_directions}")
         sol_summary = {
                 "Pruned-Leaves"         : pruned_leaves_ctr,
                 "Baseline_XMOP_Acc"     : mr_axc.x_val_baseline_accuracy,
