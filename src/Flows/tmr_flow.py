@@ -114,7 +114,11 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
         # Transform the solution into a feasible configuration.
         configuration = MrMop.get_tree_cfg(mr_axc, configuration)
         # Evaluate
-        val_acc_draw, val_acc_no_draw = MrAxC.evaluate_mr_cfg_accuracy(validation_classes, mr_axc.y_val, configuration)
+        mr_pred_vectors =  MrAxC.get_mr_vectors(validation_classes, configuration)
+        val_acc_draw, val_acc_no_draw = MrAxC.get_accuracy_from_vectors(mr_pred_vectors, mr_axc.y_val)
+        # Need to dump pred_vector for future cross validation procedures. 
+        # So the accuracy evaluation function is not directly called.
+        #val_acc_draw, val_acc_no_draw = MrAxC.evaluate_mr_cfg_accuracy(validation_classes, mr_axc.y_val, configuration)
         loss_draw = mr_axc.x_val_baseline_accuracy - val_acc_draw
         loss_no_draw = mr_axc.x_val_baseline_accuracy - val_acc_no_draw
         logger.info(f"Evaluation completed! : Baseline: {mr_axc.x_val_baseline_accuracy}")
@@ -124,6 +128,12 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
         out_dir_cfg = os.path.join(out_path, f"cfg_{loss_no_draw:.2f}")
         if not os.path.exists(out_dir_cfg):
             os.makedirs(out_dir_cfg)
+        logger.info(f"Dumping MR prediction vectors on validation set")
+        pred_vec_dump_path = os.path.join(out_dir_cfg, "mr_pred_vectors")
+        with open(pred_vec_dump_path, "w") as f:
+            json5.dump(mr_pred_vectors.tolist(), f, indent = 2)
+        logger.info(f"MR prediction vectors dumped in {pred_vec_dump_path}")
+
         logger.info(f"Starting the dump of CFG infos.")
         # The configuration consists in the set of trees per each class, so this function returns the set of classes
         # per each different tree.
@@ -147,14 +157,14 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
         for tree, classes_per_tree_pruned_leaves in pruned_leaves.items():
             for _, pruned_leaves in classes_per_tree_pruned_leaves.items():
                 pruned_leaves_ctr += len(pruned_leaves)
-        logger.info(f"CFG infos dumped. Check {out_dir_cfg} Nro")
+        logger.info(f"CFG infos dumped. Check {out_dir_cfg}")
         logger.info(f"Generating the Direction Files for exporting pruning configuration.")
-        #GREP.
+        # Generating direction files for dumping.
         direction_file_json = mr_axc.classifier.transform_assertion_into_directions(pruning_cfg)
         out_path_directions = os.path.join(out_dir_cfg, "leaf_pruning_directions.json5")
         # Dump the direction file.
         with open(out_path_directions, "w") as f:
-            json5.dump(out_path_directions, )
+            json5.dump(direction_file_json, f, indent = 2)
         logger.info(f"Direction File dumped at {out_path_directions}")
         sol_summary = {
                 "Pruned-Leaves"         : pruned_leaves_ctr,
