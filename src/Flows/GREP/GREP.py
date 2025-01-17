@@ -254,7 +254,7 @@ class GREP:
                 # For each pruned leaf per class.
                 for pruned_leaf in pruned_leaves:
                     tree_pruning_cfg.append((str(considered_class), str(tree_id), tree.leaves[pruned_leaf]["sop"]))
-            pruning_cfg.append(tree_pruning_cfg)
+            pruning_cfg.extend(tree_pruning_cfg)
         return pruning_cfg
 
     def compare(self):

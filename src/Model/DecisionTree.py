@@ -140,6 +140,8 @@ class DecisionTree:
             assert 1 == 0, "Not supported "
         leaf_indexes = []
         for x in attributes_list:
+            # logger = logging.getLogger("pyALS-RF")
+            # logger.info(f"Tu fungi ?")
             leaf_id = -1 
             boxes_output = self.get_boxes_output(x)
             for l_id, l in enumerate(self.leaves):

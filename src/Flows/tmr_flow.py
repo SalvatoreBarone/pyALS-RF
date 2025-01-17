@@ -66,12 +66,12 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
         mkpath(ctx.obj["configuration"].outdir)
     create_classifier(ctx)    
     mr_axc = MrAxC(ctx.obj["classifier"], 1) # Fix this value to 1.
-
-
     create_problem(ctx, mode = None, alpha = alpha, beta = beta, gamma = gamma)
+    # Ad hoc function.
     ctx.obj["problem"].initialize_problem(mr_axc)
     create_optimizer(ctx)
     can_improve(ctx)
+    # RIMUOVERE APPENA SI E' FIXATA LA GENERAZIONE DELLE DIREZIONI.
     # Now create the problem
     ctx.obj["optimizer"].run(ctx.obj["problem"], termination_criterion = ctx.obj['configuration'].termination_criterion, improve = ctx.obj["improve"])
     logger.info(f"AMOSA heuristic completed!")
@@ -82,15 +82,14 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
     logger.info(f"{len(ctx.obj['problem'].cache)} cache entries collected")
     logger.info(f"Saving the validation and mop set indexes")
     ctx.obj["optimizer"].archive.write_json(f"{ctx.obj['configuration'].outdir}/final_archive.json")
-    #ctx.obj["optimizer"].archive.plot_front(ctx.obj['problem'].num_of_objectives, f"{ctx.obj['configuration'].outdir}/pareto_front.pdf") # It gives me an error...
     ctx.obj["pareto_front"] = ctx.obj["optimizer"].archive
     logger.info(f"Pareto front saved! Take a look at the {ctx.obj['configuration'].outdir} directory.")
     logger.info("Dumping the MOP and Validation indexes...")
     # Dump MOP and validation indexes.
     mr_axc.dump_mop_val_indexes(ctx.obj['configuration'].outdir)
-    logger.info(f"Dump of Validation and MOP completed ! Check {ctx.obj['configuration'].outdir} directory.")
+    logger.info(f"Dump of Validation and MOP completed ! Check {ctx.obj['configuration'].outdir} directory.") 
     
-    # Used for log infos generation tests.
+    # # Used for log infos generation tests.
     # with open(os.path.join(ctx.obj['configuration'].outdir, "final_archive.json"), "r") as f:
     #     pareto_no_rep = json5.load(f)
 
@@ -101,7 +100,7 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
     validation_classes = MrAxC.per_tree_classess_into_classes_per_tree(validation_classes)
     logger.info(f"Classes per tree initialized ! Now evaluating the different CFG.")
     # For each configuration in the pareto front, save the pruning indexed of MOP and validation.
-    pareto_no_rep = __unique_pareto(ctx.obj["pareto_front"].candidate_solutions) # DA DECOMMENTARE DOPO
+    pareto_no_rep = __unique_pareto(ctx.obj["pareto_front"].candidate_solutions) 
     out_path = ctx.obj['configuration'].outdir
     
     # Save the solution in the set of unique pareto fronts. 
@@ -129,7 +128,7 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
         if not os.path.exists(out_dir_cfg):
             os.makedirs(out_dir_cfg)
         logger.info(f"Dumping MR prediction vectors on validation set")
-        pred_vec_dump_path = os.path.join(out_dir_cfg, "mr_pred_vectors")
+        pred_vec_dump_path = os.path.join(out_dir_cfg, "mr_pred_vectors.json5")
         with open(pred_vec_dump_path, "w") as f:
             json5.dump(mr_pred_vectors.tolist(), f, indent = 2)
         logger.info(f"MR prediction vectors dumped in {pred_vec_dump_path}")
@@ -139,10 +138,13 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
         # per each different tree.
         per_tree_cfg = MrMop.cfg_per_class_in_cfg_per_tree(mr_axc, configuration)
         pruned_leaves = mr_axc.classifier.get_leaf_indexes_not_in_class_list(per_tree_cfg)
-        # Dump configuration 
-        with open(os.path.join(out_dir_cfg, "cfg.json5"), "w") as f:
+        # Dump the configuration per class object. 
+        with open(os.path.join(out_dir_cfg, "per_class_cfg.json5"), "w") as f:
             json5.dump(configuration, f, indent = 2)
-        # Dump Leaves
+        # Dump the configuration itself.
+        with open(os.path.join(out_dir_cfg, "per_tree_cfg.json5"), "w") as f:
+            json5.dump(per_tree_cfg, f, indent = 2)
+        # Dump the leaf indexes.
         with open(os.path.join(out_dir_cfg, "leaves_idx.json5"), "w") as f:
             json5.dump(pruned_leaves, f, indent = 2)
         logger.info("Generating and dumping pruning configuration for the accelerator...")

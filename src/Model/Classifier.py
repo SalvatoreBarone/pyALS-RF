@@ -354,7 +354,11 @@ class Classifier:
     @staticmethod
     def compute_indexes(trees : list[DecisionTree], X : ndarray, disable_tqdm = True):
         assert len(np.shape(X)) == 2
-        return np.array( [t.visit_by_leaf_idx(X) for t in tqdm(trees, disable = disable_tqdm) ])
+        # logger = logging.getLogger("pyALS-RF")
+        to_ret = np.array( [t.visit_by_leaf_idx(X) for t in tqdm(trees, disable = disable_tqdm) ])
+        # logger.info(to_ret)
+        return to_ret
+        #return np.array( [t.visit_by_leaf_idx(X) for t in tqdm(trees, disable = disable_tqdm) ])
     
     """ I implemented this function to allow compatibility with other tools.
         In pratice, a pyALSRF pruning configuration highly depends on the parsing process (i.e. to establish)
@@ -392,7 +396,13 @@ class Classifier:
     """ Given a set of input vectors X get the corresponding leaf index for each X. Returns a vector len(tree) X len(X) """
     def compute_leaves_idx(self, X, disable_tqdm = True):
         args = [[t, X, disable_tqdm] for t in self.p_tree]
-        lists = np.array(self.pool.starmap(Classifier.compute_indexes, args))
+        # logger = logging.getLogger("pyALS-RF")
+        # logger.info(f"Executing {len(args)}")
+        #exit(1)
+        lists  = self.pool.starmap(Classifier.compute_indexes, args)
+        # logger.info(returns)
+        # exit(1)
+        #lists = np.array(returns)
         final_list = []
         for p_t_leaves in lists:
             for tree_leaf in p_t_leaves:
