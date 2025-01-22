@@ -56,10 +56,14 @@ class TMR(GREP):
                     out_path : str = "./",
                     flow : str = "pruning",
                     experiment_iteration : int = 0,
-                    mr_order : int = 3
+                    mr_order : int = 3,
+                    report_name : str = None 
                 ):
         super().__init__(classifier, pruning_set_fraction, max_loss = 5.0, min_resiliency = 0, ncpus = ncpus)
-        self.out_path = os.path.join(out_path, "tmr") 
+        if report_name == None:
+            self.out_path = os.path.join(out_path, "tmr") 
+        else:
+            self.out_path = os.path.join(out_path, report_name)
         logger = logging.getLogger("pyALS-RF")
         logger.info(f"Out Path  {self.out_path}")
         if os.path.exists(self.out_path) == False:
@@ -93,7 +97,9 @@ class TMR(GREP):
         # Initialize the logger 
         logger = logging.getLogger("pyALS-RF")
         # Initialize the output paths 
+
         report_path = os.path.join(self.out_path, "tmr.csv")
+
         pruning_path =  os.path.join(self.out_path, f"pruning_configuration_{self.exp_it}.json5")
         flow_store_path = os.path.join(self.out_path, ".flow.json5")
         # Split the dataset for the evaluation
@@ -124,7 +130,7 @@ class TMR(GREP):
                         # Remove all the leaves associated with the class
                         for l in self.classifier.trees[tree_idx].leaves:
                             # If the leaf is associated to the class
-                            if l["class"] == c:
+                            if int(l["class"]) == c:
                                 # append the leaf to the pruning configuration  
                                 # The pruning configuration is : Class Label - Tree Idx - SOP 
                                 self.pruning_configuration.append((c, str(tree_idx), l["sop"]))
@@ -147,7 +153,7 @@ class TMR(GREP):
             for already_pruned in self.pruning_configuration:
                 # If the leaf is in the pruning cfg return true
                 # THIS CHECK WITH THREE ELEMENTS HAS NOTHING TO DO WITH THE TMR.
-                if already_pruned[0] == leaf_cfg[0] and already_pruned[1] == leaf_cfg[1] and already_pruned[2] == leaf_cfg[2]:
+                if int(already_pruned[0]) == int(leaf_cfg[0]) and already_pruned[1] == leaf_cfg[1] and already_pruned[2] == leaf_cfg[2]:
                     return True
             # else false
             return False
@@ -168,10 +174,6 @@ class TMR(GREP):
         # Evaluate the overall computational time.
         comp_time = time.time() - comp_time
         logger.info("[TMR] Evaluating accuracy")
-        # Now evaluate the accuracy of the pruned tree and save results
-        # Arguments for evaluating accuracy
-        # self.x_validation = self.x_validation[0 : test_samples]
-        # self.y_validation = self.y_validation[0 : test_samples]
         self.args_evaluate_validation = [[t, self.x_validation] for t in self.classifier.p_tree]
         self.pool = self.classifier.pool
         self.baseline_accuracy_draw, self.baseline_accuracy_no_draw, exact_classifications_draw, exact_classifications_no_draw, exact_draw_counter = self.evaluate_accuracy_draw()

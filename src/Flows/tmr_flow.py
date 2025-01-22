@@ -42,7 +42,7 @@ def __unique_pareto(pareto):
             unique_data.append(entry)
     return unique_data
 
-def tmr_flow(ctx, output, fraction,  ncpus, report, it, test_samples, mr_order):
+def tmr_flow(ctx, output, fraction,  ncpus, report, it, test_samples, mr_order, report_name):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the TMR flow.")
     load_configuration_ps(ctx)
@@ -51,7 +51,7 @@ def tmr_flow(ctx, output, fraction,  ncpus, report, it, test_samples, mr_order):
         ctx.obj['configuration'].outdir = output
         mkpath(ctx.obj["configuration"].outdir)
     create_classifier(ctx)    
-    tmr = TMR (ctx.obj["classifier"], fraction,  ncpus,ctx.obj['configuration'].outdir,ctx.obj["flow"], it, mr_order)
+    tmr = TMR (ctx.obj["classifier"], fraction,  ncpus,ctx.obj['configuration'].outdir,ctx.obj["flow"], it, mr_order, report_name)
     tmr.approx(test_samples = test_samples)
 
 

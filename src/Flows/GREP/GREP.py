@@ -73,7 +73,7 @@ class GREP:
         # With the valuation:_size compute the pruning portion size 
         pruning_portion = ( len(self.classifier.x_test) - valuation_size) / len(self.classifier.x_test) # This is the portion of the validation
         indexes = np.arange(len(self.classifier.x_test))
-        self.x_pruning, self.x_validation, self.y_pruning, self.y_validation, self.idx_prun, self.idx_test = train_test_split(self.classifier.x_test, self.classifier.y_test, indexes, train_size = pruning_portion, stratify = self.classifier.y_test.ravel()) # Stratify ensures that all classess are considered. 
+        self.x_pruning, self.x_validation, self.y_pruning, self.y_validation, self.idx_prun, self.idx_test = train_test_split(self.classifier.x_test, self.classifier.y_test, indexes, train_size = pruning_portion) # Use stratify = self.classifier.x_test.ravel() ensures that all classess are considered. 
 
     def evaluate_accuracy(self):
         outcomes = np.sum(self.pool.starmap(Classifier.compute_score, self.args_evaluate_validation), axis = 0)
