@@ -132,8 +132,7 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
         pred_vec_dump_path = os.path.join(out_dir_cfg, "mr_pred_vectors")
         with open(pred_vec_dump_path, "w") as f:
             json5.dump(mr_pred_vectors.tolist(), f, indent = 2)
-        logger.info(f"MR prediction vectors dumped in {pred_vec_dump_path}")
-
+ 
         logger.info(f"Starting the dump of CFG infos.")
         # The configuration consists in the set of trees per each class, so this function returns the set of classes
         # per each different tree.

@@ -285,13 +285,23 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
     #                 'bootstrap': [True, False]
     #                 }
 
-    search_grid = { 
-                    'criterion' : ["entropy", "gini"],
-                    'max_depth': [5, 7, 10],
-                    'min_samples_split': [2, 5 , 10],
-                    'min_samples_leaf': [1, 5, 9],
-                    'bootstrap' : [True, False]
-                    }
+    # search_grid = { 
+    #                 'criterion' : ["entropy", "gini"],
+    #                 'max_depth': [5, 7, 10],
+    #                 'min_samples_split': [2, 5 , 10],
+    #                 'min_samples_leaf': [1, 5, 9],
+    #                 'bootstrap' : [True, False]
+    #                 }
+
+
+    # Define hyperparameter grid for tuning
+    search_grid = {
+        'criterion' : ["entropy", "gini"],
+        "max_depth": [None, 10, 20],
+        "min_samples_split": [i for i in range(2,11)],
+        "min_samples_leaf": [i for i in range (1, 11)],
+        'bootstrap' : [True, False]
+    }
 
     estimator = RandomForestClassifierMV(random_state=42, n_estimators = ntrees)
     if clf == "dt":
