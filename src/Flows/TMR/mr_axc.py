@@ -55,22 +55,35 @@ class MrAxC:
     """ 
         Split MOP samples and validation samples.  
     """
-    def sample_dse_samples(self):
+    def sample_dse_samples(self, fraction):
         #def sample_dse_samples(self, per_class_subsampling = False):    
         classifier = self.classifier
         indexes = np.arange(0, len(classifier.x_test))
         y_flat = self.classifier.y_test.ravel()
-        mop_size = compute_sample_size(test_set_size = len(classifier.x_test), error_margin = 0.05, confidence_level = 0.95, individual_prob = 0.5)
-        portion = mop_size / len(self.classifier.x_test)
-        self.x_mop, self.x_val, self.y_mop, self.y_val, self.mop_indexes, self.validation_indexes = train_test_split(self.classifier.x_test, y_flat, indexes, train_size = portion, stratify = y_flat)       
+        if fraction == None :
+            mop_size = compute_sample_size(test_set_size = len(classifier.x_test), error_margin = 0.05, confidence_level = 0.95, individual_prob = 0.5)
+            portion = mop_size / len(self.classifier.x_test)
+            self.x_mop, self.x_val, self.y_mop, self.y_val, self.mop_indexes, self.validation_indexes = train_test_split(self.classifier.x_test, y_flat, indexes, train_size = portion, stratify = y_flat)       
+        else:
+            self.x_mop, self.x_val, self.y_mop, self.y_val, self.mop_indexes, self.validation_indexes = train_test_split(self.classifier.x_test, y_flat, indexes, train_size = fraction)       
+        
         """ It is fundamental that each test set class is in the set of sampled classes """
         self.sampled_classes = list(set(self.y_mop))
         x_test_classess = list(set(y_flat))
+        # Flag added in the case a class is not used and the class is present in the test set.
+        # It is fundamental to note that we don't care if the class is classified or not, if it is not present
+        # in the test set ( but was present in the training set) then we can simply skip the class.
+        # SO CHOOSE THE TEST SET WISELY.
+        recover_class = False 
+        classes_to_recover = [] # This should happen if the stratify internal check of scikit learn fails, ( we're using a custom fraction.)
         for x in x_test_classess:
             if x not in self.sampled_classes:
                 self.logger.error("[MR-AXC] ERROR: In sampling, each class in the test set should be considered.")
+                recover_class = True # There is at least a class to recover.
+                classes_to_recover.append(x)
                 exit(1)
-    
+ 
+ 
     """ Compute the cost of each leaf as the number of nodes in that specific leaf. """
     def compute_leaves_costs(self):
         """ For each tree mantains the number of nodes involved in each class.  """
@@ -245,7 +258,7 @@ class MrAxC:
         np.savetxt(os.path.join(outdir, "mop_indexes.txt"), self.mop_indexes, fmt = "%d")
         np.savetxt(os.path.join(outdir, "val_indexes.txt"), self.validation_indexes, fmt = "%d")
     
-    def __init__(self, classifier: Classifier, num_cores: int = 1):
+    def __init__(self, classifier: Classifier, num_cores: int = 1, fraction : float = None):
         self.logger = logging.getLogger("pyALS-RF")
         self.logger.info("[MR-AXC] Initializing the module")
         self.classifier : Classifier = classifier   
@@ -257,7 +270,7 @@ class MrAxC:
             self.__xmop_priv_eval = self.__evaluate_xmop_single_core
             
         self.logger.info("[MR-AXC] Sampling classess..")
-        self.sample_dse_samples()
+        self.sample_dse_samples(fraction)
         self.logger.info("[MR-AXC] Sampling completed.")
         self.logger.info(f"[MR-AXC] MOO-Samples: {(len(self.x_mop))}")
         self.logger.info(f"[MR-AXC] Validation-Samples: {(len(self.x_val))}")

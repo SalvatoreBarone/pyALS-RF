@@ -169,7 +169,7 @@ def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss_lb, maxloss_ub, lo
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
-@click.option('-f', '--fraction', type = float, default = 0.5, help = "Fraction of the test set to be used as pruning set")
+@click.option('-f', '--fraction', type = float, default = None, help = "Fraction of the test set to be used as pruning set")
 @click.option('-r', '--report', type = bool, default = True , help = "Enables the generation of a CSV file containing the report")
 @click.option('-i', '--it', type = int, default = 0 , help = "Experiment iteration")
 @click.option('-t', '--test_samples', type = int, default = 0 , help = "Number of test samples used from the validation after the split. Test set is first splitted and then test_samples are taken.")
@@ -196,7 +196,7 @@ def tmr(ctx, moo, conf, ncpus, output, verbose, fraction, report, it, test_sampl
                 f"\n\t  iteration {it}"
                 )
     if moo:
-        mr_mop_flow(ctx, alpha, beta, gamma, output, ncpus)
+        mr_mop_flow(ctx, alpha, beta, gamma, output, ncpus, fraction)
     else:
         tmr_flow(ctx, output, fraction, ncpus, report, it, test_samples)
         

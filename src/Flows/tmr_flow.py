@@ -56,7 +56,7 @@ def tmr_flow(ctx, output, fraction,  ncpus, report, it, test_samples):
 
 
 
-def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n_jobs: int = 1):
+def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n_jobs: int = 1, fraction: float = None):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the TMR-MOO flow.")
     load_configuration_ps(ctx)
@@ -65,7 +65,7 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
         ctx.obj['configuration'].outdir = output
         mkpath(ctx.obj["configuration"].outdir)
     create_classifier(ctx)    
-    mr_axc = MrAxC(ctx.obj["classifier"], 1) # Fix this value to 1.
+    mr_axc = MrAxC(ctx.obj["classifier"], 1, fraction) # Fix this value to 1.
     create_problem(ctx, mode = None, alpha = alpha, beta = beta, gamma = gamma)
     # Ad hoc function.
     ctx.obj["problem"].initialize_problem(mr_axc)
