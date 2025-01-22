@@ -101,7 +101,12 @@ class MrAxC:
     def initialize_tree_prediction_per_sample(self):
         self.logger.info("[MR-AXC] Initiating accuracy evaluation on X_MOP..")
         start = time.time()
+        # self.logger.info("I've initialized XMop")
+        # self.logger.info(self.x_mop)
+        # exit(1)
         x_mop_leaves = self.classifier.compute_leaves_idx(self.x_mop)
+        # self.logger.info("Ended")
+        # exit(1)
         _, self.x_mop_baseline_accuracy = self.classifier.get_accuracy_by_leaves_idx(x_mop_leaves, self.y_mop)
         end = time.time()
         x_mop_classes = self.classifier.transform_leaves_into_classess(x_mop_leaves)
