@@ -18,7 +18,8 @@ import json5
 class ConfigParser:
     def __init__(self, configfile : str):
         self.configuration = json5.load(open(configfile))
-
+        # print(f"Opened {configfile}")
+        # exit(1)
 def search_field_in_config(configuration, field, mandatory = True, default_value = None):
     try:
         return configuration[field]

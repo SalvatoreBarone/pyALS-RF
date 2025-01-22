@@ -97,11 +97,11 @@ class TMR(GREP):
         self.split_test_dataset(self.pruning_set_fraction)
         # Get the tree indexes for classes.
         self.trees_per_class = {}
-        comp_time = time.time()
+        
         pruning_set_classes = self.get_pruning_set_classes()
-
+        comp_time = time.time()
         # For each class, take the tree with the minimum number of classifications
-        for c, pruning_set_classes_x in enumerate(self.classifier.model_classes):
+        for c, pruning_set_classes_x in enumerate(pruning_set_classes):
             # Temporary fix, simply skip in case of missing classes
             if len(pruning_set_classes_x) > 0:
                 # Find the accuracy of each single tree for the specific class.

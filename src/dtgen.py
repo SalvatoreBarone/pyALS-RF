@@ -308,9 +308,9 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
         pass
     else:
         if tuning == "random":
-            rf_random = RandomizedSearchCV(estimator = estimator, param_distributions = search_grid, n_iter = niter, cv = 3, verbose = 3, random_state = np.random.default_rng().integers(0, 100), n_jobs = ncpus)
+            rf_random = RandomizedSearchCV(estimator = estimator, param_distributions = search_grid, n_iter = niter, cv = 5, verbose = 3, random_state = np.random.default_rng().integers(0, 100), n_jobs = ncpus)
         else:
-            rf_random = GridSearchCV(estimator = estimator, param_grid = search_grid, cv = 3, verbose = 3, n_jobs = ncpus)
+            rf_random = GridSearchCV(estimator = estimator, param_grid = search_grid, cv = 5, verbose = 3, n_jobs = ncpus)
         rf_random.fit(x_train, y_train)
         logger.info(f'Best parameters:\n{tabulate([ [k, v] for k, v in rf_random.best_params_.items()])}')
         data = [ [i, estimator.tree_.node_count, estimator.tree_.max_depth ] for i, estimator in enumerate(rf_random.best_estimator_.estimators_) ]
