@@ -170,6 +170,7 @@ def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss_lb, maxloss_ub, lo
 @click.option('-o', '--output', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.option('-f', '--fraction', type = float, default = None, help = "Fraction of the test set to be used as pruning set")
+@click.option('-k', '--k_mr', type = int, default = 3, help = "Order k of modular redundancy for the heuristic.")
 @click.option('-r', '--report', type = bool, default = True , help = "Enables the generation of a CSV file containing the report")
 @click.option('-i', '--it', type = int, default = 0 , help = "Experiment iteration")
 @click.option('-t', '--test_samples', type = int, default = 0 , help = "Number of test samples used from the validation after the split. Test set is first splitted and then test_samples are taken.")
@@ -177,7 +178,7 @@ def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss_lb, maxloss_ub, lo
 @click.option('--beta', type=float, default = 0.5)
 @click.option('--gamma', type=float, default = 2)
 @click.pass_context
-def tmr(ctx, moo, conf, ncpus, output, verbose, fraction, report, it, test_samples, alpha, beta, gamma):
+def tmr(ctx, moo, conf, ncpus, output, verbose, fraction, mr_order, report, it, test_samples, alpha, beta, gamma):
     if moo :
         set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "MR_MOO")
     else:
@@ -198,7 +199,7 @@ def tmr(ctx, moo, conf, ncpus, output, verbose, fraction, report, it, test_sampl
     if moo:
         mr_mop_flow(ctx, alpha, beta, gamma, output, ncpus, fraction)
     else:
-        tmr_flow(ctx, output, fraction, ncpus, report, it, test_samples)
+        tmr_flow(ctx, output, fraction, ncpus, report, it, test_samples, mr_order)
         
 
 

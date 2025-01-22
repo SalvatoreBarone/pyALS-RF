@@ -55,7 +55,8 @@ class TMR(GREP):
                     ncpus : int = cpu_count(),
                     out_path : str = "./",
                     flow : str = "pruning",
-                    experiment_iteration : int = 0
+                    experiment_iteration : int = 0,
+                    mr_order : int = 3
                 ):
         super().__init__(classifier, pruning_set_fraction, max_loss = 5.0, min_resiliency = 0, ncpus = ncpus)
         self.out_path = os.path.join(out_path, "tmr") 
@@ -68,7 +69,9 @@ class TMR(GREP):
         self.pool = Pool(self.ncpus)
         self.pruning_configuration = []
         self.exp_it = experiment_iteration
+        self.mr_order = mr_order
     
+    # Get the set of pruning set classes.
     def get_pruning_set_classes(self):
         # Initialize the logger 
         logger = logging.getLogger("pyALS-RF")
@@ -111,7 +114,7 @@ class TMR(GREP):
                 # Get the best 3 different trees
                 idx_couples = list(enumerate(acc_vec))
                 idx_couples_sorted = sorted(idx_couples, key=lambda x: x[1], reverse=True)
-                best_trees = [idx for idx, value in idx_couples_sorted[:3]]
+                best_trees = [idx for idx, value in idx_couples_sorted[:self.mr_order]]
                 self.trees_per_class.update({int(c) : best_trees})
                 logger.info(f"[TMR] Pruning remaining trees for class {c}")
                 # Prune the trees not present in the configuration 
@@ -143,6 +146,7 @@ class TMR(GREP):
             # For each leaf in pruning configuration 
             for already_pruned in self.pruning_configuration:
                 # If the leaf is in the pruning cfg return true
+                # THIS CHECK WITH THREE ELEMENTS HAS NOTHING TO DO WITH THE TMR.
                 if already_pruned[0] == leaf_cfg[0] and already_pruned[1] == leaf_cfg[1] and already_pruned[2] == leaf_cfg[2]:
                     return True
             # else false
@@ -239,87 +243,6 @@ class TMR(GREP):
     
 
     
-    """ This function implements the true visiting procedure for the TMR. 
-        It is important to note that, in case at least two nodes identify the same class,
-        then it is useless to continue. For this reason, when a class is found, the classification
-        immediately stops.
-        For the future, multicore implemenation will be executed.
-    """
-    def visit_tmr_no_draw(self):
-        cc = 0
-        classifications = []
-        for x_val, y_val in tqdm(zip(self.x_validation, self.y_validation), desc = "Visiting tmr"):
-            #print(f"Validating for sample {idx} Class {y_val[0]}")
-            # For each input sample, check for each possible class.
-            found = False
-            for c in self.trees_per_class.keys():
-                # Stop until two trees have the majority voting.
-                voted_ctr = 0
-                for tree_index in self.trees_per_class[int(c)]:
-                    pred_vec = self.classifier.trees[tree_index].visit(x_val)
-                    # np.max(vec) > 0, usefull to check if the approximated model do not find anything.
-                    # In this case the model is never configured.
-                    if np.argmax(pred_vec) == int(c) and np.max(pred_vec) > 0:
-                        voted_ctr += 1
-                if voted_ctr >= 2:
-                    found = True
-                    classifications.append((int(c),y_val[0]))
-                    if int(c) == y_val[0]:
-                        cc += 1
-                    break
-            # Not sure when this happens..
-            # This means that all the approximated circuits made an error during classification.
-            if not found:
-                classifications.append((-1, y_val[0]))
-        return cc / len(self.x_validation) * 100, classifications
-    
-    # """ This function is identical to the previous one, it simply considers draw conditions as missclassifications"""
-    # def visit_tmr_draw(self):
-    #     cc_draw     = 0
-    #     cc_no_draw  = 0
-    #     classes = []
-    #     classifications_draw    = []
-    #     classifications_no_draw = []
-    #     draw_counter = 0
-    #     for x_val, y_val in tqdm(zip(self.x_validation, self.y_validation), desc = "Visiting tmr"):
-    #         # For each input sample, check for each possible class.
-    #         classes = []
-    #         # # Stopping criterion for the input sample
-    #         # stop_for_sample = False
-    #         for c in self.trees_per_class.keys():
-    #             # Stop until two trees have the majority voting.
-    #             voted_ctr = 0
-    #             for tree_index in self.trees_per_class[int(c)]:
-    #                 pred_vec = self.classifier.trees[tree_index].visit(x_val)
-    #                 if np.argmax(pred_vec) == int(c) and np.max(pred_vec) > 0:
-    #                     voted_ctr += 1
-    #             if voted_ctr >= 2:
-    #                 classes.append(int(c))
-    #                 # If the first break never happen, equivalent to the break in the previous function
-    #                 # It is identical to the number of classes.
-    #                 if len(classes) == 1:
-    #                     classifications_no_draw.append((int(c), y_val[0]))
-    #                     if int(c) == y_val[0]:
-    #                         cc_no_draw += 1
-    #         if len(classes) == 0:
-    #             classifications_no_draw.append((-1, y_val[0]))
-    #         # If correctly classified
-    #         if len(classes) == 1 and classes[0] == y_val[0]:
-    #             cc_draw += 1
-    #             classifications_draw.append((classes[0], y_val[0]))
-    #         # If draw condition or approx error.
-    #         elif len(classes) > 1:
-    #             draw_counter += 1
-    #             classifications_draw.append((-1, y_val[0]))
-    #         # if approx error
-    #         elif len(classes) == 0:
-    #             classifications_draw.append((-1, y_val[0]))
-    #         # If not correctly classified
-    #         elif len(classes) == 1 and classes[0] != y_val:
-    #             classifications_draw.append((classes[0], y_val[0]))
-    #     return  cc_draw / len(self.x_validation) * 100, cc_no_draw /len(self.x_validation) * 100, classifications_draw, classifications_no_draw, draw_counter
-    
-
     def visit_tmr_draw_multicore(self):
         cc_draw     = 0
         cc_no_draw  = 0
@@ -329,7 +252,7 @@ class TMR(GREP):
         draw_counter = 0
         # Starmap mantains the order
         parallel_classifications = self.pool.starmap(tree_visit, [(self.classifier.trees[tree_idx], self.x_validation) for tree_idx in self.tree_list])
-        #for x_val, y_val in tqdm(zip(self.x_validation, self.y_validation), desc = "Visiting tmr"):
+        min_number_votes = np.ceil(self.mr_order / 2)
         for val_idx in tqdm(range(0,len(self.x_validation)), desc = "Visiting tmr"):
             x_val = self.x_validation[val_idx]
             y_val = self.y_validation[val_idx]
@@ -346,7 +269,7 @@ class TMR(GREP):
                     pred = parallel_classifications[self.tree_list.index(tree_index)][val_idx]
                     if pred == int(c) : #and np.max(pred_vec) > 0:
                         voted_ctr += 1
-                if voted_ctr >= 2:
+                if voted_ctr >= min_number_votes:
                     classes.append(int(c))
                     # If the first break never happen, equivalent to the break in the previous function
                     # It is identical to the number of classes.
@@ -423,3 +346,85 @@ class TMR(GREP):
             "f1_per_class": f1_per_class,
             "accuracy_per_class": accuracy_per_class
         }
+    
+    # DEPRECATED FNs
+
+    # """ This function implements the true visiting procedure for the TMR. 
+    #     It is important to note that, in case at least two nodes identify the same class,
+    #     then it is useless to continue. For this reason, when a class is found, the classification
+    #     immediately stops.
+    #     For the future, multicore implemenation will be executed.
+    # """
+    # def visit_tmr_no_draw(self):
+    #     cc = 0
+    #     classifications = []
+    #     for x_val, y_val in tqdm(zip(self.x_validation, self.y_validation), desc = "Visiting tmr"):
+    #         #print(f"Validating for sample {idx} Class {y_val[0]}")
+    #         # For each input sample, check for each possible class.
+    #         found = False
+    #         for c in self.trees_per_class.keys():
+    #             # Stop until two trees have the majority voting.
+    #             voted_ctr = 0
+    #             for tree_index in self.trees_per_class[int(c)]:
+    #                 pred_vec = self.classifier.trees[tree_index].visit(x_val)
+    #                 # np.max(vec) > 0, usefull to check if the approximated model do not find anything.
+    #                 # In this case the model is never configured.
+    #                 if np.argmax(pred_vec) == int(c) and np.max(pred_vec) > 0:
+    #                     voted_ctr += 1
+    #             if voted_ctr >= 2:
+    #                 found = True
+    #                 classifications.append((int(c),y_val[0]))
+    #                 if int(c) == y_val[0]:
+    #                     cc += 1
+    #                 break
+    #         # Not sure when this happens..
+    #         # This means that all the approximated circuits made an error during classification.
+    #         if not found:
+    #             classifications.append((-1, y_val[0]))
+    #     return cc / len(self.x_validation) * 100, classifications
+    
+    # """ This function is identical to the previous one, it simply considers draw conditions as missclassifications"""
+    # def visit_tmr_draw(self):
+    #     cc_draw     = 0
+    #     cc_no_draw  = 0
+    #     classes = []
+    #     classifications_draw    = []
+    #     classifications_no_draw = []
+    #     draw_counter = 0
+    #     for x_val, y_val in tqdm(zip(self.x_validation, self.y_validation), desc = "Visiting tmr"):
+    #         # For each input sample, check for each possible class.
+    #         classes = []
+    #         # # Stopping criterion for the input sample
+    #         # stop_for_sample = False
+    #         for c in self.trees_per_class.keys():
+    #             # Stop until two trees have the majority voting.
+    #             voted_ctr = 0
+    #             for tree_index in self.trees_per_class[int(c)]:
+    #                 pred_vec = self.classifier.trees[tree_index].visit(x_val)
+    #                 if np.argmax(pred_vec) == int(c) and np.max(pred_vec) > 0:
+    #                     voted_ctr += 1
+    #             if voted_ctr >= 2:
+    #                 classes.append(int(c))
+    #                 # If the first break never happen, equivalent to the break in the previous function
+    #                 # It is identical to the number of classes.
+    #                 if len(classes) == 1:
+    #                     classifications_no_draw.append((int(c), y_val[0]))
+    #                     if int(c) == y_val[0]:
+    #                         cc_no_draw += 1
+    #         if len(classes) == 0:
+    #             classifications_no_draw.append((-1, y_val[0]))
+    #         # If correctly classified
+    #         if len(classes) == 1 and classes[0] == y_val[0]:
+    #             cc_draw += 1
+    #             classifications_draw.append((classes[0], y_val[0]))
+    #         # If draw condition or approx error.
+    #         elif len(classes) > 1:
+    #             draw_counter += 1
+    #             classifications_draw.append((-1, y_val[0]))
+    #         # if approx error
+    #         elif len(classes) == 0:
+    #             classifications_draw.append((-1, y_val[0]))
+    #         # If not correctly classified
+    #         elif len(classes) == 1 and classes[0] != y_val:
+    #             classifications_draw.append((classes[0], y_val[0]))
+    #     return  cc_draw / len(self.x_validation) * 100, cc_no_draw /len(self.x_validation) * 100, classifications_draw, classifications_no_draw, draw_counter
