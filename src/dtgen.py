@@ -278,28 +278,21 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
     logging.info(f"Grid Search/Random Search size {len(x_train_hyp_search)}")
     # search_grid = { 'max_features': [None, 'log2', 'sqrt'],
     #                 'criterion' : ["gini", "entropy", "log_loss"],
-    #                 'max_depth': [int(x) for x in np.arange(5, 102, 2)],
+    #                 'max_depth': [None, int(x) for x in np.arange(5, 20, 2)],
     #                 'min_samples_split': [int(x) for x in np.arange(3, 101, 1)],
     #                 'min_samples_leaf': [int(x) for x in np.arange(3, 101, 1)],
     #                 'ccp_alpha' : np.arange(0.001, 0.2, 0.002),
     #                 'bootstrap': [True, False]
     #                 }
 
-    # search_grid = { 
-    #                 'criterion' : ["entropy", "gini"],
-    #                 'max_depth': [5, 7, 10],
-    #                 'min_samples_split': [2, 5 , 10],
-    #                 'min_samples_leaf': [1, 5, 9],
-    #                 'bootstrap' : [True, False]
-    #                 }
-
 
     # Define hyperparameter grid for tuning
+    max_depth = [i for i in range(5, 21)]
     search_grid = {
         'criterion' : ["entropy", "gini"],
-        "max_depth": [None, 10, 20],
-        "min_samples_split": [i for i in range(2,11)],
-        "min_samples_leaf": [i for i in range (1, 11)],
+        "max_depth": [i for i in range(5, 21)],
+        "min_samples_split": [i for i in range(2, 51)],
+        "min_samples_leaf": [i for i in range (1, 51)],
         'bootstrap' : [True, False]
     }
 
