@@ -287,12 +287,14 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
 
 
     # Define hyperparameter grid for tuning
-    max_depth = [i for i in range(5, 21)]
+    max_depths = [5, 6, 7, 8, 9, 10, 13, 15, 17, 20]
+    min_samples_split = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50, 100]
+    min_samples_leaf = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50, 100]
     search_grid = {
         'criterion' : ["entropy", "gini"],
-        "max_depth": [i for i in range(5, 21)],
-        "min_samples_split": [i for i in range(2, 51)],
-        "min_samples_leaf": [i for i in range (1, 51)],
+        "max_depth": max_depths,
+        "min_samples_split": min_samples_split,
+        "min_samples_leaf": min_samples_leaf,
         'bootstrap' : [True, False]
     }
 
