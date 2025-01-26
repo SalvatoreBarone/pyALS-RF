@@ -336,6 +336,26 @@ class Classifier:
                 correctly_classified += 1
         return votes_vector, 100 * correctly_classified / len(y)
     
+    """  
+        Given the set of predicted classes per each tree and the set of true values
+        this function returns the 
+    """
+    def get_class_rep_per_tree(self, per_tree_classes, y):
+        per_tree_correct = []
+        #per_tree_incorrect = []
+        for tree_ in per_tree_classes:
+            correct = 0
+            wrong = 0
+            for y_pred, y_true in zip(tree_classes, y):
+                if y_pred == y_true:
+                    correct += 1
+                # else:
+                #     wrong += 1
+            per_tree_correct.append(correct)
+            #per_tree_incorrect.append(wrong)
+        return per_tree_correct#, per_tree_incorrect
+        
+
     """ Given a set of leaves obtained using the  compute_leaves_idx this function returns the corresponding classes.
     """
     def transform_leaves_into_classess(self, leaves):
@@ -350,6 +370,14 @@ class Classifier:
                     tree_classes.append(-1)
             classes.append(tree_classes)
         return classes
+    
+    """ Given the set of predicted classes per each tree, this function returns the accuracy per each tree. """
+    @staticmethod
+    def get_per_tree_accuracy(per_tree_correct, nro_samples):
+        per_tree_accuracy = []
+        for corr in per_tree_correct:
+            per_tree_accuracy.append(per_tree_correct / nro_samples * 100)
+        return per_tree_accuracy
     
     @staticmethod
     def compute_indexes(trees : list[DecisionTree], X : ndarray, disable_tqdm = True):

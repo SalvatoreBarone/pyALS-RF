@@ -111,18 +111,78 @@ class MrAxC:
                 classes_per_tree[sample_id][tree_id] = class_pred
         return np.array(classes_per_tree)
     
+    """ Transform the set of per_tree_classes (i.e. a vector where for each tree the set of classes is present)  
+        into a vector where for each sample the vector of classes for each tree is considered.
+    """
+    def pertree_classess_into_perclass_pertree_acc(self, per_tree_classes, y ):
+        perclass_pertree_acc = [[[] for c in range(len(self.classifier.model_classes))] for i in range(len(self.classifier.trees))]
+        # For each vector of classes predicted for each tree.
+        for tree_classes in enumerate(per_tree_classes):
+            for x,y in zip(per_tree_classes, y):
+                # For the specific class slot y, --i.e. the true label ( direct indexing )-- append the prediction 
+                # of a fixed decision tree.
+                perclass_pertree_acc[y].append(x)        
+        
+        # Now compute the accuracy
+        for c, class_preds in enumerate(perclass_pertree_acc):
+            for t_id, tree_preds in enumerate(class_preds):
+                correct = 0
+                for y_pred in tree_preds:
+                    if y_pred == c:
+                        correct += 1
+                perclass_pertree_acc[c][t_id] = correct / len(tree_preds) * 100
+        return perclass_pertree_acc 
+    
+    """ Given the set of predicted samples per each tree, returns for each tree the list of per_class predictions.
+        per_class predictions are the predicted class for a tree, whose true label correspond to that of a specific class.
+    """
+    def pertree_sample_preds_2_pertree_class_preds(self, per_tree_class_preds, y):
+        pertree_class_lists = [[[] for c in range(len(self.classifier.model_classes))] for i in range(len(self.classifier.trees))]
+        # For each vector of classes predicted for each tree.
+        for tree_id, tree_classes in enumerate(per_tree_class_preds):
+            for pred, true_value in zip(per_tree_class_preds, y): # Indexing is done using the true class.
+                pertree_class_lists[tree_id][true_value].append(pred)    
+        return pertree_class_lists
+
+    """ Given a list, obtained using the pertree_samples_preds_2_pertree_class_preds, this functions returns 
+        the number of correctly classified samples per each tree and per each class. 
+    """
+    @staticmethod
+    def pertree_perclass_preds_2_pertree_perclass_acc(pertree_class_list):
+        pertree_perclass_acc = [[[] for c in range(len(pertree_class_list[0]))] for i in range(len(pertree_class_list))]
+        for tree_id, trees_preds in enumerate(pertree_class_list):
+            for class_id, per_class_preds in enumerate(trees_preds):
+                for sample in per_class_preds:
+                    if sample == class_id:
+                        pertree_perclass_acc[tree_id][class_id] += 1
+                pertree_perclass_acc[tree_id][class_id] = pertree_perclass_acc[tree_id][class_id] / len(pertree_class_list[tree_id][class_id]) * 100
+        return pertree_perclass_acc
+    
+    """
+        Get from a vector obtained through the pertree_perclass_preds_2_pertree_perclass_acc, for each class the accuracy for each tree.
+    """
+    @staticmethod
+    def pertree_perclass_acc_2_perclass_pertree_acc(pertree_perclass_acc):
+        perclass_pertree_acc = [[[] for c in range(len(pertree_perclass_acc))] for i in range(len(pertree_perclass_acc[0]))]
+        for tree_id, trees_preds in enumerate(pertree_perclass_acc):
+            for class_id, _ in enumerate(trees_preds):    
+                perclass_pertree_acc[class_id][tree_id].append(pertree_perclass_acc[tree_id][class_id])
+        return perclass_pertree_acc
+    
+
+                
     def initialize_tree_prediction_per_sample(self):
         self.logger.info("[MR-AXC] Initiating accuracy evaluation on X_MOP..")
         start = time.time()
         # self.logger.info("I've initialized XMop")
         # self.logger.info(self.x_mop)
         # exit(1)
-        x_mop_leaves = self.classifier.compute_leaves_idx(self.x_mop)
+        self.x_mop_leaves = self.classifier.compute_leaves_idx(self.x_mop)
         # self.logger.info("Ended")
         # exit(1)
-        _, self.x_mop_baseline_accuracy = self.classifier.get_accuracy_by_leaves_idx(x_mop_leaves, self.y_mop)
+        _, self.x_mop_baseline_accuracy = self.classifier.get_accuracy_by_leaves_idx(self.x_mop_leaves, self.y_mop)
         end = time.time()
-        x_mop_classes = self.classifier.transform_leaves_into_classess(x_mop_leaves)
+        x_mop_classes = self.classifier.transform_leaves_into_classess(self.x_mop_leaves)
         self.x_mop_classes = MrAxC.per_tree_classess_into_classes_per_tree(x_mop_classes)
         self.logger.info(f"[MR-AXC] Accuracy on X_MOP and Leaves initialized in ms {(end - start)* 1000}")
         self.logger.info(f"[MR-AXC] Accuracy on X_MOP :{self.x_mop_baseline_accuracy}")
@@ -252,6 +312,18 @@ class MrAxC:
                 if tree_id not in class_cfg:
                     current_cost -= tree_costs[class_id]
         return current_cost
+    
+    # """ 
+    #     This function accepts in input the set of predictions (in terms of leaf idx) per each
+    #     different class. It returns a vector containing the set of corresponding classes per each tree.  
+    # """
+    # def get_per_tree_classes(self, per_tree_leaves):
+    #     assert len(self.classifier.trees) == len(per_tree_leaves), "[MrAxc] The vector per_tree_leaves should mantain per each tree the set of leaf indexes"
+    #     per_tree_classes = []
+    #     for tree, X in zip(self.classifier.trees, per_tree_leaves):
+    #             tree_classes = tree.get_classes_by_leaf_idx(X)
+    #             per_tree_classes.append(tree_classes)
+    #     return per_tree_classes
     
     """ Dump the validation and MOP indexes into mop_indexes and val_indexes folders. """
     def dump_mop_val_indexes(self, outdir):

@@ -165,6 +165,16 @@ class DecisionTree:
             leaves_per_class.update({class_idx : class_leaves})
         return leaves_per_class
     
+    # """  
+    #     Given a list of classes this function returns a dictionay containing for each different class
+    #     the list of leaves related to the class.
+    # """
+    # def get_classes_by_leaf_idx(self, leaves):
+    #     classes = []
+    #     for l in leaves:
+    #         classes.append(int(l["class"]))
+    #     return classes
+    
     """  
         Given a list of classes this function returns for each class not present in the list, 
         a dictionary containing for each class not present in class_list, the set of leaf index related to that
