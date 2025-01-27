@@ -32,7 +32,7 @@ from sklearn.model_selection import train_test_split
 import re
 import time
 import pandas as pd
-class MR_HEU:
+class MrHeu:
 
     def __init__(self, mr_order: int = 3, ncpus : int = os.cpu_count()): 
         assert mr_order >= 3, "[MR-HEU] Provide a Modular Redundancy order >= 3"

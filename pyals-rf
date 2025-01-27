@@ -27,7 +27,7 @@ from src.ConfigParsers.DtGenConfigParser import *
 from src.hdl_generation import hdl_generation
 from src.git_updater import git_updater
 from src.Flows.lcor_flow import leaves_correlation_flow
-from src.Flows.tmr_flow import tmr_flow, mr_mop_flow
+from src.Flows.tmr_flow import tmr_flow, mr_mop_flow, mr_heu_flow
 from src.Flows.faultinj_flow import fault_visit, gen_fault_collection, gen_fault_coll_ps,  dump_unfaulted_class_vector, sample_test_set, ps_faultinj_visit #, test_dbs_faulted_inference, test_bns_faulted_inference
 from src.Flows.visit_testing import visit_test
 @click.group(chain=True)
@@ -202,6 +202,27 @@ def tmr(ctx, moo, conf, ncpus, output, verbose, fraction, k_mr, report, it, test
     else:
         tmr_flow(ctx, output, fraction, ncpus, report, it, test_samples, k_mr, report_name)
         
+@cli.command("mr_heu")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
+@click.option('-f', '--fraction', type = float, default = None, help = "Fraction of the test set to be used as XAxC set. Note that if None the Levegue formula is used.")
+@click.option('-m', '--mr_order', type = int, default = 3, help = "Order k of modular redundancy for the heuristic.")
+@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-p', '--pruning_dir', type=click.Path(dir_okay=True), default = "./", help = "Path were the pruning cfg is saved. Note that this folder may be different that the one of the csv dir.")
+@click.option('-d', '--csv_dir', type=click.Path(dir_okay=True), default = "./", help = "Path were the CSV report is saved.")
+@click.pass_context
+def mr_heu(ctx, conf, verbose, fraction, mr_order, ncpus, pruning_dir, csv_dir):
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "MR_HEU")
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("MR-HEU pruning flow"
+                f"\n\tconf: {conf}"
+                f"\n\tpruning_cfg dir: {pruning_dir}"
+                f"\n\tcsv dir: {csv_dir}"
+                f"\n\tFraction : {fraction}"
+                f"\n\tMr Order : {mr_order}"
+                f"\n\tNCPUS : {ncpus}"
+                )
+    mr_heu_flow(ctx, fraction, mr_order, ncpus, pruning_dir, csv_dir)
 
 
 
@@ -440,6 +461,7 @@ cli.add_command(als)
 cli.add_command(full)
 cli.add_command(grep)
 cli.add_command(tmr)
+cli.add_command(mr_heu)
 cli.add_command(lcor)
 cli.add_command(generate_hdl)
 cli.add_command(debug_model)
