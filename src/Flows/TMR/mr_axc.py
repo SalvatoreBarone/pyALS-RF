@@ -180,7 +180,7 @@ class MrAxC:
         self.x_mop_leaves = self.classifier.compute_leaves_idx(self.x_mop)
         # self.logger.info("Ended")
         # exit(1)
-        _, self.x_mop_baseline_accuracy = self.classifier.get_accuracy_by_leaves_idx(self.x_mop_leaves, self.y_mop)
+        _, self.x_mop_baseline_accuracy, self.x_mop_baseline_accuracy_nodraw = self.classifier.get_accuracy_by_leaves_idx(self.x_mop_leaves, self.y_mop)
         end = time.time()
         x_mop_classes = self.classifier.transform_leaves_into_classess(self.x_mop_leaves)
         self.x_mop_classes = MrAxC.per_tree_classess_into_classes_per_tree(x_mop_classes)
@@ -194,7 +194,7 @@ class MrAxC:
         self.logger.info("[MR-AXC] Initiating accuracy evaluation on X_VAL..")
         start = time.time()
         x_val_leaves = self.classifier.compute_leaves_idx(self.x_val)
-        _, self.x_val_baseline_accuracy = self.classifier.get_accuracy_by_leaves_idx(x_val_leaves, self.y_val)
+        _, self.x_val_baseline_accuracy, self.x_val_baseline_accuracy_nodraw = self.classifier.get_accuracy_by_leaves_idx(x_val_leaves, self.y_val)
         end = time.time()
         self.logger.info(f"[MR-AXC] Accuracy on X_VAL and Leaves initialized in ms {(end - start)* 1000}")
         self.logger.info(f"[MR-AXC] Accuracy on X_VAL :{self.x_val_baseline_accuracy}")
@@ -300,6 +300,21 @@ class MrAxC:
     def evaluate_mr_cfg_xmop(self, mr_cfg):
         return self.__xmop_priv_eval(mr_cfg)
     
+    """ Given a solution, where for each class the set of trees is listed ( set of trees Per Class), transform the solution into che 
+        set of classes per tree.
+    """
+    @staticmethod
+    def cfg_per_class_in_cfg_per_tree(mr_axc, trees_per_class_cfg):
+        n_trees = len(mr_axc.classifier.trees)
+        per_tree_cfg = []
+        for tree in range(0, n_trees):
+            tree_classes = []
+            for considered_class, class_cfg in enumerate(trees_per_class_cfg): # It is a list.
+                if tree in class_cfg:
+                    tree_classes.append(considered_class)
+            per_tree_cfg.append(tree_classes)
+        return per_tree_cfg
+    
     """ Evaluate the savings of the current cfg.
         The cost is computed as the actual cost minus the cost of the removed parts.        
     """
@@ -329,6 +344,36 @@ class MrAxC:
     def dump_mop_val_indexes(self, outdir):
         np.savetxt(os.path.join(outdir, "mop_indexes.txt"), self.mop_indexes, fmt = "%d")
         np.savetxt(os.path.join(outdir, "val_indexes.txt"), self.validation_indexes, fmt = "%d")
+    
+    """ Dump all the pruning configuration files. 
+        This includes the:
+            1- per_tree_cfg (i.e. the classes classified per each tree)
+            2- per_class_cfg (i.e. the set of trees used for each class)
+            3- the leaves idx for each tree.
+            4- The GREP-Like pruning configuration of the Accellerator.
+            5- The direction files.
+    """
+    def dump_cfg(self, pruning_outfiles_dict, configuration):
+        per_tree_cfg = MrAxC.cfg_per_class_in_cfg_per_tree(self, configuration)
+        pruned_leaves = self.classifier.get_leaf_indexes_not_in_class_list(per_tree_cfg)
+        # Dump the configuration per class object. 
+        with open(pruning_outfiles_dict["outfile_per_class_cfg"], "w") as f:
+            json5.dump(configuration, f, indent = 2)
+        # Dump the configuration itself.
+        with open(pruning_outfiles_dict["outfile_per_tree_cfg"], "w") as f:
+            json5.dump(per_tree_cfg, f, indent = 2)
+        # Dump the leaf indexes.
+        with open(pruning_outfiles_dict["outfile_leaves_idx"], "w") as f:
+            json5.dump(pruned_leaves, f, indent = 2)
+        # Dump the pruning configuration of the accellerator.
+        pruning_cfg = GREP.get_pruning_cfg_from_leaves_idx(self.classifier, pruned_leaves)
+        with open(pruning_outfiles_dict["outfile_pruning_cfg"], "w") as f:
+            json5.dump(pruning_cfg, f, indent = 2)
+        # Dump the direction file.
+        direction_file_json = self.classifier.transform_assertion_into_directions(pruning_cfg)
+        with open(pruning_outfiles_dict["outfile_directions"], "w") as f:
+            json5.dump(direction_file_json, f, indent = 2)
+        return per_tree_cfg, pruned_leaves, pruning_cfg, direction_file_json
     
     def __init__(self, classifier: Classifier, num_cores: int = 1, fraction : float = None):
         self.logger = logging.getLogger("pyALS-RF")

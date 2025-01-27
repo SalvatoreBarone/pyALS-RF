@@ -328,13 +328,16 @@ class Classifier:
     """
     def get_accuracy_by_leaves_idx(self, leaves, y):
         votes_vector = self.get_votes_vectors_by_leaves_idx(leaves, y)
-        correctly_classified = 0
+        correctly_classified_draw = 0
+        correctly_classified_no_draw = 0
         for vote, correct_classess in zip(votes_vector, y):        
-            # print(f"Vote {np.argmax(vote)} {correct_classess} {np.argmax(vote) == int(correct_classess)} {Classifier.check_draw(vote)}")
-            # exit(1)
-            if np.argmax(vote) == int(correct_classess) and not Classifier.check_draw(vote)[0]:
-                correctly_classified += 1
-        return votes_vector, 100 * correctly_classified / len(y)
+            if np.argmax(vote) == int(correct_classess):
+                if not Classifier.check_draw(vote)[0]:
+                    correctly_classified_draw += 1
+                    correctly_classified_no_draw += 1
+                else:
+                    correctly_classified_no_draw += 1
+        return votes_vector, 100 * correctly_classified_draw / len(y), 100 * correctly_classified_no_draw / len(y)
     
     """  
         Given the set of predicted classes per each tree and the set of true values

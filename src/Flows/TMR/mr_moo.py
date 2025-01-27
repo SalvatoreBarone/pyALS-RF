@@ -94,20 +94,20 @@ class MrMop(pyamosa.Problem):
             per_class_cfg.append(class_cfg)
         return per_class_cfg
 
-    """ Given a solution, where for each class the set of trees is listed ( set of trees Per Class), transform the solution into che 
-        set of classes per tree.
-    """
-    @staticmethod
-    def cfg_per_class_in_cfg_per_tree(mr_axc, trees_per_class_cfg):
-        n_trees = len(mr_axc.classifier.trees)
-        per_tree_cfg = []
-        for tree in range(0, n_trees):
-            tree_classes = []
-            for considered_class, class_cfg in enumerate(trees_per_class_cfg): # It is a list.
-                if tree in class_cfg:
-                    tree_classes.append(considered_class)
-            per_tree_cfg.append(tree_classes)
-        return per_tree_cfg
+    # """ Given a solution, where for each class the set of trees is listed ( set of trees Per Class), transform the solution into che 
+    #     set of classes per tree.
+    # """
+    # @staticmethod
+    # def cfg_per_class_in_cfg_per_tree(mr_axc, trees_per_class_cfg):
+    #     n_trees = len(mr_axc.classifier.trees)
+    #     per_tree_cfg = []
+    #     for tree in range(0, n_trees):
+    #         tree_classes = []
+    #         for considered_class, class_cfg in enumerate(trees_per_class_cfg): # It is a list.
+    #             if tree in class_cfg:
+    #                 tree_classes.append(considered_class)
+    #         per_tree_cfg.append(tree_classes)
+    #     return per_tree_cfg
 
     def evaluate(self, x, out):
     

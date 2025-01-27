@@ -135,7 +135,7 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
         logger.info(f"Starting the dump of CFG infos.")
         # The configuration consists in the set of trees per each class, so this function returns the set of classes
         # per each different tree.
-        per_tree_cfg = MrMop.cfg_per_class_in_cfg_per_tree(mr_axc, configuration)
+        per_tree_cfg = MrAxC.cfg_per_class_in_cfg_per_tree(mr_axc, configuration)
         pruned_leaves = mr_axc.classifier.get_leaf_indexes_not_in_class_list(per_tree_cfg)
         # Dump the configuration per class object. 
         with open(os.path.join(out_dir_cfg, "per_class_cfg.json5"), "w") as f:
