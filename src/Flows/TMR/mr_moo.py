@@ -24,7 +24,6 @@ from ...Model.Classifier import Classifier
 from ...Model.DecisionTree import *
 from ..GREP.GREP import GREP
 from .mr_axc import MrAxC
-import time
 import csv 
 import os
 import json5
@@ -32,7 +31,7 @@ import pyamosa
 from scipy.stats import norm # For cut-offs.
 from sklearn.model_selection import train_test_split
 import re
-import time
+
 
 class MrMop(pyamosa.Problem):
     

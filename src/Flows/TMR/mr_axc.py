@@ -33,6 +33,9 @@ import time
 from multiprocessing import cpu_count, Pool
 from pyalslib import list_partitioning
 
+""" ALL THE FUNS WITH _2_ ARE NOT TESTED ! """
+    
+
 """ Computes the number of test set sizes to obtain an extimation of the accuracy loss.
     number of samples =                      test_set_size
                             -----------------------------------------------------
@@ -115,14 +118,14 @@ class MrAxC:
         into a vector where for each sample the vector of classes for each tree is considered.
     """
     def pertree_classess_into_perclass_pertree_acc(self, per_tree_classes, y ):
-        perclass_pertree_acc = [[[] for c in range(len(self.classifier.model_classes))] for i in range(len(self.classifier.trees))]
+        perclass_pertree_acc = [[[] for t in range(len(self.classifier.trees))] for c in range(len(self.classifier.model_classes))]
+        
         # For each vector of classes predicted for each tree.
-        for tree_classes in enumerate(per_tree_classes):
-            for x,y in zip(per_tree_classes, y):
+        for tree_id, tree_classes in enumerate(per_tree_classes):
+            for x, y_true in zip(tree_classes, y):
                 # For the specific class slot y, --i.e. the true label ( direct indexing )-- append the prediction 
                 # of a fixed decision tree.
-                perclass_pertree_acc[y].append(x)        
-        
+                perclass_pertree_acc[y_true][tree_id].append(x)        
         # Now compute the accuracy
         for c, class_preds in enumerate(perclass_pertree_acc):
             for t_id, tree_preds in enumerate(class_preds):
@@ -132,6 +135,7 @@ class MrAxC:
                         correct += 1
                 perclass_pertree_acc[c][t_id] = correct / len(tree_preds) * 100
         return perclass_pertree_acc 
+    
     
     """ Given the set of predicted samples per each tree, returns for each tree the list of per_class predictions.
         per_class predictions are the predicted class for a tree, whose true label correspond to that of a specific class.
@@ -357,8 +361,14 @@ class MrAxC:
         per_tree_cfg = MrAxC.cfg_per_class_in_cfg_per_tree(self, configuration)
         pruned_leaves = self.classifier.get_leaf_indexes_not_in_class_list(per_tree_cfg)
         # Dump the configuration per class object. 
+        # for conf in configuration:
+        #     for x in conf:
+        #         print(type(x))
+        # exit(1)
         with open(pruning_outfiles_dict["outfile_per_class_cfg"], "w") as f:
+            print(configuration)
             json5.dump(configuration, f, indent = 2)
+        # exit(1)
         # Dump the configuration itself.
         with open(pruning_outfiles_dict["outfile_per_tree_cfg"], "w") as f:
             json5.dump(per_tree_cfg, f, indent = 2)

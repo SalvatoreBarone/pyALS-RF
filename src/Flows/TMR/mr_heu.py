@@ -38,7 +38,7 @@ class MrHeu:
         assert mr_order >= 3, "[MR-HEU] Provide a Modular Redundancy order >= 3"
         self.logger = logging.getLogger("pyALS-RF")
         self.logger.info("[MR-HEU] Inizializing Modular Redundancy Heuristic")
-        self.mr_order = 3
+        self.mr_order = mr_order
         self.n_cpus = ncpus
         self.is_problem_initialized = False
         self.is_pruining_outdir_initialized = False
@@ -84,15 +84,16 @@ class MrHeu:
         assert self.is_pruining_outdir_initialized, "[MR-HEU] You should first initialize the pruning out dir!"
         assert self.is_csv_out_initialized, "[MR-HEU] You should first initialize the CSV outfile!"
         self.logger.info("[MR-HEU] Starting heuristic Accuracy based. This may take a while, but be patient !")
-        time = os.times()
+        tm = time.time()
         # Get the classes per each tree
-        pertree_classes = self.mr_axc.classifier.transform_leaves_into_classess(self.x_heu_leaves)
+        pertree_classes = self.mr_axc.classifier.transform_leaves_into_classess(self.mr_axc.x_mop_leaves)
         # Now get the accuracy for each class
-        perclass_accs = self.mr_axc.pertree_classess_into_perclass_pertree_acc(pertree_classes)
+        perclass_accs = self.mr_axc.pertree_classess_into_perclass_pertree_acc(pertree_classes, self.mr_axc.y_mop)
         # Sort the class indexes 
         # Each configuration consists in the first mr_order treees.
         mr_cfg = [list(np.argsort(c_accs)[::-1])[:self.mr_order] for c_accs in perclass_accs]  
-        time = os.times() - time
+        mr_cfg = [[int(m) for m in cfg] for cfg in mr_cfg] # Convert numpy.int64 in int
+        tm = time.time() - tm
         self.logger.info("[MR-HEU] Accuracy based heuristic completed !")
         
         # Getting XMOP accuracy values.
@@ -102,11 +103,11 @@ class MrHeu:
         validation_classes = MrAxC.per_tree_classess_into_classes_per_tree(validation_classes)
         xaxc_mr_pred_vectors =  MrAxC.get_mr_vectors(validation_classes, mr_cfg)
         heu_acc_draw, heu_acc_no_draw = MrAxC.get_accuracy_from_vectors(xaxc_mr_pred_vectors, self.mr_axc.y_val)
-        heu_loss_draw = self.mr_axc.x_mop_baseline_accuracy - val_acc_draw
+        heu_loss_draw = self.mr_axc.x_mop_baseline_accuracy - heu_acc_draw
         heu_loss_no_draw = self.mr_axc.x_mop_baseline_accuracy_nodraw - heu_acc_no_draw
         self.logger.info(f"[MR-HEU] XAxC-Set Evaluation completed! Baseline: {self.mr_axc.x_mop_baseline_accuracy}")
         self.logger.info(f"[MR-HEU] XAxC-Set Draw considered as missclassifications Acc. : {heu_acc_draw}, Loss: {heu_loss_draw}")
-        self.logger.info(f"[MR-HEU] XAxC-Set Draw NOT considered as missclassification Acc. : {val_acc_no_draw}, Loss: {loss_no_draw}")
+        self.logger.info(f"[MR-HEU] XAxC-Set Draw NOT considered as missclassification Acc. : {heu_acc_no_draw}, Loss: {heu_loss_no_draw}")
         
         
 
@@ -125,7 +126,7 @@ class MrHeu:
         self.logger.info(f"[MR-HEU] Validation-Set Draw NOT considered as missclassification  Acc. : {val_acc_no_draw}, Loss: {loss_no_draw}")
         
         # Dump vectors and preds.
-        self.mr_axc.dump_mop_val_indexes(self.outdir)
+        self.mr_axc.dump_mop_val_indexes(self.approx_cfg_outdir)
         np.savetxt(os.path.join(self.approx_cfg_outdir, "xaxc_pred_vectors.txt"), xaxc_mr_pred_vectors, fmt = "%d")
         np.savetxt(os.path.join(self.approx_cfg_outdir, "val_pred_vectors.txt"), mr_pred_vectors, fmt = "%d")
 
@@ -137,6 +138,7 @@ class MrHeu:
         # Update stats.
         sol_summary = {
                 "Algo"                   : "pertree_acc_heu",
+                "MrOrder"                : self.mr_order,
                 "Pruned-Leaves"         : len(pruning_cfg),
 
                 "Baseline_XMOP_Acc"     : self.mr_axc.x_mop_baseline_accuracy,
@@ -150,7 +152,8 @@ class MrHeu:
                 "Loss-XVal_Draw"        : loss_draw,
                 "Acc-XVal_NO_Draw"      : val_acc_no_draw,
                 "Loss-XVal_NO_Draw"     : loss_no_draw,
+                "Comp Time [s]"         : tm
             }
-        add_header = not os.path.exists(self.approx_cfg_outdir)
+        add_header = not os.path.exists(self.csv_outfile)
         df = pd.DataFrame(sol_summary, index=[0]).to_csv(self.csv_outfile, index = False, header = add_header, mode = "a")
         self.logger.info(f"Summary CSV updated! Please check {self.csv_outfile}")

@@ -71,7 +71,7 @@ def mr_heu_flow(ctx, fraction, mr_order, ncpus, pruning_dir, csv_dir):
     mr_heu = MrHeu(mr_order, ncpus)
     mr_heu.initialize_problem(mr_axc)
     mr_heu.initialize_pruning_cfg_out(pruning_dir)
-    mr_heu.initialize_pruning_cfg_out(csv_dir)
+    mr_heu.initialize_summary_files(csv_dir)
     logger.info("[MR-HEU-FLOW] MrHeu initialized !")
     logger.info("[MR-HEU-FLOW] Running problem!")
     mr_heu.heu_tree_acc()

@@ -17,6 +17,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import json5
 class ConfigParser:
     def __init__(self, configfile : str):
+        # print(f"Opening {configfile}")
         self.configuration = json5.load(open(configfile))
         # print(f"Opened {configfile}")
         # exit(1)
