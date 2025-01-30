@@ -69,7 +69,8 @@ class MrHeu:
             "outfile_per_tree_cfg"  : os.path.join(outdir, "per_tree_cfg.json5"),
             "outfile_leaves_idx"    : os.path.join(outdir, "leaves_idx.json5"),
             "outfile_pruning_cfg"   : os.path.join(outdir, "pruning_conf.json5"),
-            "outfile_directions"    : os.path.join(outdir, "leaf_pruning_directions.json5")
+            "outfile_directions"    : os.path.join(outdir, "leaf_pruning_directions.json5"),
+            "considered_classes"    : os.path.join(outdir, "considered_classes.json5") # Each configuration refers to the ordered set of the considered classes
         }
         self.is_pruining_outdir_initialized = True
 

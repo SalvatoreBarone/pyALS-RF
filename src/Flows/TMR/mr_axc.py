@@ -463,6 +463,8 @@ class MrAxC:
         direction_file_json = self.classifier.transform_assertion_into_directions(pruning_cfg)
         with open(pruning_outfiles_dict["outfile_directions"], "w") as f:
             json5.dump(direction_file_json, f, indent = 2)
+        with open(pruning_outfiles_dict["considered_classes"], "w") as f:
+            json5.dump(self.sampled_classes, f, indent = 2)
         return per_tree_cfg, pruned_leaves, pruning_cfg, direction_file_json
     
     def __init__(self, classifier: Classifier, num_cores: int = 1, fraction : float = None):
