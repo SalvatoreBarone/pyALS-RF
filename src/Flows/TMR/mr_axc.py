@@ -71,7 +71,7 @@ class MrAxC:
             self.x_mop, self.x_val, self.y_mop, self.y_val, self.mop_indexes, self.validation_indexes = train_test_split(self.classifier.x_test, y_flat, indexes, train_size = fraction)       
         
         """ It is fundamental that each test set class is in the set of sampled classes """
-        self.sampled_classes = list(set(self.y_mop))
+        self.sampled_classes = sorted([int(x) for x in list(set(self.y_mop))])
         x_test_classess= list(set(y_flat))
         # Flag added in the case a class is not used and the class is present in the test set.
         # It is fundamental to note that we don't care if the class is classified or not, if it is not present
