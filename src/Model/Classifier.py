@@ -198,7 +198,8 @@ class Classifier:
         out_col = self.dataframe.keys()[-1]
         assert len(attribute_name) == len(self.model_features), f"Mismatch in features vectors. Read {len(attribute_name)} features, buth PMML says it must be {len(self.model_features)}!"
         f_names = [ f["name"] for f in self.model_features]
-        name_matches = [ a == f for a, f in zip(attribute_name, f_names) ]
+        #name_matches = [ a == f for a, f in zip(attribute_name, f_names) ] # SUBSTITUTED FOR TIC TAC TOE ENDGAME
+        name_matches = [ a.replace('-', '_') == f.replace('-', '_') for a, f in zip(attribute_name, f_names) ]
         assert all(name_matches), f"Feature mismatch at index {name_matches.index(False)}: {attribute_name[name_matches.index(False)]} != {f_names[name_matches.index(False)]}"
         self.x_test = self.dataframe.loc[:, self.dataframe.columns != out_col].values
         self.y_test = self.dataframe.loc[:, self.dataframe.columns == out_col].values
@@ -473,7 +474,15 @@ class Classifier:
                 # the child PROBABLY specifies model-classes
                 for element in child.findall("pmml:Value", self.__namespaces):
                     self.model_classes.append(element.attrib['value'].replace('-', '_'))
+    
 
+    def __adeguate_feature_names(features):
+        to_ret = []
+        for f in features:
+            to_ret.append(f.replace('-', '_'))
+        print(to_ret)
+        return to_ret
+    
     def get_tree_model_from_pmml(self, tree_name, tree_model_root, id=0):
         tree = Node(f"Node_{tree_model_root.attrib['id']}" if "id" in tree_model_root.attrib else f"Node_{id}", feature="", operator="", threshold_value="", boolean_expression="")
         self.get_tree_nodes_from_pmml_recursively(tree_model_root, tree, id)

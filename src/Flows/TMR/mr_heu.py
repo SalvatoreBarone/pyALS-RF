@@ -89,6 +89,12 @@ class MrHeu:
         pertree_classes = self.mr_axc.classifier.transform_leaves_into_classess(self.mr_axc.x_mop_leaves)
         # Now get the accuracy for each class
         perclass_accs = self.mr_axc.pertree_classess_into_perclass_pertree_acc(pertree_classes, self.mr_axc.y_mop)
+        
+        # for class_original, accuracies in zip(self.mr_axc.sampled_classes, perclass_accs):
+        #     self.logger.info(f"Class {class_original} : {accuracies}")
+        # print(f"Sampled classes: {self.mr_axc.sampled_classes}")
+        # exit(1)
+        
         # Sort the class indexes 
         # Each configuration consists in the first mr_order treees.
         mr_cfg = [list(np.argsort(c_accs)[::-1])[:self.mr_order] for c_accs in perclass_accs]  
@@ -101,8 +107,8 @@ class MrHeu:
         validation_leaves = self.mr_axc.classifier.compute_leaves_idx(self.mr_axc.x_val, False)
         validation_classes = self.mr_axc.classifier.transform_leaves_into_classess(validation_leaves)
         validation_classes = MrAxC.per_tree_classess_into_classes_per_tree(validation_classes)
-        xaxc_mr_pred_vectors =  MrAxC.get_mr_vectors(validation_classes, mr_cfg)
-        heu_acc_draw, heu_acc_no_draw = MrAxC.get_accuracy_from_vectors(xaxc_mr_pred_vectors, self.mr_axc.y_val)
+        xaxc_mr_pred_vectors =  self.mr_axc.get_mr_vectors(validation_classes, mr_cfg)
+        heu_acc_draw, heu_acc_no_draw = self.mr_axc.get_accuracy_from_vectors(xaxc_mr_pred_vectors, self.mr_axc.y_val)
         heu_loss_draw = self.mr_axc.x_mop_baseline_accuracy - heu_acc_draw
         heu_loss_no_draw = self.mr_axc.x_mop_baseline_accuracy_nodraw - heu_acc_no_draw
         self.logger.info(f"[MR-HEU] XAxC-Set Evaluation completed! Baseline: {self.mr_axc.x_mop_baseline_accuracy}")
@@ -117,8 +123,8 @@ class MrHeu:
         validation_leaves = self.mr_axc.classifier.compute_leaves_idx(self.mr_axc.x_val, False)
         validation_classes = self.mr_axc.classifier.transform_leaves_into_classess(validation_leaves)
         validation_classes = MrAxC.per_tree_classess_into_classes_per_tree(validation_classes)
-        mr_pred_vectors =  MrAxC.get_mr_vectors(validation_classes, mr_cfg)
-        val_acc_draw, val_acc_no_draw = MrAxC.get_accuracy_from_vectors(mr_pred_vectors, self.mr_axc.y_val)
+        mr_pred_vectors =  self.mr_axc.get_mr_vectors(validation_classes, mr_cfg)
+        val_acc_draw, val_acc_no_draw = self.mr_axc.get_accuracy_from_vectors(mr_pred_vectors, self.mr_axc.y_val)
         loss_draw = self.mr_axc.x_val_baseline_accuracy - val_acc_draw
         loss_no_draw = self.mr_axc.x_val_baseline_accuracy_nodraw - val_acc_no_draw
         self.logger.info(f"[MR-HEU] Validation-Set Evaluation completed! : Baseline: {self.mr_axc.x_val_baseline_accuracy}")

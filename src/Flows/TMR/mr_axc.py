@@ -72,7 +72,7 @@ class MrAxC:
         
         """ It is fundamental that each test set class is in the set of sampled classes """
         self.sampled_classes = list(set(self.y_mop))
-        x_test_classess = list(set(y_flat))
+        x_test_classess= list(set(y_flat))
         # Flag added in the case a class is not used and the class is present in the test set.
         # It is fundamental to note that we don't care if the class is classified or not, if it is not present
         # in the test set ( but was present in the training set) then we can simply skip the class.
@@ -118,22 +118,24 @@ class MrAxC:
         into a vector where for each sample the vector of classes for each tree is considered.
     """
     def pertree_classess_into_perclass_pertree_acc(self, per_tree_classes, y ):
-        perclass_pertree_acc = [[[] for t in range(len(self.classifier.trees))] for c in range(len(self.classifier.model_classes))]
-        
+        # Iterate over the sampled classes and not the model classes.
+        # It is already checked in the sample_dse_samples that, if a class is not present in the test set, it is not considered.
+        perclass_pertree_acc = [[[] for t in range(len(self.classifier.trees))] for c in range(len(self.sampled_classes))]
         # For each vector of classes predicted for each tree.
         for tree_id, tree_classes in enumerate(per_tree_classes):
             for x, y_true in zip(tree_classes, y):
                 # For the specific class slot y, --i.e. the true label ( direct indexing )-- append the prediction 
                 # of a fixed decision tree.
-                perclass_pertree_acc[y_true][tree_id].append(x)        
+                perclass_pertree_acc[self.sampled_classes.index(y_true)][tree_id].append(x) # Use index for direct indexing.        
+        
         # Now compute the accuracy
-        for c, class_preds in enumerate(perclass_pertree_acc):
+        for c, class_preds in zip(self.sampled_classes, perclass_pertree_acc):
             for t_id, tree_preds in enumerate(class_preds):
                 correct = 0
                 for y_pred in tree_preds:
                     if y_pred == c:
                         correct += 1
-                perclass_pertree_acc[c][t_id] = correct / len(tree_preds) * 100
+                perclass_pertree_acc[self.sampled_classes.index(c)][t_id] = correct / len(tree_preds) * 100
         return perclass_pertree_acc 
     
     
@@ -203,11 +205,13 @@ class MrAxC:
         self.logger.info(f"[MR-AXC] Accuracy on X_VAL and Leaves initialized in ms {(end - start)* 1000}")
         self.logger.info(f"[MR-AXC] Accuracy on X_VAL :{self.x_val_baseline_accuracy}")
         
-    """ Get the set of TMR vector predictions.
+    """ ATTENTION: THIS FUNCTION IS DEPRECATED.
+        Get the set of TMR vector predictions.
         given the set of classes per each tree (i.e. classes_per_tree) and the modular redundant configuration (i.e. class configuration)
         this function returns the output of a TMR structure ( a set of 0 or 1 for each class).
     """
     @staticmethod
+    @DeprecationWarning
     def get_mr_vectors(classes_per_tree, class_configurations):
         assert len(np.shape(classes_per_tree)) == 2, "Invalid input vector, provide per each tree the list of classes for input samples"
         num_tree_per_cfg = [sum(1 for tree in cfg if tree > 0) for cfg in class_configurations]
@@ -235,7 +239,41 @@ class MrAxC:
         # Return to_ret
         return np.array(to_ret)
     
-    """ Given a tmr_vector predictions and an oracle y returns the accuracy considering the draw as a missclassification and the 
+
+    """ Get the set of TMR vector predictions.
+        given the set of classes per each tree (i.e. classes_per_tree) and the modular redundant configuration (i.e. class configuration)
+        this function returns the output of a TMR structure ( a set of 0 or 1 for each class).
+    """
+    def get_mr_vectors(self, classes_per_tree, class_configurations):
+        assert len(np.shape(classes_per_tree)) == 2, "Invalid input vector, provide per each tree the list of classes for input samples"
+        num_tree_per_cfg = [sum(1 for tree in cfg if tree > 0) for cfg in class_configurations]
+        thds = [int(np.ceil(num_trees/2)) for num_trees in num_tree_per_cfg]
+        to_ret = []
+        # For each inference
+        for tree_votes in classes_per_tree:
+            out_vector = []
+            # For each class configuration
+            for c_id, config in enumerate(class_configurations):
+                # If there is at least one tree in the cfg.
+                if num_tree_per_cfg[c_id] > 0 :
+                    # Get the predictions of the trees in configuration. 
+                    tree_preds = tree_votes[config]
+                    voting_trees = np.sum(tree_preds == self.sampled_classes[c_id]) # CONSIDER ONLY THE SAMPLES CLASSES, C_ID IS THE INDEX OF THE SAMPLED CLASSES.
+                    # Append 0 or 1 depending on the final outcome
+                    if voting_trees > thds[c_id]:
+                        out_vector.append(1)
+                    else:
+                        out_vector.append(0)
+                else: # If the configuration has no tree directly append 0
+                    out_vector.append(0)
+            # Append the configuration.
+            to_ret.append(out_vector)
+        # Return to_ret
+        return np.array(to_ret)
+    
+    """ 
+        THIS FUNCTION IS DEPREACTED.
+        Given a tmr_vector predictions and an oracle y returns the accuracy considering the draw as a missclassification and the 
         one not considering a draw as misclassification.
     """
     @staticmethod
@@ -262,20 +300,62 @@ class MrAxC:
         return correct_draw, correct_no_draw
 
 
+
     """ Given a tmr_vector predictions and an oracle y returns the accuracy considering the draw as a missclassification and the 
         one not considering a draw as misclassification.
     """
+    def get_correctly_predicted_from_vectors(self, tmr_vectors, y):
+        assert len(tmr_vectors) == len(y), "The number of TMR vectors should be equal to the number of different cfgs."
+        correct_draw = 0
+        correct_no_draw = 0
+        for vector, correct_class in zip(tmr_vectors, y):
+            # Get the number of active modular redundant structures
+            active_modules = np.where(vector == 1)[0]
+            nro_actives = len(active_modules)
+            # If at least one cfg
+            if nro_actives > 0:
+                # Take always the first class.
+                predicted_class = active_modules[0]
+                if self.sampled_classes[predicted_class] == correct_class: # ALWAYS MAP THE INDEX OF THE TMR WITH THE CLASS
+                    # If there is only one active module and the class is correct increase the size.
+                    if nro_actives > 1 :
+                        correct_no_draw += 1
+                    else:
+                        correct_no_draw += 1
+                        correct_draw += 1
+        # Return the accuracy considering the draw condition as a misclassification and the one with no missclassification.
+        return correct_draw, correct_no_draw
+    
+    """ DEPRECATED
+        Given a tmr_vector predictions and an oracle y returns the accuracy considering the draw as a missclassification and the 
+        one not considering a draw as misclassification.
+    """
     @staticmethod
+    @DeprecationWarning
     def get_accuracy_from_vectors(tmr_vectors, y):
         assert len(tmr_vectors) == len(y), "The number of TMR vectors should be equal to the number of different cfgs."
         correct_draw, correct_no_draw = MrAxC.get_correctly_predicted_from_vectors(tmr_vectors, y)
         # Return the accuracy considering the draw condition as a misclassification and the one with no missclassification.
         return 100 * (correct_draw / len(y)), 100 * (correct_no_draw / len(y))
+    
+    """ 
+        Given a tmr_vector predictions and an oracle y returns the accuracy considering the draw as a missclassification and the 
+        one not considering a draw as misclassification.
+    """
+    def get_accuracy_from_vectors(self, tmr_vectors, y):
+        assert len(tmr_vectors) == len(y), "The number of TMR vectors should be equal to the number of different cfgs."
+        correct_draw, correct_no_draw = self.get_correctly_predicted_from_vectors(tmr_vectors, y)
+        # Return the accuracy considering the draw condition as a misclassification and the one with no missclassification.
+        return 100 * (correct_draw / len(y)), 100 * (correct_no_draw / len(y))
+    
 
+    """ DEPRECATED  """
     @staticmethod
+    @DeprecationWarning
     def evaluate_mr_cfg_corr_class(per_tree_classes, y, cfg):
         pred_vectors = MrAxC.get_mr_vectors(per_tree_classes, cfg)
         return MrAxC.get_correctly_predicted_from_vectors(pred_vectors, y)
+    
     
     """ Evaluates the accuracy of a configuration.
         per_tree_classes:   Vector where for each input sample, the set of votes (predicted classes), for each tree 
