@@ -288,8 +288,8 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
 
     # Define hyperparameter grid for tuning
     max_depths = [5, 7, 10, 15, 20]
-    min_samples_split = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50, 100]
-    min_samples_leaf = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50, 100]
+    min_samples_split = [2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 50, 100]
+    min_samples_leaf = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 50, 100]
     ccp_alpha = [0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.01, 0.05, 0.1]
     search_grid = {
         'criterion' : ["entropy", "gini"],
@@ -300,7 +300,7 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
         'ccp_alpha' : ccp_alpha
     }
 
-    estimator = RandomForestClassifierMV(random_state=42, n_estimators = ntrees)
+    estimator = RandomForestClassifierMV(random_state = 42, n_estimators = ntrees)
     if clf == "dt":
         pass
     else:
