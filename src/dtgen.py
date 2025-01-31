@@ -288,6 +288,10 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
 
     # Define hyperparameter grid for tuning
     max_depths = [5, 7, 10, 15, 20]
+    # min_samples_split = [2, 3, 5, 7, 10, 20, 30, 50, 100]
+    # min_samples_leaf = [1, 2, 3, 5, 7, 10, 20, 30, 50, 100]
+    # ccp_alpha = [0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.01, 0.05, 0.1]
+
     min_samples_split = [2, 3, 5, 7, 10, 20, 30, 50, 100]
     min_samples_leaf = [1, 2, 3, 5, 7, 10, 20, 30, 50, 100]
     ccp_alpha = [0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.01, 0.05, 0.1]
@@ -296,7 +300,7 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
         "max_depth": max_depths,
         "min_samples_split": min_samples_split,
         "min_samples_leaf": min_samples_leaf,
-        'bootstrap' : [True, False],
+        #'bootstrap' : [True, False],
         'ccp_alpha' : ccp_alpha
     }
 
