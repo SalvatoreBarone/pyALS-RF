@@ -54,7 +54,54 @@ def compute_sample_size(test_set_size, error_margin, confidence_level, individua
     return int(test_set_size / (1 + pow(error_margin,2) * ( (test_set_size - 1) / (pow(cut_off,2) * individual_prob * (1 - individual_prob)) ) ))
 
 class MrAxC:
-
+    def __recover_from_sampling_error(self, excluded_classes ):
+        # Get the set of already sampled classes.
+        y_flat = self.classifier.y_test.ravel()
+        y_mop_flat = self.y_mop.ravel()
+        # Get the set of already sampled classes.
+        already_sampled_unique = list(set(self.sampled_classes))
+    
+        # Get the percentage in the test set of sampled classes.
+        sampled_classes_testset_percentages = [np.sum(y_flat == sampled_class) for sampled_class in already_sampled_unique]
+        sorted_indexes = sorted(range(len(sampled_classes_testset_percentages)), key=lambda i: sampled_classes_testset_percentages[i])  # Get sorting indices
+        sampled_classes_testset_percentages = [sampled_classes_testset_percentages[i] for i in sorted_indexes]
+        min_sampled_percentage = sampled_classes_testset_percentages[0]
+        # Get the same value but in the mop set. 
+        sampled_classes_mopset_percentages = [np.sum(y_mop_flat == sampled_class) for sampled_class in already_sampled_unique]
+        sampled_classes_mopset_percentages = [sampled_classes_mopset_percentages[i] for i in sorted_indexes]
+        
+        
+        # Perform a re-sampling for excluded classes.
+        for excluded_class in excluded_classes:
+            idxs = np.where(y_flat == excluded_class)[0]  # Extract indices
+            excluded_class_pop_size = len(idxs)
+            if excluded_class_pop_size == 0:
+                self.logger.error(f"[MR-AXC] Error: The class {excluded_class} is not present in the test set despite being indicated as present.")
+                exit(1)
+            elif excluded_class_pop_size == 1:
+                self.logger.warning(f"[MR-AXC] Warning: Only one sample for class {excluded_class} is present, it is assigned to the MOP set.")
+                self.x_mop = np.append(self.x_mop, [self.classifier.x_test[idxs[0]]], axis = 0)
+                self.y_mop = np.append(self.y_mop, self.classifier.y_test[idxs[0]])
+                self.mop_indexes = np.append(self.mop_indexes, idxs[0])
+                self.sampled_classes.append(int(excluded_class))
+            else:
+                self.logger.info(f"[MR-AXC] Info: Fixing sampling for class {excluded_class}")
+                if excluded_class_pop_size >= min_sampled_percentage: # If it not a minority class problem, then identify the nearest sample size.
+                    for idx in range(0, len(sampled_classes_testset_percentages)):
+                        if excluded_class_pop_size >= sampled_classes_testset_percentages[idx]: # Untill greater ( or equal in case equal to the minimum, update mop size.)
+                            mop_size = sampled_classes_mopset_percentages[idx]
+                        else:
+                            break
+                else: # Otherwise.. simply split in half ! 
+                    mop_size = int(np.ceil(excluded_class_pop_size / 2))
+                self.x_mop = np.append(self.x_mop, self.classifier.x_test[idxs[:mop_size]], axis = 0)
+                self.y_mop = np.append(self.y_mop, self.classifier.y_test[idxs[:mop_size]])
+                self.x_val = np.append(self.x_mop, self.classifier.x_test[idxs[mop_size:]], axis = 0)
+                self.y_val = np.append(self.y_mop, self.classifier.y_test[idxs[mop_size:]])
+                self.mop_indexes = np.append(self.mop_indexes, idxs[:mop_size])
+                self.validation_indexes = np.append(self.validation_indexes, idxs[mop_size:])
+                self.sampled_classes.append(int(excluded_class))
+        self.sampled_classes = sorted(self.sampled_classes)
     """ 
         Split MOP samples and validation samples.  
     """
@@ -66,7 +113,7 @@ class MrAxC:
         if fraction == None :
             mop_size = compute_sample_size(test_set_size = len(classifier.x_test), error_margin = 0.05, confidence_level = 0.95, individual_prob = 0.5)
             portion = mop_size / len(self.classifier.x_test)
-            self.x_mop, self.x_val, self.y_mop, self.y_val, self.mop_indexes, self.validation_indexes = train_test_split(self.classifier.x_test, y_flat, indexes, train_size = portion, stratify = y_flat)       
+            self.x_mop, self.x_val, self.y_mop, self.y_val, self.mop_indexes, self.validation_indexes = train_test_split(self.classifier.x_test, y_flat, indexes, train_size = portion)       
         else:
             self.x_mop, self.x_val, self.y_mop, self.y_val, self.mop_indexes, self.validation_indexes = train_test_split(self.classifier.x_test, y_flat, indexes, train_size = fraction)       
         
@@ -81,12 +128,14 @@ class MrAxC:
         classes_to_recover = [] # This should happen if the stratify internal check of scikit learn fails, ( we're using a custom fraction.)
         for x in x_test_classess:
             if x not in self.sampled_classes:
-                self.logger.error("[MR-AXC] ERROR: In sampling, each class in the test set should be considered.")
+                self.logger.warning("[MR-AXC] Warning: In sampling, each class in the test set should be considered.")
                 recover_class = True # There is at least a class to recover.
                 classes_to_recover.append(x)
-                exit(1)
- 
- 
+        # If a class was not sampled then simply insert it.
+        if recover_class:
+            self.logger.warning("[MR-AXC] Warning: Trying to recover from sampling error.")
+            self.__recover_from_sampling_error(classes_to_recover)
+
     """ Compute the cost of each leaf as the number of nodes in that specific leaf. """
     def compute_leaves_costs(self):
         """ For each tree mantains the number of nodes involved in each class.  """
