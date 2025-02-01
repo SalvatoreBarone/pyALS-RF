@@ -68,9 +68,8 @@ def synthetic_dataset(outputdir, n_samples : int, n_features : int, n_classes : 
 @click.argument('outputdir', type=click.Path(dir_okay=True), default = "output")
 @click.option("-f", "--fraction", type = float, default = 0.9, help = "Fraction of data to be used as learning set. The remaining will be used as test data. In case the config.json enables different train and test datasets this option is not considered.")
 #"Instead of using the entire training set, this function uses a small portion of the dataset, already splitted, for configuration. This option is enabled in the config.json of the dataset."
-@click.option("-h",'--hyp_dataset', type=click.Path( dir_okay=False))
-# "Separate testing dataset from dataset. If specified in the config.json of the dataset, this variable specifies the path of a separate testing dataset."
-@click.option("-t",'--test_dataset',  type=click.Path(dir_okay=False))
+@click.option("-h",'--hyp_dataset', type=click.Path( dir_okay=False), default = None, help = "Some datasets are already splitted in training and test set. This option allows to use a different dataset for hyperparameter tuning.")
+@click.option("-t",'--test_dataset',  type=click.Path(dir_okay=False), default = None, help = "Some datasets are already splitted in training and test set. This option allows to use a different dataset for testing.")
 @click.option("-n", "--ntrees", type = int, default = 1, help = "The number of trees in the ensemble. Ignored if clf is dt.")
 @click.option("-i", "--niter", type = int, default = 150, help = "The number of iterations")
 @click.option("-x", "--crossvalidate", is_flag = True, help = "Enable crossvalidation between sklearn and pyALS-RF")

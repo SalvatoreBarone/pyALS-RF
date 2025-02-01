@@ -61,7 +61,9 @@ def to_one_hot(outcomes, classes_name):
 def get_labels(outcomes, config):
     class_names = config.classes_name if isinstance(config.classes_name, list) else list(config.classes_name.keys())
     return [ class_names.index(o) for o in outcomes ]
-    
+
+""" The get_sets function is used when training from a single hyperparameter tuning dataset which is also used to extract the training and testing sets.  
+"""    
 def get_sets(dataset_file, config, fraction):
     logger = logging.getLogger("pyALS-RF")
     if config.outcome_col is None:
@@ -73,6 +75,8 @@ def get_sets(dataset_file, config, fraction):
     logger.info(f"Testing sets is {len(x_test)} feature vectors and {len(y_test)} labels")
     return list(x_train), list(y_train), list(x_test), list(y_test)
 
+""" The get_sets_no_split function is used when training from a CSV file and hyperparameterizing from another CSV file.  
+"""    
 def get_sets_no_split(dataset_file, config):
     logger = logging.getLogger("pyALS-RF")
     if config.outcome_col is None:
@@ -172,6 +176,7 @@ def save_model(outputdir, config, model, best_params, x_train, y_train, x_test, 
             acc += 1
         for i in range(model.n_classes_):
             if i != y:
+                print(f"y: {y} i: {i} p: {p}")
                 samples_error[i].append(np.ceil( (p[y] - p[i]) / 2))
     
     logger = logging.getLogger("pyALS-RF")
@@ -262,39 +267,31 @@ def models_crossvalidation(config, model, x_test, y_test, pmml_file, test_datase
 def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, cross_validate, hyp_dataset, test_dataset, ncpus, neg_exp_graph):
     logger = logging.getLogger("pyALS-RF")
     config = DtGenConfigParser(configfile)
-    if not config.separated_training:
+    assert hyp_dataset == None and test_dataset == None or hyp_dataset != None and test_dataset != None, "Hyperparameter tuning and testing datasets must be both specified or both None"
+    """ This option is used when hyperparameters are separated among training and testing datasets.
+    """
+    if hyp_dataset == None:
         x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
     else: # If the dataset is already splitted do not internally split into train and validation, but automatically integrate the functionality 
-        x_train, y_train = get_sets_no_split(dataset, config)
+        x_train, y_train = get_sets_no_split(hyp_dataset, config)
         x_test, y_test = get_sets_no_split(test_dataset, config)
     logging.info(f"Train size:  {len(x_train)} Test size: {len(x_test)}")
-    # If the dataset has a small training dataset.
-    # Else..
+
     if not config.separated_hyperparametrization:
         x_train_hyp_search = x_train
         y_train_hyp_search = y_train
     else:
-        x_train_hyp_search, y_train_hyp_search = get_sets_no_split(hyp_dataset, config)
+        assert 1 == 0, "Invalid parameter passed"
+    #    x_train_hyp_search, y_train_hyp_search = get_sets_no_split(hyp_dataset, config)
     logging.info(f"Grid Search/Random Search size {len(x_train_hyp_search)}")
-    # search_grid = { 'max_features': [None, 'log2', 'sqrt'],
-    #                 'criterion' : ["gini", "entropy", "log_loss"],
-    #                 'max_depth': [None, int(x) for x in np.arange(5, 20, 2)],
-    #                 'min_samples_split': [int(x) for x in np.arange(3, 101, 1)],
-    #                 'min_samples_leaf': [int(x) for x in np.arange(3, 101, 1)],
-    #                 'ccp_alpha' : np.arange(0.001, 0.2, 0.002),
-    #                 'bootstrap': [True, False]
-    #                 }
 
 
     # Define hyperparameter grid for tuning
     max_depths = [5, 7, 10, 15, 20]
-    # min_samples_split = [2, 3, 5, 7, 10, 20, 30, 50, 100]
-    # min_samples_leaf = [1, 2, 3, 5, 7, 10, 20, 30, 50, 100]
-    # ccp_alpha = [0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.01, 0.05, 0.1]
-
     min_samples_split = [2, 3, 5, 7, 10, 20, 30, 50, 100]
     min_samples_leaf = [1, 2, 3, 5, 7, 10, 20, 30, 50, 100]
     ccp_alpha = [0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.01, 0.05, 0.1]
+    
     search_grid = {
         'criterion' : ["entropy", "gini"],
         "max_depth": max_depths,
