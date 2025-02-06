@@ -1,5 +1,6 @@
 """
-Copyright 2021-2023 Salvatore Barone <salvatore.barone@unina.it>
+Copyright 2021-2025 Salvatore Barone <salvatore.barone@unina.it>
+                    Antonio Emmanuele <antonio.emmanuele@unina.it> 
 
 This is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
@@ -24,29 +25,11 @@ from ...Model.DecisionTree import *
 from ...plot import boxplot
 from enum import Enum
 from scipy.stats import norm # For cut-offs.
-
-""" Computes the number of test set sizes to obtain an extimation of the accuracy loss.
-    number of samples =                      test_set_size
-                            -----------------------------------------------------
-                                                                test_set_size - 1
-                            1   +   error_margin^2 -----------------------------------------------------
-                                                    cut_off^2 * individual_prob * (1 - individual_prob)
-    test_set_size: Size of the test set.
-    error_margin : Given a Probability Peval this defines the error interval size [Peval - error_margin, Peval + error_margin]
-    cut_off:    The quantile of the standard normal distribution assumed a specififc confidence level (i.e. the probability that 
-                the acc loss is within the interval centered in Peval).
-                This value is computed internally of the function that takes as input the confidence level.
-    individual_prob : The probability that a sample is present.
-""" 
-def compute_sample_size(test_set_size, error_margin, confidence_level, individual_prob):
-    cut_off = norm.ppf(confidence_level) 
-    return int(test_set_size / (1 + pow(error_margin,2) * ( (test_set_size - 1) / (pow(cut_off,2) * individual_prob * (1 - individual_prob)) ) ))
-
 class GREP:
     
     class CostCriterion:
         depth = 1,      # higher the depth higher the cost
-        activity = 2,  # lower the frequency of activation higher the cost
+        activity = 2,   # lower the frequency of activation higher the cost
         combined = 3    # both the previous, combined; thus, leaves with the same costs in terms of depth but with lower frequency of activations cost more!
         
     def __init__(self, classifier : Classifier, pruning_set_fraction : float = 0.5, max_loss : float = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count()):
