@@ -65,7 +65,7 @@ class LossBasedGREPSK(GREPSK):
             pruning_classes = self.classifier.predict(self.x_validation)
             pruned_accuracy = accuracy_score(self.y_validation, pruning_classes) * 100.0
             accuracy_loss = self.baseline_accuracy_validation - pruned_accuracy
-            if accuracy_loss <= loss_threshold:
+            if accuracy_loss <= self.max_loss:
                 # Append the newly found pruned node and its tree
                 self.pruning_configuration.append((tree_to_prune, leaf_to_prune))
                 self.removed_boxes += 1
