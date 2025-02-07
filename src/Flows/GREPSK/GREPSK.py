@@ -21,7 +21,7 @@ from sklearn.model_selection import train_test_split
 from ...plot import boxplot
 from scipy.stats import norm # For cut-offs.
 from sklearn.ensemble import RandomForestClassifier
-
+import json5
 
 """ Computes the number of test set sizes to obtain an extimation of the accuracy loss.
     number of samples =                      test_set_size
@@ -46,6 +46,14 @@ class GREPSK:
         depth = 1,      # higher the depth higher the cost
         activity = 2,   # lower the frequency of activation higher the cost
         combined = 3    # both the previous, combined; thus, leaves with the same costs in terms of depth but with lower frequency of activations cost more!
+        @staticmethod
+        def crit_to_str(criterion):
+            if criterion == 1:
+                return "depth"
+            elif criterion == 2:
+                return "activity"
+            elif criterion == 3:
+                return "combined"
         
     def __init__(self, classifier : RandomForestClassifier, pruning_set_fraction : float = 0.5, max_loss : float = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count()):
         self.classifier = classifier
@@ -56,7 +64,22 @@ class GREPSK:
         self.logger = logging.getLogger("pyALS-RF")
         self.pruning_configuration = []
         self.removed_boxes = 0
-        self.removed_ands = 0
+        # This function is placed here in order to avoid redeclaring the leaf info struct at 
+        # each iteration of the trimming process.
+        # self.leaf_info = [ {} for t in self.classifier.estimators_]         # Node count and activations
+        # Mantain the set of leaves depths
+        self.leaf_dephts =[tree.tree_.compute_node_depths() for tree in self.classifier.estimators_]
+        # Mantains the set of leaves activations.
+        self.node_counts =[ [ tree.tree_.n_node_samples[node] for node in range(0, tree.tree_.node_count)] for tree in self.classifier.estimators_]
+        self.origina_node_cost = self.get_cost()
+
+    def store_prunign_conf(self, pruning_conf_out):
+        # Avoid errors with json5 dump (doesn't like arrays bruh)
+        for j in range(len(pruning_conf_out)):
+            self.pruning_configuration[j][0] = int(self.pruning_configuration[j][0])
+            self.pruning_configuration[j][1] = int(self.pruning_configuration[j][1])
+        with open(pruning_conf_out, "w") as f:
+            json5.dump(pruning_conf_out, f, indent = 2)
 
     def prune_leaf(self, tree_id, leaf_to_prune):
         children_left = self.classifier.estimators_[tree_id].children_left
@@ -122,9 +145,7 @@ class GREPSK:
         self.logger.info("Initiating error resiliency evaluation")
         predicted_classes = []
         self.redundancy_vector = [] # Sample Idx, Redundancy, EPI vectors.
-        self.leaf_info = [ {} for t in self.classifier.estimators_]         # Node count and activations
         self.logger.info("Computing node depths")
-        self.leaf_dephts =[tree.tree_.compute_node_depths for tree in self.classifier.estimators_]
         self.logger.info("Generating leaf per pruning sample")
         sample_leaves = self.classifier.apply(self.x_pruning)
         self.logger.info("Initializing sample per leaf, leaf info and sample redundancy")
@@ -137,9 +158,9 @@ class GREPSK:
             for tree_id, leaf in enumerate(tree_leaves_per_sample):
                 # Construct the prediction vector by increasing of one vote the maximum class.
                 pred_vector[np.argmax(self.classifier.estimators_[tree_id].tree_.value[leaf])] += 1
-                # Update the leaf info 
-                if leaf not in self.leaf_info:
-                    self.leaf_info[tree_id].update({ leaf : (self.leaf_dephts[tree_id][leaf] , self.classifier.estimators_[tree_id].tree_.n_node_samples[leaf])})
+                # # Update the leaf info 
+                # if leaf not in self.leaf_info:
+                #     self.leaf_info[tree_id].update({ leaf : (self.leaf_dephts[tree_id][leaf] , self.classifier.estimators_[tree_id].tree_.n_node_samples[leaf])})
             # Take the maximum class.
             predicted_classes.append(np.argmax(pred_vector))
             # If the class is correct then add the sample in pruning configuration.
@@ -155,23 +176,25 @@ class GREPSK:
                 # The 0 is always the sample itself.
                 minimum_resiliency_class = sorted_epi_indexes[1]
                 redundancy = preds_epi[minimum_resiliency_class]
-                self.redundancy_vector.append((self.y_pruning_idxs[sample_id], redundancy, preds_epi))
+                self.redundancy_vector.append((self.y_pruning_idxs[sample_id], redundancy, tree_leaves_per_sample))
         self.logger.info("Sample per leaf and ")
     
-    def update_error_resiliency(self, pruned_leaf):
-        # For each sample update a vector.
-        pass 
     
-    def update_leaf_info(self, tree_id, pruned_leaf):
-        pass
+    def get_best_leaf(self, leaves_per_samples, cost_criterion : CostCriterion):
+        self.logger.debug("Computing cost per each leaf")
+        costs = []
+        # Sort each leaf of the sample by cost.
+        for tree_id, leaf in leaves_per_samples:
+            if cost_criterion == GREPSK.CostCriterion.depth:
+                costs.append(self.leaf_dephts[tree_id][leaf])
+            elif cost_criterion == GREPSK.CostCriterion.activity:
+                costs.append( 1 / self.node_counts[tree_id][leaf])            
+            elif cost_criterion == GREPSK.CostCriterion.combined:
+                costs.append(self.leaf_dephts[tree_id][leaf] / self.node_counts[tree_id][leaf])
+        best_tree = np.argmax(costs)
+        # Return the leaf of the tree with the highest cost.
+        return best_tree, leaves_per_samples[best_tree]
 
-    def store_pruning_conf(self, outfile : str):
-        pass
-
-    # TODO: FIX THIS FUNCTION
-    def evaluate_accuracy(self):
-        pass
-        
     def sort_leaves_by_cost(self, cost_criterion : CostCriterion):
         self.logger.debug("Computing cost per each leaf")
         leaves_id = []
@@ -192,28 +215,3 @@ class GREPSK:
         leaves_id = leaves_id[sorted_args]
         costs = costs[sorted_args]
         return leaves_id, costs
-      
-
-    def trim(self, cost_criterion : CostCriterion):
-        pass
-        # logger = logging.getLogger("pyALS-RF")
-        # logger.info(f"Test set: {len(self.classifier.x_test)} samples")
-        # logger.info(f"Pruning set fraction: {self.pruning_set_fraction}")
-        # self.split_test_dataset(self.pruning_set_fraction)
-        # logger.info(f"Pruning set: {len(self.x_pruning)} samples")
-        # logger.info(f"Validation set: {len(self.x_test)} samples")
-        # self.p_tree = self.classifier.p_tree
-        # self.args_evaluate_pruning = [[t, self.x_pruning] for t in self.p_tree]
-        # self.args_evaluate_test = [[t, self.x_test] for t in self.p_tree]
-        # self.pool = self.classifier.pool
-        # self.baseline_accuracy = self.evaluate_accuracy()
-        # logger.info(f"Baseline accuracy (on validation set) : {self.baseline_accuracy}%")
-        # self.original_cost = self.get_cost()
-        # logger.info(f"Original cost: {self.original_cost}")
-        # self.accuracy = self.baseline_accuracy
-        # self.loss = 0
-        # logger.info("Performing Boolean networks backup")
-        # self.backup_bns()
-        # self.evaluate_redundancy()
-        # self.sort_leaves_by_cost(cost_criterion)
-        # self.pruning_configuration = []
