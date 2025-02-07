@@ -18,13 +18,17 @@ import logging
 from multiprocessing import cpu_count
 from tqdm import tqdm
 from ...Model.Classifier import Classifier
-from .GREP import GREP
+from .GREPSK import GREPSK
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection  import train_test_split
 
-class ResiliencyBasedGREP(GREP):
+class ResiliencyBasedGREPSK(GREPSK):
+
     def __init__(self, classifier : Classifier, pruning_set_fraction : float = 0.5, max_loss : float = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count()):
         super().__init__(classifier, pruning_set_fraction, max_loss, min_resiliency, ncpus)
     
-    def trim(self, cost_criterion : GREP.CostCriterion):
+
+    def trim(self, cost_criterion : GREPSK.CostCriterion):
         super().trim(cost_criterion)
         logger = logging.getLogger("pyALS-RF")
         self.pruning_configuration = []

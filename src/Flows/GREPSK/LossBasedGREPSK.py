@@ -23,32 +23,18 @@ from sklearn.ensemble import RandomForestClassifier
 from .GREPSK import GREPSK
 
 class LossBasedGREPSK(GREPSK):
-    
-    def __init__(self, classifier : RandomForestClassifier, pruning_set_fraction : float = 0.5, max_loss : float = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count()) -> None:
+    # Adds a validation fraction to split the pruning set.
+    # The validation is used to evaluate the accuracy
+    def __init__(self, classifier : RandomForestClassifier, pruning_set_fraction : float = 0.5, validation_fraction: float = 0.25, max_loss : float = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count()) -> None:
         super().__init__(classifier, pruning_set_fraction, max_loss, min_resiliency, ncpus)
     
-    # Split the dataset into training, validation, and testing sets
-    def split_test_dataset(self, mode, pruning_set_fraction : float = 0.5):
-        # 2/3 for pruning and 1/3 for validation.
-        
-        # # Define the proportions
-        # train_size = 0.6  # 60% for training
-        # val_size = 0.2    # 20% for validation
-        # test_size = 0.2   # 20% for testing
+    def split_pruning_validation_set(self, X, y):
+        super().split_pruning(X,y)
+        self.x_pruning, self.x_validation, self.y_pruning, self.y_validation, self.idx_prun, self.idx_validation = train_test_split(self.x_pruning, self.y_pruning, self.idx_prun) # Use stratify = self.classifier.x_test.ravel() ensures that all classess are considered. 
 
-        # # First split: train and temp (val + test)
-        # X_train, X_temp, y_train, y_temp, idx_train, idx_temp = train_test_split(
-        #     X, y, indices, test_size=(1 - train_size), random_state=42
-        # )
-
-        # # Second split: temp into validation and test
-        # X_val, X_test, y_val, y_test, idx_val, idx_test = train_test_split(
-        #     X_temp, y_temp, idx_temp, test_size=(test_size / (test_size + val_size)), random_state=42
-        # )
-
-    
     def trim(self, cost_criterion : GREPSK.CostCriterion):
         pass
+        
         # super().trim(cost_criterion)
         # logger = logging.getLogger("pyALS-RF")
         # self.pruning_configuration = []
