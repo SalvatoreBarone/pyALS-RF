@@ -1,5 +1,6 @@
 """
-Copyright 2021-2023 Salvatore Barone <salvatore.barone@unina.it>
+Copyright 2021-2025 Antonio Emmanuele <antonio.emmanuele@unina.it>
+                    Salvatore Barone <salvatore.barone@unina.it>
 
 This is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
@@ -28,22 +29,23 @@ import pandas as pd
 class LossBasedGREPSK(GREPSK):
     # Adds a validation fraction to split the pruning set.
     # The validation is used to evaluate the accuracy
-    def __init__(self, classifier : RandomForestClassifier, pruning_set_fraction : float = 0.5, validation_fraction: float = 0.25, max_loss : float = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count()) -> None:
-        super().__init__(classifier, pruning_set_fraction, max_loss, min_resiliency, ncpus)
-    
-    def split_pruning_validation_set(self, X, y, pruning_size = 0.5):
-        super().split_pruning(X,y)
-        self.x_pruning, self.x_validation, self.y_pruning, self.y_validation, self.idx_prun, self.idx_validation = train_test_split(self.x_pruning, self.y_pruning, self.idx_prun, train_size=0.5) 
+    def __init__(self, classifier : RandomForestClassifier, pruning_set_fraction : float = 0.5, max_loss : float = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count()) -> None:
+        super().__init__(classifier, pruning_set_fraction, ncpus)
+        self.max_loss = max_loss
 
-    def trim(self, cost_criterion : GREPSK.CostCriterion, loss_threshold : float = 1.0):
+    def split_pruning_validation_set(self, X, y, validation_size = 0.5):
+        super().split_pruning(X,y)
+        self.x_pruning, self.x_validation, self.y_pruning, self.y_validation, self.idx_prun, self.idx_validation = train_test_split(self.x_pruning, self.y_pruning, self.idx_prun, test_size=0.5) 
+
+    def trim(self, cost_criterion : GREPSK.CostCriterion):
         self.logger.info("Trimming the model...")
         self.logger.info(f"Evaluating accuracy on the validation set...")
         original_classes_val = self.classifier.predict(self.x_validation)
-        self.baseline_accuracy_validation = accuracy_score(self.y_validation, original_classes_val)
+        self.baseline_accuracy_validation = accuracy_score(self.y_validation, original_classes_val) * 100.0
         self.logger.info(f"Accuracy on the validation set is {self.baseline_accuracy_validation}")
         self.logger.info(f"Evaluating accuracy on the testing set...")
-        original_classes_test = self.classifier.predict(self.x_test)
-        self.baseline_accuracy_test = accuracy_score(self.y_test, original_classes_val)
+        original_classes_test = self.classifier.predict(self.x_test) 
+        self.baseline_accuracy_test = accuracy_score(self.y_test, original_classes_val) * 100.0
         self.logger.info(f"Accuracy on the testing set is {self.baseline_accuracy_validation}")
         start = time.time()
         # Initialize the error resiliency of the pruning samples.
@@ -61,7 +63,7 @@ class LossBasedGREPSK(GREPSK):
             parent_node, sibling, sibling_id = self.prune_leaf(tree_to_prune, leaf_to_prune)
             # Evaluate accuracy.
             pruning_classes = self.classifier.predict(self.x_validation)
-            pruned_accuracy = accuracy_score(self.y_validation, pruning_classes)
+            pruned_accuracy = accuracy_score(self.y_validation, pruning_classes) * 100.0
             accuracy_loss = self.baseline_accuracy_validation - pruned_accuracy
             if accuracy_loss <= loss_threshold:
                 # Append the newly found pruned node and its tree
@@ -83,7 +85,7 @@ class LossBasedGREPSK(GREPSK):
         self.logger.info(f"Original Nodes : {self.origina_node_cost} Removed Boxes : {self.removed_boxes} Savings: {self.node_savings}")
         self.logger.info(f"Evaluating pruned accuracy on the testing validation")
         pruning_classes = self.classifier.predict(self.x_test)
-        self.pruned_accuracy_test = accuracy_score(self.y_test, pruning_classes)
+        self.pruned_accuracy_test = accuracy_score(self.y_test, pruning_classes) * 100.0
         self.logger.info(f"Accuracy on the testing set is {self.pruned_accuracy_test}")
         self.loss_test = self.baseline_accuracy_test - self.pruned_accuracy_test
         self.logger.info(f"Loss on the testing set is {self.loss_test}")

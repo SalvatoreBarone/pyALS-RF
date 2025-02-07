@@ -55,11 +55,9 @@ class GREPSK:
             elif criterion == 3:
                 return "combined"
         
-    def __init__(self, classifier : RandomForestClassifier, pruning_set_fraction : float = 0.5, max_loss : float = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count()):
+    def __init__(self, classifier : RandomForestClassifier, pruning_set_fraction : float = 0.5, ncpus : int = cpu_count()):
         self.classifier = classifier
         self.pruning_set_fraction = pruning_set_fraction
-        self.max_loss = max_loss
-        self.min_resiliency = min_resiliency
         self.ncpus = min(ncpus, len(self.classifier.trees))
         self.logger = logging.getLogger("pyALS-RF")
         self.pruning_configuration = []
