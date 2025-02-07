@@ -122,14 +122,17 @@ class GREPSK:
         # Turn parent into a leaf node
         children_left[parent_node] = -1
         children_right[parent_node] = -1
-        return parent_node, sibling, sibling_id
+        old_value = self.classifier.estimators_[tree_id].tree_.value[parent_node]
+        self.classifier.estimators_[tree_id].tree_.value[parent_node] = self.classifier.estimators_[tree_id].tree_.value[sibling]
+        return parent_node, sibling, sibling_id, old_value
     
     def split_pruning(self, X, y):
         assert len(X) == len(y)
         indexes = np.arange(len(X))
         self.x_pruning, self.x_test, self.y_pruning, self.y_test, self.idx_prun, self.idx_test = train_test_split(X, y, indexes, train_size=self.pruning_set_fraction) # Use stratify = self.classifier.x_test.ravel() ensures that all classess are considered. 
     
-    def restore_pruned_leaf(self, tree_id, parent_node, pruned_leaf, sibling, sibling_id):
+    def restore_pruned_leaf(self, tree_id, parent_node, pruned_leaf, sibling, sibling_id, old_value):
+        self.classifier.estimators_[tree_id].tree_.value[parent_node] = old_value
         # If the children was left
         if sibling_id == 0:
             self.classifier.estimators_[tree_id].tree_.children_left[parent_node] = pruned_leaf

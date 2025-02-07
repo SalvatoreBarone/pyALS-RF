@@ -52,19 +52,21 @@ class LossBasedGREPSK(GREPSK):
         start = time.time()
         # Initialize the error resiliency of the pruning samples.
         self.evaluate_error_resiliency()
+        # Threshold support
+        next_to_evaluate = 0
         tollerance_counter = 0
-        tollerance_thds = int(len(self.x_pruning) * 0.1)
+        tollerance_thds = int(len(self.x_pruning) * 0.01)
         # Prune until the minimum accuracy is found.
         while True:
             # The redundancy vector is ordered such that the first sample
             # is the one with the highest redundancy.
-            considered_sample = self.redundancy_vector[-1]
+            considered_sample = self.redundancy_vector[next_to_evaluate]
             # Sample is a tuple (sample_idx, redundancy, per_tree_leaves)
             considered_leaves = considered_sample[2]
             self.logger.debug(f"Considering sample {considered_sample}")
             tree_to_prune, leaf_to_prune = self.get_best_leaf(considered_leaves, cost_criterion)
             # Prune.
-            parent_node, sibling, sibling_id = self.prune_leaf(tree_to_prune, leaf_to_prune)
+            parent_node, sibling, sibling_id, old_value = self.prune_leaf(tree_to_prune, leaf_to_prune)
             # Evaluate accuracy.
             pruning_classes = self.classifier.predict(self.x_validation)
             pruned_accuracy = accuracy_score(self.y_validation, pruning_classes) * 100.0
@@ -72,7 +74,7 @@ class LossBasedGREPSK(GREPSK):
             if accuracy_loss <= self.max_loss:
                 # Append the newly found pruned node and its tree
                 self.pruning_configuration.append((tree_to_prune, leaf_to_prune))
-                self.removed_boxes += 1
+                self.removed_boxes += 2
                 # Update the error resiliency by adding the new node 
                 # and evaluating the new R.
                 # R should be evaluated on the entire dataset.
@@ -80,11 +82,13 @@ class LossBasedGREPSK(GREPSK):
                 self.pruned_accuracy_validation = pruned_accuracy
                 self.loss_validation = accuracy_loss
                 tollerance_counter = 0
+                next_to_evaluate = 0
             else:
-                self.restore_pruned_leaf(tree_id=tree_to_prune, parent_node=parent_node, pruned_leaf=leaf_to_prune, sibling=sibling, sibling_id=sibling_id)
+                self.restore_pruned_leaf(tree_id=tree_to_prune, parent_node=parent_node, pruned_leaf=leaf_to_prune, sibling=sibling, sibling_id=sibling_id, old_value=old_value)
                 tollerance_counter += 1 
+                next_to_evaluate += 1
                 if tollerance_counter >= tollerance_thds:
-                    break # Stop the algorithm
+                    break 
         end = time.time()
         self.delta_trimming = end - start
         self.used_criterion = cost_criterion
