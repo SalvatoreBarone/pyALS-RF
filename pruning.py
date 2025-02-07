@@ -20,10 +20,10 @@ if __name__ == "__main__":
     # Declare the arguments 
     parser.add_argument("--algo", type = int, help = "0 for loss based 1 for redundancy based", default = 0)
     parser.add_argument("--model_input", type = str, help = "Path of the joblib model.", default = None)
-    parser.add_argument("--testing_set_path", type = str, help = "Path of the testing set", default = None)
-    parser.add_argument("--cost_criterion", type = int, help = "Type of used cost critetion for selecting the best leaf. 0 for Depth, 1 activity 2 combined.", default = 0)
+    parser.add_argument("--test_set", type = str, help = "Path of the testing set", default = None)
+    parser.add_argument("--cost_criterion", type = int, help = "Type of used cost critetion for selecting the best leaf. 1 for Depth, 2 activity 3 combined.", default = 0)
     parser.add_argument("-f", "--fraction", type=float, help="Fraction of the pruning_set to use", default=0.5)
-    parser.add_argument("-v", "--validation fraction", type=float, help="Fraction of the pruning set used for validation. In redundancy based algo it is not used.", default=0.5)
+    parser.add_argument("-v", "--validation_fraction", type=float, help="Fraction of the pruning set used for validation. In redundancy based algo it is not used.", default=0.5)
     parser.add_argument("-l", "--max_loss", type=float, help="Maximum loss in loss based algorithm. In redundancy based algo it is not used.", default=1.0)
     parser.add_argument("-c", "--pruning_path", type=str, help="Path in which the pruning cfg is saved", default=None)
     parser.add_argument("-r", "--report_path", type=str, help="Path in which the report is saved", default=None)
@@ -33,18 +33,18 @@ if __name__ == "__main__":
         assert 1 == 0, "Provide --algo 1 for Redundancy based and 0 for loss based"
     
     cost_criterion = args.cost_criterion
-    if cost_criterion != 0 and cost_criterion != 1 and cost_criterion != 2:
+    if cost_criterion != 1 and cost_criterion != 2 and cost_criterion != 3:
         assert 1 == 0, "Provide a valid cost criterion, check help for more infos. "
-    
+
     if not os.path.exists(args.model_input):
         assert 1 == 0, "Provide a valid model"
     model = joblib.load(args.model_input)
     
-    if not os.path.exists(args.testing_set_path):
+    if not os.path.exists(args.test_set):
         assert 1 == 0, "Provide a valid testing set path"
-    df = pd.read_csv(args.testing_set_path, sep = ";")
-    X = df.iloc[:, :-1]
-    y = df.iloc[:, : -1]
+    df = pd.read_csv(args.test_set, sep = ";")
+    X = df.iloc[:, :-1].to_numpy()
+    y = df.iloc[:, -1].to_numpy()
 
     pruning_fraction = args.fraction
     if pruning_fraction <= 0.0 or pruning_fraction >= 1.0:

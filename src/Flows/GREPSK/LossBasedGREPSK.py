@@ -17,7 +17,6 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
 import logging, copy
 from multiprocessing import cpu_count
-from ...Model.Classifier import Classifier
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from .GREPSK import GREPSK
@@ -36,6 +35,9 @@ class LossBasedGREPSK(GREPSK):
     def split_pruning_validation_set(self, X, y, validation_size = 0.5):
         super().split_pruning(X,y)
         self.x_pruning, self.x_validation, self.y_pruning, self.y_validation, self.idx_prun, self.idx_validation = train_test_split(self.x_pruning, self.y_pruning, self.idx_prun, test_size=0.5) 
+        # self.x_validation = self.x_test 
+        # self.y_validation = self.y_test
+        # self.idx_validation = self.idx_test
 
     def trim(self, cost_criterion : GREPSK.CostCriterion):
         self.logger.info("Trimming the model...")
@@ -45,11 +47,13 @@ class LossBasedGREPSK(GREPSK):
         self.logger.info(f"Accuracy on the validation set is {self.baseline_accuracy_validation}")
         self.logger.info(f"Evaluating accuracy on the testing set...")
         original_classes_test = self.classifier.predict(self.x_test) 
-        self.baseline_accuracy_test = accuracy_score(self.y_test, original_classes_val) * 100.0
+        self.baseline_accuracy_test = accuracy_score(self.y_test, original_classes_test) * 100.0
         self.logger.info(f"Accuracy on the testing set is {self.baseline_accuracy_validation}")
         start = time.time()
         # Initialize the error resiliency of the pruning samples.
         self.evaluate_error_resiliency()
+        tollerance_counter = 0
+        tollerance_thds = int(len(self.x_pruning) * 0.1)
         # Prune until the minimum accuracy is found.
         while True:
             # The redundancy vector is ordered such that the first sample
@@ -58,7 +62,7 @@ class LossBasedGREPSK(GREPSK):
             # Sample is a tuple (sample_idx, redundancy, per_tree_leaves)
             considered_leaves = considered_sample[2]
             self.logger.debug(f"Considering sample {considered_sample}")
-            tree_to_prune, leaf_to_prune = self.get_best_leaf(considered_leaves)
+            tree_to_prune, leaf_to_prune = self.get_best_leaf(considered_leaves, cost_criterion)
             # Prune.
             parent_node, sibling, sibling_id = self.prune_leaf(tree_to_prune, leaf_to_prune)
             # Evaluate accuracy.
@@ -74,9 +78,13 @@ class LossBasedGREPSK(GREPSK):
                 # R should be evaluated on the entire dataset.
                 self.evaluate_error_resiliency()
                 self.pruned_accuracy_validation = pruned_accuracy
-                self.loss_validation = pruned_accuracy
+                self.loss_validation = accuracy_loss
+                tollerance_counter = 0
             else:
-                break # Stop the algorithm
+                self.restore_pruned_leaf(tree_id=tree_to_prune, parent_node=parent_node, pruned_leaf=leaf_to_prune, sibling=sibling, sibling_id=sibling_id)
+                tollerance_counter += 1 
+                if tollerance_counter >= tollerance_thds:
+                    break # Stop the algorithm
         end = time.time()
         self.delta_trimming = end - start
         self.used_criterion = cost_criterion
@@ -91,7 +99,8 @@ class LossBasedGREPSK(GREPSK):
         self.logger.info(f"Loss on the testing set is {self.loss_test}")
 
     def dump_report(self, report_path):
-          # Update stats.
+        report_file = os.path.join(report_path, "report.csv")
+        # Update stats.
         sol_summary = {
                 "Algo"              : "loss_based",
                 "LeafStrategy"      : GREPSK.CostCriterion.crit_to_str(self.used_criterion),
@@ -99,10 +108,6 @@ class LossBasedGREPSK(GREPSK):
                 "Baseline Acc XVal" : self.baseline_accuracy_validation,
                 "Pruned Acc XVal"   : self.pruned_accuracy_validation,
                 "Loss XVal"         : self.loss_validation,
-                
-                "Baseline Acc XTest" : self.baseline_accuracy_validation,
-                "Pruned Acc XTest"   : self.pruned_accuracy_validation,
-                "Loss XTest"         : self.loss_validation,
 
                 "Baseline Acc XTest" : self.baseline_accuracy_test,
                 "Pruned Acc XTest"   : self.pruned_accuracy_test,
@@ -113,7 +118,7 @@ class LossBasedGREPSK(GREPSK):
                 "Savings"            :self.node_savings,
                 "Comp Time [s]"         : self.delta_trimming
             }
-        add_header = not os.path.exists(self.csv_outfile)
-        df = pd.DataFrame(sol_summary, index=[0]).to_csv(report_path, index = False, header = add_header, mode = "a")
-        self.logger.info(f"Summary CSV updated! Please check {report_path}")
+        add_header = not os.path.exists(report_file)
+        df = pd.DataFrame(sol_summary, index=[0]).to_csv(report_file, index = False, header = add_header, mode = "a")
+        self.logger.info(f"Summary CSV updated! Please check {report_file}")
         

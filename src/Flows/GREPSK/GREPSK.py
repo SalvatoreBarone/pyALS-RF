@@ -22,6 +22,8 @@ from ...plot import boxplot
 from scipy.stats import norm # For cut-offs.
 from sklearn.ensemble import RandomForestClassifier
 import json5
+import os
+import joblib
 
 """ Computes the number of test set sizes to obtain an extimation of the accuracy loss.
     number of samples =                      test_set_size
@@ -43,9 +45,11 @@ def compute_sample_size(test_set_size, error_margin, confidence_level, individua
 class GREPSK:
 
     class CostCriterion:
-        depth = 1,      # higher the depth higher the cost
-        activity = 2,   # lower the frequency of activation higher the cost
-        combined = 3    # both the previous, combined; thus, leaves with the same costs in terms of depth but with lower frequency of activations cost more!
+        
+        depth =     1    # higher the depth higher the cost
+        activity =  2    # lower the frequency of activation higher the cost
+        combined =  3    # both the previous, combined; thus, leaves with the same costs in terms of depth but with lower frequency of activations cost more!
+        
         @staticmethod
         def crit_to_str(criterion):
             if criterion == 1:
@@ -58,7 +62,7 @@ class GREPSK:
     def __init__(self, classifier : RandomForestClassifier, pruning_set_fraction : float = 0.5, ncpus : int = cpu_count()):
         self.classifier = classifier
         self.pruning_set_fraction = pruning_set_fraction
-        self.ncpus = min(ncpus, len(self.classifier.trees))
+        self.ncpus = 0
         self.logger = logging.getLogger("pyALS-RF")
         self.pruning_configuration = []
         self.removed_boxes = 0
@@ -72,15 +76,27 @@ class GREPSK:
         self.origina_node_cost = self.get_cost()
 
     def store_prunign_conf(self, pruning_conf_out):
+        path_report = os.path.join(pruning_conf_out, "pruning_conf.json5")
+        model_path = os.path.join(pruning_conf_out, "pruned_classifier.joblib")
+        to_dump = []
         # Avoid errors with json5 dump (doesn't like arrays bruh)
-        for j in range(len(pruning_conf_out)):
-            self.pruning_configuration[j][0] = int(self.pruning_configuration[j][0])
-            self.pruning_configuration[j][1] = int(self.pruning_configuration[j][1])
-        with open(pruning_conf_out, "w") as f:
-            json5.dump(pruning_conf_out, f, indent = 2)
+        for j in range(0, len(pruning_conf_out) - 1):
+            pass
+            # print(f"Len {len(self.pruning_configuration)} Idx {j}")
+            # print(self.pruning_configuration)
+            
+            # print(self.pruning_configuration[j])
+            # print(self.pruning_configuration[j][1])
+            # print(self.pruning_configuration[j][0])
+            # v1 = int(self.pruning_configuration[j][0])
+            # v2 = int(self.pruning_configuration[j][1])
+            # to_dump.append((v1,v2))
+        with open(path_report, "w") as f:
+            json5.dump(to_dump, f, indent = 2)
+        joblib.dump(self.classifier, model_path)
 
     def prune_leaf(self, tree_id, leaf_to_prune):
-        children_left = self.classifier.estimators_[tree_id].children_left
+        children_left = self.classifier.estimators_[tree_id].tree_.children_left
         children_right = self.classifier.estimators_[tree_id].tree_.children_right
 
         # Find the parent node
@@ -109,17 +125,18 @@ class GREPSK:
         return parent_node, sibling, sibling_id
     
     def split_pruning(self, X, y):
-        indexes = np.arange(len(self.classifier.x_test))
-        self.x_pruning, self.x_test, self.y_pruning, self.y_test, self.idx_prun, self.idx_test = train_test_split(X, y, train_size=self.pruning_set_fraction) # Use stratify = self.classifier.x_test.ravel() ensures that all classess are considered. 
+        assert len(X) == len(y)
+        indexes = np.arange(len(X))
+        self.x_pruning, self.x_test, self.y_pruning, self.y_test, self.idx_prun, self.idx_test = train_test_split(X, y, indexes, train_size=self.pruning_set_fraction) # Use stratify = self.classifier.x_test.ravel() ensures that all classess are considered. 
     
     def restore_pruned_leaf(self, tree_id, parent_node, pruned_leaf, sibling, sibling_id):
         # If the children was left
         if sibling_id == 0:
-            self.classifier.estimators_[tree_id].children_left[parent_node] = pruned_leaf
-            self.classifier.estimators_[tree_id].children_right[parent_node] = sibling
+            self.classifier.estimators_[tree_id].tree_.children_left[parent_node] = pruned_leaf
+            self.classifier.estimators_[tree_id].tree_.children_right[parent_node] = sibling
         elif sibling_id == 1:
-            self.classifier.estimators_[tree_id].children_left[parent_node] = sibling
-            self.classifier.estimators_[tree_id].children_right[parent_node] = pruned_leaf
+            self.classifier.estimators_[tree_id].tree_.children_left[parent_node] = sibling
+            self.classifier.estimators_[tree_id].tree_.children_right[parent_node] = pruned_leaf
         else:
             self.logger.error("Invalid sibling id !")
             assert 1 == 0
@@ -139,7 +156,7 @@ class GREPSK:
         return np.ceil((votes_vector[predicted_class] - votes_vector[considered_class]) / 2)
     
     # For each sample mantains the leaf.
-    def evaluate_error_resiliency(self, predicted_classes):
+    def evaluate_error_resiliency(self):
         self.logger.info("Initiating error resiliency evaluation")
         predicted_classes = []
         self.redundancy_vector = [] # Sample Idx, Redundancy, EPI vectors.
@@ -166,29 +183,35 @@ class GREPSK:
                 preds_epi = [0 for cl in self.classifier.classes_]
                 # For each class evaluate the EPI
                 for c in range(self.classifier.n_classes_):
-                    preds_epi[c] = GREPSK.evaluate_EPI(predicted_classes[-1], c, predicted_classes)
-                # Save the EPI vectors 
-                self.sample_epis.append(preds_epi)
+                    preds_epi[c] = GREPSK.evaluate_EPI(predicted_classes[-1], c, pred_vector)
+                # # Save the EPI vectors 
+                # self.sample_epis.append(preds_epi)
                 # Take the minimum value and its index. 
                 sorted_epi_indexes = np.argsort(preds_epi)
                 # The 0 is always the sample itself.
                 minimum_resiliency_class = sorted_epi_indexes[1]
                 redundancy = preds_epi[minimum_resiliency_class]
-                self.redundancy_vector.append((self.y_pruning_idxs[sample_id], redundancy, tree_leaves_per_sample))
+                self.redundancy_vector.append((self.idx_prun[sample_id], redundancy, tree_leaves_per_sample))
         self.logger.info("Sample per leaf and ")
+        self.redundancy_vector = sorted(self.redundancy_vector, key=lambda x: x[1], reverse=True)
+
     
-    
-    def get_best_leaf(self, leaves_per_samples, cost_criterion : CostCriterion):
+    def get_best_leaf(self, leaves_per_samples, cost_criterion):
         self.logger.debug("Computing cost per each leaf")
         costs = []
         # Sort each leaf of the sample by cost.
-        for tree_id, leaf in leaves_per_samples:
+        for tree_id, leaf in enumerate(leaves_per_samples):
             if cost_criterion == GREPSK.CostCriterion.depth:
                 costs.append(self.leaf_dephts[tree_id][leaf])
             elif cost_criterion == GREPSK.CostCriterion.activity:
                 costs.append( 1 / self.node_counts[tree_id][leaf])            
             elif cost_criterion == GREPSK.CostCriterion.combined:
                 costs.append(self.leaf_dephts[tree_id][leaf] / self.node_counts[tree_id][leaf])
+            else:
+                print("Invalid cost")
+                print(cost_criterion)
+                print(GREPSK.CostCriterion.depth)
+                exit(1)
         best_tree = np.argmax(costs)
         # Return the leaf of the tree with the highest cost.
         return best_tree, leaves_per_samples[best_tree]
