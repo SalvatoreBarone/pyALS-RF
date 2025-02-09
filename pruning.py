@@ -11,7 +11,7 @@ import logging
 def run_loss_based_grep(model, cost_criterion,  X, y, pruning_fraction, validation_fraction, max_loss, pruning_path, report_path):
     trimmer = LossBasedGREPSK(classifier = model, pruning_set_fraction = pruning_fraction, max_loss = max_loss)
     trimmer.split_pruning_validation_set(X,y, validation_fraction)
-    trimmer.trim_alternative(cost_criterion)
+    trimmer.trim_fixed(cost_criterion)
     trimmer.store_prunign_conf(pruning_path)
     trimmer.dump_report(report_path)
 
@@ -26,7 +26,7 @@ def run_redundancy_based_grep(model, cost_criterion,  X, y, pruning_fraction, va
 if __name__ == "__main__":
     # Configure the root logger
     logging.basicConfig(
-        level=logging.DEBUG,  # Set the minimum log level
+        level=logging.INFO,  # Set the minimum log level
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
             logging.FileHandler("GrepSK.log"),  # Log to a file
@@ -63,6 +63,7 @@ if __name__ == "__main__":
     df = pd.read_csv(args.test_set, sep = ";")
     X = df.iloc[:, :-1].to_numpy()
     y = df.iloc[:, -1].to_numpy()
+
     pruning_fraction = args.fraction
     if pruning_fraction <= 0.0 or pruning_fraction >= 1.0:
         assert 1 == 0, "Error in pruning fraction, provide a float in range [0.0, 1.0]"

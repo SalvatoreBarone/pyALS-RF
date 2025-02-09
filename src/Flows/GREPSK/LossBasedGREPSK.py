@@ -23,6 +23,7 @@ from sklearn.metrics import accuracy_score
 import time
 import os
 import pandas as pd
+from tqdm import tqdm
 
 class LossBasedGREPSK(GREPSK):
     # Adds a validation fraction to split the pruning set.
@@ -44,7 +45,7 @@ class LossBasedGREPSK(GREPSK):
         self.logger.info(f"Evaluating accuracy on the testing set...")
         original_classes_test = self.classifier.predict(self.x_test) 
         self.baseline_accuracy_test = accuracy_score(self.y_test, original_classes_test) * 100.0
-        self.logger.info(f"Accuracy on the testing set is {self.baseline_accuracy_validation}")
+        self.logger.info(f"Accuracy on the testing set is {self.baseline_accuracy_test}")
         start = time.time()
         # Initialize the error resiliency of the pruning samples.
         self.evaluate_error_resiliency()
@@ -52,7 +53,8 @@ class LossBasedGREPSK(GREPSK):
         
         self.logger.info("Initiating algorithm ")
         # Prune until the minimum accuracy is found.
-        while len(self.red_vec) > 0 :
+        #while len(self.red_vec) > 0 :
+        for j in tqdm(range(0, len(self.red_vec)), desc = "Pruning Leaves"):
             # The redundancy vector is ordered such that the first sample
             # is the one with the highest redundancy.
             self.red_vec = self.red_vec[1:]
@@ -66,6 +68,7 @@ class LossBasedGREPSK(GREPSK):
             pruning_classes = self.classifier.predict(self.x_validation)
             pruned_accuracy = accuracy_score(self.y_validation, pruning_classes) * 100.0
             accuracy_loss = self.baseline_accuracy_validation - pruned_accuracy
+
             if accuracy_loss <= self.max_loss:
                 # Append the newly found pruned node and its tree
                 self.pruning_configuration.append((tree_to_prune, leaf_to_prune))
@@ -78,6 +81,7 @@ class LossBasedGREPSK(GREPSK):
                 # R should be evaluated on the entire pruning set
                 if len(self.x_pruning_correct) > 0:
                     self.update_error_resiliency(tree_to_prune, leaf_to_prune, parent_node)
+
             else:
                 self.restore_pruned_leaf(tree_id=tree_to_prune, parent_node=parent_node, pruned_leaf=leaf_to_prune, sibling=sibling, sibling_id=sibling_id, old_value=old_value)
 
@@ -85,7 +89,7 @@ class LossBasedGREPSK(GREPSK):
         self.delta_trimming = end - start
         self.used_criterion = cost_criterion
         self.logger.info(f"Trimming completed in {self.delta_trimming} seconds.")
-        self.node_savings = self.origina_node_cost - self.removed_boxes
+        self.node_savings =  self.removed_boxes / self.origina_node_cost * 100.0 
         self.logger.info(f"Original Nodes : {self.origina_node_cost} Removed Boxes : {self.removed_boxes} Savings: {self.node_savings}")
         self.logger.info(f"Evaluating pruned accuracy on the testing validation")
         pruning_classes = self.classifier.predict(self.x_test)
@@ -119,6 +123,8 @@ class LossBasedGREPSK(GREPSK):
             self.x_pruning_correct = self.x_pruning_correct[1:]
             self.x_pruning_correct_leaves = self.x_pruning_correct_leaves[1:] 
             self.predicted_classes = self.predicted_classes[1:]
+            counter = 0
+            counter_thd = len(self.classifier.estimators_) // 4
             while True: 
                 considered_leaves = self.classifier.apply([considered_sample])[0]
                 tree_to_prune, leaf_to_prune = self.get_best_leaf(considered_leaves, cost_criterion)
@@ -140,6 +146,9 @@ class LossBasedGREPSK(GREPSK):
                     # R should be evaluated on the entire pruning set
                     if len(self.x_pruning_correct) > 0:
                         self.update_error_resiliency(tree_to_prune, leaf_to_prune, parent_node)
+                    counter += 1
+                    if counter >= counter_thd:
+                        break
                 else:
                     self.restore_pruned_leaf(tree_id=tree_to_prune, parent_node=parent_node, pruned_leaf=leaf_to_prune, sibling=sibling, sibling_id=sibling_id, old_value=old_value)
                     break
@@ -147,7 +156,7 @@ class LossBasedGREPSK(GREPSK):
         self.delta_trimming = end - start
         self.used_criterion = cost_criterion
         self.logger.info(f"Trimming completed in {self.delta_trimming} seconds.")
-        self.node_savings = self.origina_node_cost - self.removed_boxes
+        self.node_savings = self.removed_boxes / self.origina_node_cost * 100.0
         self.logger.info(f"Original Nodes : {self.origina_node_cost} Removed Boxes : {self.removed_boxes} Savings: {self.node_savings}")
         self.logger.info(f"Evaluating pruned accuracy on the testing validation")
         pruning_classes = self.classifier.predict(self.x_test)
