@@ -1,5 +1,5 @@
 """
-Copyright 2021-2023 Salvatore Barone <salvatore.barone@unina.it>
+Copyright 2021-2025 Antonio Emmanuele <antonio.emmanuele@unina.it>
 
 This is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
@@ -14,52 +14,114 @@ You should have received a copy of the GNU General Public License along with
 RMEncoder; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """
-import logging
+import logging, copy
 from multiprocessing import cpu_count
-from tqdm import tqdm
-from ...Model.Classifier import Classifier
-from .GREPSK import GREPSK
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection  import train_test_split
+from .GREPSK import GREPSK
+from sklearn.metrics import accuracy_score
+import time
+import os
+import pandas as pd
 
 class ResiliencyBasedGREPSK(GREPSK):
 
-    def __init__(self, classifier : Classifier, pruning_set_fraction : float = 0.5, max_loss : float = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count()):
-        super().__init__(classifier, pruning_set_fraction, max_loss, min_resiliency, ncpus)
-    
+    def __init__(self, classifier : RandomForestClassifier, pruning_set_fraction : float = 0.5, min_eta : int = 5.0, min_resiliency : int = 0, ncpus : int = cpu_count()) -> None:
+        super().__init__(classifier, pruning_set_fraction, ncpus)
+        self.min_eta = min_eta
+
+    def split_pruning_validation_set(self, X, y, validation_size = 0.5):
+        super().split_pruning(X,y)
+        
 
     def trim(self, cost_criterion : GREPSK.CostCriterion):
-        super().trim(cost_criterion)
-        logger = logging.getLogger("pyALS-RF")
-        self.pruning_configuration = []
-        for x, _ in tqdm(self.initial_redundancy, total = len(self.initial_redundancy), desc="Redundancy-based hedge trimming...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
-            actual_redundancy = self.samples_info[GREP.sample_to_str(x)]["r"]
-            active_leaves = self.samples_info[GREP.sample_to_str(x)]["leaves"]
-            if actual_redundancy > self.min_resiliency:
-                for tree_name, class_name, leaf in tqdm(active_leaves, total = len(active_leaves), desc="Evaluating leaves...", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
-                    leaf_id = (class_name, tree_name, leaf)
-                    samples = self.leaves_info[(tree_name, class_name, leaf)]["samples"]
-                    residual_redundancy = [ self.samples_info[GREP.sample_to_str(x)]["r"] for x in samples ]
-                    if leaf_id not in self.pruning_configuration and all( r > (self.min_resiliency + 1) for r in residual_redundancy ):
-                        self.pruning_configuration.append(leaf_id)
-                        GREP.set_pruning_conf(self.classifier, self.pruning_configuration)
-                        self.accuracy = self.evaluate_accuracy()
-                        self.loss = self.baseline_accuracy - self.accuracy
-                        logger.debug(f"Resulting loss: {self.loss}")
-                        logger.debug(f"Adding {leaf_id} to the list of pruned assertions. Current loss is {self.loss}% (max. {self.max_loss}%)")
-                        actual_redundancy -= 1
-                        self.update_redundancy(samples)
-                        if actual_redundancy < self.min_resiliency:
-                            break
-        final_cost = self.get_cost()
-        logger.info(f"Pruned {len(self.pruning_configuration)} leaves")
-        logger.info(f"Accuracy loss: {self.loss}")
-        logger.info(f"Final cost: {final_cost}. Expected saving is {(1 - final_cost / self.original_cost) * 100}%")
+        self.logger.info("Trimming the model...")
+        self.logger.info(f"Evaluating accuracy on the testing set...")
+        original_classes_test = self.classifier.predict(self.x_test) 
+        self.baseline_accuracy_test = accuracy_score(self.y_test, original_classes_test) * 100.0
+        self.logger.info(f"Accuracy on the testing set is {self.baseline_accuracy_test}")
+        start = time.time()
+        # Initialize the error resiliency of the pruning samples.
+        self.evaluate_error_resiliency()
+        
+        
+        self.logger.info("Initiating algorithm ")
+        # Prune until the minimum accuracy is found.
+        while len(self.red_vec) > 0 :
+            # The redundancy vector is ordered such that the first sample
+            # is the one with the highest redundancy.
+            self.red_vec = self.red_vec[1:]
+            # Get the next sample.
+            considered_sample = self.x_pruning_correct[0]
+            self.x_pruning_correct = self.x_pruning_correct[1:]
+            self.x_pruning_correct_leaves = self.x_pruning_correct_leaves[1:]
+            considered_class = self.predicted_classes[0]
+            self.predicted_classes = self.predicted_classes[1:]
+            
+            # Get leaves
+            considered_leaves = self.classifier.apply([considered_sample])[0]
+            pred_epis = self.computed_episVector(considered_class, considered_leaves)
+            old_epi = GREPSK.compute_sample_res_from_EpiVector(pred_epis)
 
-    def update_redundancy(self, samples):
-        logger = logging.getLogger("pyALS-RF")
-        for x in samples:
-            self.samples_info[GREP.sample_to_str(x)]["r"] -= 1
-            #TODO: self.initial_redundancy has to be updated as well, then re-sorted
-            logger.debug(f"\tDecreasing resiliency for sample {x}. Residual redundancy: {self.samples_info[GREP.sample_to_str(x)]['r']}. Cost now is {self.get_cost()}.")
+            while True: 
+                # Prune the best leaf
+                tree_to_prune, leaf_to_prune = self.get_best_leaf(considered_leaves, cost_criterion)
+                if leaf_to_prune > 0:
+                    parent_node, sibling, sibling_id, old_value = self.prune_leaf(tree_to_prune, leaf_to_prune)
+                else:
+                    break
+                # Get the best Leaves
+                considered_leaves = self.classifier.apply([considered_sample])[0]
+                new_epi_vec =  self.computed_episVector(considered_class, considered_leaves)
+                new_epi = GREPSK.compute_sample_res_from_EpiVector(new_epi_vec)
+                eta = old_epi - new_epi
+
+                if eta <= self.min_eta:
+                    # Append the newly found pruned node and its tree
+                    self.pruning_configuration.append((tree_to_prune, leaf_to_prune))
+                    self.removed_boxes += 2
+                    self.removed_and_nodes += self.leaf_dephts[tree_to_prune][leaf_to_prune] # Depth of the original leaf -1 + 1 of the sibling
+                    
+                    # Update the error resiliency by adding the new node 
+                    # and evaluating the new R.
+                    # R should be evaluated on the entire pruning set
+                    if len(self.x_pruning_correct) > 0:
+                        self.update_error_resiliency(tree_to_prune, leaf_to_prune, parent_node)
+                else:
+                    self.restore_pruned_leaf(tree_id=tree_to_prune, parent_node=parent_node, pruned_leaf=leaf_to_prune, sibling=sibling, sibling_id=sibling_id, old_value=old_value)
+                    break
+        end = time.time()
+        self.delta_trimming = end - start
+        self.used_criterion = cost_criterion
+        self.logger.info(f"Trimming completed in {self.delta_trimming} seconds.")
+        self.node_savings = self.origina_node_cost - self.removed_boxes
+        self.logger.info(f"Original Nodes : {self.origina_node_cost} Removed Boxes : {self.removed_boxes} Savings: {self.node_savings}")
+        self.logger.info(f"Evaluating pruned accuracy on the testing set")
+        pruning_classes = self.classifier.predict(self.x_test)
+        self.pruned_accuracy_test = accuracy_score(self.y_test, pruning_classes) * 100.0
+        self.logger.info(f"Accuracy on the testing set is {self.pruned_accuracy_test}")
+        self.loss_test = self.baseline_accuracy_test - self.pruned_accuracy_test
+        self.logger.info(f"Loss on the testing set is {self.loss_test}")
+
+    def dump_report(self, report_path):
+        report_file = os.path.join(report_path, "report.csv")
+        # Update stats.
+        sol_summary = {
+                "Algo"              : "loss_based",
+                "LeafStrategy"      : GREPSK.CostCriterion.crit_to_str(self.used_criterion),
+                "MinEta"           : self.min_eta,
+
+                "Baseline Acc XTest" : self.baseline_accuracy_test,
+                "Pruned Acc XTest"   : self.pruned_accuracy_test,
+                "Loss XTest"         : self.loss_test,
+
+                "Original Nodes"     : self.origina_node_cost,
+                "Removed Nodes"      : self.removed_boxes,
+                "Original Ands"      : self.original_and_nodes,
+                "Removed Ands"       : self.removed_and_nodes,
+                "Comp Time [s]"         : self.delta_trimming
+            }
+        add_header = not os.path.exists(report_file)
+        df = pd.DataFrame(sol_summary, index=[0]).to_csv(report_file, index = False, header = add_header, mode = "a")
+        self.logger.info(f"Summary CSV updated! Please check {report_file}")
         
