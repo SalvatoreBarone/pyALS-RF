@@ -202,10 +202,17 @@ class Classifier:
             #name_matches = [ a == f for a, f in zip(attribute_name, f_names) ] # SUBSTITUTED FOR TIC TAC TOE ENDGAME
             name_matches = [ a.replace('-', '_') == f.replace('-', '_') for a, f in zip(attribute_name, f_names) ]
             assert all(name_matches), f"Feature mismatch at index {name_matches.index(False)}: {attribute_name[name_matches.index(False)]} != {f_names[name_matches.index(False)]}"
-        self.x_test = self.dataframe.loc[:, self.dataframe.columns != out_col].values
-        self.y_test = self.dataframe.loc[:, self.dataframe.columns == out_col].values
-        for arg in self.args:
-            arg[1] = self.x_test
+            self.x_test = self.dataframe.loc[:, self.dataframe.columns != out_col].values
+            self.y_test = self.dataframe.loc[:, self.dataframe.columns == out_col].values
+            for arg in self.args:
+                arg[1] = self.x_test
+        else: # TEMPORARY, TO GENERALIZE IN FUTURE
+            self.x_test = self.dataframe.iloc[:, : -1].values
+            self.y_test = self.dataframe.iloc[:, -1].values
+            for arg in self.args:
+                arg[1] = self.x_test
+            # print(self.y_test)
+            # exit(1)
 
     def brace4ALS(self, als_conf):
         if self.als_conf is None:
@@ -332,7 +339,8 @@ class Classifier:
         votes_vector = self.get_votes_vectors_by_leaves_idx(leaves, y)
         correctly_classified_draw = 0
         correctly_classified_no_draw = 0
-        for vote, correct_classess in zip(votes_vector, y):        
+        for vote, correct_classess in zip(votes_vector, y):
+            #print(f"{np.argmax(vote)} {correct_classess} ")        
             if np.argmax(vote) == int(correct_classess):
                 if not Classifier.check_draw(vote)[0]:
                     correctly_classified_draw += 1
