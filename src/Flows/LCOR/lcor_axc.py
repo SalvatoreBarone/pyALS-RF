@@ -1,0 +1,330 @@
+"""
+Copyright 2021-2023 Salvatore Barone <salvatore.barone@unina.it>, Antonio Emmanuele <antonio.emmanuele@unina.it>
+
+This is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 3 of the License, or any later version.
+
+This is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+more details.
+
+You should have received a copy of the GNU General Public License along with
+pyALS-RF; if not, write to the Free Software Foundation, Inc., 51 Franklin
+Street, Fifth Floor, Boston, MA 02110-1301, USA.
+"""
+import logging, joblib, numpy as np
+from multiprocessing import cpu_count
+from itertools import combinations, product
+from tqdm import tqdm
+from ...Model.Classifier import Classifier
+from ...Model.DecisionTree import *
+from ..GREP.GREP import GREP
+import time
+import csv 
+import os
+import json5
+from scipy.stats import norm # For cut-offs.
+from sklearn.model_selection import train_test_split
+
+""" Computes the number of test set sizes to obtain an extimation of the accuracy loss.
+    number of samples =                      test_set_size
+                            -----------------------------------------------------
+                                                                test_set_size - 1
+                            1   +   error_margin^2 -----------------------------------------------------
+                                                    cut_off^2 * individual_prob * (1 - individual_prob)
+    test_set_size: Size of the test set.
+    error_margin : Given a Probability Peval this defines the error interval size [Peval - error_margin, Peval + error_margin]
+    cut_off:    The quantile of the standard normal distribution assumed a specififc confidence level (i.e. the probability that 
+                the acc loss is within the interval centered in Peval).
+                This value is computed internally of the function that takes as input the confidence level.
+    individual_prob : The probability that a sample is present.
+""" 
+def compute_sample_size(test_set_size, error_margin, confidence_level, individual_prob):
+    cut_off = norm.ppf(confidence_level) 
+    return int(test_set_size / (1 + pow(error_margin,2) * ( (test_set_size - 1) / (pow(cut_off,2) * individual_prob * (1 - individual_prob)) ) ))
+
+class LCOR_AXC(GREP):
+    def __init__(
+                    self, classifier : Classifier,
+                    pruning_set_fraction : float = 0.5,
+                    validation_set_fraction: float = 0.5,
+                    max_loss : float = 5.0, 
+                    min_resiliency : int = 0, 
+                    ncpus : int = cpu_count(),
+                    pruning_path : str = "./",
+                    report_path : str = "./",
+                    flow : str = "pruning"
+                ):
+        super().__init__(classifier, pruning_set_fraction, max_loss, min_resiliency, ncpus)
+        self.leaf_scores = {}
+        self.corr_per_leaf = {}
+        self.pruning_path = pruning_path
+        self.report_path = report_path
+        self.flow = flow
+        self.validation_set_fraction = validation_set_fraction
+
+
+    """     
+    Compute the number of samples in each leaf
+    The func returns a data structure indexed by [leaf_class,tree,leaf].
+    Each element [i,j,z] contains (test_input,value) that falls into the leaf z. 
+    """
+    def samples_per_leaves(self,classifier : Classifier):
+        samples_per_leaf_dict = { c : {t.name : {  l["sop"] : set() for l in t.leaves if l["class"] == c } for t in classifier.trees } for c in classifier.model_classes} 
+        for x, y in  tqdm(zip(self.x_pruning, self.y_pruning), total=len(self.x_pruning), desc="Computing samples per leaf", bar_format="{desc:30} {percentage:3.0f}% |{bar:40}{r_bar}{bar:-10b}", leave=False):
+            for tree in classifier.trees:
+                boxes_output = tree.get_boxes_output(x) # Get decision boxes
+                for class_name, assertions in tree.class_assertions.items():
+                    for leaf in assertions:
+                        if eval(leaf, boxes_output): # if the Assertion is true then save (x,y) in the DS
+                            samples_per_leaf_dict[class_name][tree.name][leaf].add((tuple(frozenset(x)),y[0]))
+        return samples_per_leaf_dict
+
+    """ 
+    Compute the correlation between each couple of leaves.
+    returns a structure indexed by [(tree_A,leaf_A),(tree_B,leaf_B)] such that:
+    DS[(tree_A,leaf_A),(tree_B,leaf_B)] =  correlation(leaf_a,leaf_b) 
+    """
+    @staticmethod
+    def compute_leaves_correlation(samples_per_leaf_dict):
+        #corr_per_leaf = {}
+        corr_per_leaf_cleaned = {}
+        for cls, cls_data in samples_per_leaf_dict.items(): # for each class
+            for comb in combinations(cls_data.keys(), 2): # for each couple of tree.
+                tree_A = comb[0] # take the pair of tree 
+                tree_B = comb[1]
+                for leaves in product(list(samples_per_leaf_dict[cls][tree_A].keys()),list(samples_per_leaf_dict[cls][tree_B].keys())):
+                    #N11, N00, N1X, NX1, N0X, NX0 = 0, 0, 0, 0, 0, 0
+                    conc, disc = 0, 0
+                    Q_stat = 0
+                    leaf_A = leaves[0]
+                    leaf_B = leaves[1]
+                    if len(samples_per_leaf_dict[cls][tree_A][leaf_A]) > 0 and len(samples_per_leaf_dict[cls][tree_B][leaf_B]) > 0 :
+                        # The set here is the set of (x,y) present in at least leaf_A or leaf_B without repetition.
+                        for xy in samples_per_leaf_dict[cls][tree_A][leaf_A] | samples_per_leaf_dict[cls][tree_B][leaf_B]:   
+                            if xy in samples_per_leaf_dict[cls][tree_A][leaf_A] and xy in samples_per_leaf_dict[cls][tree_B][leaf_B]:
+                                # Case 1: x,y is in both leaves 
+                                conc += 1
+                            elif xy in samples_per_leaf_dict[cls][tree_A][leaf_A] and xy not in samples_per_leaf_dict[cls][tree_B][leaf_B]:
+                                #  Case 2: x,y is in leafA but not in leafB
+                                disc += 1
+                            elif xy in samples_per_leaf_dict[cls][tree_A][leaf_A] and xy not in samples_per_leaf_dict[cls][tree_B][leaf_B]:
+                                #  Case 3: x,y is in leafB but not in leafA
+                                disc += 1   
+                        Q_stat = (conc  -  disc) / (conc + disc)
+                        """ 
+                        Consider the statistic only in case it is positively correlated.
+                        Since we're discarding the "accuracy" of a leaf, Q is positive when two leaves are
+                        taking the same decisions, thus one of them could be eliminated.
+                        """
+                        if Q_stat > 0 : 
+                            if (cls,tree_A,leaf_A) not in corr_per_leaf_cleaned: # In case the leaf entry was not present in the map
+                                corr_per_leaf_cleaned[(cls,tree_A,leaf_A)] = {(cls,tree_B,leaf_B) : Q_stat}
+                            else:   # Otherwise insert the new statistic.
+                                corr_per_leaf_cleaned[(cls,tree_A,leaf_A)].update({(cls,tree_B,leaf_B) : Q_stat})
+                            # Compute the dual in order to remove the leaf with a greater number of literals.
+                            if (cls,tree_B,leaf_B) not in corr_per_leaf_cleaned:
+                                corr_per_leaf_cleaned[(cls,tree_B,leaf_B)] = {(cls,tree_A,leaf_A) : Q_stat}
+                            else:
+                                corr_per_leaf_cleaned[(cls,tree_B,leaf_B)].update({(cls,tree_A,leaf_A) : Q_stat})            
+        return corr_per_leaf_cleaned
+                    
+    # Compute the score for each leaf multiplying the sum(Q_stat(A,B))* Num literals.
+    def compute_leaves_score(self,corr_per_leaf):
+        scores = {}
+        for leafA in corr_per_leaf:
+            # Initialize the vector of scores only for the leaves that
+            # are not already pruned.
+            if leafA not in self.pruning_configuration:
+                scores[leafA] = 0
+        for leafA in scores.keys():
+            num_and = 0
+            for leafB in corr_per_leaf[leafA]:
+                # leafB != leafA, should also check this but for construction it leafA is not in the correlated list of leafA
+                if leafB not in self.pruning_configuration: 
+                    scores[leafA] += corr_per_leaf[leafA][leafB]
+            # After summing the correlations of leafA multiply by the number of and of leafA
+            splitted = leafA[2].split()
+            for and_w in splitted:
+                if and_w == "and":
+                    num_and += 1
+            scores[leafA] = scores[leafA] * num_and # multiply by the number of literals.
+        return scores
+    
+    # Initialize the scores
+    def init_leaves_scores(self):
+        samples_per_leaf_dict = self.samples_per_leaves(self.classifier)
+        self.corr_per_leaf = LCOR_AXC.compute_leaves_correlation(samples_per_leaf_dict)
+        scores = self.compute_leaves_score(self.corr_per_leaf)
+        # self.leaf_scores is a list of tuples (leaf={tree,class,leaf}, score) sorted by score
+        self.leaf_scores = sorted(scores.items(), key=lambda x: x[1],reverse = True) # Sort scores
+    
+    # Predispose the  trim operation by initializing internal values.
+    def predispose_trim(self):
+        logger = logging.getLogger("pyALS-RF")
+        logger.info(f"Test set: {len(self.classifier.x_test)} samples")
+        logger.info(f"Pruning set fraction: {self.pruning_set_fraction}")
+        self.split_test_dataset_lcor(self.pruning_set_fraction, self.validation_set_fraction)
+        logger.info(f"Pruning set: {len(self.x_pruning)} samples")
+        logger.info(f"Validation set: {len(self.x_validation)} samples")
+        self.p_tree = self.classifier.p_tree
+        self.args_evaluate_pruning = [[t, self.x_pruning] for t in self.p_tree]
+        self.args_evaluate_validation = [[t, self.x_validation] for t in self.p_tree]
+        self.args_evaluate_test = [[t, self.x_test] for t in self.p_tree]
+
+        self.pool = self.classifier.pool
+        self.baseline_accuracy = self.evaluate_accuracy()
+        logger.info(f"Baseline accuracy (on validation set) : {self.baseline_accuracy}%")
+        self.original_cost = self.get_cost()
+        logger.info(f"Original cost: {self.original_cost}")
+        self.accuracy = self.baseline_accuracy
+        logger.info(f"Evaluating accuracy on the test set")
+        self.test_set_accuracy = self.evaluate_accuracy_test() 
+        self.loss = 0
+        logger.info("Performing Boolean networks backup")
+        self.backup_bns()
+        self.pruning_configuration = []
+    
+    def evaluate_accuracy(self):
+        outcomes = np.sum(self.pool.starmap(Classifier.compute_score, self.args_evaluate_validation), axis = 0)
+        return np.sum(np.argmax(o) == y and not self.classifier.check_draw(o)[0] for o, y in zip(outcomes, self.y_validation)) / len(self.y_validation) * 100
+    
+    def evaluate_accuracy_test(self):
+        outcomes = np.sum(self.pool.starmap(Classifier.compute_score, self.args_evaluate_test), axis = 0)
+        return np.sum(np.argmax(o) == y and not self.classifier.check_draw(o)[0] for o, y in zip(outcomes, self.y_test)) / len(self.y_test) * 100
+    
+    def split_test_dataset_lcor(self, pruning_set_fraction : float = 0.5, validation_set_fraction: float = 0.5):
+        # if pruning_set_fraction == None: 
+        #     valuation_size = compute_sample_size(test_set_size = len(self.classifier.x_test), error_margin = 0.05, confidence_level = 0.95, individual_prob = 0.5)
+        #     # With the valuation:_size compute the pruning portion size 
+        #     pruning_portion = ( len(self.classifier.x_test) - valuation_size) / len(self.classifier.x_test) # This is the portion of the validation
+        # else:
+        #     pruning_portion = pruning_set_fraction
+        # indexes = np.arange(len(self.classifier.x_test))
+        # self.x_pruning, self.x_test, self.y_pruning, self.y_test, self.idx_prun, self.idx_test = train_test_split(self.classifier.x_test, self.classifier.y_test, indexes, train_size = pruning_portion) # Use stratify = self.classifier.x_test.ravel() ensures that all classess are considered. 
+        # self.x_pruning, self.x_validation, self.y_pruning, self.y_validation, self.idx_prun, self.idx_val = train_test_split(self.x_pruning, self.y_pruning, self.idx_prun,  test_size = validation_set_fraction)
+        self.x_pruning = self.classifier.x_train
+        self.y_pruning = self.classifier.y_train
+        self.x_validation, self.x_test, self.y_validation, self.y_test = train_test_split(self.x_pruning, self.y_pruning, train_size = validation_set_fraction)
+        
+    
+    """     
+    Algorithm(classifier, sample_per_leaf,corr_per_leaf,T',max_loss):
+    
+    score_per_leaf = compute_score(corr_per_leaf, classifier)
+    base_accuracy =  (classifier,T') -> già la tengo
+    actual_accuracy = base_accuracy 
+    scores_idx = 0
+    while base_accuracy - actual_accuracy > max_loss and scores_idx < len(score_per_leaf) :
+      best_score = score_per_leaf[0]
+      helper_classifier = prune(best_score, classifier)
+      actual_score = ComputeAccuracy(classifier,T')
+      if base_accuracy - actual_accuracy >= max_loss:
+          classifier = helper_classifier
+          Update_Correlation(corr_per_leaf)
+          Update_Scores(score_per_leaf)
+          scores_idx = 0 
+      else 
+          scores_idx ++ 
+    """        
+    def inner_trim(self, report_path):
+        logger = logging.getLogger("pyALS-RF")
+        scores_idx = 0      # Index used for the scores list
+        pruned_leaves = 0   # Number of pruned leaves
+        final_acc = 0
+        nro_candidates = len(self.leaf_scores)
+        comp_time = time.time()
+        while self.loss <= self.max_loss and len(self.leaf_scores) > scores_idx:
+            tentative = copy.deepcopy(self.pruning_configuration) # save the pruning conf.
+            leaf_id = self.leaf_scores[scores_idx][0] # Save the leaf id to try.  
+            tentative.append(leaf_id)  # append the element with the best value.
+            GREP.set_pruning_conf(self.classifier, tentative) # Set the pruning configuration
+            self.accuracy = self.evaluate_accuracy() # Evaluate the accuracy
+            loss = self.baseline_accuracy - self.accuracy # compute the loss
+            if loss <= self.max_loss:   # If the loss is acceptable
+                self.loss = loss        # Update the loss 
+                final_acc = self.accuracy  # Save the real accuracy
+                self.pruning_configuration.append(leaf_id) # Insert the leaf into the pruning configuration
+                pruned_leaves += 1  # Increase the number of pruned leaves
+                logger.info(f'Actual acc {self.accuracy} Base {self.baseline_accuracy}')
+                logger.info(f'Idx {scores_idx} Max LEN {len(self.leaf_scores)}')
+                logger.info(f'Actual loss {self.loss}')
+            else: 
+                break
+            scores_idx += 1
+        comp_time = time.time() - comp_time
+        logger.info(f'Total N.ro Leaves {len(self.corr_per_leaf)} N.ro pruned leaves {len(self.pruning_configuration)}')
+        logger.info(f' N.ro candidates {nro_candidates}  N.ro pruned leaves {pruned_leaves}')
+        logger.info(f' Pruned Accuracy {final_acc} Base Accuracy{self.baseline_accuracy}')
+        logger.info(f' Max loss {self.max_loss} Pruned Loss {self.loss} ')
+        logger.info(f' Computational time {comp_time} [s]')
+        logger.info(f"Evaluating accuracy on the test set")
+        self.pruned_accuracy_test_set = self.evaluate_accuracy_test()
+        logger.info(f"XTST base acc : {self.test_set_accuracy} pruned acc: {self.pruned_accuracy_test_set} Loss: {self.test_set_accuracy - self.pruned_accuracy_test_set}")
+        # Save the report 
+        if report_path != None :
+            csv_header = [  "Max Loss", "Total number of leaves" , "N.ro pruned leaves",
+                            "N.ro candidates Iteration"," N.ro pruned leaves Iteration",
+                            "Scores Idx", "Scores remainings elems",
+                            "Pruned Accuracy", "Base Accuracy",
+                            "Pruned Loss", "Base Accuracy XTST", "Accuracy XTST", 
+                            "Loss XTST", "Computational Time"]
+            csv_body = [ self.max_loss, len(self.corr_per_leaf),len(self.pruning_configuration),
+                         nro_candidates, pruned_leaves,
+                         scores_idx, len(self.leaf_scores),
+                         final_acc, self.baseline_accuracy,
+                         self.loss, self.test_set_accuracy
+                         ,self.pruned_accuracy_test_set, self.test_set_accuracy - self.pruned_accuracy_test_set, 
+                         comp_time]
+            add_header = not os.path.exists(report_path)
+            with open(report_path, 'a') as f:
+                writer = csv.writer(f)
+                if add_header:
+                    writer.writerow(csv_header)
+                writer.writerow(csv_body)
+
+    def trim(self):
+        self.predispose_trim()
+        self.init_leaves_scores()
+        report_path = self.report_path + "/lcor_report.csv"
+        pruning_cfg_path =  self.pruning_path + "/pruning_configuration.json5"    
+        self.inner_trim(report_path)
+        self.store_pruning_conf(pruning_cfg_path)
+        
+    # # Iterare the pruning by curr
+    # def trim_iterative(self, report, loss_lb, loss_ub, step):
+    #     self.predispose_trim()
+    #     # for each possible loss
+    #     self.init_leaves_scores()
+    #     for it_loss in np.arange(loss_lb, loss_ub + step, step):
+    #         # Generate all the paths
+    #         report_path = self.out_path + "/lcor_" + str(it_loss) + "/lcor_report.csv"
+    #         pruning_path =  self.out_path + "/lcor_" + str(it_loss) + "/pruning_configuration.json5"
+    #         flow_store_path = self.out_path + "/lcor_" + str(it_loss) + "/.flow.json5"
+    #         pruning_idxs = self.out_path + "/lcor_" + str(it_loss) + "/.pruning_idxs.json5"
+    #         test_idxs = self.out_path + "/lcor_" + str(it_loss) + "/.test_idxs.json5"
+
+    #         # Generate the out dir
+    #         if not os.path.exists(self.out_path + "/lcor_" + str(it_loss)): 
+    #             os.makedirs(self.out_path + "/lcor_" + str(it_loss))
+    #         # Save 
+    #         # with open(pruning_idxs, "w") as f:
+    #         #     json5.dump(self.idx_prun, f, indent = 2)
+    #         # with open(test_idxs, "w") as f:
+    #         #     json5.dump(self.idx_test, f, indent = 2)
+    #         np.savetxt(pruning_idxs, self.idx_prun,  fmt='%d')
+    #         np.savetxt(test_idxs, self.idx_test,  fmt='%d')
+    #         # set the new maximum loss
+    #         self.max_loss = it_loss
+    #         # Trim with the actual accuracy
+    #         self.inner_trim(report,report_path)
+    #         # Update the scores
+    #         scores = self.compute_leaves_score(self.corr_per_leaf) # Just need to recompute the scores and sort them. 
+    #         self.leaf_scores = sorted(scores.items(), key=lambda x: x[1],reverse = True) # Sort scores
+    #         # Save the pruning configuration
+    #         self.store_pruning_conf(pruning_path)
+    #         # Save the files
+    #         with open(f"{flow_store_path}", "w") as f:
+    #             json5.dump(self.flow, f, indent=2)

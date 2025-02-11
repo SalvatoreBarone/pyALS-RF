@@ -23,6 +23,7 @@ from ..ctx_factory import load_configuration_ps, create_classifier, store_flow
 from ..ConfigParsers.PsConfigParser import *
 from ..Model.Classifier import Classifier
 from .LCOR.lcor import LCOR
+from .LCOR.lcor_axc import LCOR_AXC
 import os 
 
 
@@ -37,33 +38,22 @@ def leaves_correlation_flow(ctx, output, fraction, maxloss_lb, maxloss_ub, loss_
     create_classifier(ctx)    
     lcor = LCOR (ctx.obj["classifier"], fraction, maxloss_lb, 0, ncpus,ctx.obj['configuration'].outdir,ctx.obj["flow"])
 
-    # *** Useful for testing the score function after an update to the pruning set
-    # pruning_configuration = []
-    # pruning_configuration.append(('1','4','(Node_0)'))
-    # pruning_configuration.append(('6','3','(Node_0)'))
-    # lcor.append_pruning_conf(pruning_configuration)
-    
-    #print(type(ctx.obj['configuration'].outdir))
     actual_loss = maxloss_lb
-    
-    #lcor.predispose_trim()
-    # while actual_loss <= maxloss_ub:
-    #     lcor.max_loss = actual_loss # reset the loss
-    #     report_path = ctx.obj['configuration'].outdir + "/lcor_" + str(actual_loss) + "/lcor_report.csv"
-    #     pruning_path = ctx.obj['configuration'].outdir + "/lcor_" + str(actual_loss) + "/pruning_configuration.json5"
-    #     flow_store_path = ctx.obj['configuration'].outdir + "/lcor_" + str(actual_loss) + "/.flow.json5"
-    #     if not os.path.exists(ctx.obj['configuration'].outdir + "/lcor_" + str(actual_loss)): # create the experiments path
-    #         os.makedirs(ctx.obj['configuration'].outdir + "/lcor_" + str(actual_loss))
-    #     lcor.trim(report,f"{report_path}") # trim
-    #     lcor.store_pruning_conf(pruning_path) # store the report
-    #     lcor.restore_bns()
-    #     lcor.pruning_configuration = []
-    #     actual_loss += loss_step
-    #     #store_flow(ctx)
-    #     with open(f"{flow_store_path}", "w") as f:
-    #         json5.dump(ctx.obj["flow"], f, indent=2)
-
 
     lcor.trim_alternative(report,maxloss_lb,maxloss_ub,loss_step)
 
-    
+
+def leaves_correlation_flow_2(ctx, fraction, fraction_validation, max_loss , ncpus, report_path, pruning_path ):
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("Runing the pruning flow.")
+    load_configuration_ps(ctx)
+    create_classifier(ctx)    
+    assert report_path != None
+    assert pruning_path != None
+    if not os.path.exists(report_path):
+        os.makedirs(report_path)
+    if not os.path.exists(pruning_path):
+        os.makedirs(pruning_path)
+    lcor = LCOR_AXC(ctx.obj["classifier"], pruning_set_fraction = fraction, validation_set_fraction= fraction_validation, max_loss = max_loss, min_resiliency = 0, ncpus = ncpus, report_path = report_path, pruning_path = pruning_path,flow = ctx.obj["flow"])
+    lcor.trim()
+

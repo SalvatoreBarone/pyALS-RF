@@ -74,7 +74,8 @@ def create_classifier(ctx):
         ctx.obj["classifier"] = Classifier(ctx.obj["ncpus"], ctx.obj["espresso"])
         ctx.obj["classifier"].parse(ctx.obj["configuration"].model_source, ctx.obj["configuration"].error_conf.dataset_description)
         ctx.obj["classifier"].read_test_set(ctx.obj["configuration"].error_conf.test_dataset, ctx.obj["configuration"].error_conf.dataset_description.separated_training)
-        
+        ctx.obj["classifier"].read_training_set(ctx.obj["configuration"].train_dataset, ctx.obj["configuration"].error_conf.dataset_description.separated_training)
+
 def create_alsgraph(ctx):
     pass
     # if "graph" not in ctx.obj:

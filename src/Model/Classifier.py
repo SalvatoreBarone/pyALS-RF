@@ -214,6 +214,29 @@ class Classifier:
             # print(self.y_test)
             # exit(1)
 
+    def read_training_set(self, dataset_csv, no_header = False):
+        self.dataframe = pd.read_csv(dataset_csv, sep = self.csv_separator)
+        # Todo : Remove the assumption of the last column being the label
+        attribute_name = list(self.dataframe.keys())[:-1]
+        out_col = self.dataframe.keys()[-1]
+        assert len(attribute_name) == len(self.model_features), f"Mismatch in features vectors. Read {len(attribute_name)} features, buth PMML says it must be {len(self.model_features)}!"
+        f_names = [ f["name"] for f in self.model_features]
+        if not no_header:
+            #name_matches = [ a == f for a, f in zip(attribute_name, f_names) ] # SUBSTITUTED FOR TIC TAC TOE ENDGAME
+            name_matches = [ a.replace('-', '_') == f.replace('-', '_') for a, f in zip(attribute_name, f_names) ]
+            assert all(name_matches), f"Feature mismatch at index {name_matches.index(False)}: {attribute_name[name_matches.index(False)]} != {f_names[name_matches.index(False)]}"
+            self.x_train = self.dataframe.loc[:, self.dataframe.columns != out_col].values
+            self.y_train = self.dataframe.loc[:, self.dataframe.columns == out_col].values
+            for arg in self.args:
+                arg[1] = self.x_test
+        else: # TEMPORARY, TO GENERALIZE IN FUTURE
+            self.x_train = self.dataframe.iloc[:, : -1].values
+            self.y_train = self.dataframe.iloc[:, -1].values
+            for arg in self.args:
+                arg[1] = self.x_test
+            # print(self.y_test)
+            # exit(1)
+
     def brace4ALS(self, als_conf):
         if self.als_conf is None:
             self.als_conf = als_conf

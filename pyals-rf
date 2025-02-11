@@ -26,7 +26,7 @@ from src.Flows.debug_flow import hdl_debug_flow, debug_with_scikit, print_model
 from src.ConfigParsers.DtGenConfigParser import *
 from src.hdl_generation import hdl_generation
 from src.git_updater import git_updater
-from src.Flows.lcor_flow import leaves_correlation_flow
+from src.Flows.lcor_flow import leaves_correlation_flow, leaves_correlation_flow_2
 from src.Flows.tmr_flow import tmr_flow, mr_mop_flow, mr_heu_flow
 from src.Flows.faultinj_flow import fault_visit, gen_fault_collection, gen_fault_coll_ps,  dump_unfaulted_class_vector, sample_test_set, ps_faultinj_visit #, test_dbs_faulted_inference, test_bns_faulted_inference
 from src.Flows.visit_testing import visit_test
@@ -163,6 +163,32 @@ def lcor(ctx, conf, ncpus, output, verbose, fraction, maxloss_lb, maxloss_ub, lo
     leaves_correlation_flow(ctx, output, fraction, maxloss_lb, maxloss_ub,loss_step, ncpus, report)
     #store_flow(ctx)
 
+
+@cli.command("lcor_ax")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
+@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
+@click.option('-f', '--pruning_fraction', type = float, default = 0.5, help = "Fraction of the test set to be used as pruning set")
+@click.option('-k', '--validation_fraction', type = float, default = 0.5, help = "Fraction of the pruning set to be used as validation set")
+@click.option('-l', '--maxloss', type = float, default = 5.0, help = "Maximum_loss")
+@click.option('-r', '--report_path', type = str, default = True , help = "Out folder for the report configuration.")
+@click.option('-p', '--pruning_path', type = str, default = True , help = "Out folder for the pruning configuration.")
+@click.pass_context
+def lcor_ax(ctx, conf, ncpus, verbose, pruning_fraction, validation_fraction, maxloss, report_path, pruning_path):
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False,"pruning")
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("Leaves correlation pruning flow"
+                f"\n\tconf: {conf}"
+                f"\n\tverbose: {verbose}"
+                f"\n\tpruning_fraction: {pruning_fraction}"
+                f"\n\tpruning_fraction: {validation_fraction}"
+                f"\n\tmax loss: {maxloss}"
+                f"\n\treport path: {report_path}"
+                f"\n\tpruning path: {pruning_path}"
+                )
+    leaves_correlation_flow_2(ctx, fraction=pruning_fraction, fraction_validation=validation_fraction, max_loss=maxloss, ncpus=ncpus,report_path=report_path, pruning_path=pruning_path)
+
+    
 @cli.command("tmr")
 @click.option('-m', '--moo', type = bool, default =False, help = "Set the MR optimization as a MOO optimization problem.")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
@@ -463,6 +489,7 @@ cli.add_command(grep)
 cli.add_command(tmr)
 cli.add_command(mr_heu)
 cli.add_command(lcor)
+cli.add_command(lcor_ax)
 cli.add_command(generate_hdl)
 cli.add_command(debug_model)
 cli.add_command(debug_hdl)

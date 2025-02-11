@@ -39,6 +39,7 @@ class PSConfigParser(ConfigParser):
             test_dataset = search_subfield_in_config(self.configuration, "error", "test_dataset", True),
             dataset_description = DtGenConfigParser(search_subfield_in_config(self.configuration, "error", "dataset_description", True)))
         
+        self.train_dataset = search_subfield_in_config(self.configuration, "error", "training_dataset", True)
         
         optimizer_conf = search_field_in_config(self.configuration, "optimizer", True)
         assert isinstance(optimizer_conf, dict), "the 'optimizer' field of the config file is not valid"
