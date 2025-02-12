@@ -24,7 +24,7 @@ from src.Flows.als_flow import als_one_step, als_two_steps
 from src.Flows.combined_flow import full_one_step, full_two_steps
 from src.Flows.debug_flow import hdl_debug_flow, debug_with_scikit, print_model
 from src.ConfigParsers.DtGenConfigParser import *
-from src.hdl_generation import hdl_generation
+from src.hdl_generation import hdl_generation, hdl_resource_usage
 from src.git_updater import git_updater
 from src.Flows.lcor_flow import leaves_correlation_flow, leaves_correlation_flow_2
 from src.Flows.tmr_flow import tmr_flow, mr_mop_flow, mr_heu_flow
@@ -482,6 +482,17 @@ def test_visit(ctx, conf, ps_dir, accuracy_validation, verbose, ncpus):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "visiting_testing")
     visit_test(ctx, ps_dir, accuracy_validation)
 
+@cli.command("hdl_res_usage")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file of the classifier")
+@click.option('-p', '--ps_path', type=click.Path(exists=True, dir_okay=False), default = None, help = "Path of the PS final_archive")
+@click.option('-g', '--pruning_path', type=click.Path(exists=True, dir_okay=False), default = None, help = "Path of the Pruning Cfg")
+@click.option('-g', '--out_path', type=click.Path(exists=True, dir_okay=False), default = None, help = "OutPath of the resource usage report.")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
+@click.pass_context
+def hdl_res_usage(ctx, conf, ps_path, pruning_path, out_path, verbose):
+    set_global_options(ctx, conf, "pyALS-RF", verbose, 1, False, "visiting_testing")
+    hdl_resource_usage(ctx, pruning_cfg_path=pruning_path, ps_set_configuration_path=ps_path, report_path=out_path)
+
 cli.add_command(bitwidth)
 cli.add_command(als)
 cli.add_command(full)
@@ -503,6 +514,8 @@ cli.add_command(gen_class_vectors)
 cli.add_command(gen_xtest_coll)
 cli.add_command(test_visit)
 cli.add_command(pruningcfg_into_directions)
+cli.add_command(hdl_res_usage)
+
 if __name__ == '__main__':
     if git_updater(os.path.dirname(os.path.realpath(__file__))):
         os.execv(sys.argv[0], sys.argv)

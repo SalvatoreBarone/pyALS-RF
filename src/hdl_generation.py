@@ -27,6 +27,8 @@ from .HDLGenerators.TwoStepsAlsHdlGenerator import TwoStepsAlsHdlGenerator
 from .HDLGenerators.TwoStepsAlsWcHdlGenerator import TwoStepsAlsWcHdlGenerator
 from .HDLGenerators.TwoStepsFullHdlGenerator import TwoStepsFullHdlGenerator
 from .ctx_factory import load_configuration_ps, create_classifier, create_yshelper, load_flow, create_problem, create_optimizer
+import os
+import json5
 
 def hdl_generation(ctx, lut_tech, skip_exact : bool, output, pruning_name):
     logger = logging.getLogger("pyALS-RF")
@@ -84,6 +86,7 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output, pruning_name):
             ctx.obj["pareto_front"] = ctx.obj["optimizer"].archive
         hdl_generator = PsHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
         hdl_generator.generate_axhdl(pareto_set = ctx.obj['pareto_front'].get_set(), enable_espresso = ctx.obj['espresso'], lut_tech = lut_tech)
+        #ax_luts_dbs, exact_lut_bns, ax_ffs_dbs, exact_lut_dbs, exact_ffs_dbs = hdl_generator.get_resource_usage()
     elif ctx.obj["flow"] == "als-onestep":
         hdl_generator = SingleStepAlsHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
     elif ctx.obj["flow"] == "als-twosteps":
@@ -102,3 +105,54 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output, pruning_name):
     
     
     logger.info("All done!")
+
+def hdl_resource_usage(ctx, pruning_cfg_path : str = None, ps_set_configuration_path: str = None, report_path: str = None):
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("Runing the HDL generation flow.")
+    if pruning_cfg_path != None and ps_set_configuration_path != None:
+        assert 1 == 0, "Dual AxC Cfg not yet supported !"
+    if ps_set_configuration_path != None and not os.path.exists(ps_set_configuration_path):
+        logger.error("Invalid path for precision scaling cfg")
+        assert 1 == 0
+    if pruning_cfg_path != None and not os.path.exists(pruning_cfg_path):
+        logger.error("Invalid path for pruning configuration")
+        assert 1 == 0
+    load_configuration_ps(ctx)
+    create_classifier(ctx)
+    create_yshelper(ctx)
+    # # Generate the configuration for the exact classifier.
+    # hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+    # exact_luts_dbs, exact_luts_bns, exact_ffs_dbs = hdl_generator.get_resource_usage()
+    # logger.info("Exact implementations expected requirements (voting excluded):"
+    #             f"\n\t- LUTs for decision boxes (exact): {exact_luts_dbs}"
+    #             f"\n\t- FFs for decision boxes (exact): {exact_ffs_dbs}"
+    #             f"\n\t- LUTs for Boolean Networks (exact): {exact_luts_bns}")
+    if  ps_set_configuration_path  != None:
+        with open(ps_set_configuration_path, 'r') as f:
+            pareto_set = json5.load(f)
+        for cfg_id, cfg in enumerate(pareto_set):
+            loss = cfg['f']
+            confs = cfg['x']
+            nabs = {f["name"]: n for f, n in zip(ctx.obj['classifier'].model_features, confs)}
+            ps_ax_hdl_generator = PsHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+            ctx.obj['classifier'].set_nabs(nabs)
+            nLUTs_dbs, nLUTs_bns, nFFs_dbs, nLUTs_dbs_exact, nFFs_dbs_exact = ps_ax_hdl_generator.get_resource_usage_custom()
+            dbs_lut_savings = ( (nLUTs_dbs_exact - nLUTs_dbs) / nLUTs_dbs_exact) * 100.0
+            dbs_ffs_savings = ( (nFFs_dbs_exact - nFFs_dbs) / nFFs_dbs_exact) * 100.0
+            total_lut_exact = nLUTs_dbs_exact + nLUTs_bns
+            total_luts_ax = nLUTs_dbs + nLUTs_bns
+            total_luts_savings = (1 - total_luts_ax /total_lut_exact) * 100.0
+            logger.info("Approximate implementations expected requirements (voting excluded):"
+                f"\n\t- LUTs for decision boxes (PS): {nLUTs_dbs}"
+                f"\n\t- FFs for decision boxes (PS): {nFFs_dbs}"
+                f"\n\t- LUTs for Boolean Networks (PS): {nLUTs_bns}")
+            logger.info("Exact implementations expected requirements (voting excluded):"
+                f"\n\t- LUTs for decision boxes (PS): {nLUTs_dbs_exact}"
+                f"\n\t- FFs for decision boxes (PS): {nFFs_dbs_exact}"
+                f"\n\t- LUTs for Boolean Networks (PS): {nLUTs_bns}")
+            logger.info(f"Savings DBS: LUTS: {dbs_lut_savings} FFS: {dbs_ffs_savings} Total LUTS: {total_luts_savings} Total FFS: {dbs_ffs_savings}")
+            print(confs)
+    elif pruning_cfg_path != None:
+        pass
+    else:
+        pass
