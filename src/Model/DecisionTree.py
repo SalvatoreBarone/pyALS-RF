@@ -151,6 +151,20 @@ class DecisionTree:
             leaf_indexes.append(leaf_id)
         return leaf_indexes
     
+    def visit_by_leaves(self, attributes_list):
+        if self.als_conf is not None:
+            assert 1 == 0, "Not supported "
+        classes = [-1 for x in attributes_list]
+        for x_id, x in enumerate(attributes_list):
+            # logger = logging.getLogger("pyALS-RF")
+            # logger.info(f"Tu fungi ?")
+            leaf_id = -1 
+            boxes_output = self.get_boxes_output(x)
+            for l_id, l in enumerate(self.leaves):
+                if int(eval(l["sop"], boxes_output)):
+                    classes[x_id] = int(l['class'])
+        return classes
+    
     """  
         Given a list of classes this function returns a dictionay containing for each different class
         the list of leaves related to the class.
