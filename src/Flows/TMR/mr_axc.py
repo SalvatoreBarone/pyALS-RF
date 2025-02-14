@@ -33,6 +33,7 @@ import time
 from multiprocessing import cpu_count, Pool
 from pyalslib import list_partitioning
 
+
 """ ALL THE FUNS WITH _2_ ARE NOT TESTED ! """
     
 
@@ -437,6 +438,7 @@ class MrAxC:
     """ Evaluate the accuracy on X_MOP. """
     def evaluate_mr_cfg_xmop(self, mr_cfg):
         return self.__xmop_priv_eval(mr_cfg)
+    
     
     """ Given a solution, where for each class the set of trees is listed ( set of trees Per Class), transform the solution into che 
         set of classes per tree.

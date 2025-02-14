@@ -32,6 +32,9 @@ from sklearn.model_selection import train_test_split
 import re
 import time
 import pandas as pd
+# Used for margins.
+from ..EnsemblePruning.EnsemblePruner import Pruner
+
 class MrHeu:
 
     def __init__(self, mr_order: int = 3, ncpus : int = os.cpu_count()): 
@@ -80,6 +83,18 @@ class MrHeu:
         self.csv_outfile = os.path.join(outdir, "mr_report.csv")
         self.is_csv_out_initialized = True
 
+    def rank_trees_per_acc(self):
+        pass
+
+    def rank_trees_per_margin(self):
+        # Get the prediction vectors.
+        # Get the classes
+        prediction_vectors = self.mr_axc.classifier.get_votes_vectors_by_leaves_idx(self.mr_axc.x_mop_leaves, self.mr_axc.y_mop)
+        # For each class. 
+        for class_idx in range(len(self.mr_axc.classifier.model_classes)):
+            # Get the prediction vector of a specific class.
+            pass
+
     def heu_tree_acc(self):
         assert self.is_problem_initialized, "[MR-HEU] You should first initialize the problem! "
         assert self.is_pruining_outdir_initialized, "[MR-HEU] You should first initialize the pruning out dir!"
@@ -90,12 +105,6 @@ class MrHeu:
         pertree_classes = self.mr_axc.classifier.transform_leaves_into_classess(self.mr_axc.x_mop_leaves)
         # Now get the accuracy for each class
         perclass_accs = self.mr_axc.pertree_classess_into_perclass_pertree_acc(pertree_classes, self.mr_axc.y_mop)
-        
-        # for class_original, accuracies in zip(self.mr_axc.sampled_classes, perclass_accs):
-        #     self.logger.info(f"Class {class_original} : {accuracies}")
-        # print(f"Sampled classes: {self.mr_axc.sampled_classes}")
-        # exit(1)
-        
         # Sort the class indexes 
         # Each configuration consists in the first mr_order treees.
         mr_cfg = [list(np.argsort(c_accs)[::-1])[:self.mr_order] for c_accs in perclass_accs]  

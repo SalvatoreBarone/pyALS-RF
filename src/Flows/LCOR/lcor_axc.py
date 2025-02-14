@@ -196,17 +196,18 @@ class LCOR_AXC(GREP):
         return np.sum(np.argmax(o) == y and not self.classifier.check_draw(o)[0] for o, y in zip(outcomes, self.y_test)) / len(self.y_test) * 100
     
     def split_test_dataset_lcor(self, pruning_set_fraction : float = 0.5, validation_set_fraction: float = 0.5):
-        # if pruning_set_fraction == None: 
-        #     valuation_size = compute_sample_size(test_set_size = len(self.classifier.x_test), error_margin = 0.05, confidence_level = 0.95, individual_prob = 0.5)
-        #     # With the valuation:_size compute the pruning portion size 
-        #     pruning_portion = ( len(self.classifier.x_test) - valuation_size) / len(self.classifier.x_test) # This is the portion of the validation
-        # else:
-        #     pruning_portion = pruning_set_fraction
-        # indexes = np.arange(len(self.classifier.x_test))
-        # self.x_pruning, self.x_test, self.y_pruning, self.y_test, self.idx_prun, self.idx_test = train_test_split(self.classifier.x_test, self.classifier.y_test, indexes, train_size = pruning_portion) # Use stratify = self.classifier.x_test.ravel() ensures that all classess are considered. 
-        # self.x_pruning, self.x_validation, self.y_pruning, self.y_validation, self.idx_prun, self.idx_val = train_test_split(self.x_pruning, self.y_pruning, self.idx_prun,  test_size = validation_set_fraction)
-        self.x_pruning = self.classifier.x_train
-        self.y_pruning = self.classifier.y_train
+        if pruning_set_fraction == None: 
+            valuation_size = compute_sample_size(test_set_size = len(self.classifier.x_test), error_margin = 0.05, confidence_level = 0.95, individual_prob = 0.5)
+            # With the valuation:_size compute the pruning portion size 
+            pruning_portion = ( len(self.classifier.x_test) - valuation_size) / len(self.classifier.x_test) # This is the portion of the validation
+        else:
+            pruning_portion = pruning_set_fraction
+        indexes = np.arange(len(self.classifier.x_test))
+        self.x_pruning, self.x_test, self.y_pruning, self.y_test, self.idx_prun, self.idx_test = train_test_split(self.classifier.x_test, self.classifier.y_test, indexes, train_size = pruning_portion) # Use stratify = self.classifier.x_test.ravel() ensures that all classess are considered. 
+        self.x_pruning, self.x_validation, self.y_pruning, self.y_validation, self.idx_prun, self.idx_val = train_test_split(self.x_pruning, self.y_pruning, self.idx_prun,  test_size = validation_set_fraction)
+        
+        # self.x_pruning = self.classifier.x_train
+        # self.y_pruning = self.classifier.y_train
         self.x_validation, self.x_test, self.y_validation, self.y_test = train_test_split(self.x_pruning, self.y_pruning, train_size = validation_set_fraction)
         
     
@@ -251,7 +252,9 @@ class LCOR_AXC(GREP):
                 logger.info(f'Actual acc {self.accuracy} Base {self.baseline_accuracy}')
                 logger.info(f'Idx {scores_idx} Max LEN {len(self.leaf_scores)}')
                 logger.info(f'Actual loss {self.loss}')
-            else: 
+            else:
+                # Reset the original pruning configuration.
+                GREP.set_pruning_conf(self.classifier, self.pruning_configuration) 
                 break
             scores_idx += 1
         comp_time = time.time() - comp_time
@@ -292,7 +295,10 @@ class LCOR_AXC(GREP):
         pruning_cfg_path =  self.pruning_path + "/pruning_configuration.json5"    
         self.inner_trim(report_path)
         self.store_pruning_conf(pruning_cfg_path)
-        
+        np.savetxt(os.path.join(self.pruning_path, "pruning_idx.txt"),self.idx_prun, fmt = "%d", delimiter = ",")
+        np.savetxt(os.path.join(self.pruning_path, "val_idx.txt"),self.idx_val, fmt = "%d", delimiter = ",")
+        np.savetxt(os.path.join(self.pruning_path, "tst_idx.txt"),self.idx_test, fmt = "%d", delimiter = ",")
+
     # # Iterare the pruning by curr
     # def trim_iterative(self, report, loss_lb, loss_ub, step):
     #     self.predispose_trim()
