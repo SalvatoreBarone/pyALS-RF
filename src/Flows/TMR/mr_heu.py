@@ -37,7 +37,7 @@ from ..EnsemblePruning.EnsemblePruner import Pruner
 
 class MrHeu:
 
-    def __init__(self, mr_order: int = 3, ncpus : int = os.cpu_count()): 
+    def __init__(self, mr_order: int = 3, ncpus : int = os.cpu_count(), method: str = "pertree_acc_heu"): 
         assert mr_order >= 3, "[MR-HEU] Provide a Modular Redundancy order >= 3"
         self.logger = logging.getLogger("pyALS-RF")
         self.logger.info("[MR-HEU] Inizializing Modular Redundancy Heuristic")
@@ -46,9 +46,17 @@ class MrHeu:
         self.is_problem_initialized = False
         self.is_pruining_outdir_initialized = False
         self.is_csv_out_initialized = False
+        if method == "pertree_acc_heu":
+            self.ranking_procedure = rank_trees_per_accuracy
+        elif method == "pertree_margin_heu":
+            self.ranking_procedure = rank_trees_per_margin
+        else:
+            self.logger.error("[MR-HEU] Ranking method not supported, supported : pertree_acc_heu and pertree_margin_heu")
+            exit(1)
+        self.ranking_procedure_str = method
         self.logger.info("[MR-HEU] Initialization of MR-HEU completed !")
     
-    
+
     """ Initialize the MOO problem. Optionally, if mr_axc is not none, then the current mr_axc is overwritten. """
     def initialize_problem(self, mr_axc: MrAxC = None):
         self.logger.info("[MR-HEU] Initializing MR-HEU problem")
@@ -86,29 +94,17 @@ class MrHeu:
     def rank_trees_per_acc(self):
         pass
 
-    def rank_trees_per_margin(self):
-        # Get the prediction vectors.
-        # Get the classes
-        prediction_vectors = self.mr_axc.classifier.get_votes_vectors_by_leaves_idx(self.mr_axc.x_mop_leaves, self.mr_axc.y_mop)
-        # For each class. 
-        for class_idx in range(len(self.mr_axc.classifier.model_classes)):
-            # Get the prediction vector of a specific class.
-            pass
-
+    
+    def tree_ranking(self):
+        return self.ranking_procedure(self)
+    
     def heu_tree_acc(self):
         assert self.is_problem_initialized, "[MR-HEU] You should first initialize the problem! "
         assert self.is_pruining_outdir_initialized, "[MR-HEU] You should first initialize the pruning out dir!"
         assert self.is_csv_out_initialized, "[MR-HEU] You should first initialize the CSV outfile!"
         self.logger.info("[MR-HEU] Starting heuristic Accuracy based. This may take a while, but be patient !")
         tm = time.time()
-        # Get the classes per each tree
-        pertree_classes = self.mr_axc.classifier.transform_leaves_into_classess(self.mr_axc.x_mop_leaves)
-        # Now get the accuracy for each class
-        perclass_accs = self.mr_axc.pertree_classess_into_perclass_pertree_acc(pertree_classes, self.mr_axc.y_mop)
-        # Sort the class indexes 
-        # Each configuration consists in the first mr_order treees.
-        mr_cfg = [list(np.argsort(c_accs)[::-1])[:self.mr_order] for c_accs in perclass_accs]  
-        mr_cfg = [[int(m) for m in cfg] for cfg in mr_cfg] # Convert numpy.int64 in int
+        mr_cfg = self.tree_ranking()
         tm = time.time() - tm
         self.logger.info("[MR-HEU] Accuracy based heuristic completed !")
         
@@ -153,7 +149,7 @@ class MrHeu:
         
         # Update stats.
         sol_summary = {
-                "Algo"                   : "pertree_acc_heu",
+                "Algo"                   : self.ranking_procedure_str,
                 "MrOrder"                : self.mr_order,
                 "Pruned-Leaves"         : len(pruning_cfg),
 
@@ -173,3 +169,43 @@ class MrHeu:
         add_header = not os.path.exists(self.csv_outfile)
         df = pd.DataFrame(sol_summary, index=[0]).to_csv(self.csv_outfile, index = False, header = add_header, mode = "a")
         self.logger.info(f"Summary CSV updated! Please check {self.csv_outfile}")
+
+
+def rank_trees_per_margin(heu_solver: MrHeu):
+    remaining_trees = [i for i in range(0, len(heu_solver.mr_axc.classifier.trees))]
+    # Get the prediction vectors for each single classifier
+    prediction_vectors = heu_solver.mr_axc.classifier.get_votes_vectors_by_leaves_idx(heu_solver.mr_axc.x_mop_leaves, heu_solver.mr_axc.y_mop)
+    #x_prun_classes = self.mr_axc.x_mop_classes_transposed
+    # For each class. 
+    cfgs = []
+    for class_idx in heu_solver.mr_axc.sampled_classes:
+        pv_per_class    = []    # Set of prediction vectors per each class
+        tree_preds      = [[] for tree in heu_solver.mr_axc.classifier.trees]    # Set of tree predictions
+        # Get the samples per class 
+        for pred_vec, y_idx in zip(prediction_vectors, range(0, len(heu_solver.mr_axc.y_mop))):
+            if heu_solver.mr_axc.y_mop[y_idx]== class_idx:
+                pv_per_class.append(pred_vec)
+                # For each tree, copy the predictions related to that specific sample
+                for tree_id in range(0, len(heu_solver.mr_axc.classifier.trees)):
+                    tree_preds[tree_id].append(heu_solver.mr_axc.x_mop_classes_transposed[tree_id][y_idx])
+
+        y_prun = [class_idx for _ in pv_per_class]
+        per_sample_margins = Pruner.per_sample_margin(pv_per_class, y_prun)
+        per_sample_margin_gains, new_pv = Pruner.update_margins(tree_preds=tree_preds, pred_vectors=pv_per_class, remaining_trees=remaining_trees, yprun=y_prun)
+        gains = Pruner.evaluate_mean_dm(per_sample_margins, per_sample_margin_gains)
+        # Sort the trees by gains
+        sorted_trees = np.argsort(gains)
+        # Keep the trees more contributing to the gain
+        cfgs.append([int(g) for g in sorted_trees[-heu_solver.mr_order:]])
+    return cfgs
+
+def rank_trees_per_accuracy(heu_solver: MrHeu):
+    # Get the classes per each tree
+    pertree_classes = heu_solver.mr_axc.classifier.transform_leaves_into_classess(heu_solver.mr_axc.x_mop_leaves)
+    # Now get the accuracy for each class
+    perclass_accs = heu_solver.mr_axc.pertree_classess_into_perclass_pertree_acc(pertree_classes, heu_solver.mr_axc.y_mop)
+    # Sort the class indexes 
+    # Each configuration consists in the first mr_order treees.
+    mr_cfg = [list(np.argsort(c_accs)[::-1])[:heu_solver.mr_order] for c_accs in perclass_accs]  
+    mr_cfg = [[int(m) for m in cfg] for cfg in mr_cfg] # Convert numpy.int64 in int
+    return mr_cfg

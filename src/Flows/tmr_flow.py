@@ -58,7 +58,7 @@ def tmr_flow(ctx, output, fraction,  ncpus, report, it, test_samples, mr_order, 
 """ This is a substitute for the TMR flow.  
     The code in TMR flow was bloated and full of initial experiments.
 """
-def mr_heu_flow(ctx, fraction, mr_order, ncpus, pruning_dir, csv_dir):
+def mr_heu_flow(ctx, method, fraction, mr_order, ncpus, pruning_dir, csv_dir):
     logger = logging.getLogger("pyALS-RF")
     logger.info("[MR-HEU-FLOW] Running the MR Heuristics flow")
     load_configuration_ps(ctx)
@@ -68,14 +68,14 @@ def mr_heu_flow(ctx, fraction, mr_order, ncpus, pruning_dir, csv_dir):
     mr_axc = MrAxC(ctx.obj["classifier"], 1, fraction) # Fix the num_cores value to 1.
     logger.info("[MR-HEU-FLOW] MrAxC object initialized!")
     logger.info("[MR-HEU-FLOW] Initializing the MrHeu object")
-    mr_heu = MrHeu(mr_order, ncpus)
+    mr_heu = MrHeu(mr_order, ncpus, method=method)
     mr_heu.initialize_problem(mr_axc)
     mr_heu.initialize_pruning_cfg_out(pruning_dir)
     mr_heu.initialize_summary_files(csv_dir)
     logger.info("[MR-HEU-FLOW] MrHeu initialized !")
     logger.info("[MR-HEU-FLOW] Running problem!")
-    #mr_heu.heu_tree_acc()
-    mr_heu.rank_trees_per_margin()
+    mr_heu.heu_tree_acc()
+    #mr_heu.rank_trees_per_margin()
     logger.info(f"[MR-HEU-FLOW] Problem completed, take a look at {pruning_dir} and {csv_dir}")
     
 

@@ -243,8 +243,10 @@ class MrAxC:
         # print(self.classifier.y_test)
         # exit(1)
         end = time.time()
+        #self.x_mop_classes_transposed = self.classifier.transform_leaves_into_classess(self.x_mop_leaves)
         x_mop_classes = self.classifier.transform_leaves_into_classess(self.x_mop_leaves)
-        self.x_mop_classes = MrAxC.per_tree_classess_into_classes_per_tree(x_mop_classes)
+        self.x_mop_classes_transposed = x_mop_classes # This mantains the set of predictions per each tree, and is used in the Margin based heuristic.
+        self.x_mop_classes = MrAxC.per_tree_classess_into_classes_per_tree(x_mop_classes) # This instead mantains per each sample the predictions of each tree 
         self.logger.info(f"[MR-AXC] Accuracy on X_MOP and Leaves initialized in ms {(end - start)* 1000}")
         self.logger.info(f"[MR-AXC] Accuracy on X_MOP :{self.x_mop_baseline_accuracy}")
         # If multicore evaluation function is used.

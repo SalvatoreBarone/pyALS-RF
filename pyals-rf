@@ -233,13 +233,14 @@ def tmr(ctx, moo, conf, ncpus, output, verbose, fraction, k_mr, report, it, test
 @cli.command("mr_heu")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
+@click.option('-r', '--ranking_method', type = click.Choice(["pertree_acc_heu", "pertree_margin_heu"]), default = "pertree_acc_heu", help = "This parameter is used to control the ranking procedure of DTs during MR heuristic.")
 @click.option('-f', '--fraction', type = float, default = None, help = "Fraction of the test set to be used as XAxC set. Note that if None the Levegue formula is used.")
 @click.option('-m', '--mr_order', type = int, default = 3, help = "Order k of modular redundancy for the heuristic.")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-p', '--pruning_dir', type=click.Path(dir_okay=True), default = "./", help = "Path were the pruning cfg is saved. Note that this folder may be different that the one of the csv dir.")
 @click.option('-d', '--csv_dir', type=click.Path(dir_okay=True), default = "./", help = "Path were the CSV report is saved.")
 @click.pass_context
-def mr_heu(ctx, conf, verbose, fraction, mr_order, ncpus, pruning_dir, csv_dir):
+def mr_heu(ctx, conf, verbose, ranking_method, fraction, mr_order, ncpus, pruning_dir, csv_dir):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "MR_HEU")
     logger = logging.getLogger("pyALS-RF")
     logger.info("MR-HEU pruning flow"
@@ -250,7 +251,7 @@ def mr_heu(ctx, conf, verbose, fraction, mr_order, ncpus, pruning_dir, csv_dir):
                 f"\n\tMr Order : {mr_order}"
                 f"\n\tNCPUS : {ncpus}"
                 )
-    mr_heu_flow(ctx, fraction, mr_order, ncpus, pruning_dir, csv_dir)
+    mr_heu_flow(ctx, ranking_method, fraction, mr_order, ncpus, pruning_dir, csv_dir)
 
 @cli.command("ensemble_pruning")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
