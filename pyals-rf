@@ -512,12 +512,16 @@ def test_visit(ctx, conf, ps_dir, accuracy_validation, verbose, ncpus):
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file of the classifier")
 @click.option('-p', '--ps_path', type=click.Path(exists=True, dir_okay=False), default = None, help = "Path of the PS final_archive")
 @click.option('-g', '--pruning_path', type=click.Path(exists=True, dir_okay=False), default = None, help = "Path of the Pruning Cfg")
-@click.option('-g', '--out_path', type=click.Path(exists=True, dir_okay=False), default = None, help = "OutPath of the resource usage report.")
+@click.option('-o', '--out_path', type=click.Path(exists=False, dir_okay=False), default = None, help = "OutPath of the resource usage report.")
+@click.option('-d', '--dataset_name', type=str, default = "NoDSProvided", help = "Name of the dataset used.")
+@click.option('-n', '--number_trees', type=int, default = 5, help = "Number of trees used in the ensemble.")
+@click.option('-m', '--mr_order', type=int, default = 0, help = "Redundancy order used.")
+
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def hdl_res_usage(ctx, conf, ps_path, pruning_path, out_path, verbose):
+def hdl_res_usage(ctx, conf, ps_path, pruning_path, out_path, dataset_name, number_trees, mr_order, verbose):
     set_global_options(ctx, conf, "pyALS-RF", verbose, 1, False, "visiting_testing")
-    hdl_resource_usage(ctx, pruning_cfg_path=pruning_path, ps_set_configuration_path=ps_path, report_path=out_path)
+    hdl_resource_usage(ctx, pruning_cfg_path=pruning_path, ps_set_configuration_path=ps_path, report_path=out_path, dataset_name=dataset_name, number_trees=number_trees, mr_order=mr_order)
 
 cli.add_command(bitwidth)
 cli.add_command(als)

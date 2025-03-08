@@ -29,7 +29,7 @@ from .HDLGenerators.TwoStepsFullHdlGenerator import TwoStepsFullHdlGenerator
 from .ctx_factory import load_configuration_ps, create_classifier, create_yshelper, load_flow, create_problem, create_optimizer
 import os
 import json5
-
+import pandas as pd
 def hdl_generation(ctx, lut_tech, skip_exact : bool, output, pruning_name):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the HDL generation flow.")
@@ -106,7 +106,7 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output, pruning_name):
     
     logger.info("All done!")
 
-def hdl_resource_usage(ctx, pruning_cfg_path : str = None, ps_set_configuration_path: str = None, report_path: str = None):
+def hdl_resource_usage(ctx, lut_tech = 6, pruning_cfg_path : str = None, ps_set_configuration_path: str = None, report_path: str = None, dataset_name: str = "NoDSProvided", number_trees : int = 5, mr_order :int = 1 ):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the HDL generation flow.")
     if pruning_cfg_path != None and ps_set_configuration_path != None:
@@ -120,13 +120,7 @@ def hdl_resource_usage(ctx, pruning_cfg_path : str = None, ps_set_configuration_
     load_configuration_ps(ctx)
     create_classifier(ctx)
     create_yshelper(ctx)
-    # # Generate the configuration for the exact classifier.
-    # hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
-    # exact_luts_dbs, exact_luts_bns, exact_ffs_dbs = hdl_generator.get_resource_usage()
-    # logger.info("Exact implementations expected requirements (voting excluded):"
-    #             f"\n\t- LUTs for decision boxes (exact): {exact_luts_dbs}"
-    #             f"\n\t- FFs for decision boxes (exact): {exact_ffs_dbs}"
-    #             f"\n\t- LUTs for Boolean Networks (exact): {exact_luts_bns}")
+
     if  ps_set_configuration_path  != None:
         with open(ps_set_configuration_path, 'r') as f:
             pareto_set = json5.load(f)
@@ -153,6 +147,47 @@ def hdl_resource_usage(ctx, pruning_cfg_path : str = None, ps_set_configuration_
             logger.info(f"Savings DBS: LUTS: {dbs_lut_savings} FFS: {dbs_ffs_savings} Total LUTS: {total_luts_savings} Total FFS: {dbs_ffs_savings}")
             print(confs)
     elif pruning_cfg_path != None:
+        logger.info("Computing resource usage for the exact classifier.")
+        hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+        exact_luts_dbs, exact_luts_bns, exact_ffs_dbs = hdl_generator.get_resource_usage()
+        ctx.obj['pruning_configuration'] = json5.load(open(pruning_cfg_path))
+        logger.info("Computing resource usage for the APPROXIMATE classifier.")
+        hdl_generator = GREPHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+        hdl_generator.generate_axhdl(pruning_configuration = ctx.obj['pruning_configuration'], enable_espresso = ctx.obj['espresso'], lut_tech = lut_tech)
+        ax_luts_dbs, ax_luts_bns, ax_ffs_dbs = hdl_generator.get_resource_usage()
+        
+        logger.info("Approximate implementations expected requirements (voting excluded):"
+                    f"\n\t- LUTs for decision boxes (approx.): {ax_luts_dbs}"
+                    f"\n\t- FFs for decision boxes (approx.): {ax_ffs_dbs}"
+                    f"\n\t- LUTs for Boolean Networks (approx.): {ax_luts_bns}")
+        total_lut_exact = exact_luts_dbs + exact_luts_bns
+        total_luts_ax = ax_luts_dbs + ax_luts_bns  
+        logger.info(f"Expected LUT savings for BNs: {(1 - ax_luts_bns / exact_luts_bns) * 100}%"
+                    f"\n\tExpected LUT savings for DBs: {(1 - ax_luts_dbs / exact_luts_dbs) * 100}%"
+                    f"\n\tExpected FFs savings for DBs: {(1 - ax_ffs_dbs / exact_ffs_dbs) * 100}%")
+        
+        logger.info(f"Expected LUT savings Totalfor BNs: {(1 - total_luts_ax / total_lut_exact) * 100}%")
+        report_dict = {
+            "Dataset": dataset_name,
+            "Number of Trees": number_trees,
+            "MR Order": mr_order,
+            "Exact BNs LUTs": exact_luts_bns,
+            "Exact DBs LUTs": exact_luts_dbs,
+            "Exact DBs FFs": exact_ffs_dbs,
+            "Total Exact LUTs": total_lut_exact,
+            "Approximate BNs LUTs": ax_luts_bns,
+            "Approximate DBs LUTs": ax_luts_dbs,
+            "Approximate DBs FFs": ax_ffs_dbs,
+            "Total Approximate LUTs": total_luts_ax,
+            "Expected LUT savings for BNs": (1 - ax_luts_bns / exact_luts_bns) * 100,
+            "Expected LUT savings for DBs": (1 - ax_luts_dbs / exact_luts_dbs) * 100,
+            "Expected FFs savings for DBs": (1 - ax_ffs_dbs / exact_ffs_dbs) * 100,
+            "Expected Total LUT savings": (1 - total_luts_ax / total_lut_exact) * 100
+        }
+        add_header = not os.path.exists(report_path)
+        df = pd.DataFrame([report_dict])
+        df.to_csv(report_path, mode='a', header=add_header, index=False)
+        
         pass
     else:
         pass
