@@ -115,7 +115,7 @@ class Pruner:
         "MinD-M":   1
     }
 
-    def __init__(self, classifier : Classifier, method : str = "MeanD-Ms", number_of_remaining_trees : int = 1):
+    def __init__(self, classifier : Classifier, method : str = "MeanD-M", number_of_remaining_trees : int = 1):
         assert number_of_remaining_trees < len(classifier.trees)
         self.number_of_remaing_trees = number_of_remaining_trees
         self.classifier = classifier

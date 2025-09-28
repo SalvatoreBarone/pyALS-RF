@@ -256,11 +256,24 @@ class MrAxC:
             self.p_ymop = list_partitioning(self.y_mop, self.num_cores)
         self.logger.info("[MR-AXC] Initiating accuracy evaluation on X_VAL..")
         start = time.time()
+        """ 
+            I leave this commented code, to remember that I cross checked the accuracy and accuracy draw between the old method and the new one
+            used to extrapolated labeled samples from the validation set.
+        """
+        # x_val_leaves = self.classifier.compute_leaves_idx(self.x_val)
+        # self.x_val_class_labels, self.x_val_class_labels_nodraw = self.classifier.get_class_labels_by_leaves_idx(x_val_leaves, self.y_val)
+        # new_accuracy, new_accuracy_nodraw = self.classifier.get_accuracy_from_labels(self.x_val_class_labels, self.x_val_class_labels_nodraw, self.y_val)
+        # _, self.x_val_baseline_accuracy, self.x_val_baseline_accuracy_nodraw = self.classifier.get_accuracy_by_leaves_idx(x_val_leaves, self.y_val)
+        # self.logger.info(f"[MR-AXC] NEW ACCURACY COMPUTED ON X_VAL {new_accuracy} OLD ACCURACY {self.x_val_baseline_accuracy} ")
+        # self.logger.info(f"[MR-AXC] DRAW NEW ACCURACY COMPUTED ON X_VAL {new_accuracy_nodraw} OLD ACCURACY {self.x_val_baseline_accuracy_nodraw} ")
+        # exit(1)
+        
         x_val_leaves = self.classifier.compute_leaves_idx(self.x_val)
-        _, self.x_val_baseline_accuracy, self.x_val_baseline_accuracy_nodraw = self.classifier.get_accuracy_by_leaves_idx(x_val_leaves, self.y_val)
+        self.x_val_class_labels, self.x_val_class_labels_nodraw = self.classifier.get_class_labels_by_leaves_idx(x_val_leaves, self.y_val)
+        self.x_val_baseline_accuracy, self.x_val_baseline_accuracy_nodraw = self.classifier.get_accuracy_from_labels(self.x_val_class_labels, self.x_val_class_labels_nodraw, self.y_val)
         end = time.time()
         self.logger.info(f"[MR-AXC] Accuracy on X_VAL and Leaves initialized in ms {(end - start)* 1000}")
-        self.logger.info(f"[MR-AXC] Accuracy on X_VAL :{self.x_val_baseline_accuracy}")
+        self.logger.info(f"[MR-AXC] Accuracy on X_VAL :{self.x_val_baseline_accuracy} Draw Accuracy on X_VAL :{self.x_val_baseline_accuracy_nodraw}")
         
     """ ATTENTION: THIS FUNCTION IS DEPRECATED.
         Get the set of TMR vector predictions.

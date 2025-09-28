@@ -99,6 +99,7 @@ class MrHeu:
         return self.ranking_procedure(self)
     
     def heu_tree_acc(self):
+
         assert self.is_problem_initialized, "[MR-HEU] You should first initialize the problem! "
         assert self.is_pruining_outdir_initialized, "[MR-HEU] You should first initialize the pruning out dir!"
         assert self.is_csv_out_initialized, "[MR-HEU] You should first initialize the CSV outfile!"
@@ -127,6 +128,7 @@ class MrHeu:
         # Get the validation leaves
         self.logger.info("[MR-HEU] Initiating evaluation on Validation Set")
         validation_leaves = self.mr_axc.classifier.compute_leaves_idx(self.mr_axc.x_val, False)
+
         validation_classes = self.mr_axc.classifier.transform_leaves_into_classess(validation_leaves)
         validation_classes = MrAxC.per_tree_classess_into_classes_per_tree(validation_classes)
         mr_pred_vectors =  self.mr_axc.get_mr_vectors(validation_classes, mr_cfg)
@@ -141,6 +143,8 @@ class MrHeu:
         self.mr_axc.dump_mop_val_indexes(self.approx_cfg_outdir)
         np.savetxt(os.path.join(self.approx_cfg_outdir, "xaxc_pred_vectors.txt"), xaxc_mr_pred_vectors, fmt = "%d")
         np.savetxt(os.path.join(self.approx_cfg_outdir, "val_pred_vectors.txt"), mr_pred_vectors, fmt = "%d")
+        np.savetxt(os.path.join(self.approx_cfg_outdir, "original_ensemble_labels.txt"), self.mr_axc.x_val_class_labels, fmt = "%d")
+        np.savetxt(os.path.join(self.approx_cfg_outdir, "original_ensemble_labels_nodraw.txt"), self.mr_axc.x_val_class_labels_nodraw, fmt = "%d")
 
         # Save the pruning cfg.
         self.logger.info(f"[MR-HEU] Dumping configuration / pruning / direction files ....")
@@ -198,6 +202,8 @@ def rank_trees_per_margin(heu_solver: MrHeu):
         # Keep the trees more contributing to the gain
         cfgs.append([int(g) for g in sorted_trees[-heu_solver.mr_order:]])
     return cfgs
+
+
 
 def rank_trees_per_accuracy(heu_solver: MrHeu):
     # Get the classes per each tree

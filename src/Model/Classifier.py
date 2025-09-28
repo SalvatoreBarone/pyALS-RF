@@ -355,6 +355,37 @@ class Classifier:
                     votes_vector[sample_id][int(self.trees[tree_id].leaves[single_tree_leaf]["class"])] += 1
         return votes_vector
     
+    """ Function used to obtain the set of class labels from a set of leaves indexes.
+    """
+    def get_class_labels_by_leaves_idx(self, leaves, y):
+        votes_vectors = self.get_votes_vectors_by_leaves_idx(leaves, y)
+        class_labels_draw = []
+        class_labels = []
+        for vote in votes_vectors:
+            label = np.argmax(vote)
+            if not Classifier.check_draw(vote)[0]:
+                class_labels_draw.append(label)
+                class_labels.append(label)
+            else:
+                class_labels_draw.append(label)
+                class_labels.append(-1)
+        #class_labels = [np.argmax(vote) if not Classifier.check_draw(vote)[0] else -1 for vote in votes_vectors]
+        return class_labels, class_labels_draw
+    
+    def get_accuracy_from_labels(self, class_labels, class_labels_draw, y):
+        correctly_classified_draw = 0
+        correctly_classified_no_draw = 0
+        for y_pred, y_pred_draw, y_true in zip(class_labels, class_labels_draw, y):
+            if y_pred_draw == int(y_true):
+                # If it was not a draw then increase both counters.
+                if y_pred != -1:
+                    correctly_classified_draw += 1
+                    correctly_classified_no_draw += 1
+                # Otherwise it was a draw, so increase only the draw counter.
+                else:
+                    correctly_classified_no_draw += 1
+        return 100 * correctly_classified_draw / len(y), 100 * correctly_classified_no_draw / len(y)
+    
     """ Given a set of leaves obtained using the  compute_leaves_idx this function returns the number of votes for each class
         and the accuracy w.r.t the oracle y.
     """

@@ -257,7 +257,7 @@ def mr_heu(ctx, conf, verbose, ranking_method, fraction, mr_order, ncpus, prunin
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.option('-m', '--method', type = str, default = "MeanD-M", help = "Ensemble pruning method used [MeanD-M MinD-M]")
-@click.option('-f', '--fraction', type = float, default = None, help = "Fraction of the test set to be used as XAxC set. Note that if None the Levegue formula is used.")
+@click.option('-f', '--fraction', type = float, default = 0.5, help = "Fraction of the test set to be used as XAxC set. Note that if None the Levegue formula is used.")
 @click.option('-n', '--n_trees', type = int, default = 3, help = "Number of trees to keep in the ensemble.")
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-p', '--pruning_dir', type=click.Path(dir_okay=True), default = "./", help = "Path were the pruning cfg is saved. Note that this folder may be different that the one of the csv dir.")
