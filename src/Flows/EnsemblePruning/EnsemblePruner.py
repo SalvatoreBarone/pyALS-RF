@@ -188,6 +188,10 @@ class Pruner:
         self.pruned_accuracy = ( self.pruned_correctly_classified / len(self.y_val) ) * 100.0
         self.loss = self.baseline_accuracy - self.pruned_accuracy
         self.logger.info(f"Pruned Accuracy on validation {self.pruned_accuracy} Loss: {self.loss}")
-
-        # print(f"Pruned Accuracy on validation {self.pruned_accuracy} Loss: {self.loss}")
+        self.pruning_conf = []
+        
+        # generate the pruning configuration.
+        for tree in self.pruned_trees:
+            for leaf in self.classifier.trees[tree].leaves:
+                    self.pruning_conf.append((str(int(leaf["class"])), str(tree), str(leaf["sop"])))
         
