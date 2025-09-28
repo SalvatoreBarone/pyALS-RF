@@ -403,6 +403,22 @@ class Classifier:
                     correctly_classified_no_draw += 1
         return votes_vector, 100 * correctly_classified_draw / len(y), 100 * correctly_classified_no_draw / len(y)
     
+    """ Function used to import an ensemble pruning configuration, espressed as a list of trees to remove"""
+    def prune_trees(self,pruning_conf):
+        new_trees = []
+        pruned_trees = []
+        
+        for t_idx, t in enumerate(self.trees):
+            if t_idx not in pruning_conf:
+                new_trees.append(t)
+        for t_idx in pruning_conf:
+            pruned_trees.append(self.trees[t_idx])
+        
+        self.trees = new_trees
+        self.p_tree = list_partitioning(self.trees, self.ncpus)
+        self.args = [[t, None] for t in self.p_tree]
+        self.pruned_trees = pruned_trees
+    
     """  
         Given the set of predicted classes per each tree and the set of true values
         this function returns the 

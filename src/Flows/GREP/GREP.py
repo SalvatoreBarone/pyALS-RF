@@ -198,7 +198,7 @@ class GREP:
     def set_pruning_conf(classifier : Classifier, pruning_conf):
         for t in classifier.trees:
             GREP.set_pruning(t, pruning_conf)
-    
+
     @staticmethod
     def set_pruning(tree : DecisionTree, pruning_configuration, use_espresso : bool = False):
         logger = logging.getLogger("pyALS-RF")

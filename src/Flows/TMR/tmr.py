@@ -24,7 +24,7 @@ from ..GREP.GREP import GREP
 import time
 import csv 
 import os
-import json5
+#import json5
 
 # Get the accuracy of a single decision tree on class c ( x_set contains only c samples).
 def tree_accuracy( tree, x_set, c ):

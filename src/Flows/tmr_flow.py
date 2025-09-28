@@ -31,7 +31,7 @@ import os
 import time
 import pandas as pd
 from .GREP.GREP import GREP
-
+# import json5
 # Given a pareto front (a list of dictionaries), generate a set of unique solutions 
 def __unique_pareto(pareto):
     seen = set()
@@ -58,17 +58,35 @@ def tmr_flow(ctx, output, fraction,  ncpus, report, it, test_samples, mr_order, 
 """ This is a substitute for the TMR flow.  
     The code in TMR flow was bloated and full of initial experiments.
 """
-def mr_heu_flow(ctx, method, fraction, mr_order, ncpus, pruning_dir, csv_dir):
+def mr_heu_flow(ctx, in_pruning, method, fraction, mr_order, ncpus, pruning_dir, csv_dir):
     logger = logging.getLogger("pyALS-RF")
     logger.info("[MR-HEU-FLOW] Running the MR Heuristics flow")
     load_configuration_ps(ctx)
     create_classifier(ctx)    
+    """ Useless code used to import a pruning configuration.
+        Now the heuristic themself manages a previous ensemble pruning conf by simply taking in input the list of pruned trees."""
+    # if in_pruning is not None:
+    #     with open(in_pruning, "r") as f:
+    #         pc = json5.load(f)
+    #     # print(pc)
+    #     # exit(1)
+    #     logger.info(f"[MR-HEU-FLOW] Pruning the model with the pruning configuration in {in_pruning}")
+    #     GREP.set_pruning_conf(ctx.obj["classifier"], pc)
+    #     logger.info(f"[MR-HEU-FLOW] Model pruned !")
+    # else:
+    #     logger.info(f"[MR-HEU-FLOW] No pruning configuration provided, using the full model.")
+    
+    if in_pruning is not None:
+        pruned_trees = np.loadtxt(in_pruning, dtype = int)
+        # print(pruned_trees)
+    else:
+        pruned_trees = []
     # Initialize the MRAxC object.
     logger.info("[MR-HEU-FLOW] Initializing the MrAxC object..")
     mr_axc = MrAxC(ctx.obj["classifier"], 1, fraction) # Fix the num_cores value to 1.
     logger.info("[MR-HEU-FLOW] MrAxC object initialized!")
     logger.info("[MR-HEU-FLOW] Initializing the MrHeu object")
-    mr_heu = MrHeu(mr_order, ncpus, method=method)
+    mr_heu = MrHeu(mr_order, ncpus, method=method, excluded_trees=pruned_trees)
     mr_heu.initialize_problem(mr_axc)
     mr_heu.initialize_pruning_cfg_out(pruning_dir)
     mr_heu.initialize_summary_files(csv_dir)

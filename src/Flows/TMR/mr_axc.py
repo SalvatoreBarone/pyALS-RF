@@ -508,7 +508,7 @@ class MrAxC:
             4- The GREP-Like pruning configuration of the Accellerator.
             5- The direction files.
     """
-    def dump_cfg(self, pruning_outfiles_dict, configuration):
+    def dump_cfg(self, pruning_outfiles_dict, configuration, trees_from_pruining = []):
         per_tree_cfg = MrAxC.cfg_per_class_in_cfg_per_tree(self, configuration)
         pruned_leaves = self.classifier.get_leaf_indexes_not_in_class_list(per_tree_cfg)
         # Dump the configuration per class object. 
@@ -528,6 +528,10 @@ class MrAxC:
             json5.dump(pruned_leaves, f, indent = 2)
         # Dump the pruning configuration of the accellerator.
         pruning_cfg = GREP.get_pruning_cfg_from_leaves_idx(self.classifier, pruned_leaves)
+        if len(trees_from_pruining) > 0:
+            for tree in self.pruned_trees:
+                for leaf in self.classifier.trees[tree].leaves:
+                    pruning_cfg.append((str(int(leaf["class"])), str(tree), str(leaf["sop"])))
         with open(pruning_outfiles_dict["outfile_pruning_cfg"], "w") as f:
             json5.dump(pruning_cfg, f, indent = 2)
         # Dump the direction file.

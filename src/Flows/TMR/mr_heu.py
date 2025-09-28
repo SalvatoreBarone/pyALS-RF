@@ -37,7 +37,7 @@ from ..EnsemblePruning.EnsemblePruner import Pruner
 
 class MrHeu:
 
-    def __init__(self, mr_order: int = 3, ncpus : int = os.cpu_count(), method: str = "pertree_acc_heu"): 
+    def __init__(self, mr_order: int = 3, ncpus : int = os.cpu_count(), method: str = "pertree_acc_heu", excluded_trees = []): 
         assert mr_order >= 3, "[MR-HEU] Provide a Modular Redundancy order >= 3"
         self.logger = logging.getLogger("pyALS-RF")
         self.logger.info("[MR-HEU] Inizializing Modular Redundancy Heuristic")
@@ -55,7 +55,7 @@ class MrHeu:
             exit(1)
         self.ranking_procedure_str = method
         self.logger.info("[MR-HEU] Initialization of MR-HEU completed !")
-    
+        self.excluded_trees = excluded_trees
 
     """ Initialize the MOO problem. Optionally, if mr_axc is not none, then the current mr_axc is overwritten. """
     def initialize_problem(self, mr_axc: MrAxC = None):
@@ -199,8 +199,18 @@ def rank_trees_per_margin(heu_solver: MrHeu):
         gains = Pruner.evaluate_mean_dm(per_sample_margins, per_sample_margin_gains)
         # Sort the trees by gains
         sorted_trees = np.argsort(gains)
-        # Keep the trees more contributing to the gain
-        cfgs.append([int(g) for g in sorted_trees[-heu_solver.mr_order:]])
+        """ Old code without excluded trees skipping"""        
+        # # Keep the trees more contributing to the gain
+        # cfgs.append([int(g) for g in sorted_trees[-heu_solver.mr_order:]])
+        """ New code with excluded trees skipping"""
+        curr_cfg = []
+        for tree in sorted_trees[::-1]: # Equivalent to reversed(sorted_trees)
+            if tree not in heu_solver.excluded_trees:
+                curr_cfg.append(int(tree))
+                if len(curr_cfg) == heu_solver.mr_order:
+                    break
+        assert len(curr_cfg) == heu_solver.mr_order, "[MR-HEU] Something wrong during the configuration generation"
+        cfgs.append(curr_cfg)
     return cfgs
 
 
@@ -212,6 +222,26 @@ def rank_trees_per_accuracy(heu_solver: MrHeu):
     perclass_accs = heu_solver.mr_axc.pertree_classess_into_perclass_pertree_acc(pertree_classes, heu_solver.mr_axc.y_mop)
     # Sort the class indexes 
     # Each configuration consists in the first mr_order treees.
-    mr_cfg = [list(np.argsort(c_accs)[::-1])[:heu_solver.mr_order] for c_accs in perclass_accs]  
-    mr_cfg = [[int(m) for m in cfg] for cfg in mr_cfg] # Convert numpy.int64 in int
+    """ The successive line was old code"""
+    #mr_cfg = [list(np.argsort(c_accs)[::-1])[:heu_solver.mr_order] for c_accs in perclass_accs] 
+    #mr_cfg = [[int(m) for m in cfg] for cfg in mr_cfg] # Convert numpy.int64 in int
+    """ This is the new one. 
+        It simply takes into consideration the excluded trees, i.e. those trees which 
+        we don't want to insert into the ensemble ( maybe coming from a previous pruning phase).
+    """
+    mr_cfg = []
+    for c_accs in perclass_accs:
+        sorted_trees = np.argsort(c_accs)[::-1]
+        to_add = heu_solver.mr_order
+        added_trees =  0
+        cfg = []
+
+        for tree in sorted_trees:
+            if tree not in heu_solver.excluded_trees:
+                cfg.append(int(tree))
+                added_trees += 1
+                if added_trees == to_add:
+                    break
+        assert len(cfg) == heu_solver.mr_order, "[MR-HEU] Something wrong during the configuration generation"
+        mr_cfg.append(cfg)
     return mr_cfg
