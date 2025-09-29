@@ -34,7 +34,7 @@ import time
 import pandas as pd
 # Used for margins.
 from ..EnsemblePruning.EnsemblePruner import Pruner
-
+from pyalslib import list_partitioning
 class MrHeu:
 
     def __init__(self, mr_order: int = 3, ncpus : int = os.cpu_count(), method: str = "pertree_acc_heu", excluded_trees = []): 
@@ -46,6 +46,7 @@ class MrHeu:
         self.is_problem_initialized = False
         self.is_pruining_outdir_initialized = False
         self.is_csv_out_initialized = False
+        
         if method == "pertree_acc_heu":
             self.ranking_procedure = rank_trees_per_accuracy
         elif method == "pertree_margin_heu":
@@ -90,14 +91,11 @@ class MrHeu:
              os.makedirs(outdir)
         self.csv_outfile = os.path.join(outdir, "mr_report.csv")
         self.is_csv_out_initialized = True
-
-    def rank_trees_per_acc(self):
-        pass
-
     
     def tree_ranking(self):
         return self.ranking_procedure(self)
-    
+
+
     def heu_tree_acc(self):
 
         assert self.is_problem_initialized, "[MR-HEU] You should first initialize the problem! "
@@ -111,11 +109,15 @@ class MrHeu:
         
         # Getting XMOP accuracy values.
         self.logger.info("[MR-HEU] Initiating evaluation on XAxC Set")
-        validation_leaves = self.mr_axc.classifier.compute_leaves_idx(self.mr_axc.x_val, False)
+        validation_leaves = self.mr_axc.classifier.compute_leaves_idx(self.mr_axc.x_mop, False)
+        #self.nodes_per_sample = [0 for _ in range(0, len(validation_leaves[0]))]
+        
+        # """ This code simply counts the number of nodes per sample, in order to have an idea of the complexity of the
+        #     classical visiting procedure."""
         validation_classes = self.mr_axc.classifier.transform_leaves_into_classess(validation_leaves)
         validation_classes = MrAxC.per_tree_classess_into_classes_per_tree(validation_classes)
         xaxc_mr_pred_vectors =  self.mr_axc.get_mr_vectors(validation_classes, mr_cfg)
-        heu_acc_draw, heu_acc_no_draw = self.mr_axc.get_accuracy_from_vectors(xaxc_mr_pred_vectors, self.mr_axc.y_val)
+        heu_acc_draw, heu_acc_no_draw = self.mr_axc.get_accuracy_from_vectors(xaxc_mr_pred_vectors, self.mr_axc.y_mop)
         heu_loss_draw = self.mr_axc.x_mop_baseline_accuracy - heu_acc_draw
         heu_loss_no_draw = self.mr_axc.x_mop_baseline_accuracy_nodraw - heu_acc_no_draw
         self.logger.info(f"[MR-HEU] XAxC-Set Evaluation completed! Baseline: {self.mr_axc.x_mop_baseline_accuracy}")
@@ -160,9 +162,8 @@ class MrHeu:
                 "Baseline_XMOP_Acc"     : self.mr_axc.x_mop_baseline_accuracy,
                 "Acc-XAxC_Draw"         : heu_acc_draw,     # First insert without considering the draw condition, then append.
                 "Loss-XAxC_Draw"        : heu_loss_draw,
-                "Acc-XAxC_NO_Draw"         : heu_acc_no_draw,
-                "Loss-XAxC_NO_Draw"        : heu_loss_no_draw,
-
+                "Acc-XAxC_NO_Draw"      : heu_acc_no_draw,
+                "Loss-XAxC_NO_Draw"     : heu_loss_no_draw,
                 "Baseline_XVal_Acc."    : self.mr_axc.x_val_baseline_accuracy,
                 "Acc-XVal_Draw"         : val_acc_draw,
                 "Loss-XVal_Draw"        : loss_draw,
@@ -173,6 +174,7 @@ class MrHeu:
         add_header = not os.path.exists(self.csv_outfile)
         df = pd.DataFrame(sol_summary, index=[0]).to_csv(self.csv_outfile, index = False, header = add_header, mode = "a")
         self.logger.info(f"Summary CSV updated! Please check {self.csv_outfile}")
+    
 
 
 def rank_trees_per_margin(heu_solver: MrHeu):
@@ -222,7 +224,7 @@ def rank_trees_per_accuracy(heu_solver: MrHeu):
     perclass_accs = heu_solver.mr_axc.pertree_classess_into_perclass_pertree_acc(pertree_classes, heu_solver.mr_axc.y_mop)
     # Sort the class indexes 
     # Each configuration consists in the first mr_order treees.
-    """ The successive line was old code"""
+    """ The successive line was old code. """
     #mr_cfg = [list(np.argsort(c_accs)[::-1])[:heu_solver.mr_order] for c_accs in perclass_accs] 
     #mr_cfg = [[int(m) for m in cfg] for cfg in mr_cfg] # Convert numpy.int64 in int
     """ This is the new one. 
@@ -245,3 +247,6 @@ def rank_trees_per_accuracy(heu_solver: MrHeu):
         assert len(cfg) == heu_solver.mr_order, "[MR-HEU] Something wrong during the configuration generation"
         mr_cfg.append(cfg)
     return mr_cfg
+
+
+    

@@ -205,8 +205,10 @@ class GREP:
         nl = '\n'
         #tree.boolean_networks = []
         logger.debug(f"Setting pruning configuration for {tree.name}")
+
         for bn, (class_name, assertions) in zip(tree.boolean_networks, tree.class_assertions.items()):
             pruned = [assertion for class_label, tree_name, assertion in pruning_configuration if tree_name == tree.name and class_label == class_name ] 
+
             kept_assertions = [ assertion for assertion in assertions if assertion not in pruned ]
             logger.debug(f"Pruning on tree {tree.name}, class {class_name}: {len(kept_assertions)} leaves kept out of {len(bn['minterms'])}")          
             kept_assertions, sop, hdl_expression = tree.define_boolean_expression(kept_assertions, use_espresso)
@@ -215,6 +217,22 @@ class GREP:
             bn['hdl_expression'] = hdl_expression
             #tree.boolean_networks.append({"class" : class_name, "minterms" : kept_assertions, "sop" : sop, "hdl_expression" : hdl_expression})
         logger.debug(f'Tree {tree.name} pruning configuration:\n{tabulate([[bn["class"], f"{nl}".join(bn["minterms"]), bn["sop"].replace(" or ", f" or{nl}"), bn["hdl_expression"].replace(" or ", f" or{nl}")] for bn in tree.boolean_networks], headers=["class", "minterms", "SoP", "HDL"], tablefmt="grid")}')    
+  
+    
+    """ Given in input:  
+        - a tree
+        - a tree id : ( integer provided by the user)
+        - a class label
+        This function returns the list of leaves for a specific class.
+    """
+    @staticmethod
+    def get_pruning_conf_by_class(tree: DecisionTree, tree_id, class_label: int):
+        pruned_leaves = [ ]
+        for bn in tree.boolean_networks:
+            if int(bn["class"]) != class_label:
+                for leaf in bn["minterms"]:
+                    pruned_leaves.append((str(class_label), str(tree_id), leaf))
+        return pruned_leaves
 
     @staticmethod
     def compute_redundancy(trees, dataset):

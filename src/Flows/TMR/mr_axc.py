@@ -33,7 +33,6 @@ import time
 from multiprocessing import cpu_count, Pool
 from pyalslib import list_partitioning
 
-
 """ ALL THE FUNS WITH _2_ ARE NOT TESTED ! """
     
 
@@ -238,10 +237,7 @@ class MrAxC:
         # self.logger.info("Ended")
         # exit(1)
         _, self.x_mop_baseline_accuracy, self.x_mop_baseline_accuracy_nodraw = self.classifier.get_accuracy_by_leaves_idx(self.x_mop_leaves, self.y_mop)
-        # print(self.x_mop_baseline_accuracy)
-        # print(self.classifier.x_test)
-        # print(self.classifier.y_test)
-        # exit(1)
+
         end = time.time()
         #self.x_mop_classes_transposed = self.classifier.transform_leaves_into_classess(self.x_mop_leaves)
         x_mop_classes = self.classifier.transform_leaves_into_classess(self.x_mop_leaves)
@@ -278,7 +274,7 @@ class MrAxC:
     """ ATTENTION: THIS FUNCTION IS DEPRECATED.
         Get the set of TMR vector predictions.
         given the set of classes per each tree (i.e. classes_per_tree) and the modular redundant configuration (i.e. class configuration)
-        this function returns the output of a TMR structure ( a set of 0 or 1 for each class).
+        this function returns the output of a TMR structure (a set of 0 or 1 for each class).
     """
     @staticmethod
     @DeprecationWarning
@@ -347,13 +343,13 @@ class MrAxC:
         one not considering a draw as misclassification.
     """
     @staticmethod
-    def get_correctly_predicted_from_vectors(tmr_vectors, y):
+    def get_correctly_predicted_from_vectors_static(tmr_vectors, y):
         assert len(tmr_vectors) == len(y), "The number of TMR vectors should be equal to the number of different cfgs."
         correct_draw = 0
         correct_no_draw = 0
         for vector, correct_class in zip(tmr_vectors, y):
             # Get the number of active modular redundant structures
-            active_modules = np.where(vector == 1)[0]
+            active_modules = np.where(np.array(vector) == 1)[0]
             nro_actives = len(active_modules)
             # If at least one cfg
             if nro_actives > 0:
@@ -366,6 +362,7 @@ class MrAxC:
                     else:
                         correct_no_draw += 1
                         correct_draw += 1
+
         # Return the accuracy considering the draw condition as a misclassification and the one with no missclassification.
         return correct_draw, correct_no_draw
 

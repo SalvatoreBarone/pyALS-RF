@@ -113,4 +113,41 @@ def visit_test(ctx, ps_dir, val_path, working_mode = 0, error_margin = 0.01, con
         else:
             assert 1 == 0, "Invalid configuration of the fault parameter"
         fc.faults_to_json5_list(classifier = classifier,  out_path = cp)
-        
+
+def test_classifier_from_indexes(ctx, indexes_path, ncpus, outpath):
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("Runing the TMR flow.")
+    load_configuration_ps(ctx)
+    create_classifier(ctx)   
+    classifier = ctx.obj["classifier"]
+    if indexes_path is not None:
+        validation_indexes = np.loadtxt(indexes_path, dtype = int)
+        test_samples    = classifier.x_test[validation_indexes]
+        test_labels     = classifier.y_test[validation_indexes]
+    else:
+        test_samples    = classifier.x_test
+        test_labels     = classifier.y_test
+    #sample_classes = classifier.predict(test_samples, disable_tqdm = False)
+    leaves_per_tree = classifier.compute_leaves_idx(test_samples, disable_tqdm = False)
+
+    votes_vector = classifier.get_votes_vectors_by_leaves_idx(leaves_per_tree, classifier.y_test)
+    leaves_costs = classifier.get_leaves_costs_by_leaves_idx(leaves_per_tree)
+
+    num_classes  = np.unique(test_labels.ravel()).size
+    corr_class = [ 0 for label in range(num_classes)]
+    total_count_per_class = [0 for label in range(num_classes)]
+    for sId, y in enumerate(test_labels):
+        correct_label = int(y)
+        total_count_per_class[correct_label] += 1
+        if correct_label == int(np.argmax(votes_vector[sId])):
+            corr_class[correct_label] += 1
+    for i in range(num_classes):
+        corr_class[i] = corr_class[i] / total_count_per_class[i] * 100
+    if os.path.exists(outpath):
+        out_vv = os.path.join(outpath, "votes_vector.txt")
+        out_cacc = os.path.join(outpath, "per_class_acc.txt")
+        lCostPath = os.path.join(outpath, "leaves_costs.txt")
+        np.savetxt(out_vv, votes_vector, fmt = "%d")
+        np.savetxt(out_cacc, corr_class, fmt ="%.4f")
+        np.savetxt(lCostPath, leaves_costs, fmt = "%d")
+

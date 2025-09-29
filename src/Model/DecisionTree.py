@@ -129,6 +129,15 @@ class DecisionTree:
         output = self.assertions_graph.evaluate(boxes_output, lut_io_info, self.current_als_configuration)[0]
         return [ o[f"\\{c}"] for c in self.model_classes ]
     
+    """ This function returns the class label of the trees, alongside the number of nodes used to reach the decision."""
+    def get_num_nodes_4_sample(self, attributes):
+        boxes_output = self.get_boxes_output(attributes)
+        if self.als_conf is None:
+            for c_id, a in enumerate(self.boolean_networks):
+                for minterm in a["minterms"]:
+                    if int(eval(minterm, boxes_output)):
+                        return c_id, len(re.findall(r'Node_\d+', minterm))
+        return -1, 0
     """ This function implements an alternative visiting procedure.
         Instead of evaluating all the tree leaves, and then evaluating the correct output
         this function first evaluates all the boxes output and then returns the corresponding idx.
@@ -452,3 +461,15 @@ class DecisionTree:
     def set_end_start_sample(self, start, end):
         self.start = start
         self.end = end
+
+    # def prune_bn_by_class(self, label):
+    #     pruned_leaves = [ ]
+    #     for bn in self.boolean_networks:
+    #         if int(bn["class"]) != label:
+    #             for leaf in bn["minterms"]:
+    #                 pruned_leaves.append(leaf)
+    #             bn["minterms"] = ['False']
+    #             bn["sop"] = 'False'
+    #             bn["hdl_expression"] = '\'0\''
+
+    #     print(self.boolean_networks)

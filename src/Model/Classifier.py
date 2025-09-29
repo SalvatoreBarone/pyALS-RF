@@ -355,6 +355,15 @@ class Classifier:
                     votes_vector[sample_id][int(self.trees[tree_id].leaves[single_tree_leaf]["class"])] += 1
         return votes_vector
     
+    def get_leaves_costs_by_leaves_idx(self, leaves):
+        leavesCosts = [[0 for t in range(len(self.trees))] for s in range(len(leaves[0]))]
+        for treeId, treeLeaves in enumerate(leaves):
+            for sampleId, leafId in enumerate(treeLeaves):
+                leafMinterm = self.trees[treeId].leaves[leafId]["sop"]
+                leafCost =  len(re.findall(r'Node_\d+', leafMinterm))
+                leavesCosts[sampleId][treeId] = leafCost
+        return leavesCosts
+    
     """ Function used to obtain the set of class labels from a set of leaves indexes.
     """
     def get_class_labels_by_leaves_idx(self, leaves, y):
