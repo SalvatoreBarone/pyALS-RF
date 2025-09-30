@@ -533,7 +533,6 @@ def hdl_res_usage(ctx, conf, ps_path, pruning_path, out_path, dataset_name, numb
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
 def eval_test(ctx, conf, ncpus, test_set_indexes, outpath, verbose):
-
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "eval_test_ind")
     test_classifier_from_indexes(ctx, ncpus=ncpus, indexes_path=test_set_indexes, outpath=outpath)
     

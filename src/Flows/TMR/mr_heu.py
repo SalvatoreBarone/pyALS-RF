@@ -46,7 +46,7 @@ class MrHeu:
         self.is_problem_initialized = False
         self.is_pruining_outdir_initialized = False
         self.is_csv_out_initialized = False
-        
+        self.pool = Pool(self.n_cpus)
         if method == "pertree_acc_heu":
             self.ranking_procedure = rank_trees_per_accuracy
         elif method == "pertree_margin_heu":
@@ -101,19 +101,17 @@ class MrHeu:
         assert self.is_problem_initialized, "[MR-HEU] You should first initialize the problem! "
         assert self.is_pruining_outdir_initialized, "[MR-HEU] You should first initialize the pruning out dir!"
         assert self.is_csv_out_initialized, "[MR-HEU] You should first initialize the CSV outfile!"
-        self.logger.info("[MR-HEU] Starting heuristic Accuracy based. This may take a while, but be patient !")
+        self.logger.info("[MR-HEU] Starting heuristic. This may take a while, but be patient !")
         tm = time.time()
         mr_cfg = self.tree_ranking()
         tm = time.time() - tm
-        self.logger.info("[MR-HEU] Accuracy based heuristic completed !")
+        self.logger.info("[MR-HEU] Heuristic completed !")
         
         # Getting XMOP accuracy values.
         self.logger.info("[MR-HEU] Initiating evaluation on XAxC Set")
         validation_leaves = self.mr_axc.classifier.compute_leaves_idx(self.mr_axc.x_mop, False)
-        #self.nodes_per_sample = [0 for _ in range(0, len(validation_leaves[0]))]
-        
-        # """ This code simply counts the number of nodes per sample, in order to have an idea of the complexity of the
-        #     classical visiting procedure."""
+
+
         validation_classes = self.mr_axc.classifier.transform_leaves_into_classess(validation_leaves)
         validation_classes = MrAxC.per_tree_classess_into_classes_per_tree(validation_classes)
         xaxc_mr_pred_vectors =  self.mr_axc.get_mr_vectors(validation_classes, mr_cfg)
@@ -175,8 +173,195 @@ class MrHeu:
         df = pd.DataFrame(sol_summary, index=[0]).to_csv(self.csv_outfile, index = False, header = add_header, mode = "a")
         self.logger.info(f"Summary CSV updated! Please check {self.csv_outfile}")
     
+    """ ********* METHODS RELATED TO FULL RANKING PROCEDURES ! """
+
+    """ This code, contains the old heuristic. 
+    """
+    @staticmethod
+    def compute_accuracy_per_tree(p_trees, class_samples, in_lab):
+        # Initialize a dictionary mantaining for each tree the number of correctly labeled samples.
+        correctly_labeled = {}
+        """ NOTE THAT ACTIVITY IS USELESS !"""
+        activity = {} 
+        # For each tree, visit all the samples and estimate the number of correctly labeled samples.
+        for tree_id, tree in p_trees:
+            # Initialize the counter
+            correctly_labeled[tree_id] = 0
+            for sample in class_samples:
+                label = int(np.argmax(tree.visit(sample)))
+                correctly_labeled[tree_id] += (1 if label == in_lab else 0)
+            correctly_labeled[tree_id] = (correctly_labeled[tree_id] / len(class_samples)) * 100
+        return correctly_labeled, activity
+    
+    """ Compute leaves values per tree.
+        Returns a dictionary containing for each tree the set of predictions
+    """
+    @staticmethod
+    def compute_leaves_per_tree(p_trees, class_samples, in_lab):
+        # Initialize a dictionary mantaining for each tree the number of labeled samples.
+        tree_preds = {}
+        # For each tree, visit all the samples and estimate the number of correctly labeled samples.
+        for tree_id, tree in p_trees:
+            # Initialize the counter
+            tree_preds[tree_id] = []
+            for sample in class_samples:
+                label = int(np.argmax(tree.visit(sample)))
+                tree_preds[tree_id].append(label)
+        return tree_preds
+
+    def do_full_ranking_accuracy(self):
+        mr_cfg = []
+        pruning_cfg = []
+        total_leaves_pruned = 0
+        for class_idx in tqdm(self.mr_axc.sampled_classes, desc = "[MR-HEU] Approximating trees per class"):
+            self.logger.debug(f"[MR-HEU] Starting heuristic for class {class_idx}.!")
+            # Identify the samples belonging to that class.
+            class_samples = [self.mr_axc.x_mop[i] for i in range(0, len(self.mr_axc.y_mop)) if self.mr_axc.y_mop[i] == class_idx]
+            # Rank the trees for that class, take in mind that this function considers also the excluded trees.
+            trees_for_evaluation = [(i, self.mr_axc.classifier.trees[i]) for i in range(0, len(self.mr_axc.classifier.trees)) if i not in self.excluded_trees]
+            # This simply performs a multicore, ranking operation !
+            p_tree = list_partitioning(trees_for_evaluation, self.n_cpus)
+            args = [(tree_sublist, class_samples, class_idx) for tree_sublist in p_tree ]
+            sorted_trees = self.pool.starmap(MrHeu.compute_accuracy_per_tree, args)
+
+            # sorted_trees is a list of dictionaries, we have to merge them.
+            merged_dict = {}
+            #merged_dict_activity = {}
+            for t, activity in sorted_trees:
+                merged_dict.update(t) 
+                #merged_dict_activity.update(activity)
+            
+            # With this, we sort the list of trees for the parameters.
+            sorted_trees = [k for k, v in sorted(merged_dict.items(), key=lambda x: x[1], reverse=True)]
+            class_cfg = sorted_trees[:self.mr_order]
+            # For each tree not in the class configuration
+            for tree in range(len(self.mr_axc.classifier.trees)):
+                if tree not in class_cfg:
+                    # Get the leaves related to that class 
+                    to_prune = GREP.get_pruning_conf_by_class(self.mr_axc.classifier.trees[tree], tree, class_idx)   
+                    # Extend the pruning configuration
+                    pruning_cfg.extend(to_prune)
+                    # Set the pruning configuration.
+                    pruned_leaves = GREP.set_pruning(self.mr_axc.classifier.trees[tree], to_prune)
+                    total_leaves_pruned += pruned_leaves
+            mr_cfg.append(class_cfg)
+        return mr_cfg, pruning_cfg, total_leaves_pruned
+    
+    @staticmethod
+    def get_votes_vector_by_tree_leaves_dict(leaves_dict, num_labels, num_samples):
+        votes_vectors = [[0 for _ in range(num_labels)] for _ in range(num_samples)]
+        for treeLabel in leaves_dict.keys():
+            for sampleId, sampleLabel in enumerate(leaves_dict[treeLabel]):
+                votes_vectors[sampleId][sampleLabel] += 1
+        return votes_vectors
+    
+    def do_full_ranking_margin(self):
+        mr_cfg = []
+        pruning_cfg = []
+        total_leaves_pruned = 0
+        for class_idx in tqdm(self.mr_axc.sampled_classes, desc = "[MR-HEU] Approximating trees per class"):
+            self.logger.debug(f"[MR-HEU] Starting heuristic for class {class_idx}.!")
+            # Identify the samples belonging to that class.
+            class_samples = [self.mr_axc.x_mop[i] for i in range(0, len(self.mr_axc.y_mop)) if self.mr_axc.y_mop[i] == class_idx]
+            # Rank the trees for that class, take in mind that this function considers also the excluded trees.
+            trees_for_evaluation = [(i, self.mr_axc.classifier.trees[i]) for i in range(0, len(self.mr_axc.classifier.trees)) if i not in self.excluded_trees]
+            remaining_trees = [i for i in range(0, len(self.mr_axc.classifier.trees)) if i not in self.excluded_trees]
+            # Identify the set of leaves.
+            p_tree = list_partitioning(trees_for_evaluation, self.n_cpus)
+            args = [(tree_sublist, class_samples, class_idx) for tree_sublist in p_tree ]
+            sorted_trees = self.pool.starmap(MrHeu.compute_leaves_per_tree, args)
+            # Merge the dictionary, so that we have just one.
+            merged_dict = {}
+            for t in sorted_trees:
+                merged_dict.update(t) 
+            # Convert the leaves into a votes vector
+            votesVectors = MrHeu.get_votes_vector_by_tree_leaves_dict(leaves_dict=merged_dict, num_labels=len(self.mr_axc.sampled_classes), num_samples=len(class_samples))            
+            y_prun = [class_idx for _ in range(len(class_samples))]
+            # Estimate the margins.
+            per_sample_margins = Pruner.per_sample_margin(votesVectors, y_prun)
+            per_sample_margin_gains, new_pv = Pruner.update_margins_dict(tree_preds=merged_dict, pred_vectors=votesVectors, remaining_trees=remaining_trees, yprun=y_prun)
+
+            gains = Pruner.evaluate_mean_dm_dict(per_sample_margins, per_sample_margin_gains)
+            # With this, we sort the list of trees for the parameters.
+            sorted_trees = [k for k, v in sorted(gains.items(), key=lambda x: x[1], reverse=True)]
+            class_cfg = sorted_trees[:self.mr_order]
+            # For each tree not in the class configuration
+            for tree in range(len(self.mr_axc.classifier.trees)):
+                if tree not in class_cfg:
+                    # Get the leaves related to that class 
+                    to_prune = GREP.get_pruning_conf_by_class(self.mr_axc.classifier.trees[tree], tree, class_idx)   
+                    # Extend the pruning configuration
+                    pruning_cfg.extend(to_prune)
+                    # Set the pruning configuration.
+                    pruned_leaves = GREP.set_pruning(self.mr_axc.classifier.trees[tree], to_prune)
+                    total_leaves_pruned += pruned_leaves
+            mr_cfg.append(class_cfg)
+        return mr_cfg, pruning_cfg, total_leaves_pruned
+
+    def set_full_ranking_method(self):
+        if self.ranking_procedure_str == "pertree_acc_heu":
+            self.full_ranking_method = self.do_full_ranking_accuracy
+        elif self.ranking_procedure_str == "pertree_margin_heu":
+            self.full_ranking_method = self.do_full_ranking_margin
+        else:
+            self.logger.error("[MR-HEU] Ranking method not supported, supported : pertree_acc_heu and pertree_margin_heu")
+            exit(1)
+    
+    def do_full_ranking(self):
+        return self.full_ranking_method()
+    
+    def heu_tree_acc_2(self):
+
+        assert self.is_problem_initialized, "[MR-HEU] You should first initialize the problem! "
+        assert self.is_pruining_outdir_initialized, "[MR-HEU] You should first initialize the pruning out dir!"
+        assert self.is_csv_out_initialized, "[MR-HEU] You should first initialize the CSV outfile!"
+        self.set_full_ranking_method()
+        self.logger.info("[MR-HEU] Starting heuristic Accuracy based. This may take a while, but be patient !")
+        tm = time.time()
+        mr_cfg, pruning_cfg, total_leaves_pruned = self.do_full_ranking()
+        tm = time.time() - tm
+
+        self.logger.info(f"[MR-HEU] Accuracy based heuristic completed in {tm} !")
+        self.mr_axc.num_cores = self.n_cpus
+        #thds = self.mr_axc.tune_thds(mr_cfg)
+
+        mr_vectors = self.mr_axc.mr_predict(mr_cfg, self.mr_axc.x_val, None)
+        correct_draw, correct_no_draw = MrAxC.get_correctly_predicted_from_vectors_static(mr_vectors, self.mr_axc.y_val)
+        acc = (correct_draw/len(self.mr_axc.y_val)) * 100
+        acc_no_draw = correct_no_draw/len(self.mr_axc.y_val) * 100
+        self.logger.info(f"[MR-HEU] Acc. {acc} Acc. No Draw {acc_no_draw}")
+        # Summary on the evaluation.
+        sol_summary = {
+                "Algo"                  : self.ranking_procedure_str,
+                "MrOrder"               : self.mr_order,
+                "Pruned-Leaves"         : len(pruning_cfg),
+                "Baseline_XVal_Acc."    : self.mr_axc.x_val_baseline_accuracy,
+                "Acc-XVal_Draw"         : acc,
+                "Loss-XVal_Draw"        : self.mr_axc.x_val_baseline_accuracy - acc, 
+                "Acc-XVal_NO_Draw"      : acc_no_draw,
+                "Loss-XVal_NO_Draw"     : self.mr_axc.x_val_baseline_accuracy_nodraw - acc_no_draw,
+                "Comp Time [s]"         : tm
+            }
+        add_header = not os.path.exists(self.csv_outfile)
+        df = pd.DataFrame(sol_summary, index=[0]).to_csv(self.csv_outfile, index = False, header = add_header, mode = "a")
+        self.logger.info(f"Summary CSV updated! Please check {self.csv_outfile}")
+        
+        # Dumping pruning and validation indexes
+
+        np.savetxt(os.path.join(self.approx_cfg_outdir, "original_ensemble_labels.txt"), self.mr_axc.x_val_class_labels, fmt = "%d")
+        np.savetxt(os.path.join(self.approx_cfg_outdir, "original_ensemble_labels_nodraw.txt"), self.mr_axc.x_val_class_labels_nodraw, fmt = "%d")
+        np.savetxt(os.path.join(self.approx_cfg_outdir, "val_pred_vectors.txt"), mr_vectors, fmt = "%d")
+       
+        # Dump the per class cfg
+        with open(self.pruning_outfiles_dict["outfile_per_class_cfg"], "w") as f:
+            json5.dump(mr_cfg, f, indent = 2)
+        # Dump the pruning configuration
+        with open(self.pruning_outfiles_dict["outfile_pruning_cfg"], "w") as f:
+            json5.dump(pruning_cfg, f, indent = 2)
 
 
+
+""" This functions are related to the previous implementation of the HEURISTIC !"""
 def rank_trees_per_margin(heu_solver: MrHeu):
     remaining_trees = [i for i in range(0, len(heu_solver.mr_axc.classifier.trees))]
     # Get the prediction vectors for each single classifier

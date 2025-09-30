@@ -87,6 +87,20 @@ class Pruner:
             new_pv.update({considered_tree: new_pred_vectors})
             new_margins.append(Pruner.per_sample_margin(new_pred_vectors, yprun))
         return new_margins, new_pv
+    
+    @staticmethod
+    def update_margins_dict(tree_preds, pred_vectors, remaining_trees, yprun):
+        new_margins = {}
+        new_pv = {}
+        for considered_tree in tqdm(remaining_trees, desc = "Updating tree resiliency"):
+            new_pred_vectors = copy.deepcopy(pred_vectors)
+            new_margins[considered_tree] = []
+            # Subtract the tree.
+            for sample_id, sample in enumerate(tree_preds[considered_tree]):
+                new_pred_vectors[sample_id][tree_preds[considered_tree][sample_id]] -= 1
+            new_pv.update({considered_tree: new_pred_vectors})
+            new_margins[considered_tree].extend(Pruner.per_sample_margin(new_pred_vectors, yprun))
+        return new_margins, new_pv
 
     @staticmethod
     def evaluate_mean_dm(old_margins, new_margins):
@@ -96,6 +110,18 @@ class Pruner:
             for old_margin_sample, new_margin_sample in zip(old_margins, new_margin_vector):
                 average += (old_margin_sample - new_margin_sample)
             averages.append(average / len(old_margins))
+        #averages = np.sort(averages)
+        return averages
+    
+    @staticmethod
+    def evaluate_mean_dm_dict(old_margins, new_margins):
+        averages = {}
+        for tree_id in new_margins.keys():
+            new_margin_vector = new_margins[tree_id]
+            average = 0
+            for old_margin_sample, new_margin_sample in zip(old_margins, new_margin_vector):
+                average += (old_margin_sample - new_margin_sample)
+            averages[tree_id] = (average / len(old_margins))
         #averages = np.sort(averages)
         return averages
     

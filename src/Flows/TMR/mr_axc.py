@@ -237,7 +237,10 @@ class MrAxC:
         # self.logger.info("Ended")
         # exit(1)
         _, self.x_mop_baseline_accuracy, self.x_mop_baseline_accuracy_nodraw = self.classifier.get_accuracy_by_leaves_idx(self.x_mop_leaves, self.y_mop)
-
+        # print(self.x_mop_baseline_accuracy)
+        # print(self.classifier.x_test)
+        # print(self.classifier.y_test)
+        # exit(1)
         end = time.time()
         #self.x_mop_classes_transposed = self.classifier.transform_leaves_into_classess(self.x_mop_leaves)
         x_mop_classes = self.classifier.transform_leaves_into_classess(self.x_mop_leaves)
@@ -274,7 +277,7 @@ class MrAxC:
     """ ATTENTION: THIS FUNCTION IS DEPRECATED.
         Get the set of TMR vector predictions.
         given the set of classes per each tree (i.e. classes_per_tree) and the modular redundant configuration (i.e. class configuration)
-        this function returns the output of a TMR structure (a set of 0 or 1 for each class).
+        this function returns the output of a TMR structure ( a set of 0 or 1 for each class).
     """
     @staticmethod
     @DeprecationWarning
@@ -337,6 +340,96 @@ class MrAxC:
         # Return to_ret
         return np.array(to_ret)
     
+
+    @staticmethod
+    def eval_trees_with_nodes(subtrees, samples):
+        tree_labels = {}
+        tree_num_nodes = {}
+        for tree_id, tree in subtrees:
+            tree_labels[tree_id] = []
+            tree_num_nodes[tree_id] = []
+            for sample in samples:
+                label = tree.visit(sample)
+                tree_labels[tree_id].append(np.argmax(label))
+                tree_num_nodes[tree_id].append(0)
+        return tree_labels, tree_num_nodes
+    
+    def mr_predict(self, class_configurations, samples, tuned_thds):
+        
+        if tuned_thds == None:
+            thds = {}
+            for cl_id, _ in enumerate(class_configurations):
+                thds[cl_id] = int(np.ceil(len(class_configurations[0])/2))
+        else:
+            thds = tuned_thds
+
+        # Now perform the visiting procedure of the trees.
+        pool = Pool(self.num_cores)
+        # Partition all the trees used for performing the inference.
+        unique_trees = [(t, self.classifier.trees[t]) for t in range(len(self.classifier.trees))]
+        p_trees = list_partitioning(unique_trees, self.num_cores)
+        args = [(sub_trees, samples) for  sub_trees in p_trees]
+        to_ret= pool.starmap(MrAxC.eval_trees_with_nodes, args)
+        merged_dict_labels = {}
+        # merged_dict_nodes = {}
+        for labels, nodes in to_ret:
+            merged_dict_labels.update(labels)  
+  
+
+        classes_per_tree = [] 
+        for sampleId, _ in enumerate(samples):
+            preds = []
+            for treeId, _  in enumerate(self.classifier.trees):
+                preds.append(merged_dict_labels[treeId][sampleId])
+            classes_per_tree.append(np.array(preds))
+        
+        mr_vectors = self.get_mr_vectors(classes_per_tree=classes_per_tree, class_configurations=class_configurations)
+
+        return mr_vectors
+    
+
+    def tune_thds(self, class_configurations):
+        trees_list = []
+        for tree_sublist in class_configurations:
+            trees_list.extend(tree_sublist)
+        # Get all the unique trees.
+        trees_list = list(set(trees_list))
+        # Now perform the visiting procedure of the trees.
+        pool = Pool(self.num_cores)
+        # Partition all the trees used for performing the inference.
+        unique_trees = [(t, self.classifier.trees[t]) for t in trees_list]
+        p_trees = list_partitioning(unique_trees, self.num_cores)
+        args = [(sub_trees, self.x_mop) for  sub_trees in p_trees]
+        to_ret = pool.starmap(MrAxC.eval_trees_with_nodes, args)
+
+        merged_dict_labels = {}
+        for labels, _ in to_ret:
+            merged_dict_labels.update(labels)     
+        
+        votes_per_class = {}
+           
+
+        # For each class, identify the number of trees that labeled the samples
+        for c_id, cfg in enumerate(class_configurations):
+            votes_per_class[c_id] = []
+            # For each sample, compute the number of votes that the value received
+            for s_id, _ in enumerate(self.x_mop):
+                # IF the sample is correctly labeled
+                if int(self.y_mop[s_id]) == c_id:
+                    votes = 0
+                    # Compute the average number of trees that labels the sample
+                    for tree in cfg: 
+                        if merged_dict_labels[tree][s_id] == c_id : 
+                            votes += 1
+                    votes_per_class[c_id].append(votes)
+            # print(votes_per_class)
+            # print(int(np.mean(votes_per_class[c_id])))
+
+            # In the end compute the mean as the minimum
+            votes_per_class[c_id] = min(int(np.mean(votes_per_class[c_id])) - int(10 * np.std(votes_per_class[c_id])) , int(np.ceil(len(class_configurations[0]) / 2)))
+        # print(votes_per_class)
+        # exit(1)
+        return votes_per_class
     """ 
         THIS FUNCTION IS DEPREACTED.
         Given a tmr_vector predictions and an oracle y returns the accuracy considering the draw as a missclassification and the 

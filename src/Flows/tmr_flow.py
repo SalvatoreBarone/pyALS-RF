@@ -65,17 +65,6 @@ def mr_heu_flow(ctx, in_pruning, method, fraction, mr_order, ncpus, pruning_dir,
     create_classifier(ctx)    
     """ Useless code used to import a pruning configuration.
         Now the heuristic themself manages a previous ensemble pruning conf by simply taking in input the list of pruned trees."""
-    # if in_pruning is not None:
-    #     with open(in_pruning, "r") as f:
-    #         pc = json5.load(f)
-    #     # print(pc)
-    #     # exit(1)
-    #     logger.info(f"[MR-HEU-FLOW] Pruning the model with the pruning configuration in {in_pruning}")
-    #     GREP.set_pruning_conf(ctx.obj["classifier"], pc)
-    #     logger.info(f"[MR-HEU-FLOW] Model pruned !")
-    # else:
-    #     logger.info(f"[MR-HEU-FLOW] No pruning configuration provided, using the full model.")
-    
     if in_pruning is not None:
         pruned_trees = np.loadtxt(in_pruning, dtype = int)
         # print(pruned_trees)
@@ -92,8 +81,8 @@ def mr_heu_flow(ctx, in_pruning, method, fraction, mr_order, ncpus, pruning_dir,
     mr_heu.initialize_summary_files(csv_dir)
     logger.info("[MR-HEU-FLOW] MrHeu initialized !")
     logger.info("[MR-HEU-FLOW] Running problem!")
+    #mr_heu.heu_tree_acc_2()
     mr_heu.heu_tree_acc()
-    #mr_heu.rank_trees_per_margin()
     logger.info(f"[MR-HEU-FLOW] Problem completed, take a look at {pruning_dir} and {csv_dir}")
     
 
