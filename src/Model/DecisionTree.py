@@ -414,7 +414,13 @@ class DecisionTree:
             bn_functions.append(generate_boolean_function(new_bn, f"bn_{self.name}_{id}"))
         return bn_functions
     
-    
+    """ 
+        This is an additional function added to support QAT (Quantization Aware Training).
+        It simply changes the underlying data type of each decision box.
+    """
+    def set_box_data_type(self, type = "int16"):
+        for box in self.decision_boxes: 
+            box["box"].data_type = type
     """ 
         Generate BNS alias for iv evaluation.
     """

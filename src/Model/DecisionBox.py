@@ -17,6 +17,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA.
 import copy
 from enum import Enum
 from pyalslib import double_to_hex, apply_mask_to_double, apply_mask_to_int
+import numpy as np
 
 class DecisionBox:
   class CompOperator(Enum):
@@ -110,9 +111,14 @@ class DecisionBox:
     elif self.nab != 0:
       input_to_compare = apply_mask_to_int(int(input), self.nab) 
       threshold = apply_mask_to_int(int(self.threshold), self.nab)
+    # This is for adding support to int16 quantization.
+    elif self.data_type ==  "int16":
+        input_to_compare  = np.int16(np.round(input))
+        threshold         = np.round(float(self.threshold))
     else:
       # Whether no approximation is required, input and threshold are simply converted to the suitable data-type.
       input_to_compare = int(input) 
+
       threshold = int(self.threshold)
     if self.operator == DecisionBox.CompOperator.greaterThan:
       return input_to_compare > threshold

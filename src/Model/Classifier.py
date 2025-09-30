@@ -190,7 +190,16 @@ class Classifier:
         print("\n\nTrees:")
         for t in self.trees:
             t.dump()
-            
+
+        
+    """ 
+        This is an additional function added to support QAT (Quantization Aware Training).
+        It simply changes the underlying data type of each decision box FOR EACH TREE.
+    """
+    def set_thds_type(self, type = "int16"):
+        for tree in self.trees:
+            tree.set_box_data_type(type)
+
     def read_test_set(self, dataset_csv, no_header = False):
         self.dataframe = pd.read_csv(dataset_csv, sep = self.csv_separator)
         # Todo : Remove the assumption of the last column being the label

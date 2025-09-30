@@ -114,12 +114,16 @@ def visit_test(ctx, ps_dir, val_path, working_mode = 0, error_margin = 0.01, con
             assert 1 == 0, "Invalid configuration of the fault parameter"
         fc.faults_to_json5_list(classifier = classifier,  out_path = cp)
 
-def test_classifier_from_indexes(ctx, indexes_path, ncpus, outpath):
+def test_classifier_from_indexes(ctx, quantization_type, indexes_path, ncpus, outpath):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the TMR flow.")
     load_configuration_ps(ctx)
     create_classifier(ctx)   
     classifier = ctx.obj["classifier"]
+    # Alter decision boxes outputs
+    if quantization_type != None:
+        classifier.set_thds_type(quantization_type)
+
     if indexes_path is not None:
         validation_indexes = np.loadtxt(indexes_path, dtype = int)
         test_samples    = classifier.x_test[validation_indexes]

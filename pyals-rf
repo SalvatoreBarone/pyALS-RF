@@ -527,14 +527,16 @@ def hdl_res_usage(ctx, conf, ps_path, pruning_path, out_path, dataset_name, numb
 
 @cli.command("eval_test")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file of the classifier")
+@click.option('-q', '--quantization_type', type=str, default = None)
 @click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
 @click.option('-t', '--test_set_indexes', type=click.Path(exists=True, dir_okay=False), default = None, help = "TXT containing the indexes of the test set to use")
 @click.option('-o', '--outpath', type=click.Path(dir_okay=True), default = None, help = "Override output directory configuration")
 @click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
 @click.pass_context
-def eval_test(ctx, conf, ncpus, test_set_indexes, outpath, verbose):
+def eval_test(ctx, conf, quantization_type, ncpus, test_set_indexes, outpath, verbose):
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "eval_test_ind")
-    test_classifier_from_indexes(ctx, ncpus=ncpus, indexes_path=test_set_indexes, outpath=outpath)
+
+    test_classifier_from_indexes(ctx, quantization_type, ncpus=ncpus, indexes_path=test_set_indexes, outpath=outpath)
     
 
 cli.add_command(bitwidth)
