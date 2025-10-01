@@ -133,7 +133,14 @@ def test_classifier_from_indexes(ctx, quantization_type, indexes_path, ncpus, ou
         test_labels     = classifier.y_test
     #sample_classes = classifier.predict(test_samples, disable_tqdm = False)
     leaves_per_tree = classifier.compute_leaves_idx(test_samples, disable_tqdm = False)
-
+    class_per_tree  = classifier.transform_leaves_into_classess(leaves_per_tree)
+    
+    # Transpose class_per_tree
+    classes_per_sample = [[] for _ in range(len(test_samples))]
+    for i in range(len(test_samples)):        
+        for j in range(len(classifier.trees)):      
+            classes_per_sample[i].append(class_per_tree[j][i])
+    
     votes_vector = classifier.get_votes_vectors_by_leaves_idx(leaves_per_tree, classifier.y_test)
     leaves_costs = classifier.get_leaves_costs_by_leaves_idx(leaves_per_tree)
 
@@ -151,7 +158,8 @@ def test_classifier_from_indexes(ctx, quantization_type, indexes_path, ncpus, ou
         out_vv = os.path.join(outpath, "votes_vector.txt")
         out_cacc = os.path.join(outpath, "per_class_acc.txt")
         lCostPath = os.path.join(outpath, "leaves_costs.txt")
+        leavesLabelsPath = os.path.join(outpath, "leaves_labels.txt")
         np.savetxt(out_vv, votes_vector, fmt = "%d")
         np.savetxt(out_cacc, corr_class, fmt ="%.4f")
         np.savetxt(lCostPath, leaves_costs, fmt = "%d")
-
+        np.savetxt(leavesLabelsPath, classes_per_sample, fmt ="%d")
