@@ -265,41 +265,35 @@ def models_crossvalidation(config, model, x_test, y_test, pmml_file, test_datase
     logger.info(f"Accuracy of the scikit-learn model: {acc_scikit / len(y_test)*100}%")
 
 def clamp(a, b, x):
-    if x <= a:
-        return a 
-    elif a < x < b:
-        return x
-    elif x >= b :
-        return b
-    print(x)
-    print(a)
-    print(b)
-    assert 1 == 0
+    return min(max(x, a), b)
+
 def quantize_16(X_train, X_test):
     train_attributes = [[X_train[i][j] for i in range(len(X_train))] for j in range(len(X_train[0]))]
-    test_attributes = [[X_test[i][j] for i in range(len(X_test))] for j in range(len(X_test[0]))]
-    qmin    = -1 * 2**15
-    qmax    = 2**15 - 1
+    test_attributes  = [[X_test[i][j] for i in range(len(X_test))] for j in range(len(X_test[0]))]
+
+    qmin = -2**15
+    qmax =  2**15 - 1
+
     for j in range(len(train_attributes)):
-        # Find the maximum absolute value.
-        #max = abs( max(train_attributes[j], key = abs))        
+        # Find the maximum absolute value
         max_abs = np.max(np.abs(train_attributes[j]))
-        #scale   = qmax / max_abs
-        for s in train_attributes[j]:
-            res = (s * 2**15) / max_abs
-            
-            print(res)
-            print(s)
-            print(max_abs)
+        if max_abs == 0:   # avoid div by zero
+            scale = 1.0
+        else:
+            scale = qmax / max_abs
 
-        train_attributes[j] = [clamp(qmin, qmax, np.round((s * 2**15) / max_abs))   for s in train_attributes[j]] 
-        test_attributes[j] = [clamp(qmin, qmax, np.round((s * 2**15) / max_abs))   for s in test_attributes[j]]
+        # Apply scaling and rounding
+        train_attributes[j] = [clamp(qmin, qmax, np.round(s * scale)) for s in train_attributes[j]]
+        test_attributes[j]  = [clamp(qmin, qmax, np.round(s * scale)) for s in test_attributes[j]]
 
+    # Transpose back
     train_attributes = [[np.int16(train_attributes[j][i]) for j in range(len(X_train[0]))] for i in range(len(X_train))]
-    test_attributes = [[np.int16(test_attributes[j][i]) for j in range(len(X_test[0]))] for i in range(len(X_test))]
+    test_attributes  = [[np.int16(test_attributes[j][i]) for j in range(len(X_test[0]))] for i in range(len(X_test))]
+
     return train_attributes, test_attributes
 
-def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, niter, cross_validate, hyp_dataset, test_dataset, ncpus, neg_exp_graph):
+
+def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, q16,  niter, cross_validate, hyp_dataset, test_dataset, ncpus, neg_exp_graph):
     logger = logging.getLogger("pyALS-RF")
     config = DtGenConfigParser(configfile)
     assert hyp_dataset == None and test_dataset == None or hyp_dataset != None and test_dataset != None, "Hyperparameter tuning and testing datasets must be both specified or both None"
@@ -307,7 +301,9 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
     """
     if hyp_dataset == None:
         x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
-        x_train, x_test = quantize_16(x_train, x_test)
+        if q16 == 1:
+            x_train, x_test = quantize_16(x_train, x_test)
+
     else: # If the dataset is already splitted do not internally split into train and validation, but automatically integrate the functionality 
         x_train, y_train = get_sets_no_split(hyp_dataset, config)
         x_test, y_test = get_sets_no_split(test_dataset, config)
