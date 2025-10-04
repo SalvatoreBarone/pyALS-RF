@@ -120,7 +120,7 @@ def test_classifier_from_indexes(ctx, quantization_type, indexes_path, ncpus, ou
     load_configuration_ps(ctx)
     create_classifier(ctx)   
     classifier = ctx.obj["classifier"]
-    # Alter decision boxes outputs
+    # Alter decision boxes comparison logic
     if quantization_type != None:
         classifier.set_thds_type(quantization_type)
 

@@ -323,7 +323,7 @@ class MrHeu:
 
         self.logger.info(f"[MR-HEU] Accuracy based heuristic completed in {tm} !")
         self.mr_axc.num_cores = self.n_cpus
-        #thds = self.mr_axc.tune_thds(mr_cfg)
+        # thds = self.mr_axc.tune_thds(mr_cfg)
 
         mr_vectors = self.mr_axc.mr_predict(mr_cfg, self.mr_axc.x_val, None)
         correct_draw, correct_no_draw = MrAxC.get_correctly_predicted_from_vectors_static(mr_vectors, self.mr_axc.y_val)

@@ -58,7 +58,7 @@ def tmr_flow(ctx, output, fraction,  ncpus, report, it, test_samples, mr_order, 
 """ This is a substitute for the TMR flow.  
     The code in TMR flow was bloated and full of initial experiments.
 """
-def mr_heu_flow(ctx, in_pruning, method, fraction, mr_order, ncpus, pruning_dir, csv_dir):
+def mr_heu_flow(ctx, quantization_type, in_pruning, method, fraction, mr_order, ncpus, pruning_dir, csv_dir):
     logger = logging.getLogger("pyALS-RF")
     logger.info("[MR-HEU-FLOW] Running the MR Heuristics flow")
     load_configuration_ps(ctx)
@@ -72,7 +72,10 @@ def mr_heu_flow(ctx, in_pruning, method, fraction, mr_order, ncpus, pruning_dir,
         pruned_trees = []
     # Initialize the MRAxC object.
     logger.info("[MR-HEU-FLOW] Initializing the MrAxC object..")
-    mr_axc = MrAxC(ctx.obj["classifier"], 1, fraction) # Fix the num_cores value to 1.
+    classifier = ctx.obj["classifier"]
+    if quantization_type != None:
+        classifier.set_thds_type(quantization_type)
+    mr_axc = MrAxC(classifier, 1, fraction) # Fix the num_cores value to 1.
     logger.info("[MR-HEU-FLOW] MrAxC object initialized!")
     logger.info("[MR-HEU-FLOW] Initializing the MrHeu object")
     mr_heu = MrHeu(mr_order, ncpus, method=method, excluded_trees=pruned_trees)
@@ -81,8 +84,8 @@ def mr_heu_flow(ctx, in_pruning, method, fraction, mr_order, ncpus, pruning_dir,
     mr_heu.initialize_summary_files(csv_dir)
     logger.info("[MR-HEU-FLOW] MrHeu initialized !")
     logger.info("[MR-HEU-FLOW] Running problem!")
-    #mr_heu.heu_tree_acc_2()
-    mr_heu.heu_tree_acc()
+    mr_heu.heu_tree_acc_2()
+    # mr_heu.heu_tree_acc()
     logger.info(f"[MR-HEU-FLOW] Problem completed, take a look at {pruning_dir} and {csv_dir}")
     
 
