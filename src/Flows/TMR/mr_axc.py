@@ -350,7 +350,11 @@ class MrAxC:
             tree_num_nodes[tree_id] = []
             for sample in samples:
                 label = tree.visit(sample)
-                tree_labels[tree_id].append(np.argmax(label))
+                label_max = np.max(label)
+                if label_max != 0:
+                    tree_labels[tree_id].append(np.argmax(label))
+                else:
+                    tree_labels[tree_id].append(-1)
                 tree_num_nodes[tree_id].append(0)
         return tree_labels, tree_num_nodes
     
