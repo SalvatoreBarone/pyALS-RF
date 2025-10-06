@@ -85,7 +85,6 @@ def mr_heu_flow(ctx, quantization_type, in_pruning, method, fraction, mr_order, 
     logger.info("[MR-HEU-FLOW] MrHeu initialized !")
     logger.info("[MR-HEU-FLOW] Running problem!")
     mr_heu.heu_tree_acc_2()
-    # mr_heu.heu_tree_acc()
     logger.info(f"[MR-HEU-FLOW] Problem completed, take a look at {pruning_dir} and {csv_dir}")
     
 
