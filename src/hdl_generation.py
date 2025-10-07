@@ -106,7 +106,9 @@ def hdl_generation(ctx, lut_tech, skip_exact : bool, output, pruning_name):
     
     logger.info("All done!")
 
-def hdl_resource_usage(ctx, lut_tech = 6, pruning_cfg_path : str = None, ps_set_configuration_path: str = None, report_path: str = None, dataset_name: str = "NoDSProvided", number_trees : int = 5, mr_order :int = 1 ):
+def hdl_resource_usage(ctx, lut_tech = 6, comp_type = "comp64", 
+                       pruning_cfg_path : str = None, ps_set_configuration_path: str = None, report_path: str = None, 
+                       dataset_name: str = "NoDSProvided", number_trees : int = 5, mr_order :int = 1 ):
     logger = logging.getLogger("pyALS-RF")
     logger.info("Runing the HDL generation flow.")
     if pruning_cfg_path != None and ps_set_configuration_path != None:
@@ -149,10 +151,12 @@ def hdl_resource_usage(ctx, lut_tech = 6, pruning_cfg_path : str = None, ps_set_
     elif pruning_cfg_path != None:
         logger.info("Computing resource usage for the exact classifier.")
         hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+        hdl_generator.set_comp_type(comp_type)
         exact_luts_dbs, exact_luts_bns, exact_ffs_dbs = hdl_generator.get_resource_usage()
         ctx.obj['pruning_configuration'] = json5.load(open(pruning_cfg_path))
         logger.info("Computing resource usage for the APPROXIMATE classifier.")
         hdl_generator = GREPHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+        hdl_generator.set_comp_type(comp_type)
         hdl_generator.generate_axhdl(pruning_configuration = ctx.obj['pruning_configuration'], enable_espresso = ctx.obj['espresso'], lut_tech = lut_tech)
         ax_luts_dbs, ax_luts_bns, ax_ffs_dbs = hdl_generator.get_resource_usage()
         
@@ -194,10 +198,10 @@ def hdl_resource_usage(ctx, lut_tech = 6, pruning_cfg_path : str = None, ps_set_
 
 
 def dyn_energy_estimation(ctx, 
-                          lut_tech = 6, 
-                          pruning_cfg_path : str = None, 
-                          ps_set_configuration_path: str = None, 
-                          report_path: str = None, dataset_name: str = "NoDSProvided", number_trees : int = 5, mr_order :int = 1 ):
+                          lut_tech = 6, comp_type = "comp64",
+                          pruning_cfg_path : str = None, ps_set_configuration_path: str = None, 
+                          report_path: str = None, dataset_name: str = "NoDSProvided", 
+                          number_trees : int = 5, mr_order :int = 1 ):
     
     # Get the logger and avoid potential errors.
     logger = logging.getLogger("pyALS-RF")
@@ -217,6 +221,7 @@ def dyn_energy_estimation(ctx,
 
     logger.info("Estimating energy for the exact classifier.")
     hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+    hdl_generator.set_comp_type(comp_type)
     exact_dbs_energy, exact_lut_energy = hdl_generator.get_dyn_energy()
     exact_total_energy = exact_lut_energy + exact_dbs_energy
     
@@ -228,6 +233,7 @@ def dyn_energy_estimation(ctx,
         ctx.obj['pruning_configuration'] = json5.load(open(pruning_cfg_path))
         logger.info("Computing resource usage for the APPROXIMATE classifier.")
         hdl_generator = GREPHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+        hdl_generator.set_comp_type(comp_type)
         hdl_generator.generate_axhdl(pruning_configuration = ctx.obj['pruning_configuration'], enable_espresso = ctx.obj['espresso'], lut_tech = lut_tech)
         approx_dbs_energy, approx_lut_energy = hdl_generator.get_dyn_energy()
         approx_total_energy = approx_dbs_energy + approx_lut_energy

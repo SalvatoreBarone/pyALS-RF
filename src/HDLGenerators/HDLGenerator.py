@@ -24,6 +24,19 @@ from .LutMapper import LutMapper
 from ..Model.Classifier import Classifier
 from ..Model.DecisionTree import DecisionTree
 
+comparator_dict = {
+    "comp64": {
+        "lut": 77,
+        "ffs": 128,
+        "en" : 1
+    },
+    "comp16": {
+        "lut": 55,
+        "ffs": 32,
+        "en" : 1 
+    }
+} 
+
 class HDLGenerator:
     lut_x_db = 77
     ffs_x_db = 128
@@ -69,6 +82,12 @@ class HDLGenerator:
         self.destination = destination
         self.source_dir = f"{Path(os.path.dirname(os.path.abspath(__file__))).resolve().parents[1]}{self.resource_dir}"
     
+    def set_comp_type(self, comp_type : str): 
+        self.lut_x_db = comparator_dict[comp_type]["lut"]
+        self.ffs_x_db = comparator_dict[comp_type]["ff"]
+        self.dbs_en = comparator_dict[comp_type]["en"]
+    
+
     def generate_exact_implementation(self, **kwargs):
         dest = f"{self.destination}/exact/"
         mkpath(self.destination)
