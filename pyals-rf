@@ -24,7 +24,7 @@ from src.Flows.als_flow import als_one_step, als_two_steps
 from src.Flows.combined_flow import full_one_step, full_two_steps
 from src.Flows.debug_flow import hdl_debug_flow, debug_with_scikit, print_model
 from src.ConfigParsers.DtGenConfigParser import *
-from src.hdl_generation import hdl_generation, hdl_resource_usage
+from src.hdl_generation import hdl_generation, hdl_resource_usage, dyn_energy_estimation
 from src.git_updater import git_updater
 from src.Flows.lcor_flow import leaves_correlation_flow, leaves_correlation_flow_2
 from src.Flows.tmr_flow import tmr_flow, mr_mop_flow, mr_heu_flow
@@ -526,6 +526,20 @@ def hdl_res_usage(ctx, conf, ps_path, pruning_path, out_path, dataset_name, numb
     set_global_options(ctx, conf, "pyALS-RF", verbose, 1, False, "visiting_testing")
     hdl_resource_usage(ctx, pruning_cfg_path=pruning_path, ps_set_configuration_path=ps_path, report_path=out_path, dataset_name=dataset_name, number_trees=number_trees, mr_order=mr_order)
 
+@cli.command("eval_energy")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file of the classifier")
+@click.option('-p', '--ps_path', type=click.Path(exists=True, dir_okay=False), default = None, help = "Path of the PS final_archive")
+@click.option('-g', '--pruning_path', type=click.Path(exists=True, dir_okay=False), default = None, help = "Path of the Pruning Cfg")
+@click.option('-o', '--out_path', type=click.Path(exists=False, dir_okay=False), default = None, help = "OutPath of the resource usage report.")
+@click.option('-d', '--dataset_name', type=str, default = "NoDSProvided", help = "Name of the dataset used.")
+@click.option('-n', '--number_trees', type=int, default = 5, help = "Number of trees used in the ensemble.")
+@click.option('-m', '--mr_order', type=int, default = 0, help = "Redundancy order used.")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
+@click.pass_context
+def eval_energy(ctx, conf, ps_path, pruning_path, out_path, dataset_name, number_trees, mr_order, verbose):
+    set_global_options(ctx, conf, "pyALS-RF", verbose, 1, False, "visiting_testing")
+    dyn_energy_estimation(ctx, pruning_cfg_path=pruning_path, ps_set_configuration_path=ps_path, report_path=out_path, dataset_name=dataset_name, number_trees=number_trees, mr_order=mr_order)
+
 @cli.command("eval_test")
 @click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file of the classifier")
 @click.option('-q', '--quantization_type', type=str, default = None)
@@ -563,6 +577,7 @@ cli.add_command(pruningcfg_into_directions)
 cli.add_command(hdl_res_usage)
 cli.add_command(ensemble_pruning)
 cli.add_command(eval_test)
+cli.add_command(eval_energy)
 
 if __name__ == '__main__':
     if git_updater(os.path.dirname(os.path.realpath(__file__))):

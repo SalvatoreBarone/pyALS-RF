@@ -27,6 +27,8 @@ from ..Model.DecisionTree import DecisionTree
 class HDLGenerator:
     lut_x_db = 77
     ffs_x_db = 128
+    dbs_en = 1
+    lut_en = 1
     resource_dir = "/resources/"
     # VHDL sources
     vhdl_bnf_source = "vhd/bnf.vhd"
@@ -224,6 +226,22 @@ class HDLGenerator:
                     logger.debug(f"\tClass {c} is trivially implemented as using {bn['hdl_expression']}")
         return nLuts_dbs, nLUTs_bns, nFFs_dbs
     
+    def get_dyn_energy(self):
+        logger = logging.getLogger("pyALS-RF")
+        mapper = LutMapper()
+        nDBs = sum(len(self.get_dbs(tree)) for tree in self.classifier.trees)
+        total_dbs_energy = nDBs * self.dbs_en 
+        nLUTs_bns = 0
+        for tree in self.classifier.trees:
+            logger.debug(f"Mapping tree {tree.name}")
+            for c, bn in zip(self.classifier.classes_name, tree.boolean_networks):
+                if bn["minterms"]:
+                    logger.debug(f"\tProcessing {bn['minterms']} for class {c}")
+                    nLUTs_bns += len(mapper.map(bn["minterms"], c))
+                else:
+                    logger.debug(f"\tClass {c} is trivially implemented as using {bn['hdl_expression']}")
+        total_lut_energy = nLUTs_bns * self.lut_en
+        return total_dbs_energy, total_lut_energy
 
     def implement_decision_boxes(self, tree : DecisionTree, boxes : list,  destination : str):
         logger = logging.getLogger("pyALS-RF")

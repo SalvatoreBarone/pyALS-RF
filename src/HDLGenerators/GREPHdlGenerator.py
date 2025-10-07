@@ -40,7 +40,7 @@ class GREPHdlGenerator(HDLGenerator):
         env = Environment(loader = FileSystemLoader(self.source_dir))
         trees_inputs = {}
         GREP.set_pruning_conf(self.classifier, kwargs['pruning_configuration'])
-        self.generate_exact_tb(f"{dest}/tb", features, env) # once the pruning configuration is set, you can use exact generator functions!
+        self.generate_exact_tb(f"{dest}/tb", features, env) # once the pruning configuration is set, you can use exact generator functions!    
         for tree in self.classifier.trees:
             boxes = self.get_dbs(tree)
             inputs = self.implement_decision_boxes(tree, boxes, f"{dest}/src")

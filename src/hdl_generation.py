@@ -191,3 +191,64 @@ def hdl_resource_usage(ctx, lut_tech = 6, pruning_cfg_path : str = None, ps_set_
         pass
     else:
         pass
+
+
+def dyn_energy_estimation(ctx, 
+                          lut_tech = 6, 
+                          pruning_cfg_path : str = None, 
+                          ps_set_configuration_path: str = None, 
+                          report_path: str = None, dataset_name: str = "NoDSProvided", number_trees : int = 5, mr_order :int = 1 ):
+    
+    # Get the logger and avoid potential errors.
+    logger = logging.getLogger("pyALS-RF")
+    if ps_set_configuration_path == None:
+        logger.info("Runing the HDL generation flow.")
+    else:
+        logger.error("Configuration not yet supported !")
+        assert 1 == 0
+    
+    if pruning_cfg_path != None and not os.path.exists(pruning_cfg_path):
+        logger.error("Provide a valid pruning path")
+        assert 1 == 0 
+    # Create the classifier and add its conf.
+    load_configuration_ps(ctx)
+    create_classifier(ctx)
+    create_yshelper(ctx)
+
+    logger.info("Estimating energy for the exact classifier.")
+    hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+    exact_dbs_energy, exact_lut_energy = hdl_generator.get_dyn_energy()
+    exact_total_energy = exact_lut_energy + exact_dbs_energy
+    
+    approx_dbs_energy = -1 
+    approx_lut_energy = -1 
+    approx_total_energy = -1 
+    # If the pruning configuration path is not none, then start the energy estimation even for the approximate classifier.
+    if pruning_cfg_path != None:
+        ctx.obj['pruning_configuration'] = json5.load(open(pruning_cfg_path))
+        logger.info("Computing resource usage for the APPROXIMATE classifier.")
+        hdl_generator = GREPHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+        hdl_generator.generate_axhdl(pruning_configuration = ctx.obj['pruning_configuration'], enable_espresso = ctx.obj['espresso'], lut_tech = lut_tech)
+        approx_dbs_energy, approx_lut_energy = hdl_generator.get_dyn_energy()
+        approx_total_energy = approx_dbs_energy + approx_lut_energy
+
+    report_dict = {
+        "Dataset"   :   dataset_name,
+        "Number of Trees" : number_trees,
+        "MR Order" : mr_order,
+        "Exact LUTs EN ": exact_lut_energy,
+        "Exact DBs EN": exact_dbs_energy,
+        "Exact Total EN": exact_total_energy,
+        
+
+        "Approximate LUTs EN": approx_lut_energy,
+        "Approximate DBs EN": approx_dbs_energy,
+        "Approximate Total EN": approx_total_energy,
+    
+        "Expected EN Savings for LUTs": (1 - approx_lut_energy / exact_lut_energy) * 100,
+        "Expected EN savings for DBs": (1 - approx_dbs_energy / exact_dbs_energy) * 100,
+        "Expected Total EN savings": (1 - approx_total_energy / exact_total_energy) * 100
+    }
+    add_header = not os.path.exists(report_path)
+    df = pd.DataFrame([report_dict])
+    df.to_csv(report_path, mode='a', header=add_header, index=False)
