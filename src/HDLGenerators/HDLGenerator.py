@@ -28,10 +28,10 @@ comparator_dict = {
     "comp64": {
         "lut": 77,
         "ffs": 128,
-        "en" : 1
+        "en" : 4
     },
     "comp16": {
-        "lut": 55,
+        "lut": 45,
         "ffs": 32,
         "en" : 1 
     }
@@ -84,7 +84,7 @@ class HDLGenerator:
     
     def set_comp_type(self, comp_type : str): 
         self.lut_x_db = comparator_dict[comp_type]["lut"]
-        self.ffs_x_db = comparator_dict[comp_type]["ff"]
+        self.ffs_x_db = comparator_dict[comp_type]["ffs"]
         self.dbs_en = comparator_dict[comp_type]["en"]
     
 
@@ -231,8 +231,12 @@ class HDLGenerator:
         logger = logging.getLogger("pyALS-RF")
         mapper = LutMapper()
         nDBs = sum(len(self.get_dbs(tree)) for tree in self.classifier.trees)
+        # print(nDBs)
+        # print(self.lut_x_db)
+        # print(self.ffs_x_db)
+        # exit(1)
         nLuts_dbs = self.lut_x_db * nDBs
-        nFFs_dbs = self.lut_x_db * nDBs
+        nFFs_dbs = self.ffs_x_db * nDBs
         nLUTs_bns = 0
         
         for tree in self.classifier.trees:
