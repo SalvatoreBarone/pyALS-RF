@@ -31,12 +31,12 @@ comparator_dict = {
         "en" : 8
     },
     "comp16": {
-        "lut": 45,
+        "lut": 14,
         "ffs": 32,
         "en" : 2 
     },
     "comp8": {
-        "lut": 15,
+        "lut": 5,
         "ffs": 16,
         "en" : 1 
     }
