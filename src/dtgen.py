@@ -292,6 +292,30 @@ def quantize_16(X_train, X_test):
 
     return train_attributes, test_attributes
 
+def quantize_8(X_train, X_test):
+    train_attributes = [[X_train[i][j] for i in range(len(X_train))] for j in range(len(X_train[0]))]
+    test_attributes  = [[X_test[i][j] for i in range(len(X_test))] for j in range(len(X_test[0]))]
+
+    qmin = -2**7
+    qmax =  2**7 - 1
+
+    for j in range(len(train_attributes)):
+        # Find the maximum absolute value
+        max_abs = np.max(np.abs(train_attributes[j]))
+        if max_abs == 0:   # avoid div by zero
+            scale = 1.0
+        else:
+            scale = qmax / max_abs
+
+        # Apply scaling and rounding
+        train_attributes[j] = [clamp(qmin, qmax, np.round(s * scale)) for s in train_attributes[j]]
+        test_attributes[j]  = [clamp(qmin, qmax, np.round(s * scale)) for s in test_attributes[j]]
+
+    # Transpose back
+    train_attributes = [[np.int16(train_attributes[j][i]) for j in range(len(X_train[0]))] for i in range(len(X_train))]
+    test_attributes  = [[np.int16(test_attributes[j][i]) for j in range(len(X_test[0]))] for i in range(len(X_test))]
+
+    return train_attributes, test_attributes
 
 def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, fraction, ntrees, q16,  niter, cross_validate, hyp_dataset, test_dataset, ncpus, neg_exp_graph):
     logger = logging.getLogger("pyALS-RF")
@@ -303,6 +327,8 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
         x_train, y_train, x_test, y_test = get_sets(dataset, config, fraction)
         if q16 == 1:
             x_train, x_test = quantize_16(x_train, x_test)
+        elif q16 == -1: 
+            x_train, x_test = quantize_8(x_train, x_test)
 
     else: # If the dataset is already splitted do not internally split into train and validation, but automatically integrate the functionality 
         x_train, y_train = get_sets_no_split(hyp_dataset, config)
@@ -319,7 +345,8 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
 
 
     # Define hyperparameter grid for tuning
-    max_depths = [5, 7, 10, 15, 20]
+    #max_depths = [5, 7, 10, 15, 20]
+    max_depths = [15]   # In the future, I will add a json file, for taking in input the set of hyperparameters.
     min_samples_split = [2, 3, 5, 7, 10, 20, 30, 50, 100]
     min_samples_leaf = [1, 2, 3, 5, 7, 10, 20, 30, 50, 100]
     ccp_alpha = [0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.01, 0.05, 0.1]

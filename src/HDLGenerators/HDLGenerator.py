@@ -28,11 +28,16 @@ comparator_dict = {
     "comp64": {
         "lut": 77,
         "ffs": 128,
-        "en" : 4
+        "en" : 8
     },
     "comp16": {
         "lut": 45,
         "ffs": 32,
+        "en" : 2 
+    },
+    "comp8": {
+        "lut": 15,
+        "ffs": 16,
         "en" : 1 
     }
 } 
