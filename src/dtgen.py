@@ -345,8 +345,8 @@ def training_with_parameter_tuning(clf, tuning, dataset, configfile, outputdir, 
 
 
     # Define hyperparameter grid for tuning
-    #max_depths = [5, 7, 10, 15, 20]
-    max_depths = [15]   # In the future, I will add a json file, for taking in input the set of hyperparameters.
+    max_depths = [5, 7, 10, 15, 20]
+    #max_depths = [15]   # In the future, I will add a json file, for taking in input the set of hyperparameters.
     min_samples_split = [2, 3, 5, 7, 10, 20, 30, 50, 100]
     min_samples_leaf = [1, 2, 3, 5, 7, 10, 20, 30, 50, 100]
     ccp_alpha = [0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.01, 0.05, 0.1]
