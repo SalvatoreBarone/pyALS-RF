@@ -114,7 +114,7 @@ class DecisionBox:
     # This is for adding support to int16 quantization.
     elif self.data_type ==  "int16":
         input_to_compare  = np.int16(np.round(input))
-        threshold         = np.round(float(self.threshold))
+        threshold         = np.int16(np.round(float(self.threshold)))
     elif self.data_type == "int8":
         input_to_compare  = np.int8(np.round(input))
         threshold         = np.int8(np.round(float(self.threshold)))
