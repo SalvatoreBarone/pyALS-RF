@@ -123,6 +123,15 @@ def hdl_resource_usage(ctx, lut_tech = 6, comp_type = "comp64",
     create_classifier(ctx)
     create_yshelper(ctx)
 
+    logger.info("Computing resource usage for the exact classifier.")
+    hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
+    hdl_generator.set_comp_type(comp_type)
+    exact_luts_dbs, exact_luts_bns, exact_ffs_dbs = hdl_generator.get_resource_usage()
+    total_lut_exact = exact_luts_dbs + exact_luts_bns
+    ax_luts_dbs = -1
+    ax_luts_bns = -1
+    ax_ffs_dbs  = -1
+    total_luts_ax = -1
     if  ps_set_configuration_path  != None:
         with open(ps_set_configuration_path, 'r') as f:
             pareto_set = json5.load(f)
@@ -149,10 +158,6 @@ def hdl_resource_usage(ctx, lut_tech = 6, comp_type = "comp64",
             logger.info(f"Savings DBS: LUTS: {dbs_lut_savings} FFS: {dbs_ffs_savings} Total LUTS: {total_luts_savings} Total FFS: {dbs_ffs_savings}")
             print(confs)
     elif pruning_cfg_path != None:
-        logger.info("Computing resource usage for the exact classifier.")
-        hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
-        hdl_generator.set_comp_type(comp_type)
-        exact_luts_dbs, exact_luts_bns, exact_ffs_dbs = hdl_generator.get_resource_usage()
         ctx.obj['pruning_configuration'] = json5.load(open(pruning_cfg_path))
         logger.info("Computing resource usage for the APPROXIMATE classifier.")
         hdl_generator = GREPHdlGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
@@ -164,14 +169,20 @@ def hdl_resource_usage(ctx, lut_tech = 6, comp_type = "comp64",
                     f"\n\t- LUTs for decision boxes (approx.): {ax_luts_dbs}"
                     f"\n\t- FFs for decision boxes (approx.): {ax_ffs_dbs}"
                     f"\n\t- LUTs for Boolean Networks (approx.): {ax_luts_bns}")
-        total_lut_exact = exact_luts_dbs + exact_luts_bns
+   
         total_luts_ax = ax_luts_dbs + ax_luts_bns  
         logger.info(f"Expected LUT savings for BNs: {(1 - ax_luts_bns / exact_luts_bns) * 100}%"
                     f"\n\tExpected LUT savings for DBs: {(1 - ax_luts_dbs / exact_luts_dbs) * 100}%"
                     f"\n\tExpected FFs savings for DBs: {(1 - ax_ffs_dbs / exact_ffs_dbs) * 100}%")
         
         logger.info(f"Expected LUT savings Totalfor BNs: {(1 - total_luts_ax / total_lut_exact) * 100}%")
-        report_dict = {
+        
+        
+        pass
+    else:
+        pass
+
+    report_dict = {
             "Dataset": dataset_name,
             "Number of Trees": number_trees,
             "MR Order": mr_order,
@@ -188,15 +199,10 @@ def hdl_resource_usage(ctx, lut_tech = 6, comp_type = "comp64",
             "Expected FFs savings for DBs": (1 - ax_ffs_dbs / exact_ffs_dbs) * 100,
             "Expected Total LUT savings": (1 - total_luts_ax / total_lut_exact) * 100
         }
-        add_header = not os.path.exists(report_path)
-        df = pd.DataFrame([report_dict])
-        df.to_csv(report_path, mode='a', header=add_header, index=False)
-        
-        pass
-    else:
-        pass
-
-
+    add_header = not os.path.exists(report_path)
+    df = pd.DataFrame([report_dict])
+    df.to_csv(report_path, mode='a', header=add_header, index=False)
+    
 def dyn_energy_estimation(ctx, 
                           lut_tech = 6, comp_type = "comp64",
                           pruning_cfg_path : str = None, ps_set_configuration_path: str = None, 
@@ -222,9 +228,8 @@ def dyn_energy_estimation(ctx,
     logger.info("Estimating energy for the exact classifier.")
     hdl_generator = HDLGenerator(ctx.obj["classifier"], ctx.obj["yshelper"], ctx.obj['configuration'].outdir)
     hdl_generator.set_comp_type(comp_type)
-    exact_dbs_energy, exact_lut_energy = hdl_generator.get_dyn_energy()
-    exact_total_energy = exact_lut_energy + exact_dbs_energy
-    
+    exact_dbs_energy, exact_lut_energy= hdl_generator.get_dyn_energy()
+    exact_total_energy = exact_lut_energy + exact_dbs_energy 
     approx_dbs_energy = -1 
     approx_lut_energy = -1 
     approx_total_energy = -1 
@@ -242,18 +247,24 @@ def dyn_energy_estimation(ctx,
         "Dataset"   :   dataset_name,
         "Number of Trees" : number_trees,
         "MR Order" : mr_order,
-        "Exact LUTs EN ": exact_lut_energy,
-        "Exact DBs EN": exact_dbs_energy,
-        "Exact Total EN": exact_total_energy,
-        
+        # **** EXACT 
+        # Energy for inference estimate export
+        "Exact LUTs EN [nJ]": exact_lut_energy,
+        "Exact DBs EN [nJ]": exact_dbs_energy,
+        "Exact Total EN [nJ]": exact_total_energy,
 
-        "Approximate LUTs EN": approx_lut_energy,
-        "Approximate DBs EN": approx_dbs_energy,
-        "Approximate Total EN": approx_total_energy,
-    
-        "Expected EN Savings for LUTs": (1 - approx_lut_energy / exact_lut_energy) * 100,
-        "Expected EN savings for DBs": (1 - approx_dbs_energy / exact_dbs_energy) * 100,
-        "Expected Total EN savings": (1 - approx_total_energy / exact_total_energy) * 100
+
+        # ***** APPROXIMATED
+        # Energy Export
+        "Approximate LUTs EN [nJ]": approx_lut_energy,
+        "Approximate DBs EN [nJ]": approx_dbs_energy,
+        "Approximate Total EN [nJ]": approx_total_energy,
+
+        # SAVINGS..
+        # Energy
+        "Expected EN Savings for LUTs [nJ]": (1 - approx_lut_energy / exact_lut_energy) * 100,
+        "Expected EN savings for DBs [nJ]": (1 - approx_dbs_energy / exact_dbs_energy) * 100,
+        "Expected Total EN savings [nJ]": (1 - approx_total_energy / exact_total_energy) * 100
     }
     add_header = not os.path.exists(report_path)
     df = pd.DataFrame([report_dict])

@@ -28,17 +28,17 @@ comparator_dict = {
     "comp64": {
         "lut": 77,
         "ffs": 128,
-        "en" : 8
+        "en" : 0.16,    # nJ
     },
     "comp16": {
         "lut": 14,
         "ffs": 32,
-        "en" : 2 
+        "en" : 0.09,   # nJ
     },
     "comp8": {
         "lut": 5,
         "ffs": 16,
-        "en" : 1 
+        "en" : 0.06, # NanoJoule
     }
 } 
 
@@ -46,7 +46,7 @@ class HDLGenerator:
     lut_x_db = 77
     ffs_x_db = 128
     dbs_en = 1
-    lut_en = 1
+    lut_en = 0.015   # nJ
     resource_dir = "/resources/"
     # VHDL sources
     vhdl_bnf_source = "vhd/bnf.vhd"
@@ -91,7 +91,7 @@ class HDLGenerator:
         self.lut_x_db = comparator_dict[comp_type]["lut"]
         self.ffs_x_db = comparator_dict[comp_type]["ffs"]
         self.dbs_en = comparator_dict[comp_type]["en"]
-    
+
 
     def generate_exact_implementation(self, **kwargs):
         dest = f"{self.destination}/exact/"
