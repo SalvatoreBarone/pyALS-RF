@@ -27,7 +27,7 @@ from src.ConfigParsers.DtGenConfigParser import *
 from src.hdl_generation import hdl_generation, hdl_resource_usage, dyn_energy_estimation
 from src.git_updater import git_updater
 from src.Flows.lcor_flow import leaves_correlation_flow, leaves_correlation_flow_2
-from src.Flows.tmr_flow import tmr_flow, mr_mop_flow, mr_heu_flow
+from src.Flows.tmr_flow import tmr_flow, mr_mop_flow, mr_heu_flow, mr_additional_eval
 from src.Flows.faultinj_flow import fault_visit, gen_fault_collection, gen_fault_coll_ps,  dump_unfaulted_class_vector, sample_test_set, ps_faultinj_visit #, test_dbs_faulted_inference, test_bns_faulted_inference
 from src.Flows.visit_testing import visit_test, test_classifier_from_indexes
 
@@ -554,6 +554,28 @@ def eval_test(ctx, conf, quantization_type, ncpus, test_set_indexes, outpath, ve
     set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "eval_test_ind")
     test_classifier_from_indexes(ctx, quantization_type, ncpus=ncpus, indexes_path=test_set_indexes, outpath=outpath)
     
+@cli.command("mr_additional_estimations")
+@click.option('-c', '--conf', type=click.Path(exists=True, dir_okay=False), default = None, help = "JSON configuration file of the classifier")
+@click.option('-q', '--quantization_type', type=str, default = None, help="Quantization Type used for internal threshold")
+@click.option('-j', '--ncpus', type = int, help = f"Number of parallel jobs to be used turing DSE. By default, it is {cpu_count()}", default = cpu_count())
+@click.option('-e', '--exp_path', type=str, required=True, help= "Path in which the experiments for a specific dataset were exectured")
+
+@click.option('-k', '--subpath_k', type=str, default="mr_", help= "Subpath format for the modular redundancy order experiments, performed for the same dataset.")
+@click.option('-r', '--subpath_rep', type=str, default="cfg_", help= "Subpath in which a specific configuration of experiment, was executed. For instance, mr_11/cfg_1, Experiments with Modular Redundancy 11, cfg 1, first repetition")
+
+@click.option('-l', '--k_lb', type=int, default=3, help = "Lower Bound of the redundancy order for which the experiments were performed")
+@click.option('-u', '--k_ub', type=int, default=19, help = "Upper Bound for which the experiments were performed")
+@click.option('-s', '--k_step', type=int, default=2, help = "Step for which the experiments varying MR order k were executed.")
+@click.option('-n', '--nreps', type=int, default=30, help = "Number of repetitions for each experiment with a fixed modular redundancy order.")
+
+@click.option('-o', '--outvecs_classifier', type=str, help = "Path in which the output vectors of the classifier are stored.")
+@click.option('-v', '--verbose', type = click.Choice(["DEBUG", "INFO", "WARNINGS", "ERROR", "CRITICAL", 10, 20, 30, 40, 50]), default = "INFO")
+@click.pass_context
+def mr_additional_estimations(ctx, conf, quantization_type, ncpus, exp_path, subpath_k, subpath_rep, k_lb, k_ub, k_step, nreps, outvecs_classifier, verbose):
+    set_global_options(ctx, conf, "pyALS-RF", verbose, ncpus, False, "eval_test_ind")
+    mr_additional_eval(ctx, quantization_type, ncpus, exp_path, subpath_k, subpath_rep, k_lb, k_ub, k_step, nreps, outvecs_classifier)
+    #test_classifier_from_indexes(ctx, quantization_type, ncpus=ncpus, indexes_path=test_set_indexes, outpath=outpath)
+    
 
 cli.add_command(bitwidth)
 cli.add_command(als)
@@ -580,6 +602,7 @@ cli.add_command(hdl_res_usage)
 cli.add_command(ensemble_pruning)
 cli.add_command(eval_test)
 cli.add_command(eval_energy)
+cli.add_command(mr_additional_estimations)
 
 if __name__ == '__main__':
     if git_updater(os.path.dirname(os.path.realpath(__file__))):

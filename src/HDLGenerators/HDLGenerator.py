@@ -23,6 +23,7 @@ from pathlib import Path
 from .LutMapper import LutMapper
 from ..Model.Classifier import Classifier
 from ..Model.DecisionTree import DecisionTree
+import re
 
 comparator_dict = {
     "comp64": {
@@ -251,6 +252,9 @@ class HDLGenerator:
                     logger.debug(f"\tProcessing {bn['minterms']} for class {c}")
                     nLUTs_bns += len(mapper.map(bn["minterms"], c))
                 else:
+                    for leaf in tree.leaves:
+                        nLUTs_bns = len(re.findall(r'Node_\d+', leaf["sop"]))
+                    
                     logger.debug(f"\tClass {c} is trivially implemented as using {bn['hdl_expression']}")
         return nLuts_dbs, nLUTs_bns, nFFs_dbs
     
@@ -267,6 +271,8 @@ class HDLGenerator:
                     logger.debug(f"\tProcessing {bn['minterms']} for class {c}")
                     nLUTs_bns += len(mapper.map(bn["minterms"], c))
                 else:
+                    for leaf in tree.leaves:
+                        nLUTs_bns = len(re.findall(r'Node_\d+', leaf["sop"]))
                     logger.debug(f"\tClass {c} is trivially implemented as using {bn['hdl_expression']}")
         total_lut_energy = nLUTs_bns * self.lut_en
         return total_dbs_energy, total_lut_energy
