@@ -219,7 +219,7 @@ def mr_mop_flow(ctx, alpha : float, beta : float, gamma : float, output : str, n
         
 
 
-def mr_additional_eval(ctx, quantization_type, ncpus, exp_path, subpath_k, subpath_rep, k_lb, k_ub, k_step, nreps, outvecs_classifier):
+def mr_additional_eval(ctx, quantization_type, ncpus, exp_path, subpath_k, subpath_rep, k_lb, k_ub, k_step, nreps):
     
     # ************ START UTILITY FUNCTIONS
     # Estimate the node number 
