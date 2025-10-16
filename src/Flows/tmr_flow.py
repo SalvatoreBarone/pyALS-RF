@@ -652,6 +652,7 @@ def mr_additional_eval(ctx, quantization_type, ncpus, exp_path, subpath_k, subpa
             # Handle the label indexes.
             if not os.path.exists(val_pred_vec_path):
                 logger.error("[MR-HEU-FLOW] Invalid path, please provide a structured path !")
+                logger.error(val_pred_vec_path)
                 assert 1 == 0
             # Transform the prediction vectors for pred vecs to classes.
             else: 

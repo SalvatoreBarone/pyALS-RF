@@ -347,10 +347,11 @@ class MrHeu:
         self.logger.info(f"Summary CSV updated! Please check {self.csv_outfile}")
         
         # Dumping pruning and validation indexes
-
+        
         np.savetxt(os.path.join(self.approx_cfg_outdir, "original_ensemble_labels.txt"), self.mr_axc.x_val_class_labels, fmt = "%d")
         np.savetxt(os.path.join(self.approx_cfg_outdir, "original_ensemble_labels_nodraw.txt"), self.mr_axc.x_val_class_labels_nodraw, fmt = "%d")
         np.savetxt(os.path.join(self.approx_cfg_outdir, "val_pred_vectors.txt"), mr_vectors, fmt = "%d")
+        self.mr_axc.dump_mop_val_indexes(self.approx_cfg_outdir)
        
         # Dump the per class cfg
         with open(self.pruning_outfiles_dict["outfile_per_class_cfg"], "w") as f:
