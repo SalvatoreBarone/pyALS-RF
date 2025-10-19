@@ -9,6 +9,7 @@ from .TMR.tmr import TMR
 import os 
 from pyalslib import double_to_hex, apply_mask_to_double, apply_mask_to_int, double_to_bin
 from ..Model.FaultCollection import FaultCollection
+import pandas as pd
 
 def visit_test(ctx, ps_dir, val_path, working_mode = 0, error_margin = 0.01, confidence_level = 0.95, individual_prob = 0.5, out_dir = "./", ncpus = 1):
     logger = logging.getLogger("pyALS-RF")
@@ -163,3 +164,98 @@ def test_classifier_from_indexes(ctx, quantization_type, indexes_path, ncpus, ou
         np.savetxt(out_cacc, corr_class, fmt ="%.4f")
         np.savetxt(lCostPath, leaves_costs, fmt = "%d")
         np.savetxt(leavesLabelsPath, classes_per_sample, fmt ="%d")
+
+
+def perclass_margin(ctx, quantization_type, indexes_path, ncpus, outpath):
+    def per_sample_margin(pred_vectors, yprun):
+        """Compute one margin value per sample in the test set."""
+        ntrees = np.sum(pred_vectors[0])
+        margins = []
+        for p, y in zip(pred_vectors, yprun):
+            y = int(y)
+            votes_correct = p[y]
+            sorted_votes = np.sort(p)
+            # second most voted class
+            if np.argmax(p) == y:
+                second_class_votes = sorted_votes[-2]
+            else:
+                second_class_votes = sorted_votes[-1]
+            margins.append((votes_correct - second_class_votes) / ntrees)
+        return margins
+
+    logger = logging.getLogger("pyALS-RF")
+    logger.info("[MR-HEU-FLOW] Running per-class margin evaluation...")
+
+    # === Load classifier and configuration ===
+    load_configuration_ps(ctx)
+    create_classifier(ctx)
+    classifier = ctx.obj["classifier"]
+
+    if quantization_type is not None:
+        classifier.set_thds_type(quantization_type)
+
+    # === Load test subset if provided ===
+    if indexes_path is not None:
+        validation_indexes = np.loadtxt(indexes_path, dtype=int)
+        test_samples = classifier.x_test[validation_indexes]
+        test_labels = classifier.y_test[validation_indexes]
+    else:
+        test_samples = classifier.x_test
+        test_labels = classifier.y_test
+
+    # === Compute leaves and per-tree class predictions ===
+    leaves_per_tree = classifier.compute_leaves_idx(test_samples, disable_tqdm=False)
+    class_per_tree = classifier.transform_leaves_into_classess(leaves_per_tree)
+
+    # === Compute vote vectors and margins (test set only) ===
+    votes_vector = classifier.get_votes_vectors_by_leaves_idx(leaves_per_tree, classifier.y_test)
+    margins = per_sample_margin(pred_vectors=votes_vector, yprun=test_labels)
+
+    # === Build per-sample DataFrame ===
+    os.makedirs(outpath, exist_ok=True)
+    # print(margins)
+    # print(len(test_labels))
+    # print(len(margins))
+    # print(test_labels)
+    # exit(1)
+    per_sample_df = pd.DataFrame({
+        "SampleIndex": np.arange(len(test_labels)),
+        "Label": test_labels.ravel(),
+        "Margin": margins
+    })
+
+    per_sample_csv = os.path.join(outpath, "per_sample_margins.csv")
+    per_sample_df.to_csv(per_sample_csv, index=False)
+    logger.info(f"[MR-HEU-FLOW] Saved per-sample margins to: {per_sample_csv}")
+
+    # === Compute per-class margin statistics (test set) ===
+    class_margin_stats = (
+        per_sample_df
+        .groupby("Label")
+        .agg(
+            Test_Samples=("Margin", "count"),
+            Average_Margin=("Margin", "mean"),
+            Std_Margin=("Margin", "std")
+        )
+        .reset_index()
+    )
+
+    # === Compute total (train + test) samples per class ===
+    train_labels = classifier.y_train.ravel()
+    test_labels_all = classifier.y_test.ravel()
+    all_labels = np.concatenate((train_labels, test_labels_all))
+    unique_labels, total_counts = np.unique(all_labels, return_counts=True)
+    class_total_counts = pd.DataFrame({
+        "Label": unique_labels,
+        "Total_Samples_TrainTest": total_counts
+    })
+
+    # === Merge per-class stats with total counts ===
+    class_summary = pd.merge(class_margin_stats, class_total_counts, on="Label", how="outer").fillna(0)
+
+    # === Save final per-class summary ===
+    per_class_csv = os.path.join(outpath, "per_class_margin_summary.csv")
+    class_summary.to_csv(per_class_csv, index=False)
+    logger.info(f"[MR-HEU-FLOW] Saved per-class margin summary to: {per_class_csv}")
+
+    logger.info("[MR-HEU-FLOW] Per-class margin evaluation completed successfully.")

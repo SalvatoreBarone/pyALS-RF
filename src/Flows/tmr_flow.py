@@ -453,7 +453,7 @@ def mr_additional_eval(ctx, quantization_type, ncpus, exp_path, subpath_k, subpa
             acc_e = acc_exact.get(cls, np.nan)
             acc_a = acc_approx.get(cls, np.nan)
             if acc_e > 0 and not np.isnan(acc_a):
-                loss_per_class[cls] = (1 - acc_a / acc_e) * 100
+                loss_per_class[cls] = acc_a - acc_e
             else:
                 loss_per_class[cls] = np.nan
 
@@ -480,15 +480,15 @@ def mr_additional_eval(ctx, quantization_type, ncpus, exp_path, subpath_k, subpa
         for cls in all_classes:
             row[f"#SamplesTrain_Class{cls}"] = class_counts_train.get(cls, np.nan)
             row[f"#SamplesTest_Class{cls}"] = class_counts_test.get(cls, np.nan)
-            row[f"FreqTrain_Class{cls}"] = freq_percent_train.get(cls, np.nan)
-            row[f"FreqTest_Class{cls}"] = freq_percent_test.get(cls, np.nan)
-            row[f"#MOPIndexes_Class{cls}"] = class_counts_mop.get(cls, np.nan)
-            row[f"#MOPFrequency_Class{cls}"] = freq_percent_mop.get(cls, np.nan)
-            row[f"#MOPLabels_Class{cls}"] = class_counts_mop.get(cls, np.nan)
+            # row[f"FreqTrain_Class{cls}"] = freq_percent_train.get(cls, np.nan)
+            # row[f"FreqTest_Class{cls}"] = freq_percent_test.get(cls, np.nan)
+            row[f"#MOPSamples_Class{cls}"] = class_counts_mop.get(cls, np.nan)
+            # row[f"MOPFrequency_Class{cls}"] = freq_percent_mop.get(cls, np.nan)
+            # row[f"#MOPLabels_Class{cls}"] = class_counts_mop.get(cls, np.nan)
             row[f"#CorrectlyLabeledSamplesMR_Class{cls}"] = correctly_tmr.get(cls, np.nan)
             row[f"#CorrectlyLabeledSamplesExact_Class{cls}"] = correctly_exact.get(cls, np.nan)
-            row[f"#AccuracyMR_Class{cls}"] = acc_approx.get(cls, np.nan)   # 🔸 added
-            row[f"#AccuracyExact_Class{cls}"] = acc_exact.get(cls, np.nan) # 🔸 added
+            row[f"#AccuracyMR_Class{cls}"] = acc_approx.get(cls, np.nan)   
+            row[f"#AccuracyExact_Class{cls}"] = acc_exact.get(cls, np.nan) 
             row[f"#Loss_Class{cls}"] = loss_per_class.get(cls, np.nan)
 
         row_df = pd.DataFrame([row])
@@ -510,15 +510,15 @@ def mr_additional_eval(ctx, quantization_type, ncpus, exp_path, subpath_k, subpa
                 col_order += [
                     f"#SamplesTrain_Class{cls}",
                     f"#SamplesTest_Class{cls}",
-                    f"FreqTrain_Class{cls}",
-                    f"FreqTest_Class{cls}",
+                    # f"FreqTrain_Class{cls}",
+                    # f"FreqTest_Class{cls}",
                     f"#MOPIndexes_Class{cls}",
-                    f"#MOPFrequency_Class{cls}",
-                    f"#MOPLabels_Class{cls}",
+                    # f"#MOPFrequency_Class{cls}",
+                    # f"#MOPLabels_Class{cls}",
                     f"#CorrectlyLabeledSamplesMR_Class{cls}",
                     f"#CorrectlyLabeledSamplesExact_Class{cls}",
-                    f"#AccuracyMR_Class{cls}",      
-                    f"#AccuracyExact_Class{cls}",   
+                    f"AccuracyMR_Class{cls}",      
+                    f"AccuracyExact_Class{cls}%",   
                     f"#Loss_Class{cls}",
                 ]
             col_order += ["Average_AccMR_Loss", "Average_AccExact"]
